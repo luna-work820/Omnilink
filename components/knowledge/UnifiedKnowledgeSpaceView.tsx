@@ -476,13 +476,13 @@ export function UnifiedKnowledgeSpaceView({
   const activeFolderObj = folders.find((f) => f.id === activeOpenedFolderId)
 
   const getFolderIcon = (folder: KnowledgeBaseItem) => {
-    if (folder.id === 'brand-business') return <ShoppingBag size={14} className="text-[#024AD8]" />
-    if (folder.id === 'product-knowledge') return <Layers size={14} className="text-emerald-600" />
-    if (folder.id === 'support-policy') return <ShieldCheck size={14} className="text-indigo-600" />
-    if (folder.id === 'product-rd') return <Cpu size={14} className="text-purple-600" />
-    if (folder.id === 'competitor-intel') return <Crosshair size={14} className="text-rose-600" />
-    if (folder.id === 'market-research') return <TrendingUp size={14} className="text-amber-600" />
-    return <Folder size={14} className="text-[#024AD8]" />
+    if (folder.id === 'brand-business') return <ShoppingBag size={14} className="text-[var(--primary)]" />
+    if (folder.id === 'product-knowledge') return <Layers size={14} className="text-[var(--acid-sage)]" />
+    if (folder.id === 'support-policy') return <ShieldCheck size={14} className="text-[var(--primary)]" />
+    if (folder.id === 'product-rd') return <Cpu size={14} className="text-[var(--lavender)]" />
+    if (folder.id === 'competitor-intel') return <Crosshair size={14} className="text-[var(--plum)]" />
+    if (folder.id === 'market-research') return <TrendingUp size={14} className="text-[var(--acid-sage)]" />
+    return <Folder size={14} className="text-[var(--primary)]" />
   }
 
   return (
@@ -497,7 +497,7 @@ export function UnifiedKnowledgeSpaceView({
       */}
       <div
         id="notebookllm-unified-workspace"
-        className="w-full rounded-2xl bg-[#F8F9FA] border border-[#E5E7EB] shadow-xs flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-[#E5E7EB] overflow-hidden h-[calc(100vh-100px)] min-h-[640px] max-h-[880px]"
+        className="w-full rounded-2xl bg-[#F8F9FA] border border-[var(--border)] shadow-xs flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-[var(--border)] overflow-hidden h-[calc(100vh-100px)] min-h-[640px] max-h-[880px]"
       >
         {/* ========================================================================= */}
         {/* COLUMN 1 (LEFT): 知识库来源列表 (Cards showing only icon, title, doc count) */}
@@ -591,14 +591,14 @@ export function UnifiedKnowledgeSpaceView({
             /* Sources List View (NotebookLM Style Clean Cards) */
             <div className="flex flex-col h-full justify-between overflow-hidden">
               {/* Header */}
-              <div className="p-3 border-b border-[#E5E7EB] bg-white space-y-2 shrink-0">
+              <div className="p-3 border-b border-[var(--border)] bg-[var(--surface)] space-y-2 shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <Database size={14} className="text-[#024AD8]" />
-                    <h3 className="text-xs font-extrabold text-[#111827] tracking-tight">
+                    <Database size={14} className="text-[var(--primary)]" />
+                    <h3 className="text-xs font-extrabold text-[var(--ink)] tracking-tight">
                       知识库来源
                     </h3>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-50 text-[#024AD8] font-bold border border-blue-100">
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--primary)] text-[var(--primary)] font-bold border border-[var(--primary)]">
                       {folders.length}
                     </span>
                   </div>
@@ -608,7 +608,7 @@ export function UnifiedKnowledgeSpaceView({
                       type="button"
                       id="open-knowledge-marketplace-btn"
                       onClick={() => setIsMarketplaceModalOpen(true)}
-                      className="px-2 py-1 rounded-[4px] bg-[#F3F4F6] hover:bg-[#E5E7EB] text-[#374151] hover:text-[#111827] text-xs font-medium transition-colors cursor-pointer flex items-center gap-1"
+                      className="px-2 py-1 rounded-[4px] bg-[var(--surface-muted)] hover:bg-[var(--border)] text-[var(--ink)] hover:text-[var(--ink)] text-xs font-medium transition-colors cursor-pointer flex items-center gap-1"
                       title="行业权威知识库中心"
                     >
                       <ShoppingBag size={11} />
@@ -619,7 +619,7 @@ export function UnifiedKnowledgeSpaceView({
                       type="button"
                       id="create-new-knowledge-base-btn"
                       onClick={() => setIsCreateFolderModalOpen(true)}
-                      className="px-2 py-1 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-0.5"
+                      className="px-2 py-1 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-colors cursor-pointer flex items-center gap-0.5"
                       title="新建知识库"
                     >
                       <Plus size={11} />
@@ -633,16 +633,16 @@ export function UnifiedKnowledgeSpaceView({
                   <button
                     type="button"
                     onClick={handleSelectAllFolders}
-                    className="text-[11px] font-semibold text-[#4B5563] hover:text-[#111827] flex items-center gap-1 cursor-pointer select-none truncate"
+                    className="text-[11px] font-semibold text-[var(--ink)] hover:text-[var(--ink)] flex items-center gap-1 cursor-pointer select-none truncate"
                   >
                     {selectedFolderIdsForAi.length === folders.length ? (
-                      <CheckSquare size={13} className="text-[#024AD8] shrink-0" />
+                      <CheckSquare size={13} className="text-[var(--primary)] shrink-0" />
                     ) : selectedFolderIdsForAi.length > 0 ? (
-                      <div className="w-3.5 h-3.5 rounded-[3px] bg-[#024AD8] flex items-center justify-center text-white text-[9px] font-bold shrink-0">
+                      <div className="w-3.5 h-3.5 rounded-[3px] bg-[var(--primary)] flex items-center justify-center text-[var(--surface)] text-[9px] font-bold shrink-0">
                         -
                       </div>
                     ) : (
-                      <Square size={13} className="text-[#9CA3AF] shrink-0" />
+                      <Square size={13} className="text-[var(--lavender)] shrink-0" />
                     )}
                     <span className="truncate">
                       用于推理 ({selectedFolderIdsForAi.length}/{folders.length})
@@ -652,23 +652,23 @@ export function UnifiedKnowledgeSpaceView({
                   <div className="relative flex-1 max-w-[100px]">
                     <Search
                       size={11}
-                      className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
+                      className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[var(--lavender)]"
                     />
                     <input
                       type="text"
                       value={sourceSearchTerm}
                       onChange={(e) => setSourceSearchTerm(e.target.value)}
                       placeholder="筛选..."
-                      className="w-full h-6 pl-5 pr-1.5 rounded-[4px] bg-[#F9FAFB] border border-[#E5E7EB] text-[11px] text-[#111827] focus:outline-none focus:border-[#024AD8]"
+                      className="w-full h-6 pl-5 pr-1.5 rounded-[4px] bg-[var(--surface-muted)] border border-[var(--border)] text-[11px] text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Sources Cards List: ONLY Icon, Title, Doc Count */}
-              <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scroll bg-white">
+              <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scroll bg-[var(--surface)]">
                 {filteredFolders.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-[#9CA3AF]">
+                  <div className="p-6 text-center text-xs text-[var(--lavender)]">
                     未检索到匹配的知识库
                   </div>
                 ) : (
@@ -679,8 +679,8 @@ export function UnifiedKnowledgeSpaceView({
                         key={folder.id}
                         className={`group p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 select-none ${
                           isSelected
-                            ? 'bg-blue-50/25 border-blue-200 hover:border-[#024AD8] shadow-2xs'
-                            : 'bg-white hover:bg-[#F9FAFB] border-[#E5E7EB] hover:border-[#024AD8]/40'
+                            ? 'bg-[var(--primary)]/25 border-[var(--primary)] hover:border-[var(--primary)] shadow-2xs'
+                            : 'bg-[var(--surface)] hover:bg-[var(--surface-muted)] border-[var(--border)] hover:border-[var(--primary)]/40'
                         }`}
                         onClick={() => setActiveOpenedFolderId(folder.id)}
                       >
@@ -696,8 +696,8 @@ export function UnifiedKnowledgeSpaceView({
                             <div
                               className={`w-3.5 h-3.5 rounded-[3px] flex items-center justify-center transition-colors cursor-pointer border ${
                                 isSelected
-                                  ? 'bg-[#024AD8] border-[#024AD8] text-white'
-                                  : 'bg-white border-[#D1D5DB] hover:border-[#9CA3AF]'
+                                  ? 'bg-[var(--primary)] border-[var(--primary)] text-[var(--surface)]'
+                                  : 'bg-[var(--surface)] border-[var(--border)] hover:border-[var(--lavender)]'
                               }`}
                             >
                               {isSelected && <Check size={10} strokeWidth={3} />}
@@ -705,16 +705,16 @@ export function UnifiedKnowledgeSpaceView({
                           </div>
 
                           {/* Folder Icon */}
-                          <div className="w-7 h-7 rounded-lg bg-[#F9FAFB] flex items-center justify-center shrink-0 border border-[#E5E7EB]/80">
+                          <div className="w-7 h-7 rounded-lg bg-[var(--surface-muted)] flex items-center justify-center shrink-0 border border-[var(--border)]/80">
                             {getFolderIcon(folder)}
                           </div>
 
                           {/* Folder Info: ONLY Title & Doc count */}
                           <div className="min-w-0 flex-1">
-                            <h4 className="text-xs font-bold text-[#111827] group-hover:text-[#024AD8] transition-colors truncate">
+                            <h4 className="text-xs font-bold text-[var(--ink)] group-hover:text-[var(--primary)] transition-colors truncate">
                               {folder.title}
                             </h4>
-                            <p className="text-[10px] text-[#6B7280] truncate">
+                            <p className="text-[10px] text-[var(--lavender)] truncate">
                               {folder.sourceCount} 篇文档
                             </p>
                           </div>
@@ -722,7 +722,7 @@ export function UnifiedKnowledgeSpaceView({
 
                         <ChevronRight
                           size={12}
-                          className="text-[#9CA3AF] group-hover:text-[#024AD8] group-hover:translate-x-0.5 transition-all shrink-0"
+                          className="text-[var(--lavender)] group-hover:text-[var(--primary)] group-hover:translate-x-0.5 transition-all shrink-0"
                         />
                       </div>
                     )
@@ -731,15 +731,15 @@ export function UnifiedKnowledgeSpaceView({
               </div>
 
               {/* Storage Footer */}
-              <div className="p-2.5 border-t border-[#E5E7EB] bg-[#F9FAFB] flex items-center justify-between text-[10px] text-[#6B7280] shrink-0">
+              <div className="p-2.5 border-t border-[var(--border)] bg-[var(--surface-muted)] flex items-center justify-between text-[10px] text-[var(--lavender)] shrink-0">
                 <div className="flex items-center gap-1 truncate">
-                  <HardDrive size={12} className="text-[#024AD8] shrink-0" />
+                  <HardDrive size={12} className="text-[var(--primary)] shrink-0" />
                   <span className="truncate">
-                    已用：<strong className="text-[#111827]">68.9 MB</strong>
+                    已用：<strong className="text-[var(--ink)]">68.9 MB</strong>
                   </span>
                 </div>
-                <span className="text-emerald-600 font-bold text-[10px] flex items-center gap-1 shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[var(--acid-sage)] font-bold text-[10px] flex items-center gap-1 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--acid-sage)] animate-pulse" />
                   就绪
                 </span>
               </div>
@@ -752,15 +752,15 @@ export function UnifiedKnowledgeSpaceView({
         {/* ========================================================================= */}
         <div
           id="ai-studio-center-workspace"
-          className="flex-1 bg-white flex flex-col justify-between h-full overflow-hidden"
+          className="flex-1 bg-[var(--surface)] flex flex-col justify-between h-full overflow-hidden"
         >
           {/* Top Bar: Context status & Model Selector */}
-          <div className="px-4 py-3 border-b border-[#E5E7EB] bg-white flex items-center justify-between gap-3 shrink-0">
+          <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface)] flex items-center justify-between gap-3 shrink-0">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-xs text-[#374151] font-medium truncate">
+              <span className="w-2 h-2 rounded-full bg-[var(--acid-sage)] shrink-0" />
+              <span className="text-xs text-[var(--ink)] font-medium truncate">
                 已挂载{' '}
-                <strong className="text-[#111827]">
+                <strong className="text-[var(--ink)]">
                   {selectedFolderIdsForAi.length} 个知识库
                 </strong>{' '}
                 进行交叉推理
@@ -774,18 +774,18 @@ export function UnifiedKnowledgeSpaceView({
                   type="button"
                   id="model-selector-btn"
                   onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
-                  className="px-2.5 py-1 rounded-[4px] bg-[#F9FAFB] hover:bg-[#F3F4F6] border border-[#E5E7EB] text-xs font-bold text-[#111827] flex items-center gap-1.5 cursor-pointer transition-colors"
+                  className="px-2.5 py-1 rounded-[4px] bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] border border-[var(--border)] text-xs font-bold text-[var(--ink)] flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
-                  <Bot size={13} className="text-[#024AD8]" />
+                  <Bot size={13} className="text-[var(--primary)]" />
                   <span>
                     {AI_RESEARCH_MODELS_DATA.find((m) => m.id === selectedModelId)
                       ?.name || 'Gemini 2.5 Pro'}
                   </span>
-                  <ChevronDown size={11} className="text-gray-400" />
+                  <ChevronDown size={11} className="text-[var(--lavender)]" />
                 </button>
 
                 {isModelDropdownOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-48 rounded-[8px] bg-white border border-[#E5E7EB] shadow-xl p-1 z-30 space-y-0.5">
+                  <div className="absolute right-0 top-full mt-1 w-48 rounded-[8px] bg-[var(--surface)] border border-[var(--border)] shadow-xl p-1 z-30 space-y-0.5">
                     {AI_RESEARCH_MODELS_DATA.map((model) => (
                       <button
                         key={model.id}
@@ -796,13 +796,13 @@ export function UnifiedKnowledgeSpaceView({
                         }}
                         className={`w-full text-left px-2.5 py-1.5 rounded-[4px] transition-colors cursor-pointer flex items-center justify-between text-xs font-semibold ${
                           selectedModelId === model.id
-                            ? 'bg-blue-50 text-[#024AD8] font-bold'
-                            : 'text-[#111827] hover:bg-gray-100'
+                            ? 'bg-[var(--primary)] text-[var(--primary)] font-bold'
+                            : 'text-[var(--ink)] hover:bg-[var(--surface-muted)]'
                         }`}
                       >
                         <span>{model.name}</span>
                         {selectedModelId === model.id && (
-                          <Check size={12} className="text-[#024AD8] shrink-0" />
+                          <Check size={12} className="text-[var(--primary)] shrink-0" />
                         )}
                       </button>
                     ))}
@@ -818,7 +818,7 @@ export function UnifiedKnowledgeSpaceView({
                     setResearchMessages([])
                   }
                 }}
-                className="p-1.5 rounded-[4px] text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] transition-colors cursor-pointer"
+                className="p-1.5 rounded-[4px] text-[var(--lavender)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer"
                 title="清空对话"
               >
                 <RotateCcw size={13} />
@@ -827,17 +827,17 @@ export function UnifiedKnowledgeSpaceView({
           </div>
 
           {/* Research Messages Stream */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 custom-scroll bg-[#FAFAFA]/50">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 custom-scroll bg-[var(--surface-muted)]/50">
             {researchMessages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-blue-50 text-[#024AD8] flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-[var(--primary)] text-[var(--primary)] flex items-center justify-center">
                   <Sparkles size={24} />
                 </div>
                 <div className="space-y-1 max-w-sm">
-                  <h3 className="text-sm font-bold text-[#111827]">
+                  <h3 className="text-sm font-bold text-[var(--ink)]">
                     基于知识库的 Notebook 深度研报工作台
                   </h3>
-                  <p className="text-xs text-[#6B7280] leading-relaxed">
+                  <p className="text-xs text-[var(--lavender)] leading-relaxed">
                     在左侧选择知识库或在右侧选择技能，我们将为您生成结构化竞品对比、合规审查或多语言文案。
                   </p>
                 </div>
@@ -857,8 +857,8 @@ export function UnifiedKnowledgeSpaceView({
                     <div
                       className={`w-7 h-7 rounded-[6px] flex items-center justify-center shrink-0 text-xs font-bold ${
                         isUser
-                          ? 'bg-[#111827] text-white'
-                          : 'bg-[#024AD8] text-white'
+                          ? 'bg-[var(--ink)] text-[var(--surface)]'
+                          : 'bg-[var(--primary)] text-[var(--surface)]'
                       }`}
                     >
                       {isUser ? <User size={13} /> : <Sparkles size={13} />}
@@ -868,13 +868,13 @@ export function UnifiedKnowledgeSpaceView({
                       <div
                         className={`p-4 rounded-xl text-xs leading-relaxed border ${
                           isUser
-                            ? 'bg-[#111827] text-white border-[#111827]'
-                            : 'bg-white text-[#111827] border-[#E5E7EB] shadow-2xs'
+                            ? 'bg-[var(--ink)] text-[var(--surface)] border-[var(--ink)]'
+                            : 'bg-[var(--surface)] text-[var(--ink)] border-[var(--border)] shadow-2xs'
                         }`}
                       >
                         <div
                           className={`prose prose-xs max-w-none ${
-                            isUser ? 'text-white' : 'text-[#111827]'
+                            isUser ? 'text-[var(--surface)]' : 'text-[var(--ink)]'
                           }`}
                         >
                           <ReactMarkdown
@@ -883,7 +883,7 @@ export function UnifiedKnowledgeSpaceView({
                                 return (
                                   <h3
                                     className={`text-sm font-bold block mt-2 mb-1.5 ${
-                                      isUser ? 'text-white' : 'text-[#024AD8]'
+                                      isUser ? 'text-[var(--surface)]' : 'text-[var(--primary)]'
                                     }`}
                                   >
                                     {children}
@@ -894,7 +894,7 @@ export function UnifiedKnowledgeSpaceView({
                                 return (
                                   <h4
                                     className={`text-xs font-bold block mt-3 mb-1.5 ${
-                                      isUser ? 'text-white' : 'text-[#111827]'
+                                      isUser ? 'text-[var(--surface)]' : 'text-[var(--ink)]'
                                     }`}
                                   >
                                     {children}
@@ -908,7 +908,7 @@ export function UnifiedKnowledgeSpaceView({
                                 return (
                                   <p
                                     className={`text-xs leading-relaxed my-1.5 ${
-                                      isUser ? 'text-gray-100' : 'text-[#374151]'
+                                      isUser ? 'text-[var(--lavender)]' : 'text-[var(--ink)]'
                                     }`}
                                   >
                                     {children}
@@ -926,7 +926,7 @@ export function UnifiedKnowledgeSpaceView({
                                 return (
                                   <li
                                     className={`text-xs leading-relaxed ${
-                                      isUser ? 'text-gray-100' : 'text-[#374151]'
+                                      isUser ? 'text-[var(--lavender)]' : 'text-[var(--ink)]'
                                     }`}
                                   >
                                     {children}
@@ -941,16 +941,16 @@ export function UnifiedKnowledgeSpaceView({
 
                         {/* Citations Box */}
                         {!isUser && msg.citations && msg.citations.length > 0 && (
-                          <div className="mt-3 pt-2.5 border-t border-gray-100 space-y-1.5">
-                            <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#024AD8]">
-                              <FileText size={11} className="text-[#024AD8]" />
+                          <div className="mt-3 pt-2.5 border-t border-[var(--surface-muted)] space-y-1.5">
+                            <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--primary)]">
+                              <FileText size={11} className="text-[var(--primary)]" />
                               <span>溯源文献与切片引用：</span>
                             </div>
                             <div className="flex flex-wrap gap-1.5">
                               {msg.citations.map((cit) => (
                                 <span
                                   key={cit.id}
-                                  className="px-2 py-0.5 rounded-[4px] bg-blue-50 text-[#024AD8] text-[10px] font-medium border border-blue-100"
+                                  className="px-2 py-0.5 rounded-[4px] bg-[var(--primary)] text-[var(--primary)] text-[10px] font-medium border border-[var(--primary)]"
                                 >
                                   {cit.sourceName}
                                 </span>
@@ -962,7 +962,7 @@ export function UnifiedKnowledgeSpaceView({
 
                       {/* Message Actions */}
                       {!isUser && (
-                        <div className="flex items-center justify-between text-[10px] text-[#9CA3AF] px-1">
+                        <div className="flex items-center justify-between text-[10px] text-[var(--lavender)] px-1">
                           <span>
                             {msg.timestamp} · {msg.modelUsed}
                           </span>
@@ -975,7 +975,7 @@ export function UnifiedKnowledgeSpaceView({
                                 }
                                 alert('研报内容已复制到剪贴板')
                               }}
-                              className="px-1.5 py-0.5 rounded bg-white border border-[#E5E7EB] hover:bg-gray-50 text-[#4B5563] hover:text-[#111827] font-medium flex items-center gap-1 cursor-pointer"
+                              className="px-1.5 py-0.5 rounded bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-[var(--ink)] hover:text-[var(--ink)] font-medium flex items-center gap-1 cursor-pointer"
                               title="复制"
                             >
                               <Copy size={10} />
@@ -985,7 +985,7 @@ export function UnifiedKnowledgeSpaceView({
                             <button
                               type="button"
                               onClick={() => handleSendQuery(undefined)}
-                              className="px-1.5 py-0.5 rounded bg-white border border-[#E5E7EB] hover:bg-gray-50 text-[#4B5563] hover:text-[#111827] font-medium flex items-center gap-1 cursor-pointer"
+                              className="px-1.5 py-0.5 rounded bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-[var(--ink)] hover:text-[var(--ink)] font-medium flex items-center gap-1 cursor-pointer"
                               title="重试"
                             >
                               <RotateCcw size={10} />
@@ -1002,17 +1002,17 @@ export function UnifiedKnowledgeSpaceView({
 
             {isSynthesizing && (
               <div className="flex gap-3 max-w-[90%] mr-auto">
-                <div className="w-7 h-7 rounded-[6px] bg-[#024AD8] text-white flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 rounded-[6px] bg-[var(--primary)] text-[var(--surface)] flex items-center justify-center shrink-0">
                   <Sparkles size={13} />
                 </div>
-                <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-2xs space-y-1.5">
-                  <div className="flex items-center gap-2 text-xs font-bold text-[#024AD8]">
-                    <span className="w-2 h-2 rounded-full bg-[#024AD8] animate-ping" />
+                <div className="p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-2xs space-y-1.5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-[var(--primary)]">
+                    <span className="w-2 h-2 rounded-full bg-[var(--primary)] animate-ping" />
                     <span>
                       正在检索 {selectedFolderIdsForAi.length} 个知识库并生成深度研报…
                     </span>
                   </div>
-                  <p className="text-[11px] text-[#6B7280]">
+                  <p className="text-[11px] text-[var(--lavender)]">
                     已对标声学硬件参数、欧盟 CE 合规协议与竞品拆解报告。
                   </p>
                 </div>
@@ -1021,10 +1021,10 @@ export function UnifiedKnowledgeSpaceView({
           </div>
 
           {/* Bottom Section: Quick Chips & Input Bar */}
-          <div className="p-3.5 bg-white border-t border-[#E5E7EB] space-y-2 shrink-0">
+          <div className="p-3.5 bg-[var(--surface)] border-t border-[var(--border)] space-y-2 shrink-0">
             {/* Quick Prompt Chips */}
             <div className="flex items-center gap-1.5 overflow-x-auto custom-scroll pb-0.5 text-xs">
-              <span className="text-[10px] text-[#9CA3AF] shrink-0 font-medium">
+              <span className="text-[10px] text-[var(--lavender)] shrink-0 font-medium">
                 推荐探索:
               </span>
               {[
@@ -1036,7 +1036,7 @@ export function UnifiedKnowledgeSpaceView({
                   key={idx}
                   type="button"
                   onClick={() => handleSendQuery(chip.label)}
-                  className="px-2.5 py-1 rounded-[4px] bg-[#F9FAFB] hover:bg-[#F3F4F6] border border-[#E5E7EB] text-[#4B5563] hover:text-[#111827] text-[11px] font-medium transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+                  className="px-2.5 py-1 rounded-[4px] bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--ink)] hover:text-[var(--ink)] text-[11px] font-medium transition-colors cursor-pointer shrink-0 whitespace-nowrap"
                 >
                   {chip.label}
                 </button>
@@ -1049,7 +1049,7 @@ export function UnifiedKnowledgeSpaceView({
                 e.preventDefault()
                 handleSendQuery()
               }}
-              className="relative flex items-center gap-2 bg-[#F9FAFB] p-1 rounded-xl border border-[#E5E7EB] focus-within:border-[#024AD8] focus-within:bg-white transition-all shadow-2xs"
+              className="relative flex items-center gap-2 bg-[var(--surface-muted)] p-1 rounded-xl border border-[var(--border)] focus-within:border-[var(--primary)] focus-within:bg-[var(--surface)] transition-all shadow-2xs"
             >
               {/* '+' Upload / Action trigger */}
               <div className="relative" ref={plusMenuRef}>
@@ -1057,23 +1057,23 @@ export function UnifiedKnowledgeSpaceView({
                   type="button"
                   id="plus-action-menu-btn"
                   onClick={() => setIsPlusMenuOpen(!isPlusMenuOpen)}
-                  className="w-8 h-8 rounded-[4px] bg-white border border-[#E5E7EB] text-[#111827] hover:bg-gray-100 flex items-center justify-center cursor-pointer transition-colors shadow-2xs"
+                  className="w-8 h-8 rounded-[4px] bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-muted)] flex items-center justify-center cursor-pointer transition-colors shadow-2xs"
                   title="上传文件或挂载技能"
                 >
                   <Plus size={15} />
                 </button>
 
                 {isPlusMenuOpen && (
-                  <div className="absolute left-0 bottom-full mb-2 w-48 rounded-[8px] bg-white border border-[#E5E7EB] shadow-xl p-1 z-30 space-y-0.5">
+                  <div className="absolute left-0 bottom-full mb-2 w-48 rounded-[8px] bg-[var(--surface)] border border-[var(--border)] shadow-xl p-1 z-30 space-y-0.5">
                     <button
                       type="button"
                       onClick={() => {
                         setIsPlusMenuOpen(false)
                         setIsQuickUploadModalOpen(true)
                       }}
-                      className="w-full text-left p-2 rounded-[4px] hover:bg-blue-50 text-xs font-semibold text-[#111827] flex items-center gap-2 cursor-pointer"
+                      className="w-full text-left p-2 rounded-[4px] hover:bg-[var(--primary)] text-xs font-semibold text-[var(--ink)] flex items-center gap-2 cursor-pointer"
                     >
-                      <FileText size={13} className="text-[#024AD8]" />
+                      <FileText size={13} className="text-[var(--primary)]" />
                       <span>上传新来源文件</span>
                     </button>
                     <button
@@ -1082,9 +1082,9 @@ export function UnifiedKnowledgeSpaceView({
                         setIsPlusMenuOpen(false)
                         setIsSkillMarketplaceOpen(true)
                       }}
-                      className="w-full text-left p-2 rounded-[4px] hover:bg-blue-50 text-xs font-semibold text-[#111827] flex items-center gap-2 cursor-pointer"
+                      className="w-full text-left p-2 rounded-[4px] hover:bg-[var(--primary)] text-xs font-semibold text-[var(--ink)] flex items-center gap-2 cursor-pointer"
                     >
-                      <Sparkles size={13} className="text-[#024AD8]" />
+                      <Sparkles size={13} className="text-[var(--primary)]" />
                       <span>挂载分析技能</span>
                     </button>
                   </div>
@@ -1096,14 +1096,14 @@ export function UnifiedKnowledgeSpaceView({
                 value={queryInput}
                 onChange={(e) => setQueryInput(e.target.value)}
                 placeholder="向所选知识库提问，或点击右侧技能快速生成研报与文案…"
-                className="flex-1 bg-transparent text-xs text-[#111827] focus:outline-none px-2"
+                className="flex-1 bg-transparent text-xs text-[var(--ink)] focus:outline-none px-2"
               />
 
               {/* HP Electric Blue Send Button */}
               <button
                 type="submit"
                 disabled={!queryInput.trim() || isSynthesizing}
-                className="w-8 h-8 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] active:bg-[#00226B] disabled:bg-[#E2E2E2] text-white disabled:text-[#9E9E9E] flex items-center justify-center transition-all cursor-pointer disabled:cursor-not-allowed shrink-0"
+                className="w-8 h-8 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] disabled:bg-[var(--surface-muted)] text-[var(--surface)] disabled:text-[var(--lavender)] flex items-center justify-center transition-all cursor-pointer disabled:cursor-not-allowed shrink-0"
                 title="发送"
               >
                 <Send size={13} className={isSynthesizing ? 'animate-pulse' : ''} />
@@ -1140,24 +1140,24 @@ export function UnifiedKnowledgeSpaceView({
       {isMarketplaceModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-[var(--ink)]/40 backdrop-blur-xs"
             onClick={() => setIsMarketplaceModalOpen(false)}
           />
 
           <div
             id="knowledge-marketplace-modal"
-            className="relative w-full max-w-5xl bg-white rounded-2xl p-6 shadow-2xl border border-[#E5E7EB] z-10 max-h-[90vh] flex flex-col space-y-4 animate-in zoom-in-95"
+            className="relative w-full max-w-5xl bg-[var(--surface)] rounded-2xl p-6 shadow-2xl border border-[var(--border)] z-10 max-h-[90vh] flex flex-col space-y-4 animate-in zoom-in-95"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB] shrink-0">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--border)] shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-[6px] bg-[#024AD8] text-white flex items-center justify-center">
+                <div className="w-8 h-8 rounded-[6px] bg-[var(--primary)] text-[var(--surface)] flex items-center justify-center">
                   <ShoppingBag size={16} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-[#111827]">
+                  <h3 className="text-sm font-bold text-[var(--ink)]">
                     知识库中心 (权威行业与合规库生态)
                   </h3>
-                  <p className="text-[11px] text-[#6B7280]">
+                  <p className="text-[11px] text-[var(--lavender)]">
                     一键同步行业知识、跨境法规、亚马逊类目合规与选品智库至您的知识空间。
                   </p>
                 </div>
@@ -1166,7 +1166,7 @@ export function UnifiedKnowledgeSpaceView({
               <button
                 type="button"
                 onClick={() => setIsMarketplaceModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center cursor-pointer"
+                className="w-8 h-8 rounded-full bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] text-[var(--lavender)] flex items-center justify-center cursor-pointer"
               >
                 <X size={15} />
               </button>
@@ -1187,25 +1187,25 @@ export function UnifiedKnowledgeSpaceView({
       {isCreateFolderModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-[var(--ink)]/40 backdrop-blur-xs"
             onClick={() => setIsCreateFolderModalOpen(false)}
           />
 
           <div
             id="create-folder-modal"
-            className="relative w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl border border-[#E5E7EB] z-10 space-y-4 animate-in zoom-in-95"
+            className="relative w-full max-w-md bg-[var(--surface)] rounded-2xl p-6 shadow-2xl border border-[var(--border)] z-10 space-y-4 animate-in zoom-in-95"
           >
-            <div className="flex items-center justify-between pb-2 border-b border-[#E5E7EB]">
+            <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-[6px] bg-[#024AD8] text-white flex items-center justify-center">
+                <div className="w-8 h-8 rounded-[6px] bg-[var(--primary)] text-[var(--surface)] flex items-center justify-center">
                   <Plus size={16} />
                 </div>
-                <h4 className="text-sm font-bold text-[#111827]">新建知识库</h4>
+                <h4 className="text-sm font-bold text-[var(--ink)]">新建知识库</h4>
               </div>
               <button
                 type="button"
                 onClick={() => setIsCreateFolderModalOpen(false)}
-                className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs cursor-pointer"
+                className="w-7 h-7 rounded-full bg-[var(--surface-muted)] text-[var(--lavender)] flex items-center justify-center text-xs cursor-pointer"
               >
                 <X size={13} />
               </button>
@@ -1213,7 +1213,7 @@ export function UnifiedKnowledgeSpaceView({
 
             <form onSubmit={handleCreateFolder} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1">
+                <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
                   知识库名称
                 </label>
                 <input
@@ -1221,13 +1221,13 @@ export function UnifiedKnowledgeSpaceView({
                   value={newFolderTitle}
                   onChange={(e) => setNewFolderTitle(e.target.value)}
                   placeholder="例如：2026年夏季新品营销素材库"
-                  className="w-full h-9 px-3 rounded-[4px] bg-white border border-[#E5E7EB] text-xs text-[#111827] focus:outline-none focus:border-[#024AD8]"
+                  className="w-full h-9 px-3 rounded-[4px] bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1">
+                <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
                   知识库描述（可选）
                 </label>
                 <textarea
@@ -1235,7 +1235,7 @@ export function UnifiedKnowledgeSpaceView({
                   onChange={(e) => setNewFolderDesc(e.target.value)}
                   placeholder="简述知识库包含的文档范围与用途..."
                   rows={3}
-                  className="w-full p-2.5 rounded-[4px] bg-white border border-[#E5E7EB] text-xs text-[#111827] focus:outline-none focus:border-[#024AD8]"
+                  className="w-full p-2.5 rounded-[4px] bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
                 />
               </div>
 
@@ -1243,14 +1243,14 @@ export function UnifiedKnowledgeSpaceView({
                 <button
                   type="button"
                   onClick={() => setIsCreateFolderModalOpen(false)}
-                  className="px-3 py-1.5 rounded-[4px] bg-white border border-[#D1D1D1] hover:bg-[#F7F7F7] text-[#1C1C1C] text-xs font-medium cursor-pointer"
+                  className="px-3 py-1.5 rounded-[4px] bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-[var(--ink)] text-xs font-medium cursor-pointer"
                 >
                   取消
                 </button>
                 <button
                   type="submit"
                   disabled={!newFolderTitle.trim()}
-                  className="px-4 py-1.5 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] active:bg-[#00226B] disabled:bg-[#E2E2E2] text-white disabled:text-[#9E9E9E] text-xs font-bold cursor-pointer"
+                  className="px-4 py-1.5 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] disabled:bg-[var(--surface-muted)] text-[var(--surface)] disabled:text-[var(--lavender)] text-xs font-bold cursor-pointer"
                 >
                   创建
                 </button>
@@ -1264,25 +1264,25 @@ export function UnifiedKnowledgeSpaceView({
       {isQuickUploadModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-[var(--ink)]/40 backdrop-blur-xs"
             onClick={() => setIsQuickUploadModalOpen(false)}
           />
 
           <div
             id="quick-upload-modal"
-            className="relative w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl border border-[#E5E7EB] z-10 space-y-4 animate-in zoom-in-95"
+            className="relative w-full max-w-md bg-[var(--surface)] rounded-2xl p-6 shadow-2xl border border-[var(--border)] z-10 space-y-4 animate-in zoom-in-95"
           >
-            <div className="flex items-center justify-between pb-2 border-b border-[#E5E7EB]">
+            <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-[6px] bg-[#024AD8] text-white flex items-center justify-center">
+                <div className="w-8 h-8 rounded-[6px] bg-[var(--primary)] text-[var(--surface)] flex items-center justify-center">
                   <UploadCloud size={16} />
                 </div>
-                <h4 className="text-sm font-bold text-[#111827]">上传来源文件</h4>
+                <h4 className="text-sm font-bold text-[var(--ink)]">上传来源文件</h4>
               </div>
               <button
                 type="button"
                 onClick={() => setIsQuickUploadModalOpen(false)}
-                className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs cursor-pointer"
+                className="w-7 h-7 rounded-full bg-[var(--surface-muted)] text-[var(--lavender)] flex items-center justify-center text-xs cursor-pointer"
               >
                 <X size={13} />
               </button>
@@ -1318,7 +1318,7 @@ export function UnifiedKnowledgeSpaceView({
               className="space-y-3.5"
             >
               <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1">
+                <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
                   文件名
                 </label>
                 <input
@@ -1326,19 +1326,19 @@ export function UnifiedKnowledgeSpaceView({
                   value={quickUploadName}
                   onChange={(e) => setQuickUploadName(e.target.value)}
                   placeholder="例如：2026_Q3_声学算法实测报告.pdf"
-                  className="w-full h-9 px-3 rounded-[4px] bg-white border border-[#E5E7EB] text-xs text-[#111827] focus:outline-none focus:border-[#024AD8]"
+                  className="w-full h-9 px-3 rounded-[4px] bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#111827] mb-1">
+                <label className="block text-xs font-semibold text-[var(--ink)] mb-1">
                   归属知识库
                 </label>
                 <select
                   value={quickUploadTargetFolder}
                   onChange={(e) => setQuickUploadTargetFolder(e.target.value)}
-                  className="w-full h-9 px-3 rounded-[4px] bg-white border border-[#E5E7EB] text-xs text-[#111827] focus:outline-none focus:border-[#024AD8]"
+                  className="w-full h-9 px-3 rounded-[4px] bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
                 >
                   {folders.map((f) => (
                     <option key={f.id} value={f.id}>
@@ -1352,14 +1352,14 @@ export function UnifiedKnowledgeSpaceView({
                 <button
                   type="button"
                   onClick={() => setIsQuickUploadModalOpen(false)}
-                  className="px-3 py-1.5 rounded-[4px] bg-white border border-[#D1D1D1] hover:bg-[#F7F7F7] text-[#1C1C1C] text-xs font-medium cursor-pointer"
+                  className="px-3 py-1.5 rounded-[4px] bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-[var(--ink)] text-xs font-medium cursor-pointer"
                 >
                   取消
                 </button>
                 <button
                   type="submit"
                   disabled={!quickUploadName.trim()}
-                  className="px-4 py-1.5 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] active:bg-[#00226B] disabled:bg-[#E2E2E2] text-white disabled:text-[#9E9E9E] text-xs font-bold cursor-pointer"
+                  className="px-4 py-1.5 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] disabled:bg-[var(--surface-muted)] text-[var(--surface)] disabled:text-[var(--lavender)] text-xs font-bold cursor-pointer"
                 >
                   确认上传
                 </button>

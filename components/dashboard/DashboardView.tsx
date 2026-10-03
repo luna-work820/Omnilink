@@ -40,6 +40,10 @@ import {
   Clock,
   Trophy,
 } from 'lucide-react'
+import type { Database } from '@/lib/database.types'
+import Link from 'next/link'
+
+type BrandProject = Database['public']['Tables']['brand_projects']['Row']
 
 // ===== 全球节点网络架构数据（精确对齐 1010x666 MapSVG 投影坐标） =====
 const WORLD_VIEWBOX = { w: 1010, h: 666 }
@@ -263,8 +267,10 @@ type WorldPath = { d: string; name: string; id: string }
 
 export function DashboardView({
   displayName,
+  brandProject,
 }: {
   displayName?: string
+  brandProject: BrandProject
 }) {
   const { isZh } = useLanguage()
   const [analyticsTimeframe, setAnalyticsTimeframe] = useState<'Weekly' | 'Monthly' | 'Yearly'>('Weekly')
@@ -610,9 +616,9 @@ export function DashboardView({
   const getTileBgClass = (value: number) => {
     if (value <= 100) return 'bg-[#EFF6FF] border-[#DBEAFE]'
     if (value <= 200) return 'bg-[#BFDBFE] border-[#93C5FD]'
-    if (value <= 300) return 'bg-[#60A5FA] border-[#3B82F6] text-white'
-    if (value <= 400) return 'bg-[#024AD8] border-[#003198] text-white'
-    return 'bg-[#00226B] border-[#001D6E] text-white'
+    if (value <= 300) return 'bg-[#60A5FA] border-[#3B82F6] text-[var(--surface)]'
+    if (value <= 400) return 'bg-[var(--primary)] border-[var(--primary)] text-[var(--surface)]'
+    return 'bg-[var(--primary)] border-[#001D6E] text-[var(--surface)]'
   }
 
   // 订单履约管道节点数据
@@ -666,23 +672,46 @@ export function DashboardView({
 
   return (
     <div className="space-y-6 pb-12 select-none">
+      <div className="flex flex-col gap-3 rounded-2xl border border-[var(--surface-muted)] bg-[var(--surface)] px-5 py-4 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--primary)]">当前品牌项目</p>
+          <h1 className="mt-1 truncate text-xl font-black text-[var(--lavender)]">{brandProject.name}</h1>
+          <p className="mt-1 truncate text-xs text-[var(--lavender)]">
+            {brandProject.concept || 'Y2K 视觉项目已初始化，等待上传素材进行识别。'}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2 text-xs font-bold text-[var(--lavender)]">
+          <span className="rounded-[4px] border border-[var(--primary)]/20 bg-[var(--surface-muted)] px-2.5 py-1 text-[var(--primary)]">
+            {brandProject.style.toUpperCase()}
+          </span>
+          <span className="rounded-[4px] bg-[var(--surface-muted)] px-2.5 py-1">
+            {brandProject.status === 'active' ? '进行中' : brandProject.status}
+          </span>
+          <Link
+            href="/dashboard/brand-studio"
+            className="rounded-[4px] border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[var(--ink)] transition-colors hover:border-[var(--border)] hover:bg-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2"
+          >
+            图片定风格
+          </Link>
+        </div>
+      </div>
       {/* ============================================================
           ROW 1: 顶部 Header —— 全球地图平铺充当 Header (无缝顶部与两侧羽化 + 渐变至实色底部Overlay: 利润统计 + 全球实时交易 + 核心销售榜单)
           ============================================================ */}
-      <div className="relative w-full aspect-[2000/850] min-h-[500px] rounded-2xl overflow-hidden bg-gradient-to-b from-[#F8FAFC] via-[#F1F5F9] to-[#E2E8F0] border-t-0 border-x-0 border-b border-slate-200/30 select-none">
+      <div className="relative w-full aspect-[2000/850] min-h-[500px] rounded-2xl overflow-hidden bg-gradient-to-b from-[var(--background)] via-[#F1F5F9] to-[var(--border)] border-t-0 border-x-0 border-b border-[var(--surface-muted)]/30 select-none">
         {/* 顶部与两侧羽化渐变遮罩 (与背景无缝相融) */}
-        <div className="absolute inset-y-0 left-0 w-12 sm:w-20 bg-gradient-to-r from-[#F8FAFC] via-[#F8FAFC]/70 to-transparent z-10 pointer-events-none" />
-        <div className="absolute inset-y-0 right-0 w-12 sm:w-20 bg-gradient-to-l from-[#F8FAFC] via-[#F8FAFC]/70 to-transparent z-10 pointer-events-none" />
-        <div className="absolute inset-x-0 top-0 h-10 sm:h-12 bg-gradient-to-b from-[#F8FAFC] via-[#F8FAFC]/70 to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-y-0 left-0 w-12 sm:w-20 bg-gradient-to-r from-[var(--background)] via-[var(--background)]/70 to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-12 sm:w-20 bg-gradient-to-l from-[var(--background)] via-[var(--background)]/70 to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-x-0 top-0 h-10 sm:h-12 bg-gradient-to-b from-[var(--background)] via-[var(--background)]/70 to-transparent z-10 pointer-events-none" />
 
         {/* 右上角浮动缩放控制胶囊 */}
         <div className="absolute top-4 right-4 z-30 flex items-center gap-2.5">
-          <div className="flex items-center gap-1 bg-white/80 backdrop-blur-md p-1 rounded-xl border border-slate-200/60 shadow-xs">
+          <div className="flex items-center gap-1 bg-[var(--surface)]/80 backdrop-blur-md p-1 rounded-xl border border-[var(--surface-muted)]/60 shadow-xs">
             <button
               type="button"
               onClick={handleZoomIn}
               title="放大"
-              className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-800 transition-colors cursor-pointer"
+              className="w-7 h-7 rounded-lg hover:bg-[var(--surface-muted)] flex items-center justify-center text-[var(--lavender)] transition-colors cursor-pointer"
             >
               <ZoomIn size={14} />
             </button>
@@ -690,7 +719,7 @@ export function DashboardView({
               type="button"
               onClick={handleZoomOut}
               title="缩小"
-              className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-800 transition-colors cursor-pointer"
+              className="w-7 h-7 rounded-lg hover:bg-[var(--surface-muted)] flex items-center justify-center text-[var(--lavender)] transition-colors cursor-pointer"
             >
               <ZoomOut size={14} />
             </button>
@@ -698,7 +727,7 @@ export function DashboardView({
               type="button"
               onClick={handleResetZoom}
               title="重置视图"
-              className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+              className="w-7 h-7 rounded-lg hover:bg-[var(--surface-muted)] flex items-center justify-center text-[var(--lavender)] hover:text-[var(--lavender)] transition-colors cursor-pointer"
             >
               <RotateCcw size={13} />
             </button>
@@ -707,16 +736,16 @@ export function DashboardView({
 
         {/* ---------------- 点击/悬浮国家后显示的详情浮窗 (Focus Glass Card: 无边框毛玻璃 + 极细主题色微光边框) ---------------- */}
         {(selectedNode || hoveredNode) && (
-          <div className="absolute top-16 left-4 z-40 w-72 sm:w-80 bg-white/90 backdrop-blur-md rounded-2xl p-4 border border-[#024AD8]/20 shadow-2xl text-xs space-y-2.5 animate-fadeIn">
+          <div className="absolute top-16 left-4 z-40 w-72 sm:w-80 bg-[var(--surface)]/90 backdrop-blur-md rounded-2xl p-4 border border-[var(--primary)]/20 shadow-2xl text-xs space-y-2.5 animate-fadeIn">
             {(() => {
               const target = selectedNode || hoveredNode!
               return (
                 <div className="space-y-2.5">
-                  <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
-                    <div className="flex items-center gap-2 font-bold text-slate-900">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-[var(--surface-muted)]">
+                    <div className="flex items-center gap-2 font-bold text-[var(--lavender)]">
                       <span className="text-lg">{target.flag}</span>
                       <span className="text-base font-extrabold">{target.zhName}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-[#024AD8] font-bold border border-[#024AD8]/15">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--primary)] text-[var(--primary)] font-bold border border-[var(--primary)]/15">
                         {target.zhRegion}
                       </span>
                     </div>
@@ -727,40 +756,40 @@ export function DashboardView({
                         setSelectedNode(null)
                         setHoveredNode(null)
                       }}
-                      className="w-6 h-6 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-800 flex items-center justify-center font-bold cursor-pointer"
+                      className="w-6 h-6 rounded-full hover:bg-[var(--surface-muted)] text-[var(--lavender)] hover:text-[var(--lavender)] flex items-center justify-center font-bold cursor-pointer"
                     >
                       ✕
                     </button>
                   </div>
 
                   {/* 所点击的国家当地时间 (Live Clock) */}
-                  <div className="px-3 py-2 rounded-xl bg-slate-50/90 border border-slate-200/70 flex items-center justify-between text-[11px] font-bold text-slate-800">
-                    <span className="text-slate-500 font-semibold flex items-center gap-1.5">
-                      <Clock size={13} className="text-[#024AD8]" />
+                  <div className="px-3 py-2 rounded-xl bg-[var(--surface-muted)]/90 border border-[var(--surface-muted)]/70 flex items-center justify-between text-[11px] font-bold text-[var(--lavender)]">
+                    <span className="text-[var(--lavender)] font-semibold flex items-center gap-1.5">
+                      <Clock size={13} className="text-[var(--primary)]" />
                       <span>当地时间</span>
                     </span>
-                    <span className="text-[#024AD8] font-black tnum">
+                    <span className="text-[var(--primary)] font-black tnum">
                       {selectedCountryTime || '计算中...'}
                     </span>
                   </div>
 
                   {/* 指标卡片网格 */}
                   <div className="grid grid-cols-2 gap-2 pt-1">
-                    <div className="p-2 rounded-lg bg-slate-50/80 border border-slate-200/60">
-                      <span className="text-[9px] text-slate-400 block font-medium">实时销售总额</span>
-                      <span className="font-black text-slate-900 text-sm tnum">${target.sales.toLocaleString()}</span>
+                    <div className="p-2 rounded-lg bg-[var(--surface-muted)]/80 border border-[var(--surface-muted)]/60">
+                      <span className="text-[9px] text-[var(--lavender)] block font-medium">实时销售总额</span>
+                      <span className="font-black text-[var(--lavender)] text-sm tnum">${target.sales.toLocaleString()}</span>
                     </div>
-                    <div className="p-2 rounded-lg bg-slate-50/80 border border-slate-200/60">
-                      <span className="text-[9px] text-slate-400 block font-medium">同比增长</span>
-                      <span className="font-black text-emerald-600 text-sm tnum">{target.growth}</span>
+                    <div className="p-2 rounded-lg bg-[var(--surface-muted)]/80 border border-[var(--surface-muted)]/60">
+                      <span className="text-[9px] text-[var(--lavender)] block font-medium">同比增长</span>
+                      <span className="font-black text-[var(--acid-sage)] text-sm tnum">{target.growth}</span>
                     </div>
-                    <div className="p-2 rounded-lg bg-slate-50/80 border border-slate-200/60">
-                      <span className="text-[9px] text-slate-400 block font-medium">在途活跃订单</span>
-                      <span className="font-bold text-slate-700 text-xs tnum">{target.activeOrders} 单</span>
+                    <div className="p-2 rounded-lg bg-[var(--surface-muted)]/80 border border-[var(--surface-muted)]/60">
+                      <span className="text-[9px] text-[var(--lavender)] block font-medium">在途活跃订单</span>
+                      <span className="font-bold text-[var(--lavender)] text-xs tnum">{target.activeOrders} 单</span>
                     </div>
-                    <div className="p-2 rounded-lg bg-slate-50/80 border border-slate-200/60">
-                      <span className="text-[9px] text-slate-400 block font-medium">履约妥投率</span>
-                      <span className="font-bold text-blue-600 text-xs tnum">{target.fulfillRate}</span>
+                    <div className="p-2 rounded-lg bg-[var(--surface-muted)]/80 border border-[var(--surface-muted)]/60">
+                      <span className="text-[9px] text-[var(--lavender)] block font-medium">履约妥投率</span>
+                      <span className="font-bold text-[var(--primary)] text-xs tnum">{target.fulfillRate}</span>
                     </div>
                   </div>
 
@@ -770,7 +799,7 @@ export function DashboardView({
                       setModalTitle(`${target.flag} ${target.zhName} 地区销售深度分析`)
                       setActiveModal('details')
                     }}
-                    className="w-full py-2 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] text-white text-xs font-bold transition-all cursor-pointer text-center shadow-2xs"
+                    className="w-full py-2 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-all cursor-pointer text-center shadow-2xs"
                   >
                     查看该地区销售深度分析
                   </button>
@@ -794,17 +823,17 @@ export function DashboardView({
         >
           <defs>
             {/* 微光点阵颗粒 */}
-            <circle id="dot" r="1.5" fill="#024AD8" opacity="0.32" />
+            <circle id="dot" r="1.5" fill="var(--primary)" opacity="0.32" />
             <circle id="glow-dot" r="2.0" fill="#3B82F6" opacity="0.85" />
 
             <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#024AD8" stopOpacity="0.85" />
-              <stop offset="50%" stopColor="#10B981" stopOpacity="0.75" />
-              <stop offset="100%" stopColor="#00226B" stopOpacity="0.75" />
+              <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.85" />
+              <stop offset="50%" stopColor="var(--acid-sage)" stopOpacity="0.75" />
+              <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.75" />
             </linearGradient>
 
             <filter id="nodeGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="1" stdDeviation="4" floodColor="#024AD8" floodOpacity="0.6" />
+              <feDropShadow dx="0" dy="1" stdDeviation="4" floodColor="var(--primary)" floodOpacity="0.6" />
             </filter>
           </defs>
 
@@ -864,9 +893,9 @@ export function DashboardView({
                 <path
                   key={idx}
                   d={p.d}
-                  fill={isSelected ? '#024AD8' : isActive ? '#024AD8' : 'none'}
+                  fill={isSelected ? 'var(--primary)' : isActive ? 'var(--primary)' : 'none'}
                   fillOpacity={isSelected ? 0.25 : isActive ? 0.14 : 0}
-                  stroke="#024AD8"
+                  stroke="var(--primary)"
                   strokeWidth={isSelected ? 1.2 : isActive ? 0.7 : 0.45}
                   strokeOpacity={isSelected ? 0.8 : isActive ? 0.5 : 0.2}
                   className="transition-all duration-300 cursor-pointer hover:stroke-opacity-60"
@@ -908,7 +937,7 @@ export function DashboardView({
                   <path
                     d={route.d}
                     fill="none"
-                    stroke="#FFFFFF"
+                    stroke="var(--surface)"
                     strokeWidth="3.5"
                     strokeDasharray="12,180"
                     strokeLinecap="round"
@@ -942,7 +971,7 @@ export function DashboardView({
                     cy={node.cy}
                     r={isFocused ? 32 : 22}
                     fill="none"
-                    stroke="#024AD8"
+                    stroke="var(--primary)"
                     strokeWidth="1"
                     strokeOpacity={isFocused ? 0.8 : 0.35}
                     className="animate-ping"
@@ -952,15 +981,15 @@ export function DashboardView({
                     cx={node.cx}
                     cy={node.cy}
                     r={isFocused ? 20 : 14}
-                    fill="#024AD8"
+                    fill="var(--primary)"
                     fillOpacity={isFocused ? 0.45 : 0.2}
                   />
                   <circle
                     cx={node.cx}
                     cy={node.cy}
                     r={isFocused ? 8 : 5}
-                    fill="#024AD8"
-                    stroke="#FFFFFF"
+                    fill="var(--primary)"
+                    stroke="var(--surface)"
                     strokeWidth="2"
                     filter="url(#nodeGlow)"
                   />
@@ -981,9 +1010,9 @@ export function DashboardView({
                       width="100"
                       height="34"
                       rx="8"
-                      fill="#FFFFFF"
+                      fill="var(--surface)"
                       fillOpacity={isFocused || isHover ? '0.98' : '0.92'}
-                      stroke={isFocused ? '#024AD8' : '#E2E8F0'}
+                      stroke={isFocused ? 'var(--primary)' : 'var(--border)'}
                       strokeWidth={isFocused ? '2' : '1'}
                       filter="url(#nodeGlow)"
                     />
@@ -992,7 +1021,7 @@ export function DashboardView({
                       y="15"
                       fontSize="11"
                       fontWeight="bold"
-                      fill="#111827"
+                      fill="var(--ink)"
                     >
                       {node.flag} {node.zhName}
                     </text>
@@ -1001,14 +1030,14 @@ export function DashboardView({
                       y="28"
                       fontSize="10"
                       fontWeight="bold"
-                      fill="#024AD8"
+                      fill="var(--primary)"
                     >
                       ${(node.sales / 1000).toFixed(0)}k
                       <tspan
                         dx="4"
                         fontSize="8"
                         fontWeight="normal"
-                        fill="#10B981"
+                        fill="var(--acid-sage)"
                       >
                         {node.growth}
                       </tspan>
@@ -1021,17 +1050,17 @@ export function DashboardView({
         </svg>
 
         {/* ---------------- 底部横向排版 Overlay: 上边缘渐变羽化透明，下边缘逐渐过渡为实色 ---------------- */}
-        <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-b from-white/30 via-white/70 to-white/95 backdrop-blur-md border-t border-white/30 p-5 sm:p-6 pt-9 sm:pt-11 pb-5 sm:pb-6 rounded-b-2xl before:absolute before:-top-8 before:inset-x-0 before:h-8 before:bg-gradient-to-t before:from-white/30 before:to-transparent before:pointer-events-none">
+        <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-b from-[var(--surface)]/30 via-[var(--surface)]/70 to-[var(--surface)]/95 backdrop-blur-md border-t border-[var(--surface)]/30 p-5 sm:p-6 pt-9 sm:pt-11 pb-5 sm:pb-6 rounded-b-2xl before:absolute before:-top-8 before:inset-x-0 before:h-8 before:bg-gradient-to-t before:from-[var(--surface)]/30 before:to-transparent before:pointer-events-none">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
             {/* 1. 利润统计 (加宽占 5 cols: 大数字 KPI + 7天平滑面积趋势图) */}
-            <div className="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-slate-200/50 pb-3 lg:pb-0 lg:pr-5 flex flex-col justify-between h-full">
+            <div className="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-[var(--surface-muted)]/50 pb-3 lg:pb-0 lg:pr-5 flex flex-col justify-between h-full">
               <div className="flex items-center justify-between mb-1.5">
-                <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
-                  <TrendingUp size={14} className="text-[#024AD8]" />
+                <h4 className="text-xs sm:text-sm font-extrabold text-[var(--lavender)] flex items-center gap-1.5">
+                  <TrendingUp size={14} className="text-[var(--primary)]" />
                   <span>利润统计</span>
                 </h4>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-[#024AD8] border border-blue-200/80 text-[11px] font-black animate-pulse shadow-2xs">
-                  ↑ +24% <span className="text-[10px] font-bold text-blue-500">较昨日</span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)]/80 text-[11px] font-black animate-pulse shadow-2xs">
+                  ↑ +24% <span className="text-[10px] font-bold text-[var(--primary)]">较昨日</span>
                 </span>
               </div>
 
@@ -1039,13 +1068,13 @@ export function DashboardView({
               <div className="flex flex-col sm:flex-row items-stretch gap-3 pt-1">
                 {/* 左侧 KPI 核心数据区 (35%) */}
                 <div className="sm:w-[38%] flex flex-col justify-center border-r sm:border-r-slate-200/60 sm:pr-3 shrink-0">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">当前总利润</span>
-                  <div className="text-2xl sm:text-3xl font-black text-slate-900 tnum tracking-tight mt-0.5">
+                  <span className="text-[10px] text-[var(--lavender)] font-bold uppercase tracking-wider block">当前总利润</span>
+                  <div className="text-2xl sm:text-3xl font-black text-[var(--lavender)] tnum tracking-tight mt-0.5">
                     $12,850
                   </div>
-                  <div className="text-[10px] font-bold text-slate-500 mt-1 flex items-center gap-1">
+                  <div className="text-[10px] font-bold text-[var(--lavender)] mt-1 flex items-center gap-1">
                     <span>周利润增长</span>
-                    <span className="font-extrabold text-[#024AD8]">36%</span>
+                    <span className="font-extrabold text-[var(--primary)]">36%</span>
                   </div>
                 </div>
 
@@ -1055,8 +1084,8 @@ export function DashboardView({
                     <svg viewBox="0 0 200 60" preserveAspectRatio="none" className="w-full h-full overflow-visible">
                       <defs>
                         <linearGradient id="profitTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#024AD8" stopOpacity="0.45" />
-                          <stop offset="100%" stopColor="#024AD8" stopOpacity="0.0" />
+                          <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.45" />
+                          <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.0" />
                         </linearGradient>
                       </defs>
 
@@ -1070,23 +1099,23 @@ export function DashboardView({
                       <path
                         d="M 0 45 C 20 42, 35 30, 55 22 C 75 14, 90 32, 110 18 C 130 4, 150 25, 170 12 C 185 2, 195 10, 200 8"
                         fill="none"
-                        stroke="#024AD8"
+                        stroke="var(--primary)"
                         strokeWidth="2.5"
                         strokeLinecap="round"
                       />
 
                       {/* 最高点 Label 与高亮节点 */}
                       <g transform="translate(130, 4)">
-                        <circle r="3.5" fill="#024AD8" stroke="#FFFFFF" strokeWidth="1.5" />
-                        <text x="0" y="-5" fontSize="8" fontWeight="900" fill="#003198" textAnchor="middle">
+                        <circle r="3.5" fill="var(--primary)" stroke="var(--surface)" strokeWidth="1.5" />
+                        <text x="0" y="-5" fontSize="8" fontWeight="900" fill="var(--primary)" textAnchor="middle">
                           高 $2,150
                         </text>
                       </g>
 
                       {/* 最低点 Label 与节点 */}
                       <g transform="translate(0, 45)">
-                        <circle r="3" fill="#93C5FD" stroke="#FFFFFF" strokeWidth="1.5" />
-                        <text x="10" y="10" fontSize="7" fontWeight="800" fill="#00226B" textAnchor="start">
+                        <circle r="3" fill="#93C5FD" stroke="var(--surface)" strokeWidth="1.5" />
+                        <text x="10" y="10" fontSize="7" fontWeight="800" fill="var(--primary)" textAnchor="start">
                           低 $1,200
                         </text>
                       </g>
@@ -1094,7 +1123,7 @@ export function DashboardView({
                   </div>
 
                   {/* 极简 X 轴时间 */}
-                  <div className="flex items-center justify-between text-[9px] font-bold text-slate-400 pt-1 border-t border-slate-100/80">
+                  <div className="flex items-center justify-between text-[9px] font-bold text-[var(--lavender)] pt-1 border-t border-[var(--surface-muted)]/80">
                     <span>一</span>
                     <span>二</span>
                     <span>三</span>
@@ -1108,13 +1137,13 @@ export function DashboardView({
             </div>
 
             {/* 2. 全球实时交易 (缩窄占 4 cols) */}
-            <div className="lg:col-span-4 border-b lg:border-b-0 lg:border-r border-slate-200/50 pb-3 lg:pb-0 lg:pr-5 flex flex-col justify-between h-full">
+            <div className="lg:col-span-4 border-b lg:border-b-0 lg:border-r border-[var(--surface-muted)]/50 pb-3 lg:pb-0 lg:pr-5 flex flex-col justify-between h-full">
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5 font-extrabold text-slate-900 text-xs sm:text-sm">
-                  <Zap size={14} className="text-[#024AD8]" />
+                <div className="flex items-center gap-1.5 font-extrabold text-[var(--lavender)] text-xs sm:text-sm">
+                  <Zap size={14} className="text-[var(--primary)]" />
                   <span>全球实时交易</span>
                 </div>
-                <span className="text-[10px] text-slate-400 font-bold">实时同步</span>
+                <span className="text-[10px] text-[var(--lavender)] font-bold">实时同步</span>
               </div>
 
               {/* 实时流水弹幕 (Feed Stream) */}
@@ -1127,15 +1156,15 @@ export function DashboardView({
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 20, scale: 0.95 }}
                       transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-                      className="p-2 px-3 rounded-lg flex items-center justify-between gap-3 shadow-[0_2px_8px_rgba(0,0,0,0.01)] backdrop-blur-md"
+                      className="p-2 px-3 rounded-lg flex items-center justify-between gap-3 shadow-[0_2px_8px_var(--ink)] backdrop-blur-md"
                       style={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                        backgroundColor: 'var(--surface)',
                       }}
                     >
                       <div className="flex-1 min-w-0">
                         {/* 第一行：头像 + 姓名 + 国旗图标 + 时间 */}
-                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
-                          <div className="w-5 h-5 rounded-full overflow-hidden border border-slate-100 shrink-0 relative">
+                        <div className="flex items-center gap-1.5 text-[11px] text-[var(--lavender)] font-medium">
+                          <div className="w-5 h-5 rounded-full overflow-hidden border border-[var(--surface-muted)] shrink-0 relative">
                             <Image
                               src={tx.avatar}
                               alt={tx.buyerName}
@@ -1144,26 +1173,26 @@ export function DashboardView({
                               referrerPolicy="no-referrer"
                             />
                           </div>
-                          <span className="font-extrabold text-slate-800 truncate max-w-[85px]">
+                          <span className="font-extrabold text-[var(--lavender)] truncate max-w-[85px]">
                             {tx.buyerName}
                           </span>
                           <span className="text-[11px] shrink-0" title={tx.countryName}>
                             {tx.flag}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-normal ml-auto shrink-0 flex items-center gap-1">
-                            <Clock size={9} className="text-slate-300" />
+                          <span className="text-[10px] text-[var(--lavender)] font-normal ml-auto shrink-0 flex items-center gap-1">
+                            <Clock size={9} className="text-[var(--lavender)]" />
                             {formatTimeAgo(tx.timestamp)}
                           </span>
                         </div>
 
                         {/* 第二行：商品名称 */}
-                        <div className="text-[11px] font-bold text-slate-600 truncate mt-1 pl-6.5">
+                        <div className="text-[11px] font-bold text-[var(--lavender)] truncate mt-1 pl-6.5">
                           {tx.productName}
                         </div>
                       </div>
 
                       {/* 右侧/突出：高亮金额，带有高亮蓝色的微光 */}
-                      <div className="text-xs font-black text-[#024AD8] bg-[#EFF4FF] px-2.5 py-1 rounded-[4px] shadow-[0_0_8px_rgba(2,74,216,0.18)] shrink-0 font-mono">
+                      <div className="text-xs font-black text-[var(--primary)] bg-[var(--surface-muted)] px-2.5 py-1 rounded-[4px] shadow-[0_0_8px_rgba(2,74,216,0.18)] shrink-0 font-mono">
                         +{tx.amount}
                       </div>
                     </motion.div>
@@ -1175,22 +1204,22 @@ export function DashboardView({
             {/* 3. 核心销售榜单 (3 cols) —— 去除标题，仅展示 3 个国家排行卡片，与左侧视觉平行 */}
             <div className="lg:col-span-3 flex flex-col justify-center gap-2 h-full">
               {[
-                { rank: 1, flag: '🇺🇸', name: '美国', sales: '$8.42M', trophyColor: 'text-amber-500 fill-amber-400' },
-                { rank: 2, flag: '🇯🇵', name: '日本', sales: '$5.16M', trophyColor: 'text-slate-400 fill-slate-300' },
-                { rank: 3, flag: '🇩🇪', name: '德国', sales: '$3.85M', trophyColor: 'text-amber-700 fill-amber-600' },
+                { rank: 1, flag: '🇺🇸', name: '美国', sales: '$8.42M', trophyColor: 'text-[var(--acid-sage)] fill-amber-400' },
+                { rank: 2, flag: '🇯🇵', name: '日本', sales: '$5.16M', trophyColor: 'text-[var(--lavender)] fill-slate-300' },
+                { rank: 3, flag: '🇩🇪', name: '德国', sales: '$3.85M', trophyColor: 'text-[var(--acid-sage)] fill-amber-600' },
               ].map((country) => (
                 <div
                   key={country.rank}
-                  className="flex items-center justify-between p-2 px-3 rounded-xl bg-white/85 border border-slate-200/70 hover:bg-white transition-all text-xs shadow-2xs"
+                  className="flex items-center justify-between p-2 px-3 rounded-xl bg-[var(--surface)]/85 border border-[var(--surface-muted)]/70 hover:bg-[var(--surface)] transition-all text-xs shadow-2xs"
                 >
                   <div className="flex items-center gap-2">
                     <Trophy size={14} className={`${country.trophyColor} shrink-0`} />
-                    <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <span className="font-bold text-[var(--lavender)] flex items-center gap-1.5">
                       <span>{country.flag}</span>
                       <span>{country.name}</span>
                     </span>
                   </div>
-                  <span className="font-black text-[#024AD8] text-xs sm:text-sm tnum animate-pulse inline-block transition-transform transform hover:scale-105">
+                  <span className="font-black text-[var(--primary)] text-xs sm:text-sm tnum animate-pulse inline-block transition-transform transform hover:scale-105">
                     {country.sales}
                   </span>
                 </div>
@@ -1203,21 +1232,21 @@ export function DashboardView({
       {/* ============================================================
           ROW 2: 订单履约管道全流程进度条卡片
           ============================================================ */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs hover:border-slate-300 transition-all">
+      <div className="bg-[var(--surface)] rounded-2xl border border-[var(--surface-muted)]/90 p-5 shadow-xs hover:border-[var(--surface-muted)] transition-all">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--surface-muted)]">
           <div className="flex items-center gap-2">
-            <Truck size={18} className="text-[#024AD8]" />
-            <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center">
+            <Truck size={18} className="text-[var(--primary)]" />
+            <h3 className="text-sm sm:text-base font-extrabold text-[var(--lavender)] flex items-center">
               订单履约管道全流程
-              <span className="text-xs text-slate-400 font-normal ml-1.5">(演示)</span>
+              <span className="text-xs text-[var(--lavender)] font-normal ml-1.5">(演示)</span>
             </h3>
           </div>
 
           <button
             type="button"
             onClick={() => setActiveModal('fulfill')}
-            className="px-3.5 py-1.5 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] text-white text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5"
           >
             <Truck size={14} />
             <span>批量发货与履约中心</span>
@@ -1227,7 +1256,7 @@ export function DashboardView({
         {/* Flow Pipeline Steps */}
         <div className="relative pt-2 pb-1">
           {/* Connecting Line */}
-          <div className="hidden md:block absolute top-[28px] left-[8%] right-[8%] h-1 bg-slate-200 z-0" />
+          <div className="hidden md:block absolute top-[28px] left-[8%] right-[8%] h-1 bg-[var(--surface-muted)] z-0" />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 relative z-10">
             {fulfillmentPipeline.map((item, idx) => {
@@ -1236,33 +1265,33 @@ export function DashboardView({
                 <div
                   key={item.id}
                   onClick={() => setActiveModal(item.id === 'invoiced' ? 'export' : 'fulfill')}
-                  className="p-3.5 rounded-xl border border-slate-200/90 bg-slate-50/70 hover:bg-white hover:border-[#024AD8]/50 hover:shadow-sm transition-all cursor-pointer group flex flex-col justify-between"
+                  className="p-3.5 rounded-xl border border-[var(--surface-muted)]/90 bg-[var(--surface-muted)]/70 hover:bg-[var(--surface)] hover:border-[var(--primary)]/50 hover:shadow-sm transition-all cursor-pointer group flex flex-col justify-between"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-extrabold text-slate-600 flex items-center gap-1.5">
-                      <span className="w-4 h-4 rounded-full bg-[#024AD8] text-white text-[10px] font-bold flex items-center justify-center shadow-2xs">
+                    <span className="text-[11px] font-extrabold text-[var(--lavender)] flex items-center gap-1.5">
+                      <span className="w-4 h-4 rounded-full bg-[var(--primary)] text-[var(--surface)] text-[10px] font-bold flex items-center justify-center shadow-2xs">
                         {item.step}
                       </span>
                       <span>{item.name}</span>
                     </span>
 
-                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-[#024AD8] flex items-center justify-center shadow-2xs group-hover:scale-110 transition-transform">
+                    <div className="w-7 h-7 rounded-lg bg-[var(--surface)] border border-[var(--surface-muted)] text-[var(--primary)] flex items-center justify-center shadow-2xs group-hover:scale-110 transition-transform">
                       <IconComp size={15} />
                     </div>
                   </div>
 
                   <div>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-black text-slate-900 group-hover:text-[#024AD8] transition-colors tnum">
+                      <span className="text-2xl font-black text-[var(--lavender)] group-hover:text-[var(--primary)] transition-colors tnum">
                         {item.value}
                       </span>
-                      <span className="text-xs font-bold text-slate-500">{item.unit}</span>
+                      <span className="text-xs font-bold text-[var(--lavender)]">{item.unit}</span>
                     </div>
 
                     <div className="mt-1 flex items-center justify-between text-[10px]">
-                      <span className="text-slate-500 font-medium">{item.statusText}</span>
+                      <span className="text-[var(--lavender)] font-medium">{item.statusText}</span>
                       {idx < fulfillmentPipeline.length - 1 && (
-                        <ArrowRight size={12} className="text-slate-400 hidden md:inline-block group-hover:translate-x-1 transition-transform" />
+                        <ArrowRight size={12} className="text-[var(--lavender)] hidden md:inline-block group-hover:translate-x-1 transition-transform" />
                       )}
                     </div>
                   </div>
@@ -1276,20 +1305,20 @@ export function DashboardView({
       {/* ============================================================
           ROW 3: 商品与库存综合看板 (Left: 畅销 Top 5 | Right 一列: 数据分析折线图 + 品类库存热力图)
           ============================================================ */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs hover:border-slate-300 transition-all">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+      <div className="bg-[var(--surface)] rounded-2xl border border-[var(--surface-muted)]/90 p-5 shadow-xs hover:border-[var(--surface-muted)] transition-all">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--surface-muted)]">
           <div className="flex items-center gap-2">
-            <Package size={18} className="text-[#024AD8]" />
-            <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center">
+            <Package size={18} className="text-[var(--primary)]" />
+            <h3 className="text-sm sm:text-base font-extrabold text-[var(--lavender)] flex items-center">
               商品与库存综合看板
-              <span className="text-xs text-slate-400 font-normal ml-1.5">(演示)</span>
+              <span className="text-xs text-[var(--lavender)] font-normal ml-1.5">(演示)</span>
             </h3>
           </div>
 
           <button
             type="button"
             onClick={() => setActiveModal('products')}
-            className="px-3 py-1.5 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] text-white text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+            className="px-3 py-1.5 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
           >
             <span>查看全部商品</span>
             <ExternalLink size={12} />
@@ -1301,11 +1330,11 @@ export function DashboardView({
           <div className="lg:col-span-6 flex flex-col justify-between h-full">
             <div className="flex flex-col h-full justify-between">
               <div className="flex items-center justify-between mb-3 shrink-0">
-                <h4 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <Star size={14} className="text-amber-400 fill-amber-400" />
+                <h4 className="text-xs font-extrabold text-[var(--lavender)] uppercase tracking-wider flex items-center gap-1.5">
+                  <Star size={14} className="text-[var(--acid-sage)] fill-amber-400" />
                   畅销 Top 5 榜单
                 </h4>
-                <span className="text-[11px] text-slate-400 font-medium">按销量与营收实时更新</span>
+                <span className="text-[11px] text-[var(--lavender)] font-medium">按销量与营收实时更新</span>
               </div>
 
               <div className="flex-1 flex flex-col justify-between gap-3">
@@ -1313,16 +1342,16 @@ export function DashboardView({
                   <div
                     key={product.id}
                     onClick={() => setActiveModal('products')}
-                    className="flex-1 min-h-[72px] sm:min-h-[76px] p-3 rounded-xl bg-slate-50/80 hover:bg-white border border-slate-200/80 hover:border-[#024AD8]/40 hover:shadow-2xs transition-all group cursor-pointer flex items-center justify-between gap-3"
+                    className="flex-1 min-h-[72px] sm:min-h-[76px] p-3 rounded-xl bg-[var(--surface-muted)]/80 hover:bg-[var(--surface)] border border-[var(--surface-muted)]/80 hover:border-[var(--primary)]/40 hover:shadow-2xs transition-all group cursor-pointer flex items-center justify-between gap-3"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className={`w-5 h-5 rounded-md text-[10px] font-black flex items-center justify-center text-white shrink-0 shadow-2xs ${
-                        product.rank === 1 ? 'bg-amber-500' : product.rank === 2 ? 'bg-slate-400' : product.rank === 3 ? 'bg-amber-700' : 'bg-slate-600'
+                      <span className={`w-5 h-5 rounded-md text-[10px] font-black flex items-center justify-center text-[var(--surface)] shrink-0 shadow-2xs ${
+                        product.rank === 1 ? 'bg-[var(--acid-sage)]' : product.rank === 2 ? 'bg-[var(--surface-muted)]' : product.rank === 3 ? 'bg-[var(--acid-sage)]' : 'bg-[var(--surface-muted)]'
                       }`}>
                         #{product.rank}
                       </span>
 
-                      <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 overflow-hidden relative shrink-0">
+                      <div className="w-10 h-10 rounded-lg bg-[var(--surface)] border border-[var(--surface-muted)] overflow-hidden relative shrink-0">
                         <Image
                           src={product.image}
                           alt={product.name}
@@ -1333,18 +1362,18 @@ export function DashboardView({
                       </div>
 
                       <div className="min-w-0">
-                        <h5 className="text-xs font-bold text-slate-900 truncate group-hover:text-[#024AD8] transition-colors">
+                        <h5 className="text-xs font-bold text-[var(--lavender)] truncate group-hover:text-[var(--primary)] transition-colors">
                           {product.name}
                         </h5>
-                        <p className="text-[10px] text-slate-500 truncate">
+                        <p className="text-[10px] text-[var(--lavender)] truncate">
                           {product.category}
                         </p>
                       </div>
                     </div>
 
                     <div className="text-right shrink-0">
-                      <span className="text-xs font-black text-[#024AD8] block tnum">{product.price}</span>
-                      <span className="text-[10px] text-slate-500 font-semibold tnum">{product.salesCount}</span>
+                      <span className="text-xs font-black text-[var(--primary)] block tnum">{product.price}</span>
+                      <span className="text-[10px] text-[var(--lavender)] font-semibold tnum">{product.salesCount}</span>
                     </div>
                   </div>
                 ))}
@@ -1353,21 +1382,21 @@ export function DashboardView({
           </div>
 
           {/* 右侧一列 (6 cols): 1. 数据分析折线图 (上方) + 2. 品类库存分布热力图 (下方) */}
-          <div className="lg:col-span-6 border-t lg:border-t-0 lg:border-l border-slate-100 pt-4 lg:pt-0 lg:pl-6 space-y-6">
+          <div className="lg:col-span-6 border-t lg:border-t-0 lg:border-l border-[var(--surface-muted)] pt-4 lg:pt-0 lg:pl-6 space-y-6">
             {/* 1. 数据分析折线图卡片 (移动至此) */}
-            <div className="bg-slate-50/60 p-4 rounded-xl border border-slate-200/80">
+            <div className="bg-[var(--surface-muted)]/60 p-4 rounded-xl border border-[var(--surface-muted)]/80">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                  <TrendingUp size={14} className="text-[#024AD8]" />
+                <h4 className="text-xs font-extrabold text-[var(--lavender)] uppercase tracking-wider flex items-center gap-1.5">
+                  <TrendingUp size={14} className="text-[var(--primary)]" />
                   <span>数据分析</span>
-                  <span className="text-[10px] text-slate-400 font-normal ml-0.5">(演示)</span>
+                  <span className="text-[10px] text-[var(--lavender)] font-normal ml-0.5">(演示)</span>
                 </h4>
 
                 <div className="flex items-center gap-2">
                   <select
                     value={analyticsTimeframe}
                     onChange={(e) => setAnalyticsTimeframe(e.target.value as any)}
-                    className="h-6 px-2 rounded-full bg-white text-slate-700 text-[11px] font-semibold border border-slate-200 focus:outline-none cursor-pointer"
+                    className="h-6 px-2 rounded-full bg-[var(--surface)] text-[var(--lavender)] text-[11px] font-semibold border border-[var(--surface-muted)] focus:outline-none cursor-pointer"
                   >
                     <option value="Weekly">按周</option>
                     <option value="Monthly">按月</option>
@@ -1376,7 +1405,7 @@ export function DashboardView({
 
                   <button
                     type="button"
-                    className="h-6 px-2.5 rounded-full bg-white hover:bg-slate-100 text-slate-700 text-[11px] font-semibold border border-slate-200 flex items-center gap-1 cursor-pointer"
+                    className="h-6 px-2.5 rounded-full bg-[var(--surface)] hover:bg-[var(--surface-muted)] text-[var(--lavender)] text-[11px] font-semibold border border-[var(--surface-muted)] flex items-center gap-1 cursor-pointer"
                   >
                     <span>订单维度</span>
                     <ChevronDown size={12} />
@@ -1384,7 +1413,7 @@ export function DashboardView({
 
                   <button
                     type="button"
-                    className="w-6 h-6 rounded-lg hover:bg-slate-200/60 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                    className="w-6 h-6 rounded-lg hover:bg-[var(--surface-muted)]/60 flex items-center justify-center text-[var(--lavender)] hover:text-[var(--lavender)] transition-colors cursor-pointer"
                   >
                     <MoreHorizontal size={14} />
                   </button>
@@ -1394,17 +1423,17 @@ export function DashboardView({
               {/* 转化率 & 销售额 */}
               <div className="flex items-center gap-5 my-2 text-xs">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-slate-500 font-medium text-[11px]">转化率</span>
-                  <span className="text-sm font-black text-slate-900 tnum">0.75%</span>
-                  <span className="px-1.5 py-0.2 rounded-full bg-[#82E600] text-slate-900 text-[9px] font-extrabold flex items-center gap-0.5">
+                  <span className="text-[var(--lavender)] font-medium text-[11px]">转化率</span>
+                  <span className="text-sm font-black text-[var(--lavender)] tnum">0.75%</span>
+                  <span className="px-1.5 py-0.2 rounded-full bg-[#82E600] text-[var(--lavender)] text-[9px] font-extrabold flex items-center gap-0.5">
                     <ArrowUpRight size={10} /> 13%
                   </span>
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <span className="text-slate-500 font-medium text-[11px]">销售额</span>
-                  <span className="text-sm font-black text-slate-900 tnum">-$2,480</span>
-                  <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] font-bold shrink-0">
+                  <span className="text-[var(--lavender)] font-medium text-[11px]">销售额</span>
+                  <span className="text-sm font-black text-[var(--lavender)] tnum">-$2,480</span>
+                  <span className="px-1.5 py-0.2 rounded-full bg-[var(--plum)] text-[var(--surface)] text-[9px] font-bold shrink-0">
                     -0.4%
                   </span>
                 </div>
@@ -1413,20 +1442,20 @@ export function DashboardView({
               {/* 折线图 */}
               <div className="relative pt-3 pb-1">
                 <div className="relative w-full h-28">
-                  <div className="absolute left-[63%] top-[10%] -translate-x-1/2 bg-[#024AD8] text-white font-black text-[10px] px-2 py-0.5 rounded-full shadow-xs border border-white/40 z-10 animate-bounce">
+                  <div className="absolute left-[63%] top-[10%] -translate-x-1/2 bg-[var(--primary)] text-[var(--surface)] font-black text-[10px] px-2 py-0.5 rounded-full shadow-xs border border-[var(--surface)]/40 z-10 animate-bounce">
                     +34%
                   </div>
 
                   <svg viewBox="0 0 500 120" preserveAspectRatio="none" className="w-full h-full overflow-visible">
                     <defs>
                       <pattern id="diagonalHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-                        <line x1="0" y1="0" x2="0" y2="8" stroke="#024AD8" strokeWidth="1.5" strokeOpacity="0.18" />
+                        <line x1="0" y1="0" x2="0" y2="8" stroke="var(--primary)" strokeWidth="1.5" strokeOpacity="0.18" />
                       </pattern>
                     </defs>
 
-                    <line x1="0" y1="25" x2="500" y2="25" stroke="#E2E8F0" strokeWidth="1" strokeDasharray="3,3" />
-                    <line x1="0" y1="60" x2="500" y2="60" stroke="#E2E8F0" strokeWidth="1" strokeDasharray="3,3" />
-                    <line x1="0" y1="95" x2="500" y2="95" stroke="#E2E8F0" strokeWidth="1" strokeDasharray="3,3" />
+                    <line x1="0" y1="25" x2="500" y2="25" stroke="var(--border)" strokeWidth="1" strokeDasharray="3,3" />
+                    <line x1="0" y1="60" x2="500" y2="60" stroke="var(--border)" strokeWidth="1" strokeDasharray="3,3" />
+                    <line x1="0" y1="95" x2="500" y2="95" stroke="var(--border)" strokeWidth="1" strokeDasharray="3,3" />
 
                     <path
                       d="M 0 80 Q 80 60, 165 75 T 315 30 T 415 50 T 500 65 L 500 110 L 0 110 Z"
@@ -1436,25 +1465,25 @@ export function DashboardView({
                     <path
                       d="M 0 80 Q 80 60, 165 75 T 315 30 T 415 50 T 500 65"
                       fill="none"
-                      stroke="#024AD8"
+                      stroke="var(--primary)"
                       strokeWidth="2.5"
                       strokeLinecap="round"
                     />
 
-                    <circle cx="80" cy="65" r="3" fill="#024AD8" stroke="#FFFFFF" strokeWidth="1.5" />
-                    <circle cx="165" cy="75" r="3" fill="#024AD8" stroke="#FFFFFF" strokeWidth="1.5" />
-                    <circle cx="240" cy="50" r="3" fill="#024AD8" stroke="#FFFFFF" strokeWidth="1.5" />
-                    <circle cx="315" cy="30" r="4.5" fill="#024AD8" stroke="#FFFFFF" strokeWidth="2" />
-                    <circle cx="415" cy="50" r="3" fill="#024AD8" stroke="#FFFFFF" strokeWidth="1.5" />
-                    <circle cx="490" cy="65" r="3" fill="#024AD8" stroke="#FFFFFF" strokeWidth="1.5" />
+                    <circle cx="80" cy="65" r="3" fill="var(--primary)" stroke="var(--surface)" strokeWidth="1.5" />
+                    <circle cx="165" cy="75" r="3" fill="var(--primary)" stroke="var(--surface)" strokeWidth="1.5" />
+                    <circle cx="240" cy="50" r="3" fill="var(--primary)" stroke="var(--surface)" strokeWidth="1.5" />
+                    <circle cx="315" cy="30" r="4.5" fill="var(--primary)" stroke="var(--surface)" strokeWidth="2" />
+                    <circle cx="415" cy="50" r="3" fill="var(--primary)" stroke="var(--surface)" strokeWidth="1.5" />
+                    <circle cx="490" cy="65" r="3" fill="var(--primary)" stroke="var(--surface)" strokeWidth="1.5" />
                   </svg>
                 </div>
 
-                <div className="flex justify-between text-[10px] text-slate-400 font-semibold px-1 mt-1">
+                <div className="flex justify-between text-[10px] text-[var(--lavender)] font-semibold px-1 mt-1">
                   <span>1月</span>
                   <span>2月</span>
                   <span>3月</span>
-                  <span className="text-[#024AD8] font-bold">4月</span>
+                  <span className="text-[var(--primary)] font-bold">4月</span>
                   <span>5月</span>
                   <span>6月</span>
                 </div>
@@ -1465,8 +1494,8 @@ export function DashboardView({
             <div>
               <div className="flex items-center justify-between mb-2.5">
                 <div className="flex items-center gap-1.5">
-                  <Box size={14} className="text-[#024AD8]" />
-                  <h4 className="text-xs font-extrabold text-slate-700 uppercase tracking-wider">
+                  <Box size={14} className="text-[var(--primary)]" />
+                  <h4 className="text-xs font-extrabold text-[var(--lavender)] uppercase tracking-wider">
                     品类库存分布热力图
                   </h4>
                 </div>
@@ -1474,7 +1503,7 @@ export function DashboardView({
                 <select
                   value={stockTimeframe}
                   onChange={(e) => setStockTimeframe(e.target.value as any)}
-                  className="h-6 px-2 rounded-full bg-slate-100 text-slate-700 text-[11px] font-semibold border border-slate-200 focus:outline-none cursor-pointer"
+                  className="h-6 px-2 rounded-full bg-[var(--surface-muted)] text-[var(--lavender)] text-[11px] font-semibold border border-[var(--surface-muted)] focus:outline-none cursor-pointer"
                 >
                   <option value="Weekly">按周</option>
                   <option value="Monthly">按月</option>
@@ -1482,17 +1511,17 @@ export function DashboardView({
               </div>
 
               <div className="my-1">
-                <div className="grid grid-cols-8 gap-1.5 items-center text-[11px] font-bold text-slate-600 mb-1.5">
+                <div className="grid grid-cols-8 gap-1.5 items-center text-[11px] font-bold text-[var(--lavender)] mb-1.5">
                   <span>品类</span>
                   {['周日', '周一', '周二', '周三', '周四', '周五', '周六'].map((day, idx) => (
-                    <span key={idx} className="text-center text-slate-400">{day}</span>
+                    <span key={idx} className="text-center text-[var(--lavender)]">{day}</span>
                   ))}
                 </div>
 
                 <div className="space-y-1.5">
                   {stockCategories.map((cat, rIdx) => (
                     <div key={cat.name} className="grid grid-cols-8 gap-1.5 items-center">
-                      <span className="text-[11px] font-bold text-slate-700 truncate" title={cat.zhName}>
+                      <span className="text-[11px] font-bold text-[var(--lavender)] truncate" title={cat.zhName}>
                         {cat.zhName}
                       </span>
 
@@ -1514,14 +1543,14 @@ export function DashboardView({
                 </div>
               </div>
 
-              <div className="pt-2 mt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-1 text-[10px] text-slate-500 font-semibold">
+              <div className="pt-2 mt-2 border-t border-[var(--surface-muted)] flex flex-wrap items-center justify-between gap-1 text-[10px] text-[var(--lavender)] font-semibold">
                 <span>库存分布（件）:</span>
                 <div className="flex items-center gap-1.5">
                   <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-[#EFF6FF] border border-[#DBEAFE]" /> 0-100</div>
                   <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-[#BFDBFE]" /> 101-200</div>
                   <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-[#60A5FA]" /> 201-300</div>
-                  <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-[#024AD8]" /> 301-400</div>
-                  <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-[#00226B]" /> 401+</div>
+                  <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-[var(--primary)]" /> 301-400</div>
+                  <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-[var(--primary)]" /> 401+</div>
                 </div>
               </div>
             </div>
@@ -1531,10 +1560,10 @@ export function DashboardView({
 
       {/* ===== 交互式模态框与 Toast 通知 ===== */}
       {activeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-200 overflow-hidden relative">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-              <h3 className="text-base font-extrabold text-slate-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--ink)]/40 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="bg-[var(--surface)] rounded-2xl shadow-xl max-w-md w-full p-6 border border-[var(--surface-muted)] overflow-hidden relative">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--surface-muted)] mb-4">
+              <h3 className="text-base font-extrabold text-[var(--lavender)]">
                 {activeModal === 'export' && (isZh ? '导出店铺经营报表' : 'Export Store Analytics')}
                 {activeModal === 'fulfill' && (isZh ? '订单批量履约与发货中心' : 'Order Fulfillment & Shipping Hub')}
                 {activeModal === 'products' && (isZh ? '全渠道在售精选商品库存' : 'Active Products Inventory')}
@@ -1543,20 +1572,20 @@ export function DashboardView({
               <button
                 type="button"
                 onClick={() => setActiveModal(null)}
-                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold transition-colors cursor-pointer"
+                className="w-7 h-7 rounded-full bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] text-[var(--lavender)] flex items-center justify-center text-xs font-bold transition-colors cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             {activeModal === 'export' && (
-              <div className="space-y-4 text-xs text-slate-600">
+              <div className="space-y-4 text-xs text-[var(--lavender)]">
                 <p>{isZh ? '请选择您要导出的报表格式与时间跨度，系统将生成加密 CSV/Excel 结算明细：' : 'Select format and date range for your secure export:'}</p>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="p-3 rounded-xl border-2 border-[#024AD8] bg-blue-50/40 font-bold text-slate-900 cursor-pointer text-center">
+                  <div className="p-3 rounded-xl border-2 border-[var(--primary)] bg-[var(--primary)]/40 font-bold text-[var(--lavender)] cursor-pointer text-center">
                     CSV 详细账单
                   </div>
-                  <div className="p-3 rounded-xl border border-slate-200 hover:border-slate-300 font-semibold text-slate-600 cursor-pointer text-center">
+                  <div className="p-3 rounded-xl border border-[var(--surface-muted)] hover:border-[var(--surface-muted)] font-semibold text-[var(--lavender)] cursor-pointer text-center">
                     Excel 财务汇总
                   </div>
                 </div>
@@ -1567,7 +1596,7 @@ export function DashboardView({
                       setActiveModal(null)
                       setToastMessage(isZh ? '报表已成功生成并推送到您的下载队列' : 'Report generated and queued for download')
                     }}
-                    className="w-full py-2.5 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] text-white font-bold shadow-2xs transition-all cursor-pointer text-xs"
+                    className="w-full py-2.5 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] font-bold shadow-2xs transition-all cursor-pointer text-xs"
                   >
                     {isZh ? '确认生成下载链接' : 'Confirm & Download'}
                   </button>
@@ -1577,15 +1606,15 @@ export function DashboardView({
 
             {activeModal === 'fulfill' && (
               <div className="space-y-3 text-xs">
-                <p className="text-slate-600">{isZh ? '当前共有 12 笔待发货订单等待智能路由分发：' : '12 unfulfilled orders ready for AI routing:'}</p>
+                <p className="text-[var(--lavender)]">{isZh ? '当前共有 12 笔待发货订单等待智能路由分发：' : '12 unfulfilled orders ready for AI routing:'}</p>
                 <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100">
+                    <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-[var(--surface-muted)] border border-[var(--surface-muted)]">
                       <div>
-                        <span className="font-bold text-slate-900">#ORD-2026-88{i}</span>
-                        <span className="text-[10px] text-slate-400 block">{isZh ? 'Adidas Ultraboost 22 · 1件' : 'Adidas Ultraboost 22 · 1pc'}</span>
+                        <span className="font-bold text-[var(--lavender)]">#ORD-2026-88{i}</span>
+                        <span className="text-[10px] text-[var(--lavender)] block">{isZh ? 'Adidas Ultraboost 22 · 1件' : 'Adidas Ultraboost 22 · 1pc'}</span>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold">
+                      <span className="px-2 py-0.5 rounded-full bg-[var(--acid-sage)] text-[var(--acid-sage)] text-[10px] font-extrabold">
                         {isZh ? '就绪' : 'Ready'}
                       </span>
                     </div>
@@ -1598,7 +1627,7 @@ export function DashboardView({
                       setActiveModal(null)
                       setToastMessage(isZh ? '成功执行 12 笔订单一键批量履约发货！' : 'Successfully batch fulfilled 12 orders!')
                     }}
-                    className="w-full py-2.5 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] text-white font-bold shadow-2xs transition-all cursor-pointer text-xs flex items-center justify-center gap-1.5"
+                    className="w-full py-2.5 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] font-bold shadow-2xs transition-all cursor-pointer text-xs flex items-center justify-center gap-1.5"
                   >
                     <Truck size={14} />
                     <span>{isZh ? '立即一键批量发货 (12)' : 'Execute Batch Fulfill (12)'}</span>
@@ -1609,15 +1638,15 @@ export function DashboardView({
 
             {activeModal === 'products' && (
               <div className="space-y-3 text-xs">
-                <p className="text-slate-600">{isZh ? '当前店铺在售精选商品库存及实时销量：' : 'Active store inventory and sales velocity:'}</p>
+                <p className="text-[var(--lavender)]">{isZh ? '当前店铺在售精选商品库存及实时销量：' : 'Active store inventory and sales velocity:'}</p>
                 <div className="space-y-2">
                   {topProducts.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <div key={p.id} className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--surface-muted)] border border-[var(--surface-muted)]">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900">{p.name}</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-600">{p.category}</span>
+                        <span className="font-bold text-[var(--lavender)]">{p.name}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-muted)] text-[var(--lavender)]">{p.category}</span>
                       </div>
-                      <span className="font-extrabold text-[#024AD8]">{p.price}</span>
+                      <span className="font-extrabold text-[var(--primary)]">{p.price}</span>
                     </div>
                   ))}
                 </div>
@@ -1625,7 +1654,7 @@ export function DashboardView({
                   <button
                     type="button"
                     onClick={() => setActiveModal(null)}
-                    className="px-4 py-2 rounded-[4px] bg-slate-900 text-white font-bold text-xs cursor-pointer"
+                    className="px-4 py-2 rounded-[4px] bg-[var(--surface-muted)] text-[var(--surface)] font-bold text-xs cursor-pointer"
                   >
                     {isZh ? '关闭' : 'Close'}
                   </button>
@@ -1634,16 +1663,16 @@ export function DashboardView({
             )}
 
             {activeModal === 'details' && (
-              <div className="space-y-3 text-xs text-slate-600">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                  <span className="font-bold text-slate-900 block mb-1">{isZh ? '核心指标多维拆解' : 'Multidimensional Breakdown'}</span>
+              <div className="space-y-3 text-xs text-[var(--lavender)]">
+                <div className="p-3 rounded-xl bg-[var(--surface-muted)] border border-[var(--surface-muted)]">
+                  <span className="font-bold text-[var(--lavender)] block mb-1">{isZh ? '核心指标多维拆解' : 'Multidimensional Breakdown'}</span>
                   <p>{isZh ? '基于 AI 实时监测的归因模型，该指标在过去 7 天内保持稳健增长，环比提升 +14.2%，履约时效达到行业前 5%。' : 'Real-time AI monitored attribution model shows steady 14.2% week-over-week growth.'}</p>
                 </div>
                 <div className="pt-2 flex justify-end">
                   <button
                     type="button"
                     onClick={() => setActiveModal(null)}
-                    className="px-4 py-2 rounded-[4px] bg-[#024AD8] text-white font-bold text-xs cursor-pointer hover:bg-[#003198]"
+                    className="px-4 py-2 rounded-[4px] bg-[var(--primary)] text-[var(--surface)] font-bold text-xs cursor-pointer hover:bg-[var(--primary)]"
                   >
                     {isZh ? '知道了' : 'Got it'}
                   </button>
@@ -1656,7 +1685,7 @@ export function DashboardView({
 
       {/* ===== 浮动 Toast 提示通知 ===== */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-bold animate-bounce">
+        <div className="fixed bottom-6 right-6 z-50 bg-[var(--surface-muted)] text-[var(--surface)] px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 text-xs font-bold animate-bounce">
           <CheckCircle2 size={16} className="text-[#82E600] shrink-0" />
           <span>{toastMessage}</span>
         </div>
