@@ -16,7 +16,6 @@ import {
   X,
 } from 'lucide-react'
 import { DEMO_PRODUCTS } from '@/lib/products/demo-data'
-import { SYSTEM_KNOWLEDGE_BASES } from '@/components/knowledge/mockData'
 
 type AssetKind = 'image' | 'video' | 'document'
 type AssetVisibility = 'customer-facing' | 'internal-private'
@@ -33,31 +32,7 @@ type Asset = {
   productIds: string[]
 }
 
-const PRODUCT_KNOWLEDGE = SYSTEM_KNOWLEDGE_BASES.find((base) => base.id === 'product-knowledge')
-
-const INITIAL_ASSETS: Asset[] = [
-  ...(PRODUCT_KNOWLEDGE?.sources.slice(0, 4).map((source, index) => ({
-    id: source.id,
-    name: source.name,
-    kind: source.type === 'url' ? 'document' : source.type === 'markdown' ? 'document' : 'document',
-    size: source.size,
-    updatedAt: source.updatedAt,
-    visibility: source.visibility,
-    status: 'ready',
-    productIds: index < 3 ? ['prod-101'] : [],
-  })) as Asset[]) || [],
-  {
-    id: 'asset-demo-image-1',
-    name: 'OmniFlow_S1_Product_Hero.webp',
-    kind: 'image',
-    size: '1.8 MB',
-    updatedAt: '刚刚',
-    visibility: 'customer-facing',
-    status: 'ready',
-    url: DEMO_PRODUCTS[0]?.image_url,
-    productIds: ['prod-101'],
-  },
-]
+const INITIAL_ASSETS: Asset[] = []
 
 const kindLabels: Record<AssetKind, string> = {
   image: '图片',
@@ -216,8 +191,8 @@ export function AssetLibrary() {
             {filteredAssets.length === 0 ? (
               <div className="flex min-h-72 flex-col items-center justify-center rounded-[28px] bg-white px-6 text-center shadow-[0_2px_12px_rgba(28,28,28,0.06)]">
                 <FileText size={28} className="text-[#636363]" />
-                <p className="mt-4 text-base font-bold">没有匹配的资产</p>
-                <p className="mt-1 text-sm text-[#636363]">调整筛选条件，或上传一个新文件。</p>
+                <p className="mt-4 text-base font-bold">资产库还是空的</p>
+                <p className="mt-1 text-sm text-[#636363]">上传第一个文件，开始建立商品与资产的关联。</p>
               </div>
             ) : <div className="grid gap-5 md:grid-cols-2">
               {filteredAssets.map((asset, index) => (
