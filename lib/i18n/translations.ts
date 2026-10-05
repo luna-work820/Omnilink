@@ -11,6 +11,7 @@ export interface TranslationSchema {
     ai: string
     agentApi: string
     knowledge: string
+    assets: string
     storefront: string
     store: string
     plugins: string
@@ -216,6 +217,7 @@ export const translations: Record<Language, TranslationSchema> = {
       ai: 'AI',
       agentApi: '网络与接口',
       knowledge: '知识库',
+      assets: '资产库',
       storefront: '网页设计',
       store: '店铺控制台',
       plugins: '能力中心',
@@ -419,6 +421,7 @@ export const translations: Record<Language, TranslationSchema> = {
       ai: 'AI',
       agentApi: 'Agent API',
       knowledge: 'Knowledge',
+      assets: 'Assets',
       storefront: 'Storefront',
       store: 'Store Console',
       plugins: 'Capabilities',

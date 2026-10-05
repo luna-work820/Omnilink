@@ -14,6 +14,7 @@ import {
   Package,
   Fingerprint,
   BookOpen,
+  FolderOpen,
   Palette,
   Blocks,
   Globe,
@@ -36,6 +37,7 @@ type NavItemKey =
   | 'products'
   | 'provenance'
   | 'knowledge'
+  | 'assets'
   | 'storefront'
   | 'capabilities'
   | 'network'
@@ -76,6 +78,12 @@ const NAV_ITEMS: NavItem[] = [
     href: '/dashboard/knowledge',
     icon: BookOpen,
     match: (p) => p.startsWith('/dashboard/knowledge'),
+  },
+  {
+    key: 'assets',
+    href: '/dashboard/assets',
+    icon: FolderOpen,
+    match: (p) => p.startsWith('/dashboard/assets'),
   },
   {
     key: 'storefront',
