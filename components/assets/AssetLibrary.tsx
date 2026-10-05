@@ -77,27 +77,28 @@ function AssetCard({ asset, selected, onSelect, featured }: { asset: Asset; sele
     <button
       type="button"
       onClick={onSelect}
-      className={`group relative flex min-h-[228px] flex-col overflow-hidden rounded-[24px] border text-left shadow-[0_2px_8px_rgba(28,28,28,0.06)] transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-[#B0B0B0] hover:shadow-[0_8px_20px_rgba(28,28,28,0.1)] focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2 md:min-h-[240px] ${selected ? 'border-[#024AD8] ring-2 ring-[#024AD8]/20' : 'border-[#E2E2E2]'} ${isFolder ? `${folderTone} text-white` : 'bg-white text-[#1C1C1C]'}`}
+      aria-label={`查看资产 ${asset.name}`}
+      className={`group relative flex min-h-[248px] flex-col overflow-hidden rounded-[28px] border text-left shadow-[0_2px_12px_rgba(28,28,28,0.06)] transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-[#B0B0B0] hover:shadow-[0_10px_24px_rgba(28,28,28,0.12)] focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2 ${selected ? 'border-[#024AD8] ring-2 ring-[#024AD8]/20' : 'border-[#E2E2E2]'} ${isFolder ? `${folderTone} text-white` : 'bg-white text-[#1C1C1C]'}`}
     >
       {isFolder ? (
         <>
-          <span className="relative block h-28 overflow-hidden">
-            <span className="absolute left-[22%] top-5 h-14 w-20 -rotate-6 rounded-[8px] border border-white/60 bg-white/90 shadow-sm" />
-            <span className="absolute left-[38%] top-3 h-16 w-24 rotate-3 rounded-[8px] border border-white/60 bg-white/90 shadow-sm" />
-            <span className="absolute left-[56%] top-7 h-14 w-24 rounded-[8px] border border-white/60 bg-white/95 shadow-sm" />
-            {asset.url && <img src={asset.url} alt="" className="absolute left-1/2 top-7 h-14 w-20 -translate-x-1/2 rounded-[8px] object-cover shadow-sm" />}
+          <span className="relative block h-32 overflow-hidden">
+            <span className="absolute left-[20%] top-7 h-16 w-24 -rotate-6 rounded-[9px] border border-white/60 bg-white/90 shadow-sm" />
+            <span className="absolute left-[36%] top-4 h-[72px] w-28 rotate-3 rounded-[9px] border border-white/60 bg-white/90 shadow-sm" />
+            <span className="absolute left-[54%] top-8 h-16 w-28 rounded-[9px] border border-white/60 bg-white/95 shadow-sm" />
+            {asset.url && <img src={asset.url} alt="" className="absolute left-1/2 top-8 h-16 w-24 -translate-x-1/2 rounded-[9px] object-cover shadow-sm" />}
           </span>
-          <span className="mt-auto flex items-end justify-between px-5 pb-5 pt-4">
-            <span><span className="block text-xl font-bold">{asset.name}</span><span className="mt-1 block text-sm text-white/85">{asset.productIds.length} 个商品</span></span>
-            <MoreHorizontal size={24} aria-hidden />
+          <span className="mt-auto flex items-end justify-between px-6 pb-6 pt-5">
+            <span className="min-w-0"><span className="block truncate text-xl font-bold">{asset.name}</span><span className="mt-1 block text-sm text-white/85">{asset.productIds.length} 个商品</span></span>
+            <MoreHorizontal size={24} className="shrink-0" />
           </span>
         </>
       ) : (
-        <span className="flex min-h-0 flex-1 flex-col bg-white p-5">
-          <span className="flex items-center justify-between text-[#636363]"><span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em]"><AssetIcon kind={asset.kind} />{kindLabels[asset.kind]}</span><MoreHorizontal size={22} aria-hidden /></span>
-          <span className={`mt-4 line-clamp-2 font-bold leading-tight text-[#1C1C1C] ${featured ? 'text-2xl' : 'text-xl'}`}>{asset.name}</span>
-          <span className="mt-4 line-clamp-4 text-sm leading-6 text-[#636363]">{asset.visibility === 'customer-facing' ? '对外可见的商品资料，可从资产侧继续维护商品关联。' : '内部私密文件，仅供团队工作流使用。'}</span>
-          <span className="mt-auto flex items-center justify-between border-t border-[#E2E2E2] pt-4 text-xs font-semibold uppercase tracking-[0.12em] text-[#636363]"><span>{asset.updatedAt}</span><span className="normal-case tracking-normal text-[#024AD8]">{asset.productIds.length} 个商品</span></span>
+        <span className="flex min-h-0 flex-1 flex-col bg-white p-6">
+          <span className="flex items-center justify-between text-[#636363]"><span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em]"><AssetIcon kind={asset.kind} />{kindLabels[asset.kind]}</span><MoreHorizontal size={22} /></span>
+          <span className={`mt-5 line-clamp-2 font-bold leading-[1.08] text-[#1C1C1C] ${featured ? 'text-[30px]' : 'text-2xl'}`}>{asset.name}</span>
+          <span className="mt-4 line-clamp-3 max-w-[38rem] text-sm leading-6 text-[#636363]">{asset.visibility === 'customer-facing' ? '对外可见的商品资料，可从资产侧继续维护商品关联。' : '内部私密文件，仅供团队工作流使用。'}</span>
+          <span className="mt-auto flex items-center justify-between border-t border-[#E2E2E2] pt-5 text-xs font-semibold uppercase tracking-[0.12em] text-[#636363]"><span>{asset.updatedAt}</span><span className="normal-case tracking-normal text-[#024AD8]">{asset.productIds.length} 个商品</span></span>
         </span>
       )}
     </button>
@@ -166,20 +167,20 @@ export function AssetLibrary() {
   }
 
   return (
-    <section className="min-h-[calc(100vh-3rem)] bg-white text-[#1C1C1C]">
-      <div className="mx-auto max-w-[1440px] space-y-5">
-        <header className="flex flex-col gap-4 border-b border-[#E2E2E2] pb-5 lg:flex-row lg:items-end lg:justify-between">
+    <section className="min-h-[calc(100vh-3rem)] bg-[#F4F4F1] text-[#1C1C1C]">
+      <div className="mx-auto max-w-[1480px] space-y-6 px-5 py-6 lg:px-8 lg:py-8">
+        <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#636363]">Omnilink / 资产管理</p>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight text-[#1C1C1C]">资产库</h1>
-            <p className="mt-1 max-w-2xl text-sm text-[#636363]">统一管理商品图片、视频和知识文件，并从任一侧维护商品关联。</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#636363]">Omnilink / Asset library</p>
+            <h1 className="mt-3 text-4xl font-bold tracking-[-0.04em] text-[#1C1C1C]">资产库</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#636363]">让商品图片、视频和知识文件在同一个空间里被看见、被使用，也能随时追溯它们关联的商品。</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleUpload} />
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex min-h-11 items-center gap-2 rounded-[4px] bg-[#024AD8] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#003198] active:bg-[#00226B] focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2"
+              className="inline-flex min-h-11 items-center gap-2 rounded-[4px] bg-[#1C1C1C] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#000000] focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2"
             >
               {isUploading ? <Loader2 size={16} className="animate-spin" /> : <UploadCloud size={16} />}
               {isUploading ? '正在添加' : '上传资产'}
@@ -188,56 +189,37 @@ export function AssetLibrary() {
         </header>
 
         {uploadError && (
-          <div role="alert" className="flex items-center gap-2 rounded-[4px] border border-[#FFCDD2] bg-[#FFF2F2] px-3 py-2 text-sm text-[#B71C1C]">
+          <div role="alert" className="flex items-center gap-2 rounded-[16px] border border-[#FFCDD2] bg-[#FFF2F2] px-4 py-3 text-sm text-[#B71C1C]">
             <AlertCircle size={16} />
             <span>{uploadError}</span>
             <button type="button" onClick={() => setUploadError(null)} className="ml-auto flex min-h-11 min-w-11 items-center justify-center rounded-[4px] focus-visible:outline-2 focus-visible:outline-[#024AD8]" aria-label="关闭提示"><X size={15} /></button>
           </div>
         )}
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            ['全部资产', assets.length],
-            ['商品图片', assets.filter((asset) => asset.kind === 'image').length],
-            ['知识文件', assets.filter((asset) => asset.kind === 'document').length],
-            ['已关联商品', assets.filter((asset) => asset.productIds.length > 0).length],
-          ].map(([label, value], index) => (
-            <div key={label} className={`border p-4 ${index === 0 ? 'border-[#024AD8] bg-[#EFF4FF]' : 'border-[#E2E2E2] bg-[#F7F7F7]'}`}>
-              <div className="text-xs text-[#636363]">{label}</div>
-              <div className="mt-2 text-2xl font-bold text-[#1C1C1C]">{value}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex flex-col gap-3 border-y border-[#E2E2E2] py-3 lg:flex-row lg:items-center">
-          <div className="relative min-w-0 flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#636363]" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索文件名" className="h-11 w-full rounded-[4px] border border-[#D1D1D1] bg-white pl-9 pr-3 text-sm outline-none focus:border-[#024AD8] focus:ring-1 focus:ring-[#024AD8]" />
+        <div className="flex flex-col gap-4 rounded-[20px] bg-white p-4 shadow-[0_2px_8px_rgba(28,28,28,0.04)] lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="资产类型">
+            {(['all', 'document', 'image', 'video'] as const).map((value) => (
+              <button key={value} type="button" onClick={() => setKind(value)} aria-pressed={kind === value} className={`min-h-10 rounded-full px-4 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2 ${kind === value ? 'bg-[#1C1C1C] text-white' : 'text-[#636363] hover:bg-[#F4F4F1]'}`}>
+                {value === 'all' ? '全部资产' : kindLabels[value]}
+              </button>
+            ))}
+            <span className="ml-1 text-xs text-[#636363]">{filteredAssets.length} 项</span>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <select aria-label="资产类型" value={kind} onChange={(event) => setKind(event.target.value as typeof kind)} className="h-11 rounded-[4px] border border-[#D1D1D1] bg-white px-3 text-sm outline-none focus:border-[#024AD8] focus:ring-1 focus:ring-[#024AD8]">
-              <option value="all">全部类型</option>
-              <option value="image">图片</option>
-              <option value="video">视频</option>
-              <option value="document">文件</option>
-            </select>
-            <select aria-label="可见范围" value={visibility} onChange={(event) => setVisibility(event.target.value as typeof visibility)} className="h-11 rounded-[4px] border border-[#D1D1D1] bg-white px-3 text-sm outline-none focus:border-[#024AD8] focus:ring-1 focus:ring-[#024AD8]">
-              <option value="all">全部范围</option>
-              <option value="customer-facing">对外可见</option>
-              <option value="internal-private">内部私密</option>
-            </select>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <label className="relative min-w-0 sm:w-64"><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#636363]" /><span className="sr-only">搜索文件名</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索文件名" className="h-10 w-full rounded-full border border-[#D1D1D1] bg-white pl-9 pr-3 text-sm outline-none focus:border-[#024AD8] focus:ring-1 focus:ring-[#024AD8]" /></label>
+            <select aria-label="可见范围" value={visibility} onChange={(event) => setVisibility(event.target.value as typeof visibility)} className="h-10 rounded-full border border-[#D1D1D1] bg-white px-4 text-sm outline-none focus:border-[#024AD8] focus:ring-1 focus:ring-[#024AD8]"><option value="all">全部范围</option><option value="customer-facing">对外可见</option><option value="internal-private">内部私密</option></select>
           </div>
         </div>
 
-        <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="min-w-0">
             {filteredAssets.length === 0 ? (
-              <div className="flex min-h-64 flex-col items-center justify-center gap-2 rounded-[16px] border border-[#E2E2E2] px-6 text-center">
-                <FileText size={24} className="text-[#636363]" />
-                <p className="text-sm font-semibold">没有匹配的资产</p>
-                <p className="text-xs text-[#636363]">调整筛选条件，或上传一个新文件。</p>
+              <div className="flex min-h-72 flex-col items-center justify-center rounded-[28px] bg-white px-6 text-center shadow-[0_2px_12px_rgba(28,28,28,0.06)]">
+                <FileText size={28} className="text-[#636363]" />
+                <p className="mt-4 text-base font-bold">没有匹配的资产</p>
+                <p className="mt-1 text-sm text-[#636363]">调整筛选条件，或上传一个新文件。</p>
               </div>
-            ) : <div className="grid gap-4 md:grid-cols-2">
+            ) : <div className="grid gap-5 md:grid-cols-2">
               {filteredAssets.map((asset, index) => (
                 <div key={asset.id} className={index === 0 ? 'md:col-span-2' : ''}>
                   <AssetCard asset={asset} featured={index === 0} selected={selectedId === asset.id} onSelect={() => setSelectedId(asset.id)} />
@@ -246,25 +228,25 @@ export function AssetLibrary() {
             </div>}
           </div>
 
-          <aside className="border border-[#E2E2E2] bg-[#F7F7F7] xl:sticky xl:top-5 xl:self-start">
+          <aside className="min-w-0 rounded-[28px] bg-white shadow-[0_2px_12px_rgba(28,28,28,0.06)] xl:sticky xl:top-6 xl:self-start">
             {selected ? (
-              <div className="p-5">
+              <div className="p-6">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[4px] bg-white text-[#024AD8]"><AssetIcon kind={selected.kind} /></span><div className="min-w-0"><h2 className="truncate text-sm font-bold">{selected.name}</h2><p className="mt-1 text-xs text-[#636363]">{selected.size} · {kindLabels[selected.kind]}</p></div></div>
-                  <button type="button" onClick={() => setSelectedId(null)} className="flex min-h-11 min-w-11 items-center justify-center rounded-[4px] text-[#636363] hover:bg-white focus-visible:outline-2 focus-visible:outline-[#024AD8]" aria-label="关闭资产详情"><X size={16} /></button>
+                  <div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#636363]">Selected asset</p><h2 className="mt-2 truncate text-xl font-bold">{selected.name}</h2><p className="mt-1 text-sm text-[#636363]">{selected.size} · {kindLabels[selected.kind]}</p></div>
+                  <button type="button" onClick={() => setSelectedId(null)} className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-[#636363] hover:bg-[#F4F4F1] focus-visible:outline-2 focus-visible:outline-[#024AD8]" aria-label="关闭资产详情"><X size={16} /></button>
                 </div>
-                <div className="mt-5 border-t border-[#E2E2E2] pt-4">
-                  <div className="flex items-center justify-between"><div><h3 className="text-sm font-bold">关联商品</h3><p className="mt-1 text-xs text-[#636363]">在资产侧维护关系，商品详情页会同步显示。</p></div><Link2 size={16} className="text-[#024AD8]" /></div>
-                  <div className="mt-4 space-y-2">
+                <div className="mt-8 border-t border-[#E2E2E2] pt-5">
+                  <div className="flex items-start justify-between gap-3"><div><h3 className="text-base font-bold">关联商品</h3><p className="mt-1 text-sm leading-5 text-[#636363]">在资产侧维护关系，商品详情页会同步显示。</p></div><Link2 size={18} className="mt-1 shrink-0 text-[#024AD8]" /></div>
+                  <div className="mt-5 space-y-2">
                     {DEMO_PRODUCTS.slice(0, 4).map((product) => {
                       const linked = selected.productIds.includes(product.id)
-                      return <button key={product.id} type="button" onClick={() => toggleProduct(selected.id, product.id)} className={`flex min-h-11 w-full items-center gap-3 rounded-[4px] border px-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-[#024AD8] ${linked ? 'border-[#024AD8] bg-[#EFF4FF]' : 'border-[#D1D1D1] bg-white hover:bg-[#F7F7F7]'}`}><span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border ${linked ? 'border-[#024AD8] bg-[#024AD8] text-white' : 'border-[#B0B0B0] bg-white'}`}>{linked && <Check size={13} />}</span><span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold">{product.name}</span><span className="mt-0.5 block text-[11px] text-[#636363]">{product.sku}</span></span><Package size={15} className={linked ? 'text-[#024AD8]' : 'text-[#636363]'} /></button>
+                      return <button key={product.id} type="button" onClick={() => toggleProduct(selected.id, product.id)} className={`flex min-h-12 w-full items-center gap-3 rounded-[12px] border px-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-[#024AD8] ${linked ? 'border-[#024AD8] bg-[#EFF4FF]' : 'border-[#E2E2E2] bg-white hover:bg-[#F7F7F7]'}`}><span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border ${linked ? 'border-[#024AD8] bg-[#024AD8] text-white' : 'border-[#B0B0B0] bg-white'}`}>{linked && <Check size={13} />}</span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{product.name}</span><span className="mt-0.5 block text-xs text-[#636363]">{product.sku}</span></span><Package size={15} className={linked ? 'text-[#024AD8]' : 'text-[#636363]'} /></button>
                     })}
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="flex min-h-64 flex-col items-center justify-center px-6 text-center"><Link2 size={24} className="text-[#024AD8]" /><h2 className="mt-3 text-sm font-bold">选择一个资产</h2><p className="mt-1 text-xs leading-5 text-[#636363]">查看文件详情，并从资产侧维护商品双向关联。</p></div>
+              <div className="flex min-h-72 flex-col justify-between p-6"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#636363]">Asset details</p><h2 className="mt-3 text-2xl font-bold leading-tight">选择一张卡片<br />开始维护关联</h2><p className="mt-3 text-sm leading-6 text-[#636363]">文件和商品之间的关系，从这里建立，也会同步回商品详情。</p></div><div className="mt-8 rounded-[18px] bg-[#F4F4F1] p-4 text-sm leading-6 text-[#636363]"><Link2 size={18} className="mb-3 text-[#024AD8]" />每条关联都能回到具体资产，方便团队协作和追溯。</div></div>
             )}
           </aside>
         </div>
