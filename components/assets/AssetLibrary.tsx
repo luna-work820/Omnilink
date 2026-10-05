@@ -4,11 +4,11 @@ import React, { useMemo, useRef, useState } from 'react'
 import {
   AlertCircle,
   Check,
-  ChevronRight,
   FileText,
   Image as ImageIcon,
   Link2,
   Loader2,
+  MoreHorizontal,
   Package,
   Search,
   UploadCloud,
@@ -70,30 +70,36 @@ function AssetIcon({ kind }: { kind: AssetKind }) {
   return <Icon size={16} aria-hidden />
 }
 
-function AssetCard({ asset, selected, onSelect }: { asset: Asset; selected: boolean; onSelect: () => void }) {
+function AssetCard({ asset, selected, onSelect, featured }: { asset: Asset; selected: boolean; onSelect: () => void; featured: boolean }) {
+  const isFolder = asset.kind !== 'document'
+  const folderTone = asset.kind === 'image' ? 'bg-[#FF4D6D]' : 'bg-[#A849D8]'
   return (
     <button
       type="button"
       onClick={onSelect}
-      className={`group relative flex min-h-[228px] flex-col overflow-hidden rounded-[16px] border bg-white text-left shadow-[0_2px_8px_rgba(28,28,28,0.06)] transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-[#B0B0B0] hover:shadow-[0_8px_20px_rgba(28,28,28,0.1)] focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2 md:min-h-[240px] ${selected ? 'border-[#024AD8] ring-2 ring-[#024AD8]/20' : 'border-[#E2E2E2]'}`}
+      className={`group relative flex min-h-[228px] flex-col overflow-hidden rounded-[24px] border text-left shadow-[0_2px_8px_rgba(28,28,28,0.06)] transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-[#B0B0B0] hover:shadow-[0_8px_20px_rgba(28,28,28,0.1)] focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2 md:min-h-[240px] ${selected ? 'border-[#024AD8] ring-2 ring-[#024AD8]/20' : 'border-[#E2E2E2]'} ${isFolder ? `${folderTone} text-white` : 'bg-white text-[#1C1C1C]'}`}
     >
-      <span className={`relative block h-24 overflow-hidden ${selected ? 'bg-[#024AD8]' : asset.kind === 'image' ? 'bg-[#EFF4FF]' : 'bg-[#F7F7F7]'}`}>
-        <span className="absolute right-5 top-4 h-14 w-24">
-          <span className="absolute left-0 top-2 h-10 w-16 -rotate-6 rounded-[6px] border border-[#E2E2E2] bg-white shadow-sm" />
-          <span className="absolute left-4 top-0 h-11 w-16 rotate-3 rounded-[6px] border border-[#E2E2E2] bg-white shadow-sm" />
-          <span className="absolute left-8 top-3 flex h-10 w-16 items-center justify-center overflow-hidden rounded-[6px] border border-[#D1D1D1] bg-white text-[#024AD8] shadow-sm">{asset.url && asset.kind === 'image' ? <img src={asset.url} alt="" className="h-full w-full object-cover" /> : <AssetIcon kind={asset.kind} />}</span>
+      {isFolder ? (
+        <>
+          <span className="relative block h-28 overflow-hidden">
+            <span className="absolute left-[22%] top-5 h-14 w-20 -rotate-6 rounded-[8px] border border-white/60 bg-white/90 shadow-sm" />
+            <span className="absolute left-[38%] top-3 h-16 w-24 rotate-3 rounded-[8px] border border-white/60 bg-white/90 shadow-sm" />
+            <span className="absolute left-[56%] top-7 h-14 w-24 rounded-[8px] border border-white/60 bg-white/95 shadow-sm" />
+            {asset.url && <img src={asset.url} alt="" className="absolute left-1/2 top-7 h-14 w-20 -translate-x-1/2 rounded-[8px] object-cover shadow-sm" />}
+          </span>
+          <span className="mt-auto flex items-end justify-between px-5 pb-5 pt-4">
+            <span><span className="block text-xl font-bold">{asset.name}</span><span className="mt-1 block text-sm text-white/85">{asset.productIds.length} 个商品</span></span>
+            <MoreHorizontal size={24} aria-hidden />
+          </span>
+        </>
+      ) : (
+        <span className="flex min-h-0 flex-1 flex-col bg-white p-5">
+          <span className="flex items-center justify-between text-[#636363]"><span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em]"><AssetIcon kind={asset.kind} />{kindLabels[asset.kind]}</span><MoreHorizontal size={22} aria-hidden /></span>
+          <span className={`mt-4 line-clamp-2 font-bold leading-tight text-[#1C1C1C] ${featured ? 'text-2xl' : 'text-xl'}`}>{asset.name}</span>
+          <span className="mt-4 line-clamp-4 text-sm leading-6 text-[#636363]">{asset.visibility === 'customer-facing' ? '对外可见的商品资料，可从资产侧继续维护商品关联。' : '内部私密文件，仅供团队工作流使用。'}</span>
+          <span className="mt-auto flex items-center justify-between border-t border-[#E2E2E2] pt-4 text-xs font-semibold uppercase tracking-[0.12em] text-[#636363]"><span>{asset.updatedAt}</span><span className="normal-case tracking-normal text-[#024AD8]">{asset.productIds.length} 个商品</span></span>
         </span>
-        <span className={`absolute bottom-0 left-0 right-0 h-1 ${selected ? 'bg-white' : 'bg-[#024AD8]'}`} />
-      </span>
-      <span className="flex min-h-0 flex-1 flex-col p-4">
-        <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#636363]"><AssetIcon kind={asset.kind} />{kindLabels[asset.kind]}</span>
-        <span className="mt-2 line-clamp-2 text-base font-bold leading-6 text-[#1C1C1C]">{asset.name}</span>
-        <span className="mt-1 text-xs text-[#636363]">{asset.size} · {asset.updatedAt}</span>
-        <span className={`mt-auto flex items-center justify-between border-t pt-3 text-xs ${selected ? 'border-[#B9D0FF]' : 'border-[#E2E2E2]'}`}>
-          <span className="flex items-center gap-1 font-semibold text-[#024AD8]"><Link2 size={13} />{asset.productIds.length} 个商品</span>
-          <span className="flex items-center gap-1 text-[#636363]">{asset.visibility === 'customer-facing' ? '对外可见' : '内部私密'}<ChevronRight size={14} /></span>
-        </span>
-      </span>
+      )}
     </button>
   )
 }
@@ -234,7 +240,7 @@ export function AssetLibrary() {
             ) : <div className="grid gap-4 md:grid-cols-2">
               {filteredAssets.map((asset, index) => (
                 <div key={asset.id} className={index === 0 ? 'md:col-span-2' : ''}>
-                  <AssetCard asset={asset} selected={selectedId === asset.id} onSelect={() => setSelectedId(asset.id)} />
+                  <AssetCard asset={asset} featured={index === 0} selected={selectedId === asset.id} onSelect={() => setSelectedId(asset.id)} />
                 </div>
               ))}
             </div>}
