@@ -1,13 +1,7 @@
-import { Suspense } from 'react'
-import { KnowledgeClient } from './KnowledgeClient'
+import { AssetLibrary } from '@/components/assets/AssetLibrary'
 
 export const dynamic = 'force-dynamic'
 
 export default function KnowledgePage() {
-  return (
-    <Suspense fallback={null}>
-      <KnowledgeClient />
-    </Suspense>
-  )
+  return <AssetLibrary />
 }
-

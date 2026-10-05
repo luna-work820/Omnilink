@@ -14,7 +14,6 @@ import {
   Package,
   Fingerprint,
   BookOpen,
-  FolderOpen,
   Sparkles,
   User,
   Settings,
@@ -34,7 +33,6 @@ type NavItemKey =
   | 'products'
   | 'provenance'
   | 'knowledge'
-  | 'assets'
   | 'account'
   | 'settings'
 
@@ -71,12 +69,6 @@ const NAV_ITEMS: NavItem[] = [
     href: '/dashboard/knowledge',
     icon: BookOpen,
     match: (p) => p.startsWith('/dashboard/knowledge'),
-  },
-  {
-    key: 'assets',
-    href: '/dashboard/assets',
-    icon: FolderOpen,
-    match: (p) => p.startsWith('/dashboard/assets'),
   },
 ]
 

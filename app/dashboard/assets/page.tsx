@@ -1,5 +1,5 @@
-import { AssetLibrary } from '@/components/assets/AssetLibrary'
+import { redirect } from 'next/navigation'
 
 export default function AssetsPage() {
-  return <AssetLibrary />
+  redirect('/dashboard/knowledge')
 }
