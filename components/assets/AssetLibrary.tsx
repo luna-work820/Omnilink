@@ -70,6 +70,34 @@ function AssetIcon({ kind }: { kind: AssetKind }) {
   return <Icon size={16} aria-hidden />
 }
 
+function AssetCard({ asset, selected, onSelect }: { asset: Asset; selected: boolean; onSelect: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`group relative flex min-h-[228px] flex-col overflow-hidden rounded-[16px] border bg-white text-left shadow-[0_2px_8px_rgba(28,28,28,0.06)] transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-[#B0B0B0] hover:shadow-[0_8px_20px_rgba(28,28,28,0.1)] focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2 md:min-h-[240px] ${selected ? 'border-[#024AD8] ring-2 ring-[#024AD8]/20' : 'border-[#E2E2E2]'}`}
+    >
+      <span className={`relative block h-24 overflow-hidden ${selected ? 'bg-[#024AD8]' : asset.kind === 'image' ? 'bg-[#EFF4FF]' : 'bg-[#F7F7F7]'}`}>
+        <span className="absolute right-5 top-4 h-14 w-24">
+          <span className="absolute left-0 top-2 h-10 w-16 -rotate-6 rounded-[6px] border border-[#E2E2E2] bg-white shadow-sm" />
+          <span className="absolute left-4 top-0 h-11 w-16 rotate-3 rounded-[6px] border border-[#E2E2E2] bg-white shadow-sm" />
+          <span className="absolute left-8 top-3 flex h-10 w-16 items-center justify-center overflow-hidden rounded-[6px] border border-[#D1D1D1] bg-white text-[#024AD8] shadow-sm">{asset.url && asset.kind === 'image' ? <img src={asset.url} alt="" className="h-full w-full object-cover" /> : <AssetIcon kind={asset.kind} />}</span>
+        </span>
+        <span className={`absolute bottom-0 left-0 right-0 h-1 ${selected ? 'bg-white' : 'bg-[#024AD8]'}`} />
+      </span>
+      <span className="flex min-h-0 flex-1 flex-col p-4">
+        <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#636363]"><AssetIcon kind={asset.kind} />{kindLabels[asset.kind]}</span>
+        <span className="mt-2 line-clamp-2 text-base font-bold leading-6 text-[#1C1C1C]">{asset.name}</span>
+        <span className="mt-1 text-xs text-[#636363]">{asset.size} · {asset.updatedAt}</span>
+        <span className={`mt-auto flex items-center justify-between border-t pt-3 text-xs ${selected ? 'border-[#B9D0FF]' : 'border-[#E2E2E2]'}`}>
+          <span className="flex items-center gap-1 font-semibold text-[#024AD8]"><Link2 size={13} />{asset.productIds.length} 个商品</span>
+          <span className="flex items-center gap-1 text-[#636363]">{asset.visibility === 'customer-facing' ? '对外可见' : '内部私密'}<ChevronRight size={14} /></span>
+        </span>
+      </span>
+    </button>
+  )
+}
+
 export function AssetLibrary() {
   const [assets, setAssets] = useState<Asset[]>(INITIAL_ASSETS)
   const [query, setQuery] = useState('')
@@ -196,30 +224,20 @@ export function AssetLibrary() {
         </div>
 
         <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="min-w-0 overflow-hidden border border-[#E2E2E2]">
-            <div className="hidden grid-cols-[minmax(0,1fr)_110px_120px_120px_36px] gap-3 border-b border-[#E2E2E2] bg-[#F7F7F7] px-4 py-3 text-xs font-semibold text-[#636363] sm:grid">
-              <span>资产</span><span>类型</span><span>范围</span><span>商品关联</span><span />
-            </div>
+          <div className="min-w-0">
             {filteredAssets.length === 0 ? (
-              <div className="flex min-h-64 flex-col items-center justify-center gap-2 px-6 text-center">
+              <div className="flex min-h-64 flex-col items-center justify-center gap-2 rounded-[16px] border border-[#E2E2E2] px-6 text-center">
                 <FileText size={24} className="text-[#636363]" />
                 <p className="text-sm font-semibold">没有匹配的资产</p>
                 <p className="text-xs text-[#636363]">调整筛选条件，或上传一个新文件。</p>
               </div>
-            ) : filteredAssets.map((asset) => (
-              <button key={asset.id} type="button" onClick={() => setSelectedId(asset.id)} className={`grid w-full grid-cols-1 gap-3 border-b border-[#E2E2E2] px-4 py-4 text-left transition-colors last:border-b-0 hover:bg-[#F7F7F7] focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-[-2px] sm:grid-cols-[minmax(0,1fr)_110px_120px_120px_36px] sm:items-center ${selectedId === asset.id ? 'bg-[#EFF4FF]' : 'bg-white'}`}>
-                <span className="flex min-w-0 items-center gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[4px] border border-[#E2E2E2] bg-[#F7F7F7] text-[#024AD8]">
-                    {asset.url && asset.kind === 'image' ? <img src={asset.url} alt="" className="h-full w-full object-cover" /> : <AssetIcon kind={asset.kind} />}
-                  </span>
-                  <span className="min-w-0"><span className="block truncate text-sm font-semibold text-[#1C1C1C]">{asset.name}</span><span className="mt-1 block text-xs text-[#636363]">{asset.size} · {asset.updatedAt}</span></span>
-                </span>
-                <span className="text-xs text-[#636363] sm:block">{kindLabels[asset.kind]}</span>
-                <span className="text-xs text-[#636363]">{asset.visibility === 'customer-facing' ? '对外可见' : '内部私密'}</span>
-                <span className="flex items-center gap-1 text-xs font-semibold text-[#024AD8]"><Link2 size={13} />{asset.productIds.length} 个商品</span>
-                <ChevronRight size={16} className="hidden justify-self-end text-[#636363] sm:block" />
-              </button>
-            ))}
+            ) : <div className="grid gap-4 md:grid-cols-2">
+              {filteredAssets.map((asset, index) => (
+                <div key={asset.id} className={index === 0 ? 'md:col-span-2' : ''}>
+                  <AssetCard asset={asset} selected={selectedId === asset.id} onSelect={() => setSelectedId(asset.id)} />
+                </div>
+              ))}
+            </div>}
           </div>
 
           <aside className="border border-[#E2E2E2] bg-[#F7F7F7] xl:sticky xl:top-5 xl:self-start">
