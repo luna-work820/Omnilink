@@ -5,7 +5,7 @@
  *   - versioned schema: 支持未来演进
  *   - section order 显式: 不依赖数据库行顺序
  *   - content/style/settings 分离: 编辑体验清晰
- *   - JSONB 存储: 复用现有 store_settings.theme_config
+ *   - JSONB 存储: 草稿与发布页面保存在 storefront_versions.schema_document
  *   - Theme System 兼容: 映射到现有 ThemeDefinition
  */
 
@@ -184,7 +184,7 @@ export function createDefaultSchema(): StorefrontSchema {
     version: STOREFRONT_SCHEMA_VERSION,
     theme: {
       themeId: 'minimal',
-      accent: '#121214',
+      accent: 'var(--ink)',
       radius: 4,
     },
     sections: [

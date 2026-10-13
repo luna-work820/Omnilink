@@ -3,15 +3,15 @@ import {
   resolveCategorySemanticField,
   resolveCategorySemanticMappings,
   getCategorySemanticMappingDiagnostics,
+  type SemanticFieldLike,
 } from './category-semantic-mapping'
 import { PRODUCT_CATEGORY_TEMPLATES } from './category-templates'
-import type { SemanticField } from '@/lib/semantic/types'
 
 function makeSemanticField(
   id: string,
   fieldName: string,
   aliases: string[] = [],
-): SemanticField {
+): SemanticFieldLike {
   return {
     id,
     schema_id: 'test-schema-id',
@@ -38,7 +38,7 @@ export function runPhase3ATests() {
   const results: Array<{ test: string; passed: boolean; details?: any }> = []
 
   // Mock semantic fields covering common eyewear, audio, smartwatch, shoes fields
-  const mockEyewearFields: SemanticField[] = [
+  const mockEyewearFields: SemanticFieldLike[] = [
     makeSemanticField('sf-1', 'frame_material'),
     makeSemanticField('sf-2', 'lens_material'),
     makeSemanticField('sf-3', 'lens_type'),
@@ -114,7 +114,7 @@ export function runPhase3ATests() {
   })
 
   // Test 6: Explicit mapping 指向不存在 Semantic Field → unmapped → 不允许错误 fallback
-  const mockMissingFields: SemanticField[] = [
+  const mockMissingFields: SemanticFieldLike[] = [
     makeSemanticField('sf-1', 'other_field'),
   ]
   const t6 = resolveCategorySemanticField(
@@ -129,7 +129,7 @@ export function runPhase3ATests() {
   })
 
   // Test 7: Category Template 有字段但 Semantic Schema 没字段 → unmappedTemplateFieldKeys
-  const partialFields: SemanticField[] = [
+  const partialFields: SemanticFieldLike[] = [
     makeSemanticField('sf-1', 'frame_material'),
   ]
   const sunglassesTemplate = PRODUCT_CATEGORY_TEMPLATES['太阳镜']
@@ -174,7 +174,7 @@ export function runPhase3ATests() {
 
   // Test 10: 5个核心品类全映射诊断验证
   const categoryReports: Record<string, any> = {}
-  const mockAllStandardFields: SemanticField[] = [
+  const mockAllStandardFields: SemanticFieldLike[] = [
     // 太阳镜 & 光学眼镜
     makeSemanticField('sf-1', 'frame_material'),
     makeSemanticField('sf-2', 'lens_material'),

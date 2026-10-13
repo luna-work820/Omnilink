@@ -1,284 +1,115 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireUser, getOwnedStore } from '@/lib/api/auth'
-import type { Database } from '@/lib/database.types'
-import {
-  saveCanonicalProductAttributes,
-  CanonicalProductAttribute,
-} from '@/lib/products/canonical-attributes'
-import { ProductAttributeValidationError } from '@/lib/product/errors'
-import { createProductWithVariants } from '@/lib/products/product-with-variants-service'
-import { resolveSchemaByIndustrySlug } from '@/lib/semantic/schema-service'
+import { requireUser } from '@/lib/api/auth'
 
-type ProductInsert = Database['public']['Tables']['products']['Insert']
-
-const PRODUCT_INSERT_KEYS: (keyof ProductInsert)[] = [
-  'sku', 'name', 'description', 'price', 'currency', 'inventory', 'status',
-  'raw_data',
-]
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === 'object' && !Array.isArray(value))
+type ServerSupabaseClient = Awaited<ReturnType<typeof import('@/lib/supabase/server').createClientServer>>
+type CatalogVariantRow = {
+  sku_code: string | null
+  price: number | string | null
+  currency_code: string | null
+  availability_type: string | null
+  availability_value: number | string | null
+}
+type CatalogMediaRow = { storage_path: string | null }
+type CatalogItemRow = {
+  id: string
+  title: string
+  slug: string
+  item_type: string
+  cover_image?: string | null
+  details: unknown
+  catalog_variants?: CatalogVariantRow[] | null
+  catalog_media?: CatalogMediaRow[] | null
 }
 
-function pickInsert(body: unknown): Partial<ProductInsert> {
-  if (!body || typeof body !== 'object') return {}
-  const src = body as Record<string, unknown>
-  const out: Record<string, unknown> = {}
-  for (const k of PRODUCT_INSERT_KEYS) {
-    if (k in src) out[k] = src[k]
+type JsonRecord = Record<string, unknown>
+function isRecord(value: unknown): value is JsonRecord { return Boolean(value && typeof value === 'object' && !Array.isArray(value)) }
+function slugify(value: string) {
+  const slug = value.trim().toLowerCase().replace(/[^\p{Letter}\p{Number}]+/gu, '-').replace(/(^-|-$)/g, '')
+  return slug || `product-${Date.now()}`
+}
+async function resolveCatalogContext(supabase: ServerSupabaseClient, userId: string) {
+  const { data: membership, error: membershipError } = await supabase.from('organization_members').select('organization_id, role').eq('user_id', userId).eq('status', 'active').in('role', ['owner', 'admin', 'editor']).limit(1).maybeSingle()
+  if (membershipError || !membership) return null
+  const { data: store, error: storeError } = await supabase.from('stores').select('id, organization_id, name, slug, currency').eq('organization_id', membership.organization_id).limit(1).maybeSingle()
+  if (storeError || !store) return null
+  return { organizationId: membership.organization_id, store }
+}
+function legacyProduct(
+  item: CatalogItemRow,
+  variant?: CatalogVariantRow,
+  media?: CatalogMediaRow,
+) {
+  return {
+    ...item,
+    id: item.id,
+    name: item.title,
+    sku: variant?.sku_code ?? null,
+    price: variant ? Number(variant.price) : null,
+    currency: variant?.currency_code ?? 'CNY',
+    inventory: variant?.availability_type === 'stock' ? Number(variant.availability_value ?? 0) : null,
+    image_url: media?.storage_path ?? item.cover_image ?? null,
+    raw_data: item.details ?? {},
+    semantic_data: null,
   }
-  return out as Partial<ProductInsert>
 }
-
-// GET /api/merchant/products - List the caller's own products.
 export async function GET() {
   const auth = await requireUser()
   if (!auth.ok) return auth.response
   const { supabase, user } = auth
-
-  try {
-    const store = await getOwnedStore(supabase, user)
-    if (!store) {
-      return NextResponse.json({ error: 'Store not found', code: 'STORE_NOT_FOUND' }, { status: 404 })
-    }
-    const { data: products, error } = await supabase
-      .from('products')
-      .select('id, store_id, sku, name, description, price, currency, inventory, status, raw_data, semantic_data, created_at, updated_at')
-      .eq('store_id', store.id)
-      .order('created_at', { ascending: false })
-      .limit(50)
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-    return NextResponse.json({ products: products || [] })
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
+  const context = await resolveCatalogContext(supabase, user.id)
+  if (!context) return NextResponse.json({ error: 'Store not found', code: 'STORE_NOT_FOUND' }, { status: 404 })
+  const { data, error } = await supabase
+    .from('catalog_items')
+    .select('*, catalog_variants(*), catalog_media(*)')
+    .eq('organization_id', context.organizationId)
+    .neq('status', 'archived')
+    .order('created_at', { ascending: false })
+    .limit(50)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const products = (data ?? []).map((item) => legacyProduct(item, item.catalog_variants?.[0], item.catalog_media?.[0]))
+  return NextResponse.json({ products })
 }
-
-// POST /api/merchant/products - Create a product in the caller's own store.
-// (Previously used the anon client + createMerchantProduct which inserted
-// non-existent columns; now server-side, ownership-scoped, whitelisted.)
 export async function POST(request: NextRequest) {
   const auth = await requireUser()
   if (!auth.ok) return auth.response
   const { supabase, user } = auth
-
-  try {
-    const store = await getOwnedStore(supabase, user)
-    if (!store) {
-      console.error('[POST /api/merchant/products] Store lookup failed', { userId: user.id })
-      return NextResponse.json(
-        { error: 'Store not found', code: 'STORE_NOT_FOUND' },
-        { status: 404 },
-      )
-    }
-
-    const storeBaseCurrency = store.base_currency
-
-    const body = await request.json()
-    if (!body?.name || body?.price == null) {
-      return NextResponse.json(
-        { error: 'name and price are required' },
-        { status: 400 },
-      )
-    }
-    const rawData = isRecord(body.raw_data) ? { ...body.raw_data } : {}
-    if (typeof body.category_id === 'string' && body.category_id && !rawData.category_id) {
-      rawData.category_id = body.category_id
-    }
-    if (typeof body.category === 'string' && body.category && !rawData.category) {
-      rawData.category = body.category
-    }
-
-    // Extract options from body if present
-    const options = Array.isArray(body.options) ? body.options : undefined
-
-    // Optional per-SKU overrides from the variant matrix (price/stock/SKU
-    // per combination). The service validates and matches them against the
-    // generated combinations; anything malformed is ignored there.
-    const variants = Array.isArray(body.variants) ? body.variants : undefined
-
-    // Phase 2B: resolve the canonical target category + raw attributes EARLY so
-    // the semantic schema is resolved BEFORE the product row is inserted. A
-    // missing schema must never create an orphan products row.
-    const targetCategory =
-      typeof body.category === 'string'
-        ? body.category
-        : isRecord(body.raw_data) && typeof body.raw_data.category === 'string'
-          ? body.raw_data.category
-          : undefined
-
-    const rawAttributes = Array.isArray(body.attributes)
-      ? body.attributes
-      : isRecord(body.raw_data) && Array.isArray(body.raw_data.attributes)
-        ? body.raw_data.attributes
-        : []
-
-    // Schema resolution (trusted SERVICE_ROLE_ONLY reader, Phase 1) MUST precede
-    // the product INSERT. If attributes are supplied but the industry schema is
-    // missing, fail fast with 422 and create nothing.
-    if (rawAttributes.length > 0 && targetCategory) {
-      const resolution = await resolveSchemaByIndustrySlug(targetCategory, '1.0')
-      if (!resolution.found) {
-        console.error('[POST /api/merchant/products] Semantic schema not found', {
-          storeId: store.id,
-          industry: targetCategory,
-        })
-        return NextResponse.json(
-          {
-            error: `Semantic schema not found for industry '${targetCategory}'`,
-            code: 'SCHEMA_NOT_FOUND',
-          },
-          { status: 422 },
-        )
-      }
-    }
-
-    // Use orchestration service to create product with options and variants
-    const orchestrationResult = await createProductWithVariants({
-      name: body.name,
-      sku: body.sku,
-      price: body.price,
-      currency: storeBaseCurrency,
-      inventory: body.inventory,
-      description: body.description,
-      status: body.status,
-      category: body.category,
-      category_id: body.category_id,
-      origin: body.origin,
-      attributes: body.attributes,
-      raw_data: rawData,
-      store_id: store.id,
-      options: options,
-      variants: variants,
-    })
-
-    if (!orchestrationResult.success || !orchestrationResult.productId) {
-      console.error('[POST /api/merchant/products] Product with variants creation failed', { 
-        storeId: store.id, 
-        error: orchestrationResult.error 
-      })
-      return NextResponse.json({ 
-        error: orchestrationResult.error || 'Failed to create product', 
-        code: 'PRODUCT_CREATE_FAILED' 
-      }, { status: 500 })
-    }
-
-    // Fetch the created product for response
-    const { data: product, error: fetchError } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', orchestrationResult.productId)
-      .single()
-    
-    if (fetchError || !product) {
-      console.error('[POST /api/merchant/products] Failed to fetch created product', { 
-        productId: orchestrationResult.productId, 
-        error: fetchError?.message 
-      })
-      return NextResponse.json({ 
-        error: 'Product created but failed to fetch', 
-        code: 'PRODUCT_FETCH_FAILED' 
-      }, { status: 500 })
-    }
-
-    // Process attributes if present via Canonical Service.
-    // targetCategory / rawAttributes were resolved earlier (before the product
-    // INSERT) as part of Phase 2B ordering — do not re-derive them here.
-    if (rawAttributes.length > 0) {
-      const validAttributes: CanonicalProductAttribute[] = []
-
-      for (const attr of rawAttributes) {
-        if (!attr || typeof attr !== 'object') continue
-        const fieldKey = String(
-          (attr as Record<string, unknown>).key ??
-          (attr as Record<string, unknown>).fieldKey ??
-          (attr as Record<string, unknown>).field_key ??
-          ''
-        ).trim()
-        const label = (attr as Record<string, unknown>).label
-          ? String((attr as Record<string, unknown>).label).trim()
-          : undefined
-        const value = String((attr as Record<string, unknown>).value ?? '').trim()
-        const type = (attr as Record<string, unknown>).type
-        const confidence =
-          typeof (attr as Record<string, unknown>).confidence === 'number'
-            ? ((attr as Record<string, unknown>).confidence as number)
-            : 1.0
-
-        if (fieldKey) {
-          validAttributes.push({
-            fieldKey,
-            label,
-            value,
-            type:
-              type === 'text' || type === 'number' || type === 'boolean' || type === 'select'
-                ? type
-                : 'text',
-            unit: (attr as Record<string, unknown>).unit
-              ? String((attr as Record<string, unknown>).unit)
-              : null,
-            source:
-              (attr as Record<string, unknown>).source === 'manual' ||
-              (attr as Record<string, unknown>).source === 'system'
-                ? ((attr as Record<string, unknown>).source as 'manual' | 'system')
-                : 'manual',
-            confidence,
-            isStandard: true,
-          })
-        }
-      }
-
-      if (validAttributes.length > 0) {
-        try {
-          const result = await saveCanonicalProductAttributes(product.id, {
-            category: targetCategory,
-            attributes: validAttributes,
-          })
-
-          return NextResponse.json(
-            {
-              success: true,
-              product,
-              canonical: result.canonical,
-              mapping: result.mapping,
-              ai_ready: false,
-            },
-            { status: 201 },
-          )
-        } catch (attrError) {
-          if (attrError instanceof ProductAttributeValidationError) {
-            return NextResponse.json(
-              {
-                success: false,
-                error: 'Product attribute validation failed',
-                product_id: product.id,
-                attribute_validation_failed: true,
-                issues: attrError.issues,
-              },
-              { status: 422 },
-            )
-          }
-          throw attrError
-        }
-      }
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      product, 
-      ai_ready: false,
-      optionsCreated: orchestrationResult.optionsCreated,
-      variantsCreated: orchestrationResult.variantsCreated,
-    }, { status: 201 })
-  } catch (error) {
-    console.error('[POST /api/merchant/products] Unexpected error', { 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    })
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error', code: 'INTERNAL_ERROR' },
-      { status: 500 },
-    )
+  const context = await resolveCatalogContext(supabase, user.id)
+  if (!context) return NextResponse.json({ error: 'Store not found', code: 'STORE_NOT_FOUND' }, { status: 404 })
+  let body: JsonRecord
+  try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }) }
+  const title = typeof body.name === 'string' ? body.name.trim() : typeof body.title === 'string' ? body.title.trim() : ''
+  if (!title) return NextResponse.json({ error: 'name is required' }, { status: 400 })
+  const price = Number(body.price ?? 0), inventory = Number(body.inventory ?? 0)
+  if (!Number.isFinite(price) || price < 0 || !Number.isFinite(inventory) || inventory < 0) return NextResponse.json({ error: 'price and inventory must be non-negative numbers' }, { status: 400 })
+  const productInsert = {
+    organization_id: context.organizationId,
+    item_type: typeof body.item_type === 'string' && ['product', 'service', 'skill'].includes(body.item_type) ? body.item_type : 'product',
+    title,
+    slug: slugify(typeof body.slug === 'string' ? body.slug : title),
+    description: typeof body.description === 'string' ? body.description : null,
+    status: typeof body.status === 'string' && ['draft', 'active', 'archived'].includes(body.status) ? body.status : 'draft',
+    details: {
+      ...(isRecord(body.raw_data) ? body.raw_data : {}),
+      category_path: Array.isArray(body.category_path) ? body.category_path.filter((v): v is string => typeof v === 'string') : [],
+      tags: Array.isArray(body.tags) ? body.tags.filter((v): v is string => typeof v === 'string') : [],
+    },
   }
+  const { data: product, error: productError } = await supabase.from('catalog_items').insert(productInsert).select('*').single()
+  if (productError || !product) return NextResponse.json({ error: productError?.message ?? 'Failed to create catalog item' }, { status: 500 })
+  const variantInsert = {
+    organization_id: context.organizationId,
+    catalog_item_id: product.id,
+    sku_code: typeof body.sku === 'string' && body.sku.trim() ? body.sku.trim() : `${product.slug.toUpperCase().replace(/[^A-Z0-9]+/g, '-')}-001`,
+    title,
+    price,
+    currency_code: typeof body.currency === 'string' ? body.currency : (context.store.currency ?? 'CNY'),
+    availability_type: product.item_type === 'product' ? 'stock' : 'capacity',
+    availability_value: Math.floor(inventory),
+  }
+  const { data: variant, error: variantError } = await supabase.from('catalog_variants').insert(variantInsert).select('*').single()
+  if (variantError || !variant) {
+    await supabase.from('catalog_items').delete().eq('id', product.id)
+    return NextResponse.json({ error: variantError?.message ?? 'Failed to create SKU' }, { status: 500 })
+  }
+  return NextResponse.json({ product: legacyProduct(product, variant), variant }, { status: 201 })
 }

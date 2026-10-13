@@ -1,7 +1,7 @@
-import { KnowledgeThreePane } from '@/components/knowledge/KnowledgeThreePane'
+import { KnowledgeClient } from './KnowledgeClient'
 
 export const dynamic = 'force-dynamic'
 
 export default function KnowledgePage() {
-  return <KnowledgeThreePane />
+  return <KnowledgeClient />
 }

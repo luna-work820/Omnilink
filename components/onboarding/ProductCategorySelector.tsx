@@ -31,11 +31,11 @@ export function ProductCategorySelector({ value, onChange }: ProductCategorySele
   return (
     <div className="space-y-3">
       <div>
-        <label className="text-xs font-bold text-[#111827] flex items-center gap-1.5">
-          <Tag size={13} className="text-[#E11D48]" />
+        <label className="text-xs font-bold text-[var(--ink)] flex items-center gap-1.5">
+          <Tag size={13} className="text-[var(--plum)]" />
           <span>主营行业 (Primary Industry)</span>
         </label>
-        <p className="text-[11px] text-[#6B7280] mt-1 leading-relaxed">
+        <p className="text-[11px] text-[var(--lavender)] mt-1 leading-relaxed">
           用于确定店铺默认行业、AI 推荐方向和语义体系，不代表单个商品分类。(Used to determine the store&apos;s default industry and AI recommendations. This is not an individual product category.)
         </p>
       </div>
@@ -51,8 +51,8 @@ export function ProductCategorySelector({ value, onChange }: ProductCategorySele
               onClick={() => onChange(opt.name)}
               className={`px-4 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 border shadow-2xs ${
                 isSelected
-                  ? 'bg-gradient-to-r from-[#E11D48] to-[#FB7185] text-white border-transparent shadow-md scale-[1.02]'
-                  : 'bg-white text-[#374151] border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  ? 'bg-gradient-to-r from-[var(--plum)] to-[var(--plum)] text-[var(--surface)] border-transparent shadow-md scale-[1.02]'
+                  : 'bg-[var(--surface)] text-[var(--ink)] border-[var(--surface-muted)] hover:border-[var(--surface-muted)] hover:bg-[var(--surface-muted)]'
               }`}
             >
               <span className="text-sm leading-none">{opt.icon}</span>

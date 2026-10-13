@@ -12,17 +12,17 @@ import type { ThemeTokens } from '../types'
 
 export const electricVioletTokens: ThemeTokens = {
   colors: {
-    // 品牌主色：HP Electric Blue (#024ad8)。仅用于 CTA / active / accent。
-    primary: '#024ad8',
+    // 品牌主色：HP Electric Blue (var(--primary))。仅用于 CTA / active / accent。
+    primary: 'var(--primary)',
     // White-first 画布背景。
-    background: '#FFFFFF',
-    // 灰色卡片分层 (Cloud #f7f7f7)。
-    surface: '#F7F7F7',
-    text: '#1A1A1A',
-    muted: '#636363',
-    border: '#E8E8E8',
+    background: 'var(--surface)',
+    // 灰色卡片分层 (Cloud var(--surface-muted))。
+    surface: 'var(--surface-muted)',
+    text: 'var(--ink)',
+    muted: 'var(--lavender)',
+    border: 'var(--border)',
     // 深蓝 Deep Navy (#0e3191)，用于 hover / 强调态。
-    accent: '#0e3191',
+    accent: 'var(--plum)',
   },
   typography: {
     // 复用 app/layout.tsx 注入的 next/font 变量（Plus Jakarta Sans / Inter）。
@@ -32,9 +32,9 @@ export const electricVioletTokens: ThemeTokens = {
     bodyWeight: 400,
   },
   radius: {
-    // 卡片圆角微调收紧至 8px (0.5rem)。按钮 4px (0.25rem)。
+    // 全局规则：卡片 8px，按钮胶囊形状。
     card: '0.5rem',   // 8px
-    button: '0.25rem', // 4px
+    button: '9999px',
     input: '0.25rem',  // 4px
   },
   spacing: {
@@ -45,8 +45,8 @@ export const electricVioletTokens: ThemeTokens = {
   },
   shadows: {
     // 受控阴影：卡片近乎无影，浮卡带一点品牌色深度。
-    card: '0 1px 2px rgba(17,24,39,0.05)',
-    floating: '0 12px 32px rgba(139,92,246,0.12)',
+    card: '0 1px 2px var(--ink)',
+    floating: '0 12px 32px var(--lavender)',
   },
   motion: {
     duration: '200ms',

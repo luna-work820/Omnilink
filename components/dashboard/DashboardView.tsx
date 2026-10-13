@@ -6,37 +6,22 @@ import { useLanguage } from '@/context/LanguageContext'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   TrendingUp,
-  Users,
-  DollarSign,
-  Receipt,
   ArrowUpRight,
   MoreHorizontal,
   ChevronDown,
   ExternalLink,
-  Store,
   ShoppingBag,
-  Globe,
-  Bot,
-  ArrowLeft,
   Truck,
-  AlertTriangle,
   CheckCircle2,
   ArrowRight,
-  RefreshCw,
   ZoomIn,
   ZoomOut,
   RotateCcw,
-  Activity,
-  Radio,
   Zap,
   Package,
   Box,
-  Train,
   FileText,
   Star,
-  Sparkles,
-  ChevronRight,
-  SlidersHorizontal,
   Clock,
   Trophy,
 } from 'lucide-react'
@@ -266,20 +251,18 @@ const GLOBAL_ROUTES = [
 type WorldPath = { d: string; name: string; id: string }
 
 export function DashboardView({
-  displayName,
   brandProject,
 }: {
-  displayName?: string
   brandProject: BrandProject
 }) {
   const { isZh } = useLanguage()
   const [analyticsTimeframe, setAnalyticsTimeframe] = useState<'Weekly' | 'Monthly' | 'Yearly'>('Weekly')
   const [stockTimeframe, setStockTimeframe] = useState<'Weekly' | 'Monthly'>('Weekly')
-  const [activeCountryFilter, setActiveCountryFilter] = useState<'all' | 'top'>('all')
+  const [activeCountryFilter] = useState<'all' | 'top'>('all')
 
   // ===== 全球市场与节点分布真实状态驱动系统 =====
   const [worldPaths, setWorldPaths] = useState<WorldPath[]>([])
-  const [mapLoaded, setMapLoaded] = useState(false)
+  const [, setMapLoaded] = useState(false)
   const [hoveredNode, setHoveredNode] = useState<GlobalNode | null>(null)
   const [selectedNode, setSelectedNode] = useState<GlobalNode | null>(null)
   const [zoomScale, setZoomScale] = useState<number>(1)
@@ -303,7 +286,7 @@ export function DashboardView({
   ]
 
   // Hover state for heatmap tile
-  const [hoveredTile, setHoveredTile] = useState<{ row: number; col: number; value: number } | null>(null)
+  const [, setHoveredTile] = useState<{ row: number; col: number; value: number } | null>(null)
 
   // ===== 全球实时交易流 (Live Real-time Transactions Stream) =====
   interface LiveTransaction {
@@ -329,7 +312,7 @@ export function DashboardView({
       productName: 'Adidas Ultraboost 22',
       productImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=80&auto=format&fit=crop&q=80',
       amount: '$180',
-      timestamp: Date.now() - 1000,
+      timestamp: 1760000000000 - 1000,
       isNew: true,
     },
     {
@@ -341,7 +324,7 @@ export function DashboardView({
       productName: 'Sony WH-1000XM5',
       productImage: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=80&auto=format&fit=crop&q=80',
       amount: '$399',
-      timestamp: Date.now() - 12000,
+      timestamp: 1760000000000 - 12000,
     },
     {
       id: 'tx-3',
@@ -352,7 +335,7 @@ export function DashboardView({
       productName: 'Samsung Watch 6',
       productImage: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=80&auto=format&fit=crop&q=80',
       amount: '$299',
-      timestamp: Date.now() - 35000,
+      timestamp: 1760000000000 - 35000,
     },
     {
       id: 'tx-4',
@@ -363,23 +346,23 @@ export function DashboardView({
       productName: 'AirPods Pro 2',
       productImage: 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=80&auto=format&fit=crop&q=80',
       amount: '$249',
-      timestamp: Date.now() - 61000,
+      timestamp: 1760000000000 - 61000,
     },
   ]
 
   const [liveTransactions, setLiveTransactions] = useState<LiveTransaction[]>(INITIAL_TRANSACTIONS)
-  const [tick, setTick] = useState(0)
+  const [currentTime, setCurrentTime] = useState(() => Date.now())
 
   // Ticking effect to refresh dynamic "timeAgo" every second
   useEffect(() => {
     const interval = setInterval(() => {
-      setTick((t) => t + 1)
+      setCurrentTime(Date.now())
     }, 1000)
     return () => clearInterval(interval)
   }, [])
 
   const formatTimeAgo = (ts: number) => {
-    const seconds = Math.max(1, Math.floor((Date.now() - ts) / 1000))
+    const seconds = Math.max(1, Math.floor((currentTime - ts) / 1000))
     if (seconds < 5) return '1s ago'
     if (seconds < 60) return `${seconds}s ago`
     const minutes = Math.floor(seconds / 60)
@@ -681,15 +664,15 @@ export function DashboardView({
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2 text-xs font-bold text-[var(--lavender)]">
-          <span className="rounded-[4px] border border-[var(--primary)]/20 bg-[var(--surface-muted)] px-2.5 py-1 text-[var(--primary)]">
+          <span className=" border border-[var(--primary)]/20 bg-[var(--surface-muted)] px-2.5 py-1 text-[var(--primary)]">
             {brandProject.style.toUpperCase()}
           </span>
-          <span className="rounded-[4px] bg-[var(--surface-muted)] px-2.5 py-1">
+          <span className=" bg-[var(--surface-muted)] px-2.5 py-1">
             {brandProject.status === 'active' ? '进行中' : brandProject.status}
           </span>
           <Link
             href="/dashboard/brand-studio"
-            className="rounded-[4px] border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[var(--ink)] transition-colors hover:border-[var(--border)] hover:bg-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2"
+            className=" border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[var(--ink)] transition-colors hover:border-[var(--border)] hover:bg-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2"
           >
             图片定风格
           </Link>
@@ -799,7 +782,7 @@ export function DashboardView({
                       setModalTitle(`${target.flag} ${target.zhName} 地区销售深度分析`)
                       setActiveModal('details')
                     }}
-                    className="w-full py-2 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-all cursor-pointer text-center shadow-2xs"
+                    className="w-full py-2  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-all cursor-pointer text-center shadow-2xs"
                   >
                     查看该地区销售深度分析
                   </button>
@@ -1192,7 +1175,7 @@ export function DashboardView({
                       </div>
 
                       {/* 右侧/突出：高亮金额，带有高亮蓝色的微光 */}
-                      <div className="text-xs font-black text-[var(--primary)] bg-[var(--surface-muted)] px-2.5 py-1 rounded-[4px] shadow-[0_0_8px_rgba(2,74,216,0.18)] shrink-0 font-mono">
+                      <div className="text-xs font-black text-[var(--primary)] bg-[var(--surface-muted)] px-2.5 py-1  shadow-[0_0_8px_rgba(2,74,216,0.18)] shrink-0 font-mono">
                         +{tx.amount}
                       </div>
                     </motion.div>
@@ -1246,7 +1229,7 @@ export function DashboardView({
           <button
             type="button"
             onClick={() => setActiveModal('fulfill')}
-            className="px-3.5 py-1.5 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5"
+            className="px-3.5 py-1.5  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-1.5"
           >
             <Truck size={14} />
             <span>批量发货与履约中心</span>
@@ -1318,7 +1301,7 @@ export function DashboardView({
           <button
             type="button"
             onClick={() => setActiveModal('products')}
-            className="px-3 py-1.5 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+            className="px-3 py-1.5  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
           >
             <span>查看全部商品</span>
             <ExternalLink size={12} />
@@ -1596,7 +1579,7 @@ export function DashboardView({
                       setActiveModal(null)
                       setToastMessage(isZh ? '报表已成功生成并推送到您的下载队列' : 'Report generated and queued for download')
                     }}
-                    className="w-full py-2.5 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] font-bold shadow-2xs transition-all cursor-pointer text-xs"
+                    className="w-full py-2.5  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] font-bold shadow-2xs transition-all cursor-pointer text-xs"
                   >
                     {isZh ? '确认生成下载链接' : 'Confirm & Download'}
                   </button>
@@ -1627,7 +1610,7 @@ export function DashboardView({
                       setActiveModal(null)
                       setToastMessage(isZh ? '成功执行 12 笔订单一键批量履约发货！' : 'Successfully batch fulfilled 12 orders!')
                     }}
-                    className="w-full py-2.5 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] font-bold shadow-2xs transition-all cursor-pointer text-xs flex items-center justify-center gap-1.5"
+                    className="w-full py-2.5  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] font-bold shadow-2xs transition-all cursor-pointer text-xs flex items-center justify-center gap-1.5"
                   >
                     <Truck size={14} />
                     <span>{isZh ? '立即一键批量发货 (12)' : 'Execute Batch Fulfill (12)'}</span>
@@ -1654,7 +1637,7 @@ export function DashboardView({
                   <button
                     type="button"
                     onClick={() => setActiveModal(null)}
-                    className="px-4 py-2 rounded-[4px] bg-[var(--surface-muted)] text-[var(--surface)] font-bold text-xs cursor-pointer"
+                    className="px-4 py-2  bg-[var(--surface-muted)] text-[var(--surface)] font-bold text-xs cursor-pointer"
                   >
                     {isZh ? '关闭' : 'Close'}
                   </button>
@@ -1672,7 +1655,7 @@ export function DashboardView({
                   <button
                     type="button"
                     onClick={() => setActiveModal(null)}
-                    className="px-4 py-2 rounded-[4px] bg-[var(--primary)] text-[var(--surface)] font-bold text-xs cursor-pointer hover:bg-[var(--primary)]"
+                    className="px-4 py-2  bg-[var(--primary)] text-[var(--surface)] font-bold text-xs cursor-pointer hover:bg-[var(--primary)]"
                   >
                     {isZh ? '知道了' : 'Got it'}
                   </button>

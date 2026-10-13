@@ -136,7 +136,7 @@ function getPaddingClass(padding?: string): string {
 function getBgClass(bgStyle?: string): string {
   switch (bgStyle) {
     case 'contrast':
-      return 'bg-gray-900 text-white'
+      return 'bg-[var(--surface-muted)] text-[var(--surface)]'
     case 'accent':
       return 'bg-[color-mix(in_srgb,var(--th-color-primary)_6%,transparent)] text-[var(--th-color-text)]'
     case 'glass':
@@ -161,7 +161,7 @@ function getTextAlignClass(textAlign?: string): string {
 
 /** 主题化基础按钮类（主按钮）。 */
 const PRIMARY_BUTTON =
-  'inline-block px-6 py-3 text-sm font-bold text-white bg-[var(--th-color-primary)] hover:bg-[var(--th-color-accent)] rounded-[var(--th-radius-button)] transition-colors [transition-duration:var(--th-motion-duration)] [transition-timing-function:var(--th-motion-easing)]'
+  'inline-block px-6 py-3 text-sm font-bold text-[var(--surface)] bg-[var(--th-color-primary)] hover:bg-[var(--th-color-accent)] rounded-[var(--th-radius-button)] transition-colors [transition-duration:var(--th-motion-duration)] [transition-timing-function:var(--th-motion-easing)]'
 
 /** 主题化次按钮类。 */
 const SECONDARY_BUTTON =
@@ -187,13 +187,13 @@ function HeaderSection({
   return (
     <header className="sticky top-0 z-40 bg-[var(--th-color-background)]/95 backdrop-blur-md border-b border-[var(--th-color-border)]">
       {content.showAnnouncement && content.announcement && (
-        <div className="bg-[var(--th-color-primary)] text-white text-xs font-bold py-2.5 px-5 text-center">
+        <div className="bg-[var(--th-color-primary)] text-[var(--surface)] text-xs font-bold py-2.5 px-5 text-center">
           {content.announcement}
         </div>
       )}
       <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 h-16 sm:h-20 flex items-center justify-between">
         <Link href={`/store/${storeSlug || ''}`} className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-[var(--th-radius-card)] bg-[var(--th-color-primary)] text-white font-black flex items-center justify-center text-base">
+          <div className="w-10 h-10 rounded-[var(--th-radius-card)] bg-[var(--th-color-primary)] text-[var(--surface)] font-black flex items-center justify-center text-base">
             {(content.title || 'S').charAt(0).toUpperCase()}
           </div>
           <span className="[font-family:var(--th-font-heading)] font-extrabold text-lg sm:text-xl tracking-tight text-[var(--th-color-text)]">
@@ -574,7 +574,7 @@ function FooterSection({
                   )}
                   {contact?.whatsapp && (
                     <div className="flex items-center gap-2">
-                      <MessageCircle className="w-4 h-4 shrink-0 text-emerald-500" />
+                      <MessageCircle className="w-4 h-4 shrink-0 text-[var(--acid-sage)]" />
                       <a
                         href={`https://wa.me/${contact.whatsapp.replace(/[^0-9]/g, '')}`}
                         target="_blank"
@@ -604,7 +604,7 @@ function FooterSection({
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={item.label}
-                        className="w-9 h-9 rounded-full border border-[var(--th-color-border)] bg-[var(--th-color-background)] hover:bg-[var(--th-color-primary)] hover:text-white hover:border-[var(--th-color-primary)] flex items-center justify-center transition-all text-[var(--th-color-text)]"
+                        className="w-9 h-9 rounded-full border border-[var(--th-color-border)] bg-[var(--th-color-background)] hover:bg-[var(--th-color-primary)] hover:text-[var(--surface)] hover:border-[var(--th-color-primary)] flex items-center justify-center transition-all text-[var(--th-color-text)]"
                       >
                         <IconComponent className="w-4 h-4" />
                       </a>
@@ -657,7 +657,7 @@ function TestimonialsSection({
             className="bg-[var(--th-color-surface)] rounded-[var(--th-radius-card)] p-6 border border-[var(--th-color-border)] shadow-[var(--th-shadow-card)]"
           >
             <div className="space-y-4">
-              <div className="flex items-center gap-1 text-amber-400">
+              <div className="flex items-center gap-1 text-[var(--acid-sage)]">
                 {Array.from({ length: item.rating || 5 }).map((_, s) => (
                   <span key={s}>★</span>
                 ))}
@@ -720,7 +720,7 @@ function FAQSection({
 function UnsupportedSection({ type }: { type: string }) {
   return (
     <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-8">
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-sm text-yellow-800">
+      <div className="bg-[var(--acid-sage)] border border-[var(--acid-sage)] rounded-lg p-4 text-sm text-[var(--acid-sage)]">
         <strong>Unsupported section type:</strong> {type}
       </div>
     </div>

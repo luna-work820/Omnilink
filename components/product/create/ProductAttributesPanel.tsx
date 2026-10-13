@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useRef, useState } from 'react'
-import { Plus, X, Layers, FileText } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 
 /**
@@ -195,8 +195,6 @@ export function ProductAttributesPanel({
 
   const variantRows = rows.filter((r) => r.role === 'variant')
   const traitRows = rows.filter((r) => r.role === 'trait')
-  const filledVariantRows = variantRows.filter((r) => r.values.length > 0)
-  const skuCount = filledVariantRows.reduce((acc, r) => acc * r.values.length, 1)
 
   const placeholderFor = (row: AttributeRow): string => {
     if (row.placeholder) return row.placeholder
@@ -207,21 +205,15 @@ export function ProductAttributesPanel({
 
   return (
     <div className="space-y-3.5">
-      {/* 模块标题与指引说明 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2.5 border-b border-slate-100 gap-1">
+      <div className="flex items-center justify-between pb-2.5 border-b border-[var(--surface-muted)]">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-[#EFF4FF] text-[#024AD8] flex items-center justify-center font-bold text-xs">
+          <div className="w-6 h-6 rounded-md bg-[var(--surface-muted)] text-[var(--primary)] flex items-center justify-center font-bold text-xs">
             02
           </div>
-          <h3 className="text-sm font-bold text-slate-900">
+          <h3 className="text-sm font-bold text-[var(--lavender)]">
             {isZh ? '商品规格' : 'Product Specifications'}
           </h3>
         </div>
-        <span className="text-[11px] text-slate-400">
-          {isZh
-            ? '「特征」展示在详情页参数表，「规格」用于生成 SKU——按用途填到对应区域即可。'
-            : 'Traits appear in the spec table; variants generate SKUs. Pick the section by purpose.'}
-        </span>
       </div>
 
       {/* ───── 子区域 1：商品特征（单值 + 单位） ───── */}
@@ -230,10 +222,7 @@ export function ProductAttributesPanel({
         badge="A"
         titleZh="商品特征"
         titleEn="Product Traits"
-        subtitleZh="整件商品共享的事实参数，展示在详情页参数表"
-        subtitleEn="Product-wide facts, shown in the spec table"
-        icon={<FileText size={14} />}
-        accentClass="bg-[#EFF4FF] text-[#024AD8] border-[#024AD8]/20"
+        accentClass="bg-[var(--surface-muted)] text-[var(--primary)] border-[var(--primary)]/20"
         rows={traitRows}
         disabled={disabled}
         renderRow={(row) => (
@@ -245,7 +234,7 @@ export function ProductAttributesPanel({
                 onChange={(e) => handleTraitValueChange(row.id, e.target.value)}
                 placeholder={placeholderFor(row)}
                 disabled={disabled}
-                className="w-full h-8 px-2.5 rounded-[4px] bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-[#024AD8] focus:ring-1 focus:ring-[#024AD8] transition-all"
+                className="w-full h-8 px-2.5  bg-[var(--surface)] border border-[var(--surface-muted)] text-xs text-[var(--lavender)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] transition-all"
               />
             </div>
             <div className="w-16 sm:w-20 shrink-0">
@@ -255,14 +244,14 @@ export function ProductAttributesPanel({
                 onChange={(e) => handleUnitChange(row.id, e.target.value)}
                 placeholder={isZh ? '单位' : 'Unit'}
                 disabled={disabled}
-                className="w-full h-8 px-2 rounded-[4px] bg-white border border-slate-200 text-xs text-center text-slate-600 focus:outline-none focus:border-[#024AD8] focus:ring-1 focus:ring-[#024AD8] transition-all"
+                className="w-full h-8 px-2  bg-[var(--surface)] border border-[var(--surface-muted)] text-xs text-center text-[var(--lavender)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] transition-all"
               />
             </div>
             <button
               type="button"
               onClick={() => handleRemove(row.id)}
               disabled={disabled}
-              className="w-7 h-7 rounded-[4px] text-slate-400 hover:text-[#D32F2F] hover:bg-[#FFF2F2] flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+              className="w-7 h-7  text-[var(--lavender)] hover:text-[var(--plum)] hover:bg-[var(--surface-muted)] flex items-center justify-center transition-colors shrink-0 cursor-pointer"
               title={isZh ? '删除' : 'Remove'}
             >
               <X size={14} />
@@ -273,8 +262,6 @@ export function ProductAttributesPanel({
         onQuickAdd={(def) => handleAddQuick(def)}
         isQuickAdded={(def) => rows.some((r) => r.key === def.key)}
         onAddCustom={(name, clear) => handleAddCustom('trait', name, clear)}
-        emptyHintZh="还没有商品特征。点击下方「+ 添加特征」或快捷标签开始。"
-        emptyHintEn="No traits yet. Click + Add Trait or a quick chip below."
       />
 
       {/* ───── 子区域 2：销售规格（多值 + SKU 矩阵） ───── */}
@@ -283,10 +270,7 @@ export function ProductAttributesPanel({
         badge="B"
         titleZh="销售规格"
         titleEn="Purchase Variants"
-        subtitleZh="顾客可挑选的购买版本，自动生成 SKU 矩阵"
-        subtitleEn="Customer-selectable purchase options; auto-generates SKUs"
-        icon={<Layers size={14} />}
-        accentClass="bg-[#FFF7E8] text-[#B26A00] border-[#F0B400]/30"
+        accentClass="bg-[var(--surface-muted)] text-[#B26A00] border-[#F0B400]/30"
         rows={variantRows}
         disabled={disabled}
         renderRow={(row) => (
@@ -304,36 +288,8 @@ export function ProductAttributesPanel({
         onQuickAdd={(def) => handleAddQuick(def)}
         isQuickAdded={(def) => rows.some((r) => r.key === def.key)}
         onAddCustom={(name, clear) => handleAddCustom('variant', name, clear)}
-        emptyHintZh="还没有销售规格。点击下方「+ 添加规格」开始，或选择快捷标签。"
-        emptyHintEn="No variants yet. Click + Add Variant or pick a quick chip."
       />
 
-      {/* SKU 组合预览：规格维度会放大 SKU 数量，必须让商家可见 */}
-      {variantRows.length > 0 && (
-        <div
-          className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-[4px] border ${
-            skuCount > 50
-              ? 'bg-[#FFF2F2] border-[#FFCDD2] text-[#D32F2F]'
-              : 'bg-[#EFF4FF] border-[#024AD8]/20 text-[#024AD8]'
-          }`}
-        >
-          <Layers size={12} className="shrink-0" />
-          <span>
-            {filledVariantRows.length === 0
-              ? isZh
-                ? `已添加 ${variantRows.length} 个销售规格，请为每个规格至少填写 1 个选项值`
-                : `${variantRows.length} variant axis added — add at least one value to each`
-              : isZh
-                ? `将生成 ${skuCount} 个 SKU 组合（${filledVariantRows.length} 个规格维度）`
-                : `${skuCount} SKU combinations across ${filledVariantRows.length} axes`}
-            {skuCount > 50
-              ? isZh
-                ? ' · 组合过多，建议精简维度或选项值'
-                : ' · too many combinations, consider trimming'
-              : ''}
-          </span>
-        </div>
-      )}
     </div>
   )
 }
@@ -347,9 +303,6 @@ interface AttributeSectionProps {
   badge: string
   titleZh: string
   titleEn: string
-  subtitleZh: string
-  subtitleEn: string
-  icon: React.ReactNode
   accentClass: string
   rows: AttributeRow[]
   disabled: boolean
@@ -358,8 +311,6 @@ interface AttributeSectionProps {
   onQuickAdd: (def: QuickDef) => void
   isQuickAdded: (def: QuickDef) => boolean
   onAddCustom: (name: string, clear: () => void) => void
-  emptyHintZh: string
-  emptyHintEn: string
 }
 
 function AttributeSection({
@@ -367,9 +318,6 @@ function AttributeSection({
   badge,
   titleZh,
   titleEn,
-  subtitleZh,
-  subtitleEn,
-  icon,
   accentClass,
   rows,
   disabled,
@@ -378,8 +326,6 @@ function AttributeSection({
   onQuickAdd,
   isQuickAdded,
   onAddCustom,
-  emptyHintZh,
-  emptyHintEn,
 }: AttributeSectionProps) {
   const [showCustom, setShowCustom] = useState(false)
   const [customName, setCustomName] = useState('')
@@ -392,25 +338,21 @@ function AttributeSection({
   }
 
   return (
-    <div className="rounded-[6px] border border-slate-200 bg-white/60 overflow-hidden">
+    <div className="rounded-[6px] border border-[var(--surface-muted)] bg-[var(--surface)]/60 overflow-hidden">
       {/* 区域头 */}
-      <div className="flex items-start justify-between px-3 py-2 border-b border-slate-100">
-        <div className="flex items-start gap-2 min-w-0">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--surface-muted)]">
+        <div className="flex items-center gap-2 min-w-0">
           <div
-            className={`w-5 h-5 rounded-md border flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 ${accentClass}`}
+            className={`w-5 h-5 rounded-md border flex items-center justify-center text-[10px] font-bold shrink-0 ${accentClass}`}
             aria-hidden="true"
           >
             {badge}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold text-slate-900">
+              <span className="text-xs font-bold text-[var(--lavender)]">
                 {isZh ? titleZh : titleEn}
               </span>
-              <span className="text-slate-300">{icon}</span>
-            </div>
-            <div className="text-[10px] text-slate-400 mt-0.5 leading-tight">
-              {isZh ? subtitleZh : subtitleEn}
             </div>
           </div>
         </div>
@@ -419,17 +361,15 @@ function AttributeSection({
       {/* 行列表 */}
       <div className="px-3 py-2 space-y-1.5">
         {rows.length === 0 ? (
-          <div className="text-[11px] text-slate-400 py-2">
-            {isZh ? emptyHintZh : emptyHintEn}
-          </div>
+          <div className="h-1" aria-hidden="true" />
         ) : (
           rows.map((row) => (
             <div
               key={row.id}
-              className="flex items-center gap-2 py-1 px-2 -mx-2 rounded-[4px] hover:bg-slate-50 transition-colors group"
+              className="flex items-center gap-2 py-1 px-2 -mx-2  hover:bg-[var(--surface-muted)] transition-colors group"
             >
               <span
-                className="w-16 sm:w-20 shrink-0 text-[11px] font-semibold text-slate-700 truncate"
+                className="w-16 sm:w-20 shrink-0 text-[11px] font-semibold text-[var(--lavender)] truncate"
                 title={row.label}
               >
                 {row.label}
@@ -441,11 +381,8 @@ function AttributeSection({
       </div>
 
       {/* 快捷 + 自定义添加 */}
-      <div className="px-3 py-2 border-t border-slate-100 bg-slate-50/50 space-y-1.5">
+      <div className="px-3 py-2 border-t border-[var(--surface-muted)] bg-[var(--surface-muted)]/50 space-y-1.5">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[10px] font-semibold text-slate-400 shrink-0">
-            {isZh ? '快捷:' : 'Quick:'}
-          </span>
           {quickDefs.map((def) => {
             const added = isQuickAdded(def)
             return (
@@ -454,17 +391,28 @@ function AttributeSection({
                 type="button"
                 onClick={() => onQuickAdd(def)}
                 disabled={disabled || added}
-                className={`text-[11px] px-2 py-0.5 rounded-[3px] border transition-all flex items-center gap-1 cursor-pointer ${
+                  className={`h-7 text-[11px] px-3 rounded-full border transition-all flex items-center gap-1 cursor-pointer ${
                   added
-                    ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-default opacity-60'
-                    : 'bg-white text-slate-700 border-slate-200 hover:border-[#024AD8] hover:text-[#024AD8] hover:bg-[#EFF4FF]'
+                    ? 'bg-[var(--surface-muted)] text-[var(--lavender)] border-[var(--surface-muted)] cursor-default opacity-60'
+                    : 'bg-[var(--surface)] text-[var(--lavender)] border-[var(--surface-muted)] hover:border-[var(--primary)] hover:text-[var(--primary)] hover:bg-[var(--surface-muted)]'
                 }`}
               >
-                <Plus size={10} className={added ? 'hidden' : 'text-[#024AD8]'} />
                 <span>{isZh ? def.labelZh : def.labelEn}</span>
               </button>
             )
           })}
+          {!showCustom && (
+            <button
+              type="button"
+              onClick={() => setShowCustom(true)}
+              disabled={disabled}
+              aria-label={isZh ? `添加${titleZh.replace('商品', '').replace('销售', '')}` : `Add ${titleEn}`}
+              title={isZh ? `添加${titleZh.replace('商品', '').replace('销售', '')}` : `Add ${titleEn}`}
+              className="w-7 h-7 rounded-full border border-[var(--surface-muted)] bg-[var(--surface)] text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[var(--surface-muted)] flex items-center justify-center transition-colors cursor-pointer"
+            >
+              <Plus size={13} />
+            </button>
+          )}
         </div>
 
         {showCustom ? (
@@ -488,13 +436,13 @@ function AttributeSection({
                   ? `自定义${titleZh.replace('商品', '').replace('销售', '')}名称，回车添加`
                   : `Custom ${titleEn.toLowerCase()}, press Enter`
               }
-              className="flex-1 min-w-0 h-7 px-2 rounded-[4px] bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-[#024AD8]"
+              className="flex-1 min-w-0 h-7 px-2  bg-[var(--surface)] border border-[var(--surface-muted)] text-xs text-[var(--lavender)] focus:outline-none focus:border-[var(--primary)]"
             />
             <button
               type="button"
               onClick={confirm}
               disabled={!customName.trim()}
-              className="px-2.5 h-7 bg-[#024AD8] hover:bg-[#003198] text-white text-[11px] font-bold rounded-[4px] cursor-pointer disabled:opacity-40"
+              className="px-3 h-7 bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-[11px] font-bold rounded-full cursor-pointer disabled:opacity-40"
             >
               {isZh ? '添加' : 'Add'}
             </button>
@@ -504,26 +452,12 @@ function AttributeSection({
                 setCustomName('')
                 setShowCustom(false)
               }}
-              className="px-2 h-7 text-[11px] text-slate-500 hover:bg-white rounded-[4px] cursor-pointer"
+              className="px-3 h-7 text-[11px] text-[var(--lavender)] hover:bg-[var(--surface)] rounded-full cursor-pointer"
             >
               {isZh ? '取消' : 'Cancel'}
             </button>
           </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowCustom(true)}
-            disabled={disabled}
-            className="text-[11px] font-medium text-[#024AD8] hover:text-[#003198] hover:bg-[#EFF4FF] px-2 py-1 rounded-[3px] flex items-center gap-1 transition-colors cursor-pointer"
-          >
-            <Plus size={11} />
-            <span>
-              {isZh
-                ? `+ 添加${titleZh.replace('商品', '').replace('销售', '')}`
-                : `+ Add ${titleEn.replace('Product ', '').replace('Purchase ', '')}`}
-            </span>
-          </button>
-        )}
+        ) : null}
       </div>
     </div>
   )
@@ -561,14 +495,14 @@ function VariantRowEditor({
       {row.values.map((v, vIdx) => (
         <span
           key={`${row.id}-val-${vIdx}`}
-          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] bg-white border border-slate-200 text-[11px] text-slate-800"
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] bg-[var(--surface)] border border-[var(--surface-muted)] text-[11px] text-[var(--lavender)]"
         >
           <span>{v}</span>
           <button
             type="button"
             onClick={() => onRemoveValue(vIdx)}
             disabled={disabled}
-            className="text-slate-400 hover:text-[#D32F2F] cursor-pointer"
+            className="text-[var(--lavender)] hover:text-[var(--plum)] cursor-pointer"
           >
             <X size={10} />
           </button>
@@ -588,23 +522,15 @@ function VariantRowEditor({
           }}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-28 h-6 px-1.5 rounded-[2px] bg-white border border-slate-200 text-[11px] text-slate-900 focus:outline-none focus:border-[#024AD8]"
+          className="w-28 h-6 px-1.5 rounded-[2px] bg-[var(--surface)] border border-[var(--surface-muted)] text-[11px] text-[var(--lavender)] focus:outline-none focus:border-[var(--primary)]"
         />
-        <button
-          type="button"
-          onClick={() => onAddValue(draft, clear)}
-          disabled={disabled}
-          className="px-1.5 py-0.5 rounded-[2px] bg-slate-200 hover:bg-[#EFF4FF] hover:text-[#024AD8] text-[11px] cursor-pointer"
-        >
-          +
-        </button>
       </div>
 
       <button
         type="button"
         onClick={onRemoveRow}
         disabled={disabled}
-        className="ml-auto w-6 h-6 rounded-[3px] text-slate-400 hover:text-[#D32F2F] hover:bg-[#FFF2F2] flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+        className="ml-auto w-6 h-6 rounded-[3px] text-[var(--lavender)] hover:text-[var(--plum)] hover:bg-[var(--surface-muted)] flex items-center justify-center transition-colors shrink-0 cursor-pointer"
         title={isZh ? '删除该规格' : 'Remove variant'}
       >
         <X size={12} />

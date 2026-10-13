@@ -3,7 +3,7 @@
  *
  * 架构（唯一渲染闭环，与编辑器预览共享同一渲染器）：
  *   Route
- *     → getPublicStorefront(slug)   // store_settings.theme_config → canonical StorefrontSchema
+ *     → getPublicStorefront(slug)   // 已发布版本 → canonical StorefrontSchema
  *     → notFound 守卫（未发布/店铺非 active）
  *     → getStorefrontProducts(store) // 真实商品白名单 DTO
  *     → ThemeRoot(theme.themeId)     // 现有 Theme System 注入 --th-*
@@ -11,7 +11,7 @@
  *         → DynamicSectionRenderer × sections // 与 Editor Preview 共用
  *
  * Route 不访问 Supabase、不解析 semantic_data、不拼商品 URL、不做主题策略。
- * store_pages 仅作 legacy 发布位兜底（service 层处理），不是内容事实源。
+ * 旧店铺在首次版本化发布前，仍可从 legacy 发布位读取。
  */
 
 import type { CSSProperties } from 'react'

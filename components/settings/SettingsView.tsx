@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState, useTransition } from 'react'
+import React, { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { SectionTitle, StatusDot } from '@/components/dashboard/kit'
+import { SectionTitle } from '@/components/dashboard/kit'
 import { useLanguage } from '@/context/LanguageContext'
 import { motion, AnimatePresence } from 'motion/react'
 import {
@@ -20,16 +20,10 @@ import {
   Lock,
   Activity,
   Zap,
-  Code2,
-  Terminal,
   Clock,
   ShieldCheck,
   AlertCircle,
   RefreshCw,
-  FileCode,
-  ArrowUpRight,
-  Database,
-  Search,
 } from 'lucide-react'
 
 export type SettingsViewProps = {
@@ -250,9 +244,9 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="fixed top-6 right-6 z-50 px-4 py-2.5 rounded-full bg-[#111827] text-white text-xs font-semibold shadow-2xl flex items-center gap-2 border border-white/10"
+            className="fixed top-6 right-6 z-50 px-4 py-2.5 rounded-full bg-[var(--ink)] text-[var(--surface)] text-xs font-semibold shadow-2xl flex items-center gap-2 border border-[var(--surface)]/10"
           >
-            <Check size={14} className="text-[#FB7185]" />
+            <Check size={14} className="text-[var(--plum)]" />
             <span>{toastMessage}</span>
           </motion.div>
         )}
@@ -265,14 +259,14 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
           3. 📊 API 调用监控 (API Usage & Stats)
           ============================================================ */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 p-1 rounded-full bg-white/85 backdrop-blur-md border border-white/90 shadow-[0_4px_18px_rgba(0,0,0,0.03)]">
+        <div className="flex items-center gap-1.5 p-1 rounded-full bg-[var(--surface)]/85 backdrop-blur-md border border-[var(--surface)]/90 shadow-[0_4px_18px_var(--ink)]">
           <button
             type="button"
             onClick={() => setActiveTab('profile')}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'profile'
-                ? 'bg-[#111827] text-white shadow-sm'
-                : 'text-[#6B7280] hover:text-[#111827] hover:bg-gray-100/60'
+                ? 'bg-[var(--ink)] text-[var(--surface)] shadow-sm'
+                : 'text-[var(--lavender)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)]/60'
             }`}
           >
             <Store size={14} />
@@ -284,8 +278,8 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
             onClick={() => setActiveTab('api-keys')}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'api-keys'
-                ? 'bg-[#111827] text-white shadow-sm'
-                : 'text-[#6B7280] hover:text-[#111827] hover:bg-gray-100/60'
+                ? 'bg-[var(--ink)] text-[var(--surface)] shadow-sm'
+                : 'text-[var(--lavender)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)]/60'
             }`}
           >
             <Key size={14} />
@@ -293,8 +287,8 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
             <span
               className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
                 activeTab === 'api-keys'
-                  ? 'bg-white/20 text-[#FB7185]'
-                  : 'bg-[#F4F5F7] text-[#6B7280]'
+                  ? 'bg-[var(--surface)]/20 text-[var(--plum)]'
+                  : 'bg-[var(--surface-muted)] text-[var(--lavender)]'
               }`}
             >
               {apiKeys.filter((k) => k.status === 'active').length}
@@ -306,8 +300,8 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
             onClick={() => setActiveTab('api-stats')}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'api-stats'
-                ? 'bg-[#111827] text-white shadow-sm'
-                : 'text-[#6B7280] hover:text-[#111827] hover:bg-gray-100/60'
+                ? 'bg-[var(--ink)] text-[var(--surface)] shadow-sm'
+                : 'text-[var(--lavender)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)]/60'
             }`}
           >
             <Activity size={14} />
@@ -323,7 +317,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
               setNewKeyName('')
               setIsGeneratingModalOpen(true)
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#FB7185] hover:bg-[#F43F5E] text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--plum)] hover:bg-[#F43F5E] text-[var(--surface)] text-xs font-bold shadow-sm transition-all cursor-pointer"
           >
             <Plus size={14} />
             <span>{isZh ? '生成新 API 密钥' : 'Generate API Key'}</span>
@@ -345,14 +339,14 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="crextio-card p-5 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#F4F5F7] border border-[#E5E7EB] text-[#111827] flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-full bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--ink)] flex items-center justify-center shrink-0">
                   <Store size={18} />
                 </div>
                 <div>
-                  <span className="text-xs text-[#6B7280] block font-medium">
+                  <span className="text-xs text-[var(--lavender)] block font-medium">
                     {t.settings.storeEntity}
                   </span>
-                  <div className="text-base font-bold text-[#111827] mt-0.5 truncate max-w-[160px]">
+                  <div className="text-base font-bold text-[var(--ink)] mt-0.5 truncate max-w-[160px]">
                     {currentStore.store_name}
                   </div>
                 </div>
@@ -361,33 +355,33 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
 
             <div className="crextio-card p-5 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#F4F5F7] border border-[#E5E7EB] text-[#111827] flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-full bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--ink)] flex items-center justify-center shrink-0">
                   <Tag size={18} />
                 </div>
                 <div>
-                  <span className="text-xs text-[#6B7280] block font-medium">
+                  <span className="text-xs text-[var(--lavender)] block font-medium">
                     {t.settings.industryCategory}
                   </span>
-                  <div className="text-base font-bold text-[#111827] mt-0.5">
+                  <div className="text-base font-bold text-[var(--ink)] mt-0.5">
                     {currentStore.industries?.name || (isZh ? '零售百货' : 'Retail & Goods')}
                   </div>
                 </div>
               </div>
-              <span className="px-2.5 py-0.5 rounded-full bg-[#FB7185] text-white text-xs font-bold shadow-xs">
+              <span className="px-2.5 py-0.5 rounded-full bg-[var(--plum)] text-[var(--surface)] text-xs font-bold shadow-xs">
                 Live
               </span>
             </div>
 
             <div className="crextio-dark-card p-5 flex items-center justify-between">
               <div className="space-y-0.5">
-                <span className="text-xs text-white/80 block font-medium">
+                <span className="text-xs text-[var(--surface)]/80 block font-medium">
                   {t.settings.configuration}
                 </span>
-                <div className="text-sm font-bold text-white">
+                <div className="text-sm font-bold text-[var(--surface)]">
                   {t.settings.productionMode}
                 </div>
               </div>
-              <div className="w-8 h-8 rounded-full bg-white/10 text-[#FB7185] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-[var(--surface)]/10 text-[var(--plum)] flex items-center justify-center">
                 <SlidersHorizontal size={15} />
               </div>
             </div>
@@ -427,8 +421,8 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                   </div>
                 </div>
 
-                <div className="mt-6 pt-5 border-t border-[#E5E7EB] flex items-center gap-2 text-xs text-[#6B7280]">
-                  <Sparkles size={14} className="text-[#FB7185] shrink-0" />
+                <div className="mt-6 pt-5 border-t border-[var(--border)] flex items-center gap-2 text-xs text-[var(--lavender)]">
+                  <Sparkles size={14} className="text-[var(--plum)] shrink-0" />
                   <span>{t.settings.syncNotice}</span>
                 </div>
               </div>
@@ -438,28 +432,28 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
             <div className="lg:col-span-5">
               <div className="crextio-card p-6 flex flex-col justify-between h-full">
                 <div>
-                  <div className="w-12 h-12 rounded-2xl bg-[#F4F5F7] border border-[#E5E7EB] flex items-center justify-center text-[#111827] mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-[var(--surface-muted)] border border-[var(--border)] flex items-center justify-center text-[var(--ink)] mb-4">
                     <Settings size={22} />
                   </div>
 
-                  <h3 className="font-heading text-lg font-bold text-[#111827]">
+                  <h3 className="font-heading text-lg font-bold text-[var(--ink)]">
                     {t.settings.systemPreferences}
                   </h3>
-                  <p className="text-xs text-[#6B7280] mt-1 leading-relaxed">
+                  <p className="text-xs text-[var(--lavender)] mt-1 leading-relaxed">
                     {t.settings.systemPreferencesDesc}
                   </p>
 
                   <div className="space-y-3 mt-5">
-                    <div className="p-3.5 rounded-2xl bg-[#F4F5F7] border border-[#E5E7EB] space-y-2">
+                    <div className="p-3.5 rounded-2xl bg-[var(--surface-muted)] border border-[var(--border)] space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#111827]">
+                        <span className="text-xs font-bold text-[var(--ink)]">
                           {isZh ? '店铺基础货币 (Base Currency)' : 'Store Base Currency'}
                         </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white text-[#6B7280] font-semibold border border-gray-200">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--surface)] text-[var(--lavender)] font-semibold border border-[var(--surface-muted)]">
                           {baseCurrency === 'USD' ? 'USD $' : 'CNY ¥'}
                         </span>
                       </div>
-                      <p className="text-[11px] text-[#6B7280]">
+                      <p className="text-[11px] text-[var(--lavender)]">
                         {isZh
                           ? '控制全店商品价格统一基础币种（Demo 仅支持 CNY 与 USD）'
                           : 'Unified baseline currency for all store products (CNY & USD only)'}
@@ -470,8 +464,8 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                           onClick={() => setBaseCurrency('CNY')}
                           className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                             baseCurrency === 'CNY'
-                              ? 'bg-[#111827] text-white shadow-xs'
-                              : 'bg-white border border-[#E5E7EB] text-[#374151] hover:bg-gray-50'
+                              ? 'bg-[var(--ink)] text-[var(--surface)] shadow-xs'
+                              : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-muted)]'
                           }`}
                         >
                           <span>CNY (人民币 ¥)</span>
@@ -481,8 +475,8 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                           onClick={() => setBaseCurrency('USD')}
                           className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                             baseCurrency === 'USD'
-                              ? 'bg-[#111827] text-white shadow-xs'
-                              : 'bg-white border border-[#E5E7EB] text-[#374151] hover:bg-gray-50'
+                              ? 'bg-[var(--ink)] text-[var(--surface)] shadow-xs'
+                              : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-muted)]'
                           }`}
                         >
                           <span>USD (美元 $)</span>
@@ -490,18 +484,18 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                       </div>
                     </div>
 
-                    <div className="p-3.5 rounded-2xl bg-[#F4F5F7] border border-[#E5E7EB] flex items-center justify-between">
-                      <span className="text-xs font-bold text-[#111827]">
+                    <div className="p-3.5 rounded-2xl bg-[var(--surface-muted)] border border-[var(--border)] flex items-center justify-between">
+                      <span className="text-xs font-bold text-[var(--ink)]">
                         {t.settings.imageWatermarking}
                       </span>
-                      <span className="text-xs font-bold text-[#FB7185]">
+                      <span className="text-xs font-bold text-[var(--plum)]">
                         {t.settings.enabledState}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-[#E5E7EB]">
+                <div className="mt-6 pt-4 border-t border-[var(--border)]">
                   <button
                     type="button"
                     disabled={isSavingPreferences}
@@ -525,7 +519,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                         setIsSavingPreferences(false)
                       }
                     }}
-                    className="w-full py-2.5 px-4 rounded-full bg-[#111827] hover:bg-black text-white text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                    className="w-full py-2.5 px-4 rounded-full bg-[var(--ink)] hover:bg-[var(--ink)] text-[var(--surface)] text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
                   >
                     {isSavingPreferences ? (isZh ? '保存中...' : 'Saving...') : t.settings.savePreferences}
                   </button>
@@ -550,33 +544,33 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="crextio-card p-5 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#F4F5F7] border border-[#E5E7EB] text-[#111827] flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-full bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--ink)] flex items-center justify-center shrink-0">
                   <Key size={18} />
                 </div>
                 <div>
-                  <span className="text-xs text-[#6B7280] block font-medium">
+                  <span className="text-xs text-[var(--lavender)] block font-medium">
                     {isZh ? '活跃密钥' : 'Active Keys'}
                   </span>
-                  <div className="text-base font-bold text-[#111827] mt-0.5">
+                  <div className="text-base font-bold text-[var(--ink)] mt-0.5">
                     {apiKeys.filter((k) => k.status === 'active').length} {isZh ? '个凭据' : 'Credentials'}
                   </div>
                 </div>
               </div>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-xs font-bold">
+              <span className="px-2.5 py-0.5 rounded-full bg-[var(--acid-sage)]/10 text-[var(--acid-sage)] text-xs font-bold">
                 {isZh ? '安全就绪' : 'Protected'}
               </span>
             </div>
 
             <div className="crextio-card p-5 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#F4F5F7] border border-[#E5E7EB] text-[#111827] flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-full bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--ink)] flex items-center justify-center shrink-0">
                   <Lock size={18} />
                 </div>
                 <div>
-                  <span className="text-xs text-[#6B7280] block font-medium">
+                  <span className="text-xs text-[var(--lavender)] block font-medium">
                     {isZh ? '认证协议' : 'Auth Protocol'}
                   </span>
-                  <div className="text-base font-bold text-[#111827] mt-0.5 font-mono text-xs">
+                  <div className="text-base font-bold text-[var(--ink)] mt-0.5 font-mono text-xs">
                     Bearer Token
                   </div>
                 </div>
@@ -585,12 +579,12 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
 
             <div className="crextio-dark-card p-5 flex items-center justify-between">
               <div className="space-y-0.5">
-                <span className="text-xs text-white/80 block font-medium">
+                <span className="text-xs text-[var(--surface)]/80 block font-medium">
                   {isZh ? '密钥安全等级' : 'Security Level'}
                 </span>
-                <div className="text-sm font-bold text-white">AES-256 GCM</div>
+                <div className="text-sm font-bold text-[var(--surface)]">AES-256 GCM</div>
               </div>
-              <div className="w-8 h-8 rounded-full bg-white/10 text-[#FB7185] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-[var(--surface)]/10 text-[var(--plum)] flex items-center justify-center">
                 <ShieldCheck size={16} />
               </div>
             </div>
@@ -615,44 +609,44 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                   key={keyItem.id}
                   className={`p-4 rounded-2xl border transition-all ${
                     keyItem.status === 'active'
-                      ? 'bg-white border-[#E5E7EB] shadow-xs'
-                      : 'bg-gray-50/70 border-dashed border-gray-200 opacity-60'
+                      ? 'bg-[var(--surface)] border-[var(--border)] shadow-xs'
+                      : 'bg-[var(--surface-muted)]/70 border-dashed border-[var(--surface-muted)] opacity-60'
                   }`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-[#111827]">
+                        <span className="text-xs font-bold text-[var(--ink)]">
                           {keyItem.name}
                         </span>
                         <span
                           className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                             keyItem.environment === 'production'
-                              ? 'bg-[#FB7185]/15 text-[#FB7185]'
-                              : 'bg-amber-100 text-amber-700'
+                              ? 'bg-[var(--plum)]/15 text-[var(--plum)]'
+                              : 'bg-[var(--acid-sage)] text-[var(--acid-sage)]'
                           }`}
                         >
                           {keyItem.environment === 'production' ? 'PROD' : 'TEST'}
                         </span>
                         {keyItem.status === 'revoked' && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-600">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--plum)] text-[var(--plum)]">
                             {isZh ? '已吊销' : 'Revoked'}
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 font-mono text-xs text-[#374151]">
-                        <span className="bg-[#F4F5F7] px-2.5 py-1 rounded-lg border border-gray-200/80">
+                      <div className="flex items-center gap-2 font-mono text-xs text-[var(--ink)]">
+                        <span className="bg-[var(--surface-muted)] px-2.5 py-1 rounded-lg border border-[var(--surface-muted)]/80">
                           {keyItem.keyPrefix}
                         </span>
                         <button
                           type="button"
                           onClick={() => handleCopyText(keyItem.fullKey || keyItem.keyPrefix, keyItem.id)}
-                          className="p-1 text-[#6B7280] hover:text-[#111827] transition-colors cursor-pointer"
+                          className="p-1 text-[var(--lavender)] hover:text-[var(--ink)] transition-colors cursor-pointer"
                           title={isZh ? '复制密钥' : 'Copy Key'}
                         >
                           {copiedKeyId === keyItem.id ? (
-                            <Check size={13} className="text-[#FB7185]" />
+                            <Check size={13} className="text-[var(--plum)]" />
                           ) : (
                             <Copy size={13} />
                           )}
@@ -663,7 +657,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                         {keyItem.scopes.map((scope) => (
                           <span
                             key={scope}
-                            className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-[#F4F5F7] text-[#6B7280]"
+                            className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-[var(--surface-muted)] text-[var(--lavender)]"
                           >
                             {scope}
                           </span>
@@ -671,8 +665,8 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
-                      <div className="text-right text-[11px] text-[#6B7280] hidden md:block">
+                    <div className="flex items-center gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[var(--surface-muted)]">
+                      <div className="text-right text-[11px] text-[var(--lavender)] hidden md:block">
                         <div>{isZh ? '最后使用' : 'Last used'}: {keyItem.lastUsedAt}</div>
                         <div>{isZh ? '创建时间' : 'Created'}: {keyItem.createdAt}</div>
                       </div>
@@ -681,7 +675,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                         <button
                           type="button"
                           onClick={() => handleRevokeKey(keyItem.id)}
-                          className="p-2 rounded-xl text-[#9CA3AF] hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer"
+                          className="p-2 rounded-xl text-[var(--lavender)] hover:text-[var(--plum)] hover:bg-[var(--plum)] transition-all cursor-pointer"
                           title={isZh ? '吊销此密钥' : 'Revoke Key'}
                         >
                           <Trash2 size={15} />
@@ -698,10 +692,10 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
           <div className="crextio-card p-6 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h3 className="font-heading text-sm font-bold text-[#111827]">
+                <h3 className="font-heading text-sm font-bold text-[var(--ink)]">
                   {isZh ? '快速接入与代码示例' : 'Quickstart & Code Sandbox'}
                 </h3>
-                <p className="text-xs text-[#6B7280] mt-0.5">
+                <p className="text-xs text-[var(--lavender)] mt-0.5">
                   {isZh
                     ? '在 HTTP 请求 Header 中附带 Authorization: Bearer <API_KEY>'
                     : 'Pass your secret key in the Authorization header of every request'}
@@ -709,14 +703,14 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
               </div>
 
               {/* 语言切换器 */}
-              <div className="flex items-center gap-1 bg-[#F4F5F7] p-1 rounded-full border border-[#E5E7EB]">
+              <div className="flex items-center gap-1 bg-[var(--surface-muted)] p-1 rounded-full border border-[var(--border)]">
                 <button
                   type="button"
                   onClick={() => setCodeLanguage('curl')}
                   className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                     codeLanguage === 'curl'
-                      ? 'bg-white text-[#111827] shadow-2xs'
-                      : 'text-[#6B7280] hover:text-[#111827]'
+                      ? 'bg-[var(--surface)] text-[var(--ink)] shadow-2xs'
+                      : 'text-[var(--lavender)] hover:text-[var(--ink)]'
                   }`}
                 >
                   cURL
@@ -726,8 +720,8 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                   onClick={() => setCodeLanguage('javascript')}
                   className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                     codeLanguage === 'javascript'
-                      ? 'bg-white text-[#111827] shadow-2xs'
-                      : 'text-[#6B7280] hover:text-[#111827]'
+                      ? 'bg-[var(--surface)] text-[var(--ink)] shadow-2xs'
+                      : 'text-[var(--lavender)] hover:text-[var(--ink)]'
                   }`}
                 >
                   JavaScript
@@ -737,8 +731,8 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                   onClick={() => setCodeLanguage('python')}
                   className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                     codeLanguage === 'python'
-                      ? 'bg-white text-[#111827] shadow-2xs'
-                      : 'text-[#6B7280] hover:text-[#111827]'
+                      ? 'bg-[var(--surface)] text-[var(--ink)] shadow-2xs'
+                      : 'text-[var(--lavender)] hover:text-[var(--ink)]'
                   }`}
                 >
                   Python
@@ -747,7 +741,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
             </div>
 
             {/* 代码展示 */}
-            <div className="bg-[#111827] rounded-2xl p-4 font-mono text-xs text-white relative group">
+            <div className="bg-[var(--ink)] rounded-2xl p-4 font-mono text-xs text-[var(--surface)] relative group">
               <button
                 type="button"
                 onClick={() =>
@@ -760,11 +754,11 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                     'sample-code'
                   )
                 }
-                className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] flex items-center gap-1.5 transition-all cursor-pointer"
+                className="absolute top-3 right-3 px-2.5 py-1 rounded-lg bg-[var(--surface)]/10 hover:bg-[var(--surface)]/20 text-[var(--surface)] text-[11px] flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 {copiedKeyId === 'sample-code' ? (
                   <>
-                    <Check size={12} className="text-[#FB7185]" />
+                    <Check size={12} className="text-[var(--plum)]" />
                     <span>{isZh ? '已复制' : 'Copied'}</span>
                   </>
                 ) : (
@@ -775,33 +769,33 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                 )}
               </button>
 
-              <pre className="overflow-x-auto text-gray-300 py-1 leading-relaxed">
+              <pre className="overflow-x-auto text-[var(--lavender)] py-1 leading-relaxed">
                 {codeLanguage === 'curl' && (
                   <code>
-                    <span className="text-[#FB7185]">curl</span> -X GET &quot;https://api.omnilink.ai/v1/merchant/products&quot; \<br />
-                    {'  '}-H &quot;<span className="text-emerald-400">Authorization: Bearer omni_live_sk_892f3...92a1</span>&quot; \<br />
+                    <span className="text-[var(--plum)]">curl</span> -X GET &quot;https://api.omnilink.ai/v1/merchant/products&quot; \<br />
+                    {'  '}-H &quot;<span className="text-[var(--acid-sage)]">Authorization: Bearer omni_live_sk_892f3...92a1</span>&quot; \<br />
                     {'  '}-H &quot;Content-Type: application/json&quot;
                   </code>
                 )}
                 {codeLanguage === 'javascript' && (
                   <code>
-                    <span className="text-indigo-300">const</span> response = <span className="text-indigo-300">await</span> fetch(<span className="text-emerald-300">&apos;https://api.omnilink.ai/v1/merchant/products&apos;</span>, &#123;<br />
+                    <span className="text-[var(--primary)]">const</span> response = <span className="text-[var(--primary)]">await</span> fetch(<span className="text-[var(--acid-sage)]">&apos;https://api.omnilink.ai/v1/merchant/products&apos;</span>, &#123;<br />
                     {'  '}headers: &#123;<br />
-                    {'    '}&apos;Authorization&apos;: <span className="text-emerald-300">&apos;Bearer omni_live_sk_892f3...92a1&apos;</span>,<br />
+                    {'    '}&apos;Authorization&apos;: <span className="text-[var(--acid-sage)]">&apos;Bearer omni_live_sk_892f3...92a1&apos;</span>,<br />
                     {'    '}&apos;Content-Type&apos;: &apos;application/json&apos;<br />
                     {'  '}&#125;<br />
                     &#125;);<br />
-                    <span className="text-indigo-300">const</span> data = <span className="text-indigo-300">await</span> response.json();
+                    <span className="text-[var(--primary)]">const</span> data = <span className="text-[var(--primary)]">await</span> response.json();
                   </code>
                 )}
                 {codeLanguage === 'python' && (
                   <code>
-                    <span className="text-indigo-300">import</span> requests<br /><br />
+                    <span className="text-[var(--primary)]">import</span> requests<br /><br />
                     headers = &#123;<br />
-                    {'    '}&quot;Authorization&quot;: <span className="text-emerald-300">&quot;Bearer omni_live_sk_892f3...92a1&quot;</span>,<br />
+                    {'    '}&quot;Authorization&quot;: <span className="text-[var(--acid-sage)]">&quot;Bearer omni_live_sk_892f3...92a1&quot;</span>,<br />
                     {'    '}&quot;Content-Type&quot;: &quot;application/json&quot;<br />
                     &#125;<br />
-                    res = requests.get(<span className="text-emerald-300">&quot;https://api.omnilink.ai/v1/merchant/products&quot;</span>, headers=headers)<br />
+                    res = requests.get(<span className="text-[var(--acid-sage)]">&quot;https://api.omnilink.ai/v1/merchant/products&quot;</span>, headers=headers)<br />
                     print(res.json())
                   </code>
                 )}
@@ -825,68 +819,68 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="crextio-card p-5 flex items-center justify-between">
               <div>
-                <span className="text-xs text-[#6B7280] block font-medium">
+                <span className="text-xs text-[var(--lavender)] block font-medium">
                   {isZh ? '今日请求总量' : 'Today Requests'}
                 </span>
-                <div className="text-xl font-bold text-[#111827] mt-0.5 tnum font-heading">
+                <div className="text-xl font-bold text-[var(--ink)] mt-0.5 tnum font-heading">
                   28,490
                 </div>
-                <span className="text-[11px] text-emerald-600 font-semibold mt-0.5 flex items-center gap-0.5">
+                <span className="text-[11px] text-[var(--acid-sage)] font-semibold mt-0.5 flex items-center gap-0.5">
                   +14.2% {isZh ? '较昨日' : 'vs yesterday'}
                 </span>
               </div>
-              <div className="w-10 h-10 rounded-full bg-[#F4F5F7] border border-[#E5E7EB] text-[#111827] flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-full bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--ink)] flex items-center justify-center shrink-0">
                 <Activity size={18} />
               </div>
             </div>
 
             <div className="crextio-card p-5 flex items-center justify-between">
               <div>
-                <span className="text-xs text-[#6B7280] block font-medium">
+                <span className="text-xs text-[var(--lavender)] block font-medium">
                   {isZh ? '调用成功率' : 'Success Rate'}
                 </span>
-                <div className="text-xl font-bold text-emerald-600 mt-0.5 tnum font-heading">
+                <div className="text-xl font-bold text-[var(--acid-sage)] mt-0.5 tnum font-heading">
                   99.98%
                 </div>
-                <span className="text-[11px] text-[#6B7280] mt-0.5">
+                <span className="text-[11px] text-[var(--lavender)] mt-0.5">
                   {isZh ? '状态极佳' : 'Optimal'}
                 </span>
               </div>
-              <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-full bg-[var(--acid-sage)] text-[var(--acid-sage)] flex items-center justify-center shrink-0">
                 <ShieldCheck size={18} />
               </div>
             </div>
 
             <div className="crextio-card p-5 flex items-center justify-between">
               <div>
-                <span className="text-xs text-[#6B7280] block font-medium">
+                <span className="text-xs text-[var(--lavender)] block font-medium">
                   {isZh ? '平均响应延迟' : 'Avg Latency'}
                 </span>
-                <div className="text-xl font-bold text-[#111827] mt-0.5 tnum font-heading">
+                <div className="text-xl font-bold text-[var(--ink)] mt-0.5 tnum font-heading">
                   38 ms
                 </div>
-                <span className="text-[11px] text-emerald-600 mt-0.5">
+                <span className="text-[11px] text-[var(--acid-sage)] mt-0.5">
                   &lt; 120ms SLA
                 </span>
               </div>
-              <div className="w-10 h-10 rounded-full bg-[#F4F5F7] border border-[#E5E7EB] text-[#111827] flex items-center justify-center shrink-0">
-                <Zap size={18} className="text-[#FB7185]" />
+              <div className="w-10 h-10 rounded-full bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--ink)] flex items-center justify-center shrink-0">
+                <Zap size={18} className="text-[var(--plum)]" />
               </div>
             </div>
 
             <div className="crextio-dark-card p-5 flex items-center justify-between">
               <div>
-                <span className="text-xs text-white/80 block font-medium">
+                <span className="text-xs text-[var(--surface)]/80 block font-medium">
                   {isZh ? '速率限额配额' : 'Rate Limit'}
                 </span>
-                <div className="text-base font-bold text-white mt-0.5">
+                <div className="text-base font-bold text-[var(--surface)] mt-0.5">
                   1,000 req/min
                 </div>
-                <span className="text-[11px] text-white/70 mt-0.5">
+                <span className="text-[11px] text-[var(--surface)]/70 mt-0.5">
                   {isZh ? '当前负载 12%' : '12% Load'}
                 </span>
               </div>
-              <div className="w-8 h-8 rounded-full bg-white/10 text-[#FB7185] flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[var(--surface)]/10 text-[var(--plum)] flex items-center justify-center shrink-0">
                 <Clock size={16} />
               </div>
             </div>
@@ -943,17 +937,17 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
           <div className="crextio-card p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-heading text-sm font-bold text-[#111827]">
+                <h3 className="font-heading text-sm font-bold text-[var(--ink)]">
                   {isZh ? '实时调用审计流水' : 'Live API Invocation Stream'}
                 </h3>
-                <p className="text-xs text-[#6B7280] mt-0.5">
+                <p className="text-xs text-[var(--lavender)] mt-0.5">
                   {isZh ? '近 24 小时内的最新 API 调用记录' : 'Recent API requests received across all registered keys'}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => showToast(isZh ? '已刷新最新调用日志' : 'Logs refreshed')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F4F5F7] hover:bg-gray-200 text-xs font-semibold text-[#111827] transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] text-xs font-semibold text-[var(--ink)] transition-all cursor-pointer"
               >
                 <RefreshCw size={12} />
                 <span>{isZh ? '刷新' : 'Refresh'}</span>
@@ -963,7 +957,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b border-[#E5E7EB] text-[#6B7280] font-semibold">
+                  <tr className="border-b border-[var(--border)] text-[var(--lavender)] font-semibold">
                     <th className="pb-3 pr-4">{isZh ? '请求方法' : 'Method'}</th>
                     <th className="pb-3 px-4">{isZh ? '请求路径' : 'Endpoint'}</th>
                     <th className="pb-3 px-4">{isZh ? '状态码' : 'Status'}</th>
@@ -972,32 +966,32 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                     <th className="pb-3 pl-4 text-right">{isZh ? '时间' : 'Timestamp'}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 font-mono">
+                <tbody className="divide-y divide-[var(--surface-muted)] font-mono">
                   {RECENT_API_LOGS.map((log) => (
-                    <tr key={log.id} className="hover:bg-[#F4F5F7]/50 transition-colors">
+                    <tr key={log.id} className="hover:bg-[var(--surface-muted)]/50 transition-colors">
                       <td className="py-3 pr-4 font-bold">
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] ${
                             log.method === 'GET'
-                              ? 'bg-blue-50 text-blue-600'
-                              : 'bg-emerald-50 text-emerald-600'
+                              ? 'bg-[var(--primary)] text-[var(--primary)]'
+                              : 'bg-[var(--acid-sage)] text-[var(--acid-sage)]'
                           }`}
                         >
                           {log.method}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-[#111827] font-sans text-xs">
-                        <span className="font-mono text-[11px] text-[#374151]">{log.endpoint}</span>
+                      <td className="py-3 px-4 text-[var(--ink)] font-sans text-xs">
+                        <span className="font-mono text-[11px] text-[var(--ink)]">{log.endpoint}</span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full font-sans">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--acid-sage)] bg-[var(--acid-sage)] px-2 py-0.5 rounded-full font-sans">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--acid-sage)]" />
                           {log.statusCode} OK
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-[#6B7280] text-[11px]">{log.latency}</td>
-                      <td className="py-3 px-4 text-[#374151] font-sans text-xs">{log.client}</td>
-                      <td className="py-3 pl-4 text-right text-[#9CA3AF] text-[11px]">{log.timestamp}</td>
+                      <td className="py-3 px-4 text-[var(--lavender)] text-[11px]">{log.latency}</td>
+                      <td className="py-3 px-4 text-[var(--ink)] font-sans text-xs">{log.client}</td>
+                      <td className="py-3 pl-4 text-right text-[var(--lavender)] text-[11px]">{log.timestamp}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1012,20 +1006,20 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
           ============================================================ */}
       <AnimatePresence>
         {isGeneratingModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--ink)]/40 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-gray-100 space-y-5"
+              className="w-full max-w-lg bg-[var(--surface)] rounded-3xl p-6 sm:p-7 shadow-2xl border border-[var(--surface-muted)] space-y-5"
             >
-              <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+              <div className="flex items-center justify-between pb-2 border-b border-[var(--surface-muted)]">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-full bg-[#FB7185]/15 text-[#FB7185] flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-full bg-[var(--plum)]/15 text-[var(--plum)] flex items-center justify-center">
                     <Key size={16} />
                   </div>
                   <div>
-                    <h3 className="font-heading text-base font-bold text-[#111827]">
+                    <h3 className="font-heading text-base font-bold text-[var(--ink)]">
                       {generatedKeyResult
                         ? isZh
                           ? '密钥已成功生成'
@@ -1034,7 +1028,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                         ? '生成新 API 密钥'
                         : 'Create New API Key'}
                     </h3>
-                    <p className="text-xs text-[#6B7280]">
+                    <p className="text-xs text-[var(--lavender)]">
                       {isZh
                         ? '配置安全访问凭据与权限作用域'
                         : 'Configure credentials & permissions scope'}
@@ -1044,7 +1038,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                 <button
                   type="button"
                   onClick={() => setIsGeneratingModalOpen(false)}
-                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-[#6B7280] flex items-center justify-center transition-all cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] text-[var(--lavender)] flex items-center justify-center transition-all cursor-pointer"
                 >
                   ✕
                 </button>
@@ -1054,7 +1048,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                 /* 生成前表单 */
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold text-[#374151] mb-1.5">
+                    <label className="block text-xs font-semibold text-[var(--ink)] mb-1.5">
                       {isZh ? '密钥备注名称' : 'Key Name / Label'} *
                     </label>
                     <input
@@ -1062,12 +1056,12 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                       placeholder={isZh ? '例如：移动端小程序、ERP 实时同步助手' : 'e.g. Mobile App, ERP Integration'}
                       value={newKeyName}
                       onChange={(e) => setNewKeyName(e.target.value)}
-                      className="w-full h-10 px-3.5 rounded-xl border border-gray-200 text-xs text-[#111827] focus:outline-none focus:ring-1 focus:ring-[#FB7185] focus:border-[#FB7185] transition-all"
+                      className="w-full h-10 px-3.5 rounded-xl border border-[var(--surface-muted)] text-xs text-[var(--ink)] focus:outline-none focus:ring-1 focus:ring-[var(--plum)] focus:border-[var(--plum)] transition-all"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#374151] mb-1.5">
+                    <label className="block text-xs font-semibold text-[var(--ink)] mb-1.5">
                       {isZh ? '目标环境' : 'Environment'}
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -1076,8 +1070,8 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                         onClick={() => setNewKeyEnv('production')}
                         className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                           newKeyEnv === 'production'
-                            ? 'bg-[#111827] text-white border-[#111827]'
-                            : 'bg-white text-[#6B7280] border-gray-200 hover:bg-gray-50'
+                            ? 'bg-[var(--ink)] text-[var(--surface)] border-[var(--ink)]'
+                            : 'bg-[var(--surface)] text-[var(--lavender)] border-[var(--surface-muted)] hover:bg-[var(--surface-muted)]'
                         }`}
                       >
                         <span>{isZh ? '生产环境 (Live)' : 'Production'}</span>
@@ -1087,8 +1081,8 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                         onClick={() => setNewKeyEnv('test')}
                         className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                           newKeyEnv === 'test'
-                            ? 'bg-[#111827] text-white border-[#111827]'
-                            : 'bg-white text-[#6B7280] border-gray-200 hover:bg-gray-50'
+                            ? 'bg-[var(--ink)] text-[var(--surface)] border-[var(--ink)]'
+                            : 'bg-[var(--surface)] text-[var(--lavender)] border-[var(--surface-muted)] hover:bg-[var(--surface-muted)]'
                         }`}
                       >
                         <span>{isZh ? '沙箱测试 (Sandbox)' : 'Test / Sandbox'}</span>
@@ -1097,7 +1091,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#374151] mb-1.5">
+                    <label className="block text-xs font-semibold text-[var(--ink)] mb-1.5">
                       {isZh ? '权限作用域 (Scopes)' : 'Permission Scopes'}
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -1113,15 +1107,15 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                           onClick={() => toggleScope(item.key)}
                           className={`p-2.5 rounded-xl border text-left text-xs font-medium flex items-center gap-2 transition-all cursor-pointer ${
                             newKeyScopes.includes(item.key)
-                              ? 'bg-[#FB7185]/10 border-[#FB7185] text-[#FB7185]'
-                              : 'bg-white border-gray-200 text-[#6B7280] hover:bg-gray-50'
+                              ? 'bg-[var(--plum)]/10 border-[var(--plum)] text-[var(--plum)]'
+                              : 'bg-[var(--surface)] border-[var(--surface-muted)] text-[var(--lavender)] hover:bg-[var(--surface-muted)]'
                           }`}
                         >
                           <div
                             className={`w-3.5 h-3.5 rounded flex items-center justify-center border ${
                               newKeyScopes.includes(item.key)
-                                ? 'bg-[#FB7185] border-[#FB7185] text-white'
-                                : 'border-gray-300'
+                                ? 'bg-[var(--plum)] border-[var(--plum)] text-[var(--surface)]'
+                                : 'border-[var(--surface-muted)]'
                             }`}
                           >
                             {newKeyScopes.includes(item.key) && <Check size={10} />}
@@ -1133,13 +1127,13 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#374151] mb-1.5">
+                    <label className="block text-xs font-semibold text-[var(--ink)] mb-1.5">
                       {isZh ? '有效期限' : 'Expiration'}
                     </label>
                     <select
                       value={newKeyExpiry}
                       onChange={(e) => setNewKeyExpiry(e.target.value)}
-                      className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-[#111827] focus:outline-none focus:ring-1 focus:ring-[#FB7185]"
+                      className="w-full h-10 px-3 rounded-xl border border-[var(--surface-muted)] text-xs text-[var(--ink)] focus:outline-none focus:ring-1 focus:ring-[var(--plum)]"
                     >
                       <option value="never">{isZh ? '永不过期 (Never expires)' : 'Never'}</option>
                       <option value="30">{isZh ? '30 天 (30 days)' : '30 days'}</option>
@@ -1152,14 +1146,14 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                     <button
                       type="button"
                       onClick={() => setIsGeneratingModalOpen(false)}
-                      className="flex-1 py-2.5 rounded-full bg-gray-100 hover:bg-gray-200 text-xs font-bold text-[#374151] transition-all cursor-pointer"
+                      className="flex-1 py-2.5 rounded-full bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] text-xs font-bold text-[var(--ink)] transition-all cursor-pointer"
                     >
                       {isZh ? '取消' : 'Cancel'}
                     </button>
                     <button
                       type="button"
                       onClick={handleGenerateKey}
-                      className="flex-1 py-2.5 rounded-full bg-[#FB7185] hover:bg-[#F43F5E] text-xs font-bold text-white shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                      className="flex-1 py-2.5 rounded-full bg-[var(--plum)] hover:bg-[#F43F5E] text-xs font-bold text-[var(--surface)] shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       <Zap size={13} />
                       <span>{isZh ? '立即生成' : 'Generate Key'}</span>
@@ -1169,8 +1163,8 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
               ) : (
                 /* 生成成功展示完整密钥（仅完整显示一次） */
                 <div className="space-y-4">
-                  <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-2.5 text-xs text-amber-800">
-                    <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                  <div className="p-3.5 rounded-2xl bg-[var(--acid-sage)] border border-[var(--acid-sage)] flex items-start gap-2.5 text-xs text-[var(--acid-sage)]">
+                    <AlertCircle size={16} className="text-[var(--acid-sage)] shrink-0 mt-0.5" />
                     <div>
                       <span className="font-bold block mb-0.5">
                         {isZh ? '请妥善保存此密钥' : 'Save this secret key securely'}
@@ -1183,11 +1177,11 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                     </div>
                   </div>
 
-                  <div className="bg-[#111827] rounded-2xl p-4 font-mono text-xs text-white space-y-2">
-                    <div className="text-[11px] text-gray-400 font-sans">
+                  <div className="bg-[var(--ink)] rounded-2xl p-4 font-mono text-xs text-[var(--surface)] space-y-2">
+                    <div className="text-[11px] text-[var(--lavender)] font-sans">
                       {isZh ? '您的全新 API 密钥：' : 'Your new API Key:'}
                     </div>
-                    <div className="break-all text-[#FB7185] font-bold select-all bg-black/40 p-2.5 rounded-xl border border-white/10">
+                    <div className="break-all text-[var(--plum)] font-bold select-all bg-[var(--ink)]/40 p-2.5 rounded-xl border border-[var(--surface)]/10">
                       {generatedKeyResult}
                     </div>
                   </div>
@@ -1196,11 +1190,11 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                     <button
                       type="button"
                       onClick={() => handleCopyText(generatedKeyResult, 'modal-key')}
-                      className="flex-1 py-2.5 rounded-full bg-[#111827] hover:bg-black text-xs font-bold text-white shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                      className="flex-1 py-2.5 rounded-full bg-[var(--ink)] hover:bg-[var(--ink)] text-xs font-bold text-[var(--surface)] shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       {copiedKeyId === 'modal-key' ? (
                         <>
-                          <Check size={13} className="text-[#FB7185]" />
+                          <Check size={13} className="text-[var(--plum)]" />
                           <span>{isZh ? '已复制到剪贴板' : 'Copied!'}</span>
                         </>
                       ) : (
@@ -1213,7 +1207,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                     <button
                       type="button"
                       onClick={() => setIsGeneratingModalOpen(false)}
-                      className="flex-1 py-2.5 rounded-full bg-gray-100 hover:bg-gray-200 text-xs font-bold text-[#374151] transition-all cursor-pointer"
+                      className="flex-1 py-2.5 rounded-full bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] text-xs font-bold text-[var(--ink)] transition-all cursor-pointer"
                     >
                       {isZh ? '我已保存，关闭' : 'Done & Close'}
                     </button>
@@ -1241,9 +1235,9 @@ function FieldItem({
 }) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-[#6B7280] mb-1.5">{label}</label>
-      <div className="flex items-center gap-3 bg-[#F4F5F7] border border-[#E5E7EB] rounded-2xl px-4 py-3 text-xs font-semibold text-[#111827]">
-        <Icon size={15} className="text-[#6B7280] shrink-0" />
+      <label className="block text-xs font-semibold text-[var(--lavender)] mb-1.5">{label}</label>
+      <div className="flex items-center gap-3 bg-[var(--surface-muted)] border border-[var(--border)] rounded-2xl px-4 py-3 text-xs font-semibold text-[var(--ink)]">
+        <Icon size={15} className="text-[var(--lavender)] shrink-0" />
         <span className={mono ? 'font-mono' : ''}>{value}</span>
       </div>
     </div>
@@ -1266,29 +1260,28 @@ function EndpointCard({
   latency: string
 }) {
   return (
-    <div className="p-4 rounded-2xl bg-[#F4F5F7]/80 border border-[#E5E7EB] flex flex-col justify-between gap-3">
+    <div className="p-4 rounded-2xl bg-[var(--surface-muted)]/80 border border-[var(--border)] flex flex-col justify-between gap-3">
       <div>
         <div className="flex items-center gap-2 mb-1.5">
           <span
             className={`px-2 py-0.5 rounded text-[10px] font-bold ${
               method === 'GET'
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-emerald-100 text-emerald-700'
+                ? 'bg-[var(--primary)] text-[var(--primary)]'
+                : 'bg-[var(--acid-sage)] text-[var(--acid-sage)]'
             }`}
           >
             {method}
           </span>
-          <span className="font-mono text-xs font-bold text-[#111827]">{path}</span>
+          <span className="font-mono text-xs font-bold text-[var(--ink)]">{path}</span>
         </div>
-        <h4 className="text-xs font-bold text-[#111827] mt-1">{title}</h4>
-        <p className="text-[11px] text-[#6B7280] leading-relaxed mt-0.5">{desc}</p>
+        <h4 className="text-xs font-bold text-[var(--ink)] mt-1">{title}</h4>
+        <p className="text-[11px] text-[var(--lavender)] leading-relaxed mt-0.5">{desc}</p>
       </div>
 
-      <div className="flex items-center justify-between pt-2 border-t border-gray-200/70 text-[11px] text-[#6B7280]">
+      <div className="flex items-center justify-between pt-2 border-t border-[var(--surface-muted)]/70 text-[11px] text-[var(--lavender)]">
         <span>{rps}</span>
-        <span className="font-mono font-bold text-emerald-600">{latency}</span>
+        <span className="font-mono font-bold text-[var(--acid-sage)]">{latency}</span>
       </div>
     </div>
   )
 }
-

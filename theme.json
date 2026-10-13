@@ -1,0 +1,13 @@
+{
+  "colors": {
+    "background": "#F6F3EE",
+    "surface": "#FFFFFF",
+    "surfaceMuted": "#F6F3EE",
+    "border": "#DED9D0",
+    "ink": "#181817",
+    "primary": "#A73F32",
+    "plum": "#A73F32",
+    "lavender": "#78746E",
+    "acidSage": "#DED9D0"
+  }
+}

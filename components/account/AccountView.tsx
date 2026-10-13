@@ -30,12 +30,12 @@ export function AccountView({ currentStore, currentUser }: AccountViewProps) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="crextio-card p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#F4F5F7] border border-[#E5E7EB] text-[#111827] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-full bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--ink)] flex items-center justify-center shrink-0">
               <ShieldCheck size={18} />
             </div>
             <div>
-              <span className="text-xs text-[#6B7280] block font-medium">{t.account.accountStatus}</span>
-              <div className="text-base font-bold text-[#111827] mt-0.5">
+              <span className="text-xs text-[var(--lavender)] block font-medium">{t.account.accountStatus}</span>
+              <div className="text-base font-bold text-[var(--ink)] mt-0.5">
                 <StatusDot tone="ok" label={t.account.activeVerified} />
               </div>
             </div>
@@ -44,27 +44,27 @@ export function AccountView({ currentStore, currentUser }: AccountViewProps) {
 
         <div className="crextio-card p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#F4F5F7] border border-[#E5E7EB] text-[#111827] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-full bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--ink)] flex items-center justify-center shrink-0">
               <Store size={18} />
             </div>
             <div>
-              <span className="text-xs text-[#6B7280] block font-medium">{t.account.assignedStore}</span>
-              <div className="text-base font-bold text-[#111827] mt-0.5 truncate max-w-[160px]">
+              <span className="text-xs text-[var(--lavender)] block font-medium">{t.account.assignedStore}</span>
+              <div className="text-base font-bold text-[var(--ink)] mt-0.5 truncate max-w-[160px]">
                 {currentStore.store_name}
               </div>
             </div>
           </div>
-          <span className="px-2.5 py-0.5 rounded-full bg-[#edbc40] text-[#111827] text-xs font-bold shadow-sm">
+          <span className="px-2.5 py-0.5 rounded-full bg-[var(--acid-sage)] text-[var(--ink)] text-xs font-bold shadow-sm">
             Owner
           </span>
         </div>
 
         <div className="crextio-dark-card p-5 flex items-center justify-between">
           <div className="space-y-0.5">
-            <span className="text-xs text-white/80 block font-medium">{t.account.securityKey}</span>
-            <div className="text-sm font-bold text-white">{t.account.oauthAuth}</div>
+            <span className="text-xs text-[var(--surface)]/80 block font-medium">{t.account.securityKey}</span>
+            <div className="text-sm font-bold text-[var(--surface)]">{t.account.oauthAuth}</div>
           </div>
-          <div className="w-8 h-8 rounded-full bg-white/10 text-[#edbc40] flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-[var(--surface)]/10 text-[var(--acid-sage)] flex items-center justify-center">
             <KeyRound size={15} />
           </div>
         </div>
@@ -83,38 +83,38 @@ export function AccountView({ currentStore, currentUser }: AccountViewProps) {
 
               <div className="space-y-4 mt-5">
                 <div>
-                  <label className="block text-xs font-semibold text-[#6B7280] mb-1.5">
+                  <label className="block text-xs font-semibold text-[var(--lavender)] mb-1.5">
                     {t.account.emailAddress}
                   </label>
-                  <div className="flex items-center gap-3 bg-[#F4F5F7] border border-[#E5E7EB] rounded-2xl px-4 py-3 text-xs font-bold text-[#111827]">
+                  <div className="flex items-center gap-3 bg-[var(--surface-muted)] border border-[var(--border)] rounded-2xl px-4 py-3 text-xs font-bold text-[var(--ink)]">
                     <span className="font-mono">{currentUser.email}</span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#6B7280] mb-1.5">
+                  <label className="block text-xs font-semibold text-[var(--lavender)] mb-1.5">
                     {t.account.uniqueUserId}
                   </label>
-                  <div className="flex items-center gap-3 bg-[#F4F5F7] border border-[#E5E7EB] rounded-2xl px-4 py-3 text-xs font-mono text-[#6B7280]">
-                    <Fingerprint size={15} className="text-[#111827] shrink-0" />
+                  <div className="flex items-center gap-3 bg-[var(--surface-muted)] border border-[var(--border)] rounded-2xl px-4 py-3 text-xs font-mono text-[var(--lavender)]">
+                    <Fingerprint size={15} className="text-[var(--ink)] shrink-0" />
                     <span className="truncate">{currentUser.id}</span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#6B7280] mb-1.5">
+                  <label className="block text-xs font-semibold text-[var(--lavender)] mb-1.5">
                     {t.account.registrationDate}
                   </label>
-                  <div className="flex items-center gap-3 bg-[#F4F5F7] border border-[#E5E7EB] rounded-2xl px-4 py-3 text-xs font-medium text-[#111827]">
-                    <Calendar size={15} className="text-[#6B7280] shrink-0" />
+                  <div className="flex items-center gap-3 bg-[var(--surface-muted)] border border-[var(--border)] rounded-2xl px-4 py-3 text-xs font-medium text-[var(--ink)]">
+                    <Calendar size={15} className="text-[var(--lavender)] shrink-0" />
                     <span>{createdAt}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="mt-6 pt-5 border-t border-[#E5E7EB] flex items-center gap-2 text-xs text-[#6B7280]">
-              <Sparkles size={14} className="text-[#111827] shrink-0" />
+            <div className="mt-6 pt-5 border-t border-[var(--border)] flex items-center gap-2 text-xs text-[var(--lavender)]">
+              <Sparkles size={14} className="text-[var(--ink)] shrink-0" />
               <span>{t.account.mfaNotice}</span>
             </div>
           </div>
@@ -124,33 +124,33 @@ export function AccountView({ currentStore, currentUser }: AccountViewProps) {
         <div className="lg:col-span-5">
           <div className="crextio-card p-6 flex flex-col justify-between h-full">
             <div>
-              <div className="w-12 h-12 rounded-2xl bg-[#F4F5F7] border border-[#E5E7EB] text-[#111827] flex items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--ink)] flex items-center justify-center mb-4">
                 <ShieldCheck size={22} />
               </div>
 
-              <h3 className="font-heading text-lg font-bold text-[#111827]">
+              <h3 className="font-heading text-lg font-bold text-[var(--ink)]">
                 {t.account.storePermissions}
               </h3>
-              <p className="text-xs text-[#6B7280] mt-1 leading-relaxed">
+              <p className="text-xs text-[var(--lavender)] mt-1 leading-relaxed">
                 {t.account.storePermissionsDesc}
               </p>
 
               <div className="mt-5 space-y-2.5">
-                <div className="p-3.5 rounded-2xl bg-[#F4F5F7] border border-[#E5E7EB] flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#111827]">{t.account.storeOwner}</span>
+                <div className="p-3.5 rounded-2xl bg-[var(--surface-muted)] border border-[var(--border)] flex items-center justify-between">
+                  <span className="text-xs font-bold text-[var(--ink)]">{t.account.storeOwner}</span>
                   <span className="text-xs font-bold text-[#e28c33]">{t.account.authorized}</span>
                 </div>
-                <div className="p-3.5 rounded-2xl bg-[#F4F5F7] border border-[#E5E7EB] flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#111827]">{t.account.agentAccess}</span>
+                <div className="p-3.5 rounded-2xl bg-[var(--surface-muted)] border border-[var(--border)] flex items-center justify-between">
+                  <span className="text-xs font-bold text-[var(--ink)]">{t.account.agentAccess}</span>
                   <span className="text-xs font-bold text-[#3b3686]">{t.account.fullRestRead}</span>
                 </div>
               </div>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-[#E5E7EB]">
+            <div className="mt-6 pt-4 border-t border-[var(--border)]">
               <button
                 type="button"
-                className="w-full py-2.5 px-4 rounded-full bg-[#111827] hover:bg-black text-white text-xs font-semibold shadow-sm transition-all cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-full bg-[var(--ink)] hover:bg-[var(--ink)] text-[var(--surface)] text-xs font-semibold shadow-sm transition-all cursor-pointer"
               >
                 {t.account.changePassword}
               </button>

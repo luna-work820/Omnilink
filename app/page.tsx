@@ -1,8 +1,5 @@
-import { redirect } from "next/navigation";
+import { FlowerStudiesLanding } from '@/components/landing'
 
 export default function Home() {
-  redirect("/dashboard");
+  return <FlowerStudiesLanding />
 }
-
-
-

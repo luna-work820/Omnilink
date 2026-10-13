@@ -1,14 +1,4 @@
 import { createClientServer } from '@/lib/supabase/server'
-import {
-  getSemanticFieldsBySchemaId,
-  saveProductSemantics,
-} from '@/lib/semantic/processor'
-import { saveUnknownFieldsTrusted } from '@/lib/semantic/trusted-unknown-fields-writer'
-import {
-  resolveSchemaByIndustrySlug,
-  SchemaNotFoundError,
-} from '@/lib/semantic/schema-service'
-import { mapDraftAttributes, type InputAttribute } from '@/lib/product-ai/attribute-mapper'
 import { getCategoryTemplate } from '@/lib/product/category-templates'
 import {
   resolveCategorySemanticMappings,
@@ -67,11 +57,25 @@ export interface SaveCanonicalProductAttributesInput {
 }
 
 export interface SaveCanonicalProductAttributesResult {
-  mapping: Awaited<ReturnType<typeof mapDraftAttributes>>
+  mapping: {
+    semanticData: Record<string, unknown>
+    unknownFields: Array<{ raw_field: string; raw_value: unknown; reason: string }>
+    accepted: Array<{ sourceKey: string; semanticField: string; value: unknown; confidence: number }>
+    rejected: Array<{ sourceKey: string; reason: string }>
+  }
   canonical: CanonicalProductAttributesResponse
 }
 
 type JsonRecord = Record<string, unknown>
+
+interface InputAttribute {
+  key: string
+  label?: string
+  value: string
+  type?: CanonicalProductAttribute['type']
+  unit?: string | null
+  confidence?: number
+}
 
 function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value))
@@ -287,20 +291,8 @@ async function loadProductContext(productId: string) {
   const targetId = isUuid(productId) ? productId : toValidUuid(productId)
 
   const { data: product, error } = await supabase
-    .from('products')
-    .select(
-      `
-      id,
-      raw_data,
-      semantic_data,
-      store_id,
-      stores(
-        industries(
-          slug
-        )
-      )
-    `,
-    )
+    .from('catalog_items')
+    .select('id, details, title, description, organization_id, category_id')
     .eq('id', targetId)
     .maybeSingle()
 
@@ -308,60 +300,53 @@ async function loadProductContext(productId: string) {
     throw new Error('Product not found')
   }
 
-  const rawData = isRecord(product.raw_data)
-    ? product.raw_data
-    : {}
+  const persistedDetails = isRecord(product.details) ? product.details : {}
+  const { data: pimRows, error: pimError } = await supabase
+    .from('catalog_item_attributes')
+    .select('value, value_origin, confidence, catalog_attribute_definitions!catalog_item_attributes_definition_organization_fkey(code)')
+    .eq('catalog_item_id', product.id)
+    .is('variant_id', null)
+  if (pimError) throw new Error(`Failed to load PIM attributes: ${pimError.message}`)
+
+  const persistedAttributes = Object.fromEntries((pimRows ?? []).flatMap((row) => {
+    const definition = row.catalog_attribute_definitions as { code?: string } | null
+    const code = definition?.code
+    if (!code) return []
+    return [[code, row.value]]
+  }))
+  // Prefer normalized PIM values. Legacy JSON is a read-only fallback while
+  // older records are being migrated; all new writes go through the RPC.
+  const rawData: JsonRecord = {
+    ...persistedDetails,
+    category_id: product.category_id,
+    attributes: Object.keys(persistedAttributes).length
+      ? persistedAttributes
+      : persistedDetails.attributes,
+  }
 
   const category =
     typeof rawData.category === 'string'
       ? rawData.category
       : null
 
-  const rawStore = Array.isArray(product.stores) ? product.stores[0] : product.stores
-  const storeObj = isRecord(rawStore) ? rawStore : null
-  const industriesObj = isRecord(storeObj?.industries) ? storeObj?.industries : null
-  const industrySlug = typeof industriesObj?.slug === 'string' ? industriesObj.slug : 'eyewear'
-
-  const industryResolution = await resolveSchemaByIndustrySlug(industrySlug, '1.0')
-  let schemaId: string | null = industryResolution.found ? industryResolution.schemaId : null
-  let schemaVersion: string = industryResolution.found ? industryResolution.version : '1.0'
-
-  if (!schemaId) {
-    const eyewearResolution = await resolveSchemaByIndustrySlug('eyewear', '1.0')
-    if (eyewearResolution.found) {
-      schemaId = eyewearResolution.schemaId
-      schemaVersion = eyewearResolution.version
-    }
-  }
-
-  if (!schemaId) {
-    throw new SchemaNotFoundError(industrySlug, '1.0')
-  }
-
-  const fields = await getSemanticFieldsBySchemaId(schemaId)
-
-  const { data: productSemantic } = await supabase
-    .from('product_semantics')
-    .select(
-      'semantic_data, confidence, generated_by, updated_at',
-    )
-    .eq('product_id', productId)
-    .eq('schema_id', schemaId)
-    .order('updated_at', {
-      ascending: false,
-    })
-    .limit(1)
-    .maybeSingle()
+  const schemaVersion = '1.0'
+  const fields: Array<{
+    id: string
+    field_name: string
+    display_name?: string | null
+    field_type?: string | null
+    required?: boolean
+    aliases?: string[]
+  }> = []
 
   return {
     supabase,
-    product,
     rawData,
+    persistedDetails,
+    details: rawData,
     category,
-    schemaId,
     schemaVersion,
     fields,
-    productSemantic,
   }
 }
 
@@ -370,12 +355,10 @@ export async function getCanonicalProductAttributes(
 ): Promise<CanonicalProductAttributesResponse> {
   const {
     category,
-    schemaId,
     schemaVersion,
     fields,
-    product,
     rawData,
-    productSemantic,
+    details,
   } = await loadProductContext(productId)
 
   const template = getCategoryTemplate(
@@ -422,21 +405,11 @@ export async function getCanonicalProductAttributes(
     ]),
   )
 
-  let semanticMap: JsonRecord = {}
-  let source: 'canonical' | 'legacy' = 'canonical'
-
-  if (productSemantic?.semantic_data) {
-    semanticMap = normalizeSemanticMap(
-      productSemantic.semantic_data,
-    )
-  } else if (product.semantic_data) {
-    source = 'legacy'
-    semanticMap = normalizeSemanticMap(
-      product.semantic_data,
-    )
-  } else {
-    source = 'legacy'
-  }
+  const hasCatalogAttributes = isRecord(details.attributes)
+  const semanticMap = normalizeSemanticMap(
+    details.attributes ?? details.semantic_data,
+  )
+  const source: 'canonical' | 'legacy' = hasCatalogAttributes ? 'canonical' : 'legacy'
 
   const attributes: CanonicalProductAttribute[] = []
 
@@ -485,10 +458,12 @@ export async function getCanonicalProductAttributes(
         null,
       source:
         source === 'canonical'
-          ? inferSource(productSemantic?.generated_by)
+          ? inferSource(isRecord(rawValue) && typeof rawValue.source === 'string' ? rawValue.source : null)
           : 'system',
       confidence:
-        productSemantic?.confidence ?? undefined,
+        isRecord(rawValue) && typeof rawValue.confidence === 'number'
+          ? rawValue.confidence
+          : undefined,
       isStandard: Boolean(mapping),
     })
   }
@@ -601,7 +576,7 @@ export async function getCanonicalProductAttributes(
   return {
     product_id: productId,
     category,
-    schema_id: schemaId,
+    schema_id: null,
     schema_version: schemaVersion,
     attributes,
     is_complete:
@@ -611,19 +586,17 @@ export async function getCanonicalProductAttributes(
   }
 }
 
-// Note: This is an application-level merge and not a database-level atomic transaction.
-// TODO: Phase 3/DB hardening: transactional JSONB merge or RPC
 export async function saveCanonicalProductAttributes(
   productId: string,
   input: SaveCanonicalProductAttributesInput,
 ): Promise<SaveCanonicalProductAttributesResult> {
   const {
     supabase,
-    schemaId,
     schemaVersion,
     fields,
     category: existingCategory,
     rawData,
+    persistedDetails,
   } = await loadProductContext(productId)
 
   const targetCategory = input.category || existingCategory || ''
@@ -668,178 +641,68 @@ export async function saveCanonicalProductAttributes(
     categoryMappings,
   )
 
-  const mapping = await mapDraftAttributes(
-    schemaId,
-    incomingInputs,
+  const semanticData = Object.fromEntries(
+    incomingInputs.map((attribute) => [attribute.key, attribute.value]),
   )
-
-  const { data: currentSemantic } = await supabase
-    .from('product_semantics')
-    .select('semantic_data')
-    .eq('product_id', productId)
-    .eq('schema_id', schemaId)
-    .order('updated_at', {
-      ascending: false,
-    })
-    .limit(1)
-    .maybeSingle()
-
-  const currentSemanticData = normalizeSemanticMap(
-    currentSemantic?.semantic_data,
-  )
-
-  // 1. Process explicit deletions on existing semantic data
-  const deletionSet = new Set<string>()
-  if (Array.isArray(input.deletions)) {
-    for (const delKey of input.deletions) {
-      if (typeof delKey === 'string' && delKey.trim().length > 0) {
-        deletionSet.add(delKey.trim().toLowerCase())
-      }
-    }
+  const mapping = {
+    semanticData,
+    unknownFields: [],
+    accepted: incomingInputs.map((attribute) => ({
+      sourceKey: attribute.key,
+      semanticField: attribute.key,
+      value: attribute.value,
+      confidence: attribute.confidence ?? 1,
+    })),
+    rejected: [],
   }
 
-  for (const key of Object.keys(currentSemanticData)) {
-    if (deletionSet.has(key.toLowerCase())) {
-      delete currentSemanticData[key]
-    }
+  const nextDetails: JsonRecord = {
+    ...persistedDetails,
   }
-
-  // 2. Merge incoming updates: Set wins over Delete if same key exists in both
-  const mergedSemanticData = {
-    ...currentSemanticData,
-    ...mapping.semanticData,
-  }
-
-  const shouldUpdateSemanticStore =
-    Object.keys(mergedSemanticData).length > 0 ||
-    deletionSet.size > 0 ||
-    mapping.accepted.length > 0
-
-  if (shouldUpdateSemanticStore) {
-    const acceptedConfidence =
-      mapping.accepted.length > 0
-        ? mapping.accepted.reduce(
-            (sum, item) => sum + item.confidence,
-            0,
-          ) / mapping.accepted.length
-        : 1
-
-    await saveProductSemantics(
-      productId,
-      schemaId,
-      mergedSemanticData,
-      acceptedConfidence,
-      'merchant-confirmed-ai-draft',
-    )
-  }
-
-  // 3. Sync legacy raw_data compatibility layer (for non-standard/unknown attributes and categories)
-  const currentAttributes = getRawAttributes(rawData)
-  const attributeMap = new Map(
-    currentAttributes.map((attr) => [
-      attr.fieldKey.toLowerCase(),
-      attr,
-    ]),
-  )
-
-  // Apply deletions to raw_data custom attributes as well
-  for (const delKey of deletionSet) {
-    attributeMap.delete(delKey)
-  }
-
-  // Remove accepted standard attributes from raw_data.attributes to prevent duplicates/pollution
-  for (const accepted of mapping.accepted) {
-    attributeMap.delete(accepted.semanticField.toLowerCase())
-    attributeMap.delete(accepted.sourceKey.toLowerCase())
-  }
-
-  for (const mappingItem of categoryMappings.mappings) {
-    attributeMap.delete(mappingItem.templateKey.toLowerCase())
-    attributeMap.delete(mappingItem.semanticFieldName.toLowerCase())
-  }
-
-  for (const attr of input.attributes) {
-    if (categoryRules.rules.has(attr.fieldKey) || categoryRules.rules.has(attr.fieldKey.toLowerCase())) {
-      attributeMap.delete(attr.fieldKey.toLowerCase())
-    }
-  }
-
-  // Upsert unknown/custom fields
-  for (const unknown of mapping.unknownFields) {
-    const rawValue = isRecord(unknown.raw_value)
-      ? unknown.raw_value
-      : {}
-
-    const existing = attributeMap.get(unknown.raw_field.toLowerCase())
-
-    attributeMap.set(unknown.raw_field.toLowerCase(), {
-      fieldKey: unknown.raw_field,
-      label:
-        typeof rawValue.label === 'string'
-          ? rawValue.label
-          : unknown.raw_field,
-      value:
-        typeof rawValue.value === 'string'
-          ? rawValue.value
-          : String(rawValue.value ?? ''),
-      type: normalizeType(rawValue.type),
-      unit:
-        typeof rawValue.unit === 'string'
-          ? rawValue.unit
-          : existing?.unit ?? null,
-      source: 'manual',
-      confidence: 1,
-      isStandard: false,
-    })
-  }
-
-  const nextRawData: JsonRecord = {
-    ...rawData,
-  }
-
-  if (input.categoryId !== undefined) {
-    nextRawData.category_id = input.categoryId || null
-  }
+  delete nextDetails.attributes
+  delete nextDetails.semantic_data
+  delete nextDetails.category_id
 
   if (input.category !== undefined) {
-    nextRawData.category = input.category || null
+    nextDetails.category = input.category || null
   } else if (existingCategory) {
-    nextRawData.category = existingCategory
+    nextDetails.category = existingCategory
   }
 
-  nextRawData.attributes = [...attributeMap.values()].map((attr) => ({
-    key: attr.fieldKey,
-    label: attr.label,
-    value: attr.value,
-    type: attr.type,
-    unit: attr.unit ?? null,
-    source: attr.source,
-    confidence: attr.confidence ?? 1,
-  }))
+  const deletions = (input.deletions ?? [])
+    .map((key) => key.trim().toLowerCase())
+    .filter(Boolean)
+  const { error: attributesError } = await supabase.rpc('save_catalog_item_attributes', {
+    p_item_id: productId,
+    p_attributes: incomingInputs.map((mapped, index) => {
+      const original = input.attributes[index]
+      return {
+        key: mapped.key,
+        label: original.label ?? mapped.label ?? mapped.key,
+        value: mapped.value,
+        type: mapped.type ?? original.type ?? 'text',
+        unit: mapped.unit ?? original.unit ?? null,
+        source: original.source ?? 'manual',
+        confidence: mapped.confidence ?? original.confidence ?? 1,
+        required: original.required ?? false,
+        allowed_values: original.allowedValues ?? [],
+      }
+    }),
+    p_deletions: deletions,
+    p_category_id: input.categoryId && isUuid(input.categoryId) ? input.categoryId : null,
+  })
+  if (attributesError) {
+    throw new Error(`Failed to save PIM attributes: ${attributesError.message}`)
+  }
 
   const { error } = await supabase
-    .from('products')
-    .update({
-      raw_data: nextRawData,
-      updated_at: new Date().toISOString(),
-    })
+    .from('catalog_items')
+    .update({ details: nextDetails })
     .eq('id', productId)
 
   if (error) {
     throw new Error(
-      `Failed to save legacy attribute compatibility data: ${error.message}`,
-    )
-  }
-
-  if (mapping.unknownFields.length > 0) {
-    // `semantic_unknown_fields` is SERVICE_ROLE_ONLY — the merchant session
-    // client cannot write it (the write was previously silently dropped by RLS).
-    // Route through the trusted server-only writer instead (ownership already
-    // verified via the RLS-scoped product read in loadProductContext).
-    await saveUnknownFieldsTrusted(
-      productId,
-      schemaId,
-      mapping.unknownFields,
+      `Failed to save Catalog attributes: ${error.message}`,
     )
   }
 

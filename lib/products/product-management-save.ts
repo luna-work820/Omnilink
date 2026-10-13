@@ -14,6 +14,7 @@ export interface ProductManagementSaveInput {
     inventory?: number
     status?: 'active' | 'draft' | 'archived'
     category_id?: string | null
+    raw_data?: Record<string, unknown> | null
   }
 
   categoryId?: string | null
@@ -48,9 +49,9 @@ export interface ProductManagementSaveResult {
   success: true
   productId: string
   canonical?: {
-    attributes?: any[]
+    attributes?: unknown[]
     is_legacy?: boolean
-    [key: string]: any
+    [key: string]: unknown
   }
 }
 
@@ -112,7 +113,7 @@ export async function saveProductManagement(
   // 2. Canonical Attributes
   // --------------------------------------------------
 
-  let canonicalData: any = undefined
+  let canonicalData: Record<string, unknown> | undefined
 
   if (
     (input.attributes && input.attributes.length > 0) ||

@@ -10,6 +10,7 @@ export interface PendingImage {
   file: File
   previewUrl: string
   status: 'idle' | 'uploading' | 'retrying' | 'success' | 'error'
+  mediaType: 'image' | 'video'
   retryInfo?: {
     attempt: number
     maxAttempts: number
@@ -42,7 +43,6 @@ interface ProductMediaUploaderProps {
   isZh?: boolean
 }
 
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
 export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductMediaUploaderProps>(
@@ -50,8 +50,8 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
     const [pendingFiles, setPendingFiles] = useState<PendingImage[]>([])
     const [existingList, setExistingList] = useState<ExistingAsset[]>(existingAssets)
     const [isDragging, setIsDragging] = useState(false)
-    const [isUploadingDirect, setIsUploadingDirect] = useState(false)
     const [generalError, setGeneralError] = useState<string | null>(null)
+    const [removingAssetId, setRemovingAssetId] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     // External URL support states
@@ -134,7 +134,7 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
           const errData = await res.json()
           setUrlError(errData.error || (isZh ? '添加链接失败' : 'Failed to save URL asset'))
         }
-      } catch (err) {
+      } catch {
         setUrlError(isZh ? '网络请求失败，请稍后重试' : 'Network error, please try again later')
       } finally {
         setIsAddingUrl(false)
@@ -153,10 +153,12 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
         let errorReason = ''
 
         for (const file of fileArray) {
-          if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+          const isImage = file.type.startsWith('image/')
+          const isVideo = file.type.startsWith('video/')
+          if (!isImage && !isVideo) {
             errorReason = isZh
-              ? '仅支持 JPG、PNG、WebP 格式图片'
-              : 'Only JPG, PNG, and WebP images are supported'
+              ? '仅支持 JPG、PNG、WebP 图片或 MP4、WebM、MOV 视频'
+              : 'Only JPG, PNG, WebP images or MP4, WebM, MOV videos are supported'
             continue
           }
           if (file.size <= 0 || file.size > MAX_FILE_SIZE) {
@@ -180,6 +182,7 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
             file,
             previewUrl: URL.createObjectURL(file),
             status: 'idle',
+            mediaType: isVideo ? 'video' : 'image',
           })
         }
 
@@ -241,6 +244,33 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
         }
         return updated
       })
+    }
+
+    const removeExistingAsset = async (asset: ExistingAsset) => {
+      setGeneralError(null)
+      const isPersistedAsset = Boolean(productId) && !asset.id.startsWith('media-') && !asset.id.startsWith('external-')
+
+      if (isPersistedAsset) {
+        setRemovingAssetId(asset.id)
+        try {
+          const response = await fetch('/api/assets', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ asset_id: asset.id }),
+          })
+          if (!response.ok) {
+            const payload = await response.json().catch(() => ({})) as { error?: string }
+            throw new Error(payload.error || (isZh ? '移除媒体失败' : 'Failed to remove media'))
+          }
+        } catch (error) {
+          setGeneralError(error instanceof Error ? error.message : (isZh ? '移除媒体失败，请稍后重试' : 'Failed to remove media. Try again.'))
+          setRemovingAssetId(null)
+          return
+        }
+        setRemovingAssetId(null)
+      }
+
+      setExistingList((prev) => prev.filter((item) => item.id !== asset.id))
     }
 
     const uploadSingleFile = async (item: PendingImage, targetProductId: string) => {
@@ -344,14 +374,6 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
       [uploadPendingFiles, pendingFiles]
     )
 
-    const handleDirectUploadClick = async () => {
-      if (!productId) return
-      setIsUploadingDirect(true)
-      setGeneralError(null)
-      await uploadPendingFiles(productId)
-      setIsUploadingDirect(false)
-    }
-
     return (
       <div className="space-y-4">
         {/* Dropzone */}
@@ -360,28 +382,28 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+          className={`hidden relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
             isDragging
-              ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/20'
-              : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50'
+              ? 'border-[var(--primary)] bg-[var(--primary)]/50 dark:bg-[var(--primary)]/20'
+              : 'border-[var(--surface-muted)] hover:border-[var(--surface-muted)] dark:border-[var(--surface-muted)] dark:hover:border-[var(--surface-muted)] bg-[var(--surface-muted)]/50 dark:bg-[var(--surface-muted)]/50'
           }`}
         >
           <input
             ref={fileInputRef}
             type="file"
             multiple
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
             className="hidden"
             onChange={handleFileSelect}
           />
           <div className="flex flex-col items-center justify-center space-y-2">
-            <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-[var(--primary)] dark:bg-[var(--primary)]/30 text-[var(--primary)] dark:text-[var(--primary)] flex items-center justify-center">
               <UploadCloud className="w-6 h-6" />
             </div>
-            <div className="text-sm font-medium text-slate-800 dark:text-slate-200">
+            <div className="text-sm font-medium text-[var(--lavender)] dark:text-[var(--lavender)]">
               {isZh ? '点击选择图片 或 将图片拖拽至此处' : 'Click to select or drag images here'}
             </div>
-            <div className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="text-xs text-[var(--lavender)] dark:text-[var(--lavender)]">
               {isZh
                 ? '支持 JPG、PNG、WebP 格式，单张不超过 10MB'
                 : 'Supports JPG, PNG, WebP up to 10MB per file'}
@@ -390,10 +412,10 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
         </div>
 
         {/* URL Input and Live Preview Component */}
-        <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-850 rounded-xl p-4 space-y-3.5">
+        <div className="hidden bg-[var(--surface-muted)] dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)]/80 dark:border-[var(--surface-muted)] rounded-xl p-4 space-y-3.5">
           <div className="flex items-center gap-1.5">
-            <Link2 size={14} className="text-[#024AD8]" />
-            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+            <Link2 size={14} className="text-[var(--primary)]" />
+            <span className="text-xs font-bold text-[var(--lavender)] dark:text-[var(--lavender)]">
               {isZh ? '输入外部媒体链接 (支持图片与视频)' : 'Enter External Media URL (Supports Image & Video)'}
             </span>
           </div>
@@ -407,13 +429,13 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
                 setUrlError(null)
               }}
               placeholder={isZh ? '输入有效的图片或视频 https:// 链接...' : 'Enter valid image or video https:// URL...'}
-              className="flex-1 min-w-0 px-3 py-1.5 text-xs bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[4px] text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[#024AD8] focus:border-[#024AD8]"
+              className="flex-1 min-w-0 px-3 py-1.5 text-xs bg-[var(--surface)] dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)] dark:border-[var(--surface-muted)]  text-[var(--lavender)] dark:text-[var(--lavender)] placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
             />
             <button
               type="button"
               onClick={handleAddUrl}
               disabled={isAddingUrl || !urlInput.trim()}
-              className="px-3.5 py-1.5 text-xs font-bold rounded-[4px] bg-[#024AD8] hover:bg-[#003198] text-white disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 transition-colors inline-flex items-center gap-1 cursor-pointer"
+              className="px-3.5 py-1.5 text-xs font-bold  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] disabled:bg-[var(--surface-muted)] dark:disabled:bg-[var(--surface-muted)] disabled:text-[var(--lavender)] transition-colors inline-flex items-center gap-1 cursor-pointer"
               style={{ outlineOffset: '2px' }}
             >
               {isAddingUrl ? (
@@ -426,7 +448,7 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
           </div>
 
           {urlError && (
-            <div className="text-[11px] text-red-600 flex items-center gap-1 mt-1">
+            <div className="text-[11px] text-[var(--plum)] flex items-center gap-1 mt-1">
               <AlertCircle size={12} className="flex-shrink-0" />
               <span>{urlError}</span>
             </div>
@@ -434,12 +456,12 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
 
           {/* Real-time Interactive Live Preview */}
           {urlInput.trim() && /^https?:\/\//i.test(urlInput.trim()) && (
-            <div className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-lg p-3 space-y-2 mt-2 shadow-inner">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-900 pb-1.5">
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            <div className="border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] bg-[var(--surface)] dark:bg-[var(--surface-muted)] rounded-lg p-3 space-y-2 mt-2 shadow-inner">
+              <div className="flex items-center justify-between border-b border-[var(--surface-muted)] dark:border-[var(--surface-muted)] pb-1.5">
+                <span className="text-[11px] font-semibold text-[var(--lavender)] dark:text-[var(--lavender)]">
                   {isZh ? '实时媒体预览' : 'Live Media Preview'}
                 </span>
-                <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-[var(--primary)] dark:bg-[var(--primary)]/40 text-[var(--primary)] dark:text-[var(--primary)] flex items-center gap-1">
                   {isVideoUrl(urlInput.trim()) ? (
                     <>
                       <Film size={10} />
@@ -453,7 +475,7 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
                   )}
                 </span>
               </div>
-              <div className="flex items-center justify-center bg-slate-50 dark:bg-slate-900 rounded border border-slate-100 dark:border-slate-850 p-2 overflow-hidden min-h-[140px]">
+              <div className="flex items-center justify-center bg-[var(--surface-muted)] dark:bg-[var(--surface-muted)] rounded border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] p-2 overflow-hidden min-h-[140px]">
                 {isVideoUrl(urlInput.trim()) ? (
                   <video
                     src={urlInput.trim()}
@@ -477,45 +499,14 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
         </div>
 
         {generalError && (
-          <div className="flex items-center space-x-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 p-3 rounded-lg border border-red-200 dark:border-red-900">
+          <div className="flex items-center space-x-2 text-xs text-[var(--plum)] dark:text-[var(--plum)] bg-[var(--plum)] dark:bg-[var(--plum)]/30 p-3 rounded-lg border border-[var(--plum)] dark:border-[var(--plum)]">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{generalError}</span>
           </div>
         )}
 
         {/* Gallery */}
-        {(existingList.length > 0 || pendingFiles.length > 0) && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                {isZh ? '商品画廊' : 'Product Gallery'} ({existingList.length + pendingFiles.length})
-              </span>
-
-              {productId &&
-                pendingFiles.some(
-                  (f) => f.status === 'idle' || f.status === 'error'
-                ) && (
-                  <button
-                    type="button"
-                    onClick={handleDirectUploadClick}
-                    disabled={isUploadingDirect}
-                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[#024AD8] hover:bg-[#003198] text-white disabled:opacity-50 transition-colors"
-                  >
-                    {isUploadingDirect ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>{isZh ? '正在处理上传...' : 'Processing upload...'}</span>
-                      </>
-                    ) : (
-                      <>
-                        <UploadCloud className="w-3.5 h-3.5" />
-                        <span>{isZh ? '开始上传新图片' : 'Upload New Images'}</span>
-                      </>
-                    )}
-                  </button>
-                )}
-            </div>
-
+        <div className="space-y-3">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {/* Existing Uploaded Assets */}
               {existingList.map((asset) => {
@@ -523,12 +514,12 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
                 return (
                   <div
                     key={asset.id}
-                    className="group relative rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden aspect-square shadow-sm"
+                    className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-[var(--surface-muted)] bg-[var(--surface)] shadow-sm"
                   >
                     {isVideo ? (
                       <video
                         src={asset.url}
-                        className="w-full h-full object-cover"
+                        className="h-full w-full object-contain bg-[var(--surface-muted)]"
                         controls={false}
                         autoPlay={false}
                         muted
@@ -539,10 +530,10 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
                       <img
                         src={asset.url}
                         alt={isZh ? '商品素材' : 'Product Asset'}
-                        className="w-full h-full object-cover"
+                        className="h-full w-full object-contain bg-[var(--surface-muted)]"
                       />
                     )}
-                    <div className="absolute top-1.5 left-1.5 bg-emerald-500/90 text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm flex items-center space-x-1">
+                    <div className="absolute top-1.5 left-1.5 bg-[var(--acid-sage)]/90 text-[var(--surface)] text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm flex items-center space-x-1">
                       {isVideo ? <Film className="w-3 h-3" /> : <CheckCircle className="w-3 h-3" />}
                       <span>{isVideo ? (isZh ? '公开视频' : 'Video') : (isZh ? '公开图像' : 'Image')}</span>
                     </div>
@@ -552,12 +543,14 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation()
-                        setExistingList(prev => prev.filter(item => item.id !== asset.id))
+                        void removeExistingAsset(asset)
                       }}
-                      className="absolute top-1.5 right-1.5 p-1 rounded-full bg-slate-900/65 hover:bg-red-600 text-white transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+                      disabled={removingAssetId === asset.id}
+                      className="absolute top-1.5 right-1.5 p-1 rounded-full bg-[var(--surface-muted)]/65 text-[var(--surface)] transition-colors hover:bg-[var(--plum)] disabled:cursor-wait disabled:opacity-70 group-hover:opacity-100"
                       title={isZh ? '移除资产' : 'Remove Asset'}
+                      aria-label={isZh ? `移除${isVideo ? '视频' : '图片'}` : `Remove ${isVideo ? 'video' : 'image'}`}
                     >
-                      <X className="w-3 h-3" />
+                      {removingAssetId === asset.id ? <Loader2 className="h-3 w-3 animate-spin motion-reduce:animate-none" /> : <X className="h-3 w-3" />}
                     </button>
                   </div>
                 )
@@ -567,24 +560,28 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
               {pendingFiles.map((item) => (
                 <div
                   key={item.id}
-                  className="group relative rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden aspect-square shadow-sm"
+                  className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-[var(--surface-muted)] bg-[var(--surface)] shadow-sm"
                 >
-                  <img
-                    src={item.uploadedUrl || item.previewUrl}
-                    alt={item.file.name}
-                    className="w-full h-full object-cover"
-                  />
+                  {item.mediaType === 'video' ? (
+                    <video src={item.uploadedUrl || item.previewUrl} muted playsInline className="h-full w-full object-contain bg-[var(--surface-muted)]" />
+                  ) : (
+                    <img
+                      src={item.uploadedUrl || item.previewUrl}
+                      alt={item.file.name}
+                      className="h-full w-full object-contain bg-[var(--surface-muted)]"
+                    />
+                  )}
 
                   {/* Status Overlay Badges */}
                   <div className="absolute top-1.5 left-1.5 right-1.5 flex flex-col gap-1 items-start">
                     {item.status === 'uploading' && (
-                      <span className="bg-[#024AD8]/95 text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm flex items-center space-x-1">
+                      <span className="bg-[var(--primary)]/95 text-[var(--surface)] text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm flex items-center space-x-1">
                         <Loader2 className="w-3 h-3 animate-spin" />
                         <span>{isZh ? '上传中...' : 'Uploading...'}</span>
                       </span>
                     )}
                     {item.status === 'retrying' && item.retryInfo && (
-                      <span className="bg-amber-600/95 text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm flex items-center space-x-1">
+                      <span className="bg-[var(--acid-sage)]/95 text-[var(--surface)] text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm flex items-center space-x-1">
                         <RefreshCw className="w-3 h-3 animate-spin" />
                         <span>
                           {isZh
@@ -594,18 +591,18 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
                       </span>
                     )}
                     {item.status === 'success' && (
-                      <span className="bg-emerald-500/95 text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm flex items-center space-x-1">
+                      <span className="bg-[var(--acid-sage)]/95 text-[var(--surface)] text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm flex items-center space-x-1">
                         <CheckCircle className="w-3 h-3" />
                         <span>{isZh ? '已完成' : 'Uploaded'}</span>
                       </span>
                     )}
                     {item.status === 'idle' && (
-                      <span className="bg-amber-500/90 text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm">
+                      <span className="bg-[var(--acid-sage)]/90 text-[var(--surface)] text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm">
                         {isZh ? '待提交' : 'Pending'}
                       </span>
                     )}
                     {item.status === 'error' && (
-                      <span className="bg-red-600/95 text-white text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm flex items-center space-x-1">
+                      <span className="bg-[var(--plum)]/95 text-[var(--surface)] text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm flex items-center space-x-1">
                         <AlertCircle className="w-3 h-3" />
                         <span>{isZh ? '上传失败' : 'Failed'}</span>
                       </span>
@@ -620,7 +617,7 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
                         e.stopPropagation()
                         removePendingFile(item.id)
                       }}
-                      className="absolute top-1.5 right-1.5 p-1 rounded-full bg-slate-900/60 hover:bg-slate-900 text-white transition-colors"
+                      className="absolute top-1.5 right-1.5 p-1 rounded-full bg-[var(--surface-muted)]/60 hover:bg-[var(--surface-muted)] text-[var(--surface)] transition-colors"
                       title={isZh ? '移除文件' : 'Remove File'}
                     >
                       <X className="w-3.5 h-3.5" />
@@ -629,15 +626,30 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
 
                   {/* Error Text Overlay */}
                   {item.status === 'error' && item.errorMsg && (
-                    <div className="absolute inset-x-0 bottom-0 bg-red-950/90 text-red-200 text-[10px] p-1.5 text-center leading-tight">
+                    <div className="absolute inset-x-0 bottom-0 bg-[var(--plum)]/90 text-[var(--plum)] text-[10px] p-1.5 text-center leading-tight">
                       {item.errorMsg}
                     </div>
                   )}
                 </div>
               ))}
+
+              {existingList.length + pendingFiles.length < 8 && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    event.preventDefault()
+                    validateAndAddFiles(event.dataTransfer.files)
+                  }}
+                  className="group flex aspect-[4/3] items-center justify-center border border-dashed border-[var(--border)] bg-transparent text-[var(--text-muted)] transition-colors hover:border-[var(--primary)] hover:bg-[var(--surface-muted)] hover:text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label={isZh ? '上传商品图片或视频' : 'Upload product media'}
+                >
+                  <Plus className="h-8 w-8 stroke-[1.5]" aria-hidden="true" />
+                </button>
+              )}
             </div>
           </div>
-        )}
       </div>
     )
   }

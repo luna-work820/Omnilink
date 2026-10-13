@@ -153,8 +153,8 @@ export function VariantMatrixTable({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-        <Layers size={12} className="shrink-0 text-[#024AD8]" />
+      <div className="flex items-center gap-1.5 text-[11px] text-[var(--lavender)]">
+        <Layers size={12} className="shrink-0 text-[var(--primary)]" />
         <span>
           {isZh
             ? `按 ${filledAxes.map((a) => a.name).join(' × ')} 生成 ${rows.length} 个 SKU，可逐个调整价格 / 库存 / SKU`
@@ -162,20 +162,20 @@ export function VariantMatrixTable({
         </span>
       </div>
 
-      <div className="overflow-x-auto border border-slate-200 rounded-[4px]">
+      <div className="overflow-x-auto border border-[var(--surface-muted)] ">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
+            <tr className="bg-[var(--surface-muted)] border-b border-[var(--surface-muted)] text-[var(--lavender)] font-bold">
               <th className="py-2 px-3">{isZh ? '规格组合' : 'Combination'}</th>
               <th className="py-2 px-3">{isZh ? 'SKU 编码' : 'SKU'}</th>
               <th className="py-2 px-3">{isZh ? `售价 (${currencySymbol})` : 'Price'}</th>
               <th className="py-2 px-3">{isZh ? '库存' : 'Stock'}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-[var(--surface-muted)]">
             {rows.map((row) => (
-              <tr key={row.key} className="hover:bg-slate-50/60">
-                <td className="py-2 px-3 font-semibold text-slate-900 whitespace-nowrap">
+              <tr key={row.key} className="hover:bg-[var(--surface-muted)]/60">
+                <td className="py-2 px-3 font-semibold text-[var(--lavender)] whitespace-nowrap">
                   {filledAxes.map((a) => row.optionValues[a.code]).filter(Boolean).join(' / ')}
                 </td>
                 <td className="py-2 px-3">
@@ -184,7 +184,7 @@ export function VariantMatrixTable({
                     value={row.sku}
                     onChange={(e) => updateRow(row.key, 'sku', e.target.value)}
                     disabled={disabled}
-                    className="h-7 w-36 px-2 rounded-[4px] bg-white border border-slate-200 text-[11px] font-mono text-slate-900 focus:outline-none focus:border-[#024AD8]"
+                    className="h-7 w-36 px-2  bg-[var(--surface)] border border-[var(--surface-muted)] text-[11px] font-mono text-[var(--lavender)] focus:outline-none focus:border-[var(--primary)]"
                   />
                 </td>
                 <td className="py-2 px-3">
@@ -196,7 +196,7 @@ export function VariantMatrixTable({
                     step="0.01"
                     placeholder={basePrice || '0.00'}
                     disabled={disabled}
-                    className="h-7 w-24 px-2 rounded-[4px] bg-white border border-slate-200 text-[11px] font-bold text-slate-900 focus:outline-none focus:border-[#024AD8]"
+                    className="h-7 w-24 px-2  bg-[var(--surface)] border border-[var(--surface-muted)] text-[11px] font-bold text-[var(--lavender)] focus:outline-none focus:border-[var(--primary)]"
                   />
                 </td>
                 <td className="py-2 px-3">
@@ -208,7 +208,7 @@ export function VariantMatrixTable({
                     step="1"
                     placeholder={baseInventory || '0'}
                     disabled={disabled}
-                    className="h-7 w-20 px-2 rounded-[4px] bg-white border border-slate-200 text-[11px] text-slate-900 focus:outline-none focus:border-[#024AD8]"
+                    className="h-7 w-20 px-2  bg-[var(--surface)] border border-[var(--surface-muted)] text-[11px] text-[var(--lavender)] focus:outline-none focus:border-[var(--primary)]"
                   />
                 </td>
               </tr>

@@ -13,8 +13,6 @@ import {
   Plus,
   FileText,
   ChevronRight,
-  Zap,
-  Tag,
 } from 'lucide-react'
 import type { SavedArtifact } from './types'
 import { AI_SKILLS_LIBRARY, type AiSkillItem } from './skillsData'
@@ -96,32 +94,32 @@ export function RightSkillsArtifactsDrawer({
       {/* Main Drawer Container - Solid White Base */}
       <aside
         id="right-skills-artifacts-drawer"
-        className={`h-full bg-white border-l border-[#E5E7EB] text-[#111827] flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out relative z-20 ${
+        className={`h-full bg-[var(--surface)] border-l border-[var(--border)] text-[var(--ink)] flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out relative z-20 ${
           isCollapsed ? 'w-[48px] overflow-hidden' : 'w-[260px] xl:w-[280px]'
         }`}
       >
         {/* COLLAPSED STATE (48px Slim Icon Sidebar) */}
         {isCollapsed ? (
-          <div className="flex flex-col items-center py-3.5 h-full justify-between select-none bg-white">
+          <div className="flex flex-col items-center py-3.5 h-full justify-between select-none bg-[var(--surface)]">
             {/* Top expand trigger */}
             <div className="flex flex-col items-center gap-3">
               <button
                 type="button"
                 id="expand-right-drawer-btn"
                 onClick={onToggleCollapse}
-                className="w-8 h-8 rounded-[4px] bg-[#F3F4F6] hover:bg-[#E5E7EB] text-[#374151] hover:text-[#111827] flex items-center justify-center cursor-pointer transition-colors"
+                className="w-8 h-8  bg-[var(--surface-muted)] hover:bg-[var(--border)] text-[var(--ink)] hover:text-[var(--ink)] flex items-center justify-center cursor-pointer transition-colors"
                 title="展开技能与资产面板"
               >
                 <PanelRightOpen size={16} />
               </button>
 
-              <div className="w-5 h-[1px] bg-[#E5E7EB]" />
+              <div className="w-5 h-[1px] bg-[var(--border)]" />
 
               {/* Quick search icon in collapsed mode */}
               <button
                 type="button"
                 onClick={() => setIsCommandPaletteOpen(true)}
-                className="w-8 h-8 rounded-[4px] bg-blue-50 hover:bg-blue-100 text-[#024AD8] flex items-center justify-center cursor-pointer transition-colors"
+                className="w-8 h-8  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--primary)] flex items-center justify-center cursor-pointer transition-colors"
                 title="快捷检索技能"
               >
                 <Search size={15} />
@@ -131,12 +129,12 @@ export function RightSkillsArtifactsDrawer({
               <button
                 type="button"
                 onClick={onOpenSkillMarketplace}
-                className="w-8 h-8 rounded-[4px] bg-[#F9FAFB] hover:bg-blue-50 text-[#374151] hover:text-[#024AD8] flex items-center justify-center cursor-pointer transition-colors relative border border-[#E5E7EB]"
+                className="w-8 h-8  bg-[var(--surface-muted)] hover:bg-[var(--primary)] text-[var(--ink)] hover:text-[var(--primary)] flex items-center justify-center cursor-pointer transition-colors relative border border-[var(--border)]"
                 title="技能中心"
               >
                 <Sparkles size={15} />
                 {activeSkillIds.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#024AD8] text-[9px] font-bold text-white flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[var(--primary)] text-[9px] font-bold text-[var(--surface)] flex items-center justify-center">
                     {activeSkillIds.length}
                   </span>
                 )}
@@ -146,11 +144,11 @@ export function RightSkillsArtifactsDrawer({
               <button
                 type="button"
                 onClick={onToggleCollapse}
-                className="w-8 h-8 rounded-[4px] bg-[#F9FAFB] hover:bg-[#F3F4F6] text-[#374151] flex items-center justify-center cursor-pointer transition-colors relative border border-[#E5E7EB]"
+                className="w-8 h-8  bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] text-[var(--ink)] flex items-center justify-center cursor-pointer transition-colors relative border border-[var(--border)]"
                 title="沉淀文件"
               >
                 <FileText size={15} />
-                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-600 text-[9px] font-bold text-white flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[var(--acid-sage)] text-[9px] font-bold text-[var(--surface)] flex items-center justify-center">
                   {artifacts.length}
                 </span>
               </button>
@@ -159,22 +157,22 @@ export function RightSkillsArtifactsDrawer({
             {/* Bottom collapsed vertical label */}
             <div
               onClick={onToggleCollapse}
-              className="rotate-180 [writing-mode:vertical-rl] text-[11px] font-bold text-[#6B7280] hover:text-[#024AD8] tracking-widest cursor-pointer py-2"
+              className="rotate-180 [writing-mode:vertical-rl] text-[11px] font-bold text-[var(--lavender)] hover:text-[var(--primary)] tracking-widest cursor-pointer py-2"
             >
               技能与资产
             </div>
           </div>
         ) : (
           /* EXPANDED FULL STATE - PURE WHITE CANVAS */
-          <div className="flex flex-col h-full overflow-hidden bg-white">
+          <div className="flex flex-col h-full overflow-hidden bg-[var(--surface)]">
             {/* Top Layer 1: Header & Skill Search Box */}
-            <div className="p-3 border-b border-[#E5E7EB] bg-white space-y-2 shrink-0">
+            <div className="p-3 border-b border-[var(--border)] bg-[var(--surface)] space-y-2 shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <div className="w-5 h-5 rounded-[4px] bg-blue-50 text-[#024AD8] flex items-center justify-center">
+                  <div className="w-5 h-5  bg-[var(--primary)] text-[var(--primary)] flex items-center justify-center">
                     <Sparkles size={12} />
                   </div>
-                  <h3 className="text-xs font-extrabold text-[#111827] tracking-tight">
+                  <h3 className="text-xs font-extrabold text-[var(--ink)] tracking-tight">
                     技能与资产
                   </h3>
                 </div>
@@ -183,7 +181,7 @@ export function RightSkillsArtifactsDrawer({
                   type="button"
                   id="collapse-right-drawer-btn"
                   onClick={onToggleCollapse}
-                  className="p-1 rounded-[4px] text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] transition-colors cursor-pointer"
+                  className="p-1  text-[var(--lavender)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer"
                   title="收起右侧面板"
                 >
                   <PanelRightClose size={15} />
@@ -193,26 +191,26 @@ export function RightSkillsArtifactsDrawer({
               {/* Search Bar Input */}
               <div
                 onClick={() => setIsCommandPaletteOpen(true)}
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#F9FAFB] hover:bg-white border border-[#E5E7EB] hover:border-[#024AD8]/40 text-[#6B7280] hover:text-[#111827] transition-all cursor-pointer shadow-2xs group"
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[var(--surface-muted)] hover:bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--primary)]/40 text-[var(--lavender)] hover:text-[var(--ink)] transition-all cursor-pointer shadow-2xs group"
               >
-                <Search size={13} className="text-[#024AD8] shrink-0" />
-                <span className="text-xs flex-1 text-[#6B7280] truncate">
+                <Search size={13} className="text-[var(--primary)] shrink-0" />
+                <span className="text-xs flex-1 text-[var(--lavender)] truncate">
                   搜索技能或快捷指令...
                 </span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-white text-[#9CA3AF] border border-[#E5E7EB] font-medium shrink-0">
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-[var(--surface)] text-[var(--lavender)] border border-[var(--border)] font-medium shrink-0">
                   快捷
                 </span>
               </div>
             </div>
 
             {/* Top Layer 2: Dynamic Skill Capsule Pills */}
-            <div className="px-3 py-2 border-b border-[#E5E7EB] bg-white shrink-0 space-y-1.5">
-              <div className="flex items-center justify-between text-[11px] text-[#6B7280]">
-                <span className="font-semibold text-[#374151]">常用技能</span>
+            <div className="px-3 py-2 border-b border-[var(--border)] bg-[var(--surface)] shrink-0 space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] text-[var(--lavender)]">
+                <span className="font-semibold text-[var(--ink)]">常用技能</span>
                 <button
                   type="button"
                   onClick={onOpenSkillMarketplace}
-                  className="text-[#024AD8] hover:text-[#003198] font-bold flex items-center gap-0.5 transition-colors cursor-pointer"
+                  className="text-[var(--primary)] hover:text-[var(--primary)] font-bold flex items-center gap-0.5 transition-colors cursor-pointer"
                 >
                   <span>技能中心</span>
                   <ChevronRight size={11} />
@@ -225,7 +223,7 @@ export function RightSkillsArtifactsDrawer({
                     key={pill.id}
                     type="button"
                     onClick={() => handlePillClick(pill.id)}
-                    className="bg-blue-50 hover:bg-blue-100 text-[#024AD8] border border-blue-100 rounded-full px-2 py-0.5 text-[11px] transition-all cursor-pointer font-medium active:scale-95 whitespace-nowrap"
+                    className="bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)] rounded-full px-2 py-0.5 text-[11px] transition-all cursor-pointer font-medium active:scale-95 whitespace-nowrap"
                   >
                     {pill.name}
                   </button>
@@ -234,7 +232,7 @@ export function RightSkillsArtifactsDrawer({
                 <button
                   type="button"
                   onClick={onOpenSkillMarketplace}
-                  className="bg-[#F3F4F6] text-[#4B5563] hover:text-[#111827] border border-[#E5E7EB] rounded-full px-2 py-0.5 text-[11px] hover:bg-[#E5E7EB] transition-all cursor-pointer font-medium flex items-center gap-0.5 whitespace-nowrap"
+                  className="bg-[var(--surface-muted)] text-[var(--ink)] hover:text-[var(--ink)] border border-[var(--border)] rounded-full px-2 py-0.5 text-[11px] hover:bg-[var(--border)] transition-all cursor-pointer font-medium flex items-center gap-0.5 whitespace-nowrap"
                 >
                   <Plus size={10} />
                   <span>更多分类</span>
@@ -243,12 +241,12 @@ export function RightSkillsArtifactsDrawer({
             </div>
 
             {/* Main Layer 3: File Artifacts List (No "Saved Artifacts" header div, no detailed summary paragraphs, only title & keywords) */}
-            <div className="flex-1 overflow-y-auto p-2.5 space-y-2 custom-scroll bg-white">
+            <div className="flex-1 overflow-y-auto p-2.5 space-y-2 custom-scroll bg-[var(--surface)]">
               {sortedArtifacts.length === 0 ? (
-                <div className="py-12 text-center text-[#9CA3AF] text-xs flex flex-col items-center gap-2">
-                  <FileText size={24} className="opacity-40 text-[#024AD8]" />
+                <div className="py-12 text-center text-[var(--lavender)] text-xs flex flex-col items-center gap-2">
+                  <FileText size={24} className="opacity-40 text-[var(--primary)]" />
                   <span>暂无沉淀文件</span>
-                  <span className="text-[10px] text-[#9CA3AF]">
+                  <span className="text-[10px] text-[var(--lavender)]">
                     点击上方技能即可生成研报与文案
                   </span>
                 </div>
@@ -263,18 +261,18 @@ export function RightSkillsArtifactsDrawer({
                       }}
                       className={`group relative p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
                         art.pinned
-                          ? 'bg-blue-50/20 border-blue-200 hover:border-[#024AD8] shadow-2xs'
-                          : 'bg-white hover:bg-[#F9FAFB] border-[#E5E7EB] hover:border-[#024AD8]/40'
+                          ? 'bg-[var(--primary)]/20 border-[var(--primary)] hover:border-[var(--primary)] shadow-2xs'
+                          : 'bg-[var(--surface)] hover:bg-[var(--surface-muted)] border-[var(--border)] hover:border-[var(--primary)]/40'
                       }`}
                     >
                       {/* Card Header: Tag badge, keywords & hover actions */}
                       <div className="flex items-center justify-between gap-1 mb-1">
                         <div className="flex items-center gap-1 min-w-0 flex-wrap">
-                          <span className="px-1.5 py-0.2 rounded-[4px] bg-blue-50 text-[#024AD8] border border-blue-100 text-[10px] font-bold truncate">
+                          <span className="px-1.5 py-0.2  bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)] text-[10px] font-bold truncate">
                             {art.typeLabel}
                           </span>
                           {art.pinned && (
-                            <span className="px-1 py-0.2 rounded-[4px] bg-amber-50 text-amber-600 border border-amber-200 text-[9px] font-bold">
+                            <span className="px-1 py-0.2  bg-[var(--acid-sage)] text-[var(--acid-sage)] border border-[var(--acid-sage)] text-[9px] font-bold">
                               置顶
                             </span>
                           )}
@@ -289,8 +287,8 @@ export function RightSkillsArtifactsDrawer({
                                 e.stopPropagation()
                                 onTogglePinArtifact(art.id)
                               }}
-                              className={`p-1 rounded-[3px] hover:bg-[#F3F4F6] transition-colors cursor-pointer ${
-                                art.pinned ? 'text-amber-600' : 'text-[#6B7280] hover:text-[#111827]'
+                              className={`p-1 rounded-[3px] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer ${
+                                art.pinned ? 'text-[var(--acid-sage)]' : 'text-[var(--lavender)] hover:text-[var(--ink)]'
                               }`}
                               title={art.pinned ? '取消置顶' : '置顶'}
                             >
@@ -301,7 +299,7 @@ export function RightSkillsArtifactsDrawer({
                           <button
                             type="button"
                             onClick={(e) => handleExportArtifact(art, e)}
-                            className="p-1 rounded-[3px] text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] transition-colors cursor-pointer"
+                            className="p-1 rounded-[3px] text-[var(--lavender)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer"
                             title="导出文件"
                           >
                             <Download size={11} />
@@ -316,7 +314,7 @@ export function RightSkillsArtifactsDrawer({
                                   onDeleteArtifact(art.id)
                                 }
                               }}
-                              className="p-1 rounded-[3px] text-[#6B7280] hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                              className="p-1 rounded-[3px] text-[var(--lavender)] hover:text-[var(--plum)] hover:bg-[var(--plum)] transition-colors cursor-pointer"
                               title="删除"
                             >
                               <Trash2 size={11} />
@@ -326,7 +324,7 @@ export function RightSkillsArtifactsDrawer({
                       </div>
 
                       {/* Card Body: Title only (No detailed summary paragraph) */}
-                      <h4 className="text-xs font-bold text-[#111827] group-hover:text-[#024AD8] transition-colors line-clamp-2 leading-snug">
+                      <h4 className="text-xs font-bold text-[var(--ink)] group-hover:text-[var(--primary)] transition-colors line-clamp-2 leading-snug">
                         {art.title}
                       </h4>
 
@@ -336,7 +334,7 @@ export function RightSkillsArtifactsDrawer({
                           {art.keywords.map((kw, idx) => (
                             <span
                               key={idx}
-                              className="px-1.5 py-0.2 rounded bg-[#F3F4F6] text-[#4B5563] text-[10px] font-medium"
+                              className="px-1.5 py-0.2 rounded bg-[var(--surface-muted)] text-[var(--ink)] text-[10px] font-medium"
                             >
                               #{kw}
                             </span>
@@ -345,9 +343,9 @@ export function RightSkillsArtifactsDrawer({
                       )}
 
                       {/* Bottom meta */}
-                      <div className="mt-1.5 pt-1.5 border-t border-[#F3F4F6] flex items-center justify-between text-[10px] text-[#9CA3AF]">
+                      <div className="mt-1.5 pt-1.5 border-t border-[var(--surface-muted)] flex items-center justify-between text-[10px] text-[var(--lavender)]">
                         <span>{art.createdAt}</span>
-                        <span className="text-[#024AD8] group-hover:underline flex items-center gap-0.5 font-medium">
+                        <span className="text-[var(--primary)] group-hover:underline flex items-center gap-0.5 font-medium">
                           <span>查看</span>
                           <ChevronRight size={10} />
                         </span>

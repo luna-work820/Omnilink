@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClientServer } from "@/lib/supabase/server";
+import { ownsStore } from "@/lib/api/auth";
 import { normalizeStorefrontSchema } from "@/lib/storefront/schema";
 
 /**
@@ -61,14 +62,7 @@ export async function PATCH(
   }
 
   // 3. 店铺归属：显式 owner 过滤（跨店修改 → 404）
-  const { data: store, error: storeError } = await supabase
-    .from("stores")
-    .select("id")
-    .eq("id", storeId)
-    .eq("owner_id", user.id)
-    .maybeSingle();
-
-  if (storeError || !store) {
+  if (!(await ownsStore(supabase, user, storeId))) {
     return NextResponse.json(
       { error: "Store not found" },
       { status: 404 }

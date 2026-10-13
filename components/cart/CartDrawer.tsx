@@ -55,7 +55,7 @@ export default function CartDrawer() {
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity duration-300"
+        className="fixed inset-0 bg-[var(--ink)]/40 backdrop-blur-xs transition-opacity duration-300"
         onClick={closeCart}
       />
 
@@ -105,7 +105,7 @@ export default function CartDrawer() {
             <button
               type="button"
               onClick={closeCart}
-              className="mt-6 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] px-6 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--th-color-accent)]"
+              className="mt-6 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] px-6 py-2.5 text-xs font-semibold text-[var(--surface)] transition-colors hover:bg-[var(--th-color-accent)]"
             >
               Continue Shopping
             </button>
@@ -144,7 +144,7 @@ export default function CartDrawer() {
                           type="button"
                           onClick={() => removeItem(item.id)}
                           aria-label={`Remove ${item.productName}`}
-                          className="text-[var(--th-color-muted)] hover:text-red-500 transition-colors p-1"
+                          className="text-[var(--th-color-muted)] hover:text-[var(--plum)] transition-colors p-1"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -214,7 +214,7 @@ export default function CartDrawer() {
                 <Link
                   href={`/store/${storeSlug}/checkout`}
                   onClick={closeCart}
-                  className="flex items-center justify-center gap-2 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] py-3 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[var(--th-color-accent)]"
+                  className="flex items-center justify-center gap-2 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] py-3 text-xs font-semibold text-[var(--surface)] shadow-sm transition-colors hover:bg-[var(--th-color-accent)]"
                 >
                   <span>Proceed to Checkout</span>
                   <ArrowRight className="h-3.5 w-3.5" />

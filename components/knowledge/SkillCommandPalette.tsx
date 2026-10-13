@@ -93,40 +93,40 @@ export function SkillCommandPalette({
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-[var(--ink)]/40 backdrop-blur-xs transition-opacity"
         onClick={onClose}
       />
 
       {/* Palette Container */}
       <div
-        className="relative w-full max-w-xl bg-white border border-[#E5E7EB] rounded-2xl shadow-xl overflow-hidden text-[#111827] flex flex-col max-h-[75vh] animate-in fade-in zoom-in-95 duration-150"
+        className="relative w-full max-w-xl bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-xl overflow-hidden text-[var(--ink)] flex flex-col max-h-[75vh] animate-in fade-in zoom-in-95 duration-150"
         onKeyDown={handleKeyDown}
       >
         {/* Search Header */}
-        <div className="flex items-center px-4 py-3.5 border-b border-[#E5E7EB] gap-3 bg-[#F9FAFB] shrink-0">
-          <Search size={18} className="text-[#024AD8] shrink-0" />
+        <div className="flex items-center px-4 py-3.5 border-b border-[var(--border)] gap-3 bg-[var(--surface-muted)] shrink-0">
+          <Search size={18} className="text-[var(--primary)] shrink-0" />
           <input
             ref={inputRef}
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="搜索分析与研报生成技能（例如：竞品对标、合规审查、文案生成）..."
-            className="flex-1 bg-transparent text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none"
+            className="flex-1 bg-transparent text-sm text-[var(--ink)] placeholder:text-[var(--lavender)] focus:outline-none"
           />
-          <span className="text-[10px] bg-white text-[#6B7280] px-2 py-0.5 rounded-[4px] border border-[#E5E7EB] font-medium">
+          <span className="text-[10px] bg-[var(--surface)] text-[var(--lavender)] px-2 py-0.5  border border-[var(--border)] font-medium">
             ESC 退出
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="text-[#6B7280] hover:text-[#111827] p-1 cursor-pointer"
+            className="text-[var(--lavender)] hover:text-[var(--ink)] p-1 cursor-pointer"
           >
             <X size={16} />
           </button>
         </div>
 
         {/* Category Filter Pills */}
-        <div className="px-4 py-2 border-b border-[#E5E7EB] bg-white flex items-center gap-1.5 overflow-x-auto shrink-0 custom-scroll text-xs">
+        <div className="px-4 py-2 border-b border-[var(--border)] bg-[var(--surface)] flex items-center gap-1.5 overflow-x-auto shrink-0 custom-scroll text-xs">
           {[
             { id: 'all', label: '全部技能' },
             { id: 'recommended', label: '⭐ 推荐精选' },
@@ -139,8 +139,8 @@ export function SkillCommandPalette({
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                 selectedCategory === cat.id
-                  ? 'bg-[#024AD8] text-white shadow-2xs'
-                  : 'bg-[#F3F4F6] text-[#4B5563] hover:text-[#111827] hover:bg-[#E5E7EB]'
+                  ? 'bg-[var(--primary)] text-[var(--surface)] shadow-2xs'
+                  : 'bg-[var(--surface-muted)] text-[var(--ink)] hover:text-[var(--ink)] hover:bg-[var(--border)]'
               }`}
             >
               {cat.label}
@@ -149,10 +149,10 @@ export function SkillCommandPalette({
         </div>
 
         {/* Results List */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scroll max-h-[380px] bg-white">
+        <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scroll max-h-[380px] bg-[var(--surface)]">
           {filteredSkills.length === 0 ? (
-            <div className="py-12 text-center text-[#9CA3AF] text-xs">
-              <Sparkles size={24} className="mx-auto mb-2 opacity-40 text-[#024AD8]" />
+            <div className="py-12 text-center text-[var(--lavender)] text-xs">
+              <Sparkles size={24} className="mx-auto mb-2 opacity-40 text-[var(--primary)]" />
               <span>未检索到匹配的技能</span>
             </div>
           ) : (
@@ -171,15 +171,15 @@ export function SkillCommandPalette({
                   onMouseEnter={() => setSelectedIndex(index)}
                   className={`p-3 rounded-xl flex items-start gap-3 transition-all cursor-pointer select-none border ${
                     isSelected
-                      ? 'bg-blue-50/70 border-[#024AD8]/40 text-[#111827]'
-                      : 'bg-white border-transparent text-[#374151] hover:bg-[#F9FAFB]'
+                      ? 'bg-[var(--primary)]/70 border-[var(--primary)]/40 text-[var(--ink)]'
+                      : 'bg-[var(--surface)] border-transparent text-[var(--ink)] hover:bg-[var(--surface-muted)]'
                   }`}
                 >
                   <div
                     className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
                       isSelected
-                        ? 'bg-[#024AD8] text-white shadow-2xs'
-                        : 'bg-blue-50 text-[#024AD8]'
+                        ? 'bg-[var(--primary)] text-[var(--surface)] shadow-2xs'
+                        : 'bg-[var(--primary)] text-[var(--primary)]'
                     }`}
                   >
                     {icon}
@@ -187,26 +187,26 @@ export function SkillCommandPalette({
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-[#111827]">
+                      <span className="font-bold text-xs text-[var(--ink)]">
                         {skill.name}
                       </span>
                       {skill.badge && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-50 text-[#024AD8] border border-blue-100 font-medium">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)] font-medium">
                           {skill.badge}
                         </span>
                       )}
                       {isMounted && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--acid-sage)] text-[var(--acid-sage)] border border-[var(--acid-sage)] font-medium">
                           已挂载
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-[#6B7280] line-clamp-1 mt-0.5">
+                    <p className="text-[11px] text-[var(--lavender)] line-clamp-1 mt-0.5">
                       {skill.description}
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0 text-[#6B7280]">
+                  <div className="flex items-center gap-1.5 shrink-0 text-[var(--lavender)]">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -214,7 +214,7 @@ export function SkillCommandPalette({
                         onSelectSkill(skill, false)
                         onClose()
                       }}
-                      className="px-2 py-1 rounded-[4px] text-[10px] font-semibold bg-[#F3F4F6] hover:bg-[#024AD8] text-[#374151] hover:text-white border border-[#E5E7EB] transition-colors"
+                      className="px-2 py-1  text-[10px] font-semibold bg-[var(--surface-muted)] hover:bg-[var(--primary)] text-[var(--ink)] hover:text-[var(--surface)] border border-[var(--border)] transition-colors"
                       title="挂载到当前对话"
                     >
                       {isMounted ? '已挂载' : '+ 挂载'}
@@ -226,7 +226,7 @@ export function SkillCommandPalette({
                         onSelectSkill(skill, true)
                         onClose()
                       }}
-                      className="p-1.5 rounded-[4px] text-[#024AD8] hover:text-white hover:bg-[#024AD8] transition-colors"
+                      className="p-1.5  text-[var(--primary)] hover:text-[var(--surface)] hover:bg-[var(--primary)] transition-colors"
                       title="立即执行此技能"
                     >
                       <Zap size={14} />
@@ -239,22 +239,22 @@ export function SkillCommandPalette({
         </div>
 
         {/* Footer shortcuts */}
-        <div className="px-4 py-2 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between text-[11px] text-[#6B7280] shrink-0">
+        <div className="px-4 py-2 bg-[var(--surface-muted)] border-t border-[var(--border)] flex items-center justify-between text-[11px] text-[var(--lavender)] shrink-0">
           <div className="flex items-center gap-3">
             <span>
-              <kbd className="px-1.5 py-0.5 rounded bg-white text-[#374151] border border-[#E5E7EB] text-[10px]">
+              <kbd className="px-1.5 py-0.5 rounded bg-[var(--surface)] text-[var(--ink)] border border-[var(--border)] text-[10px]">
                 ↑↓
               </kbd>{' '}
               切换选择
             </span>
             <span>
-              <kbd className="px-1.5 py-0.5 rounded bg-white text-[#374151] border border-[#E5E7EB] text-[10px]">
+              <kbd className="px-1.5 py-0.5 rounded bg-[var(--surface)] text-[var(--ink)] border border-[var(--border)] text-[10px]">
                 Enter
               </kbd>{' '}
               立即执行
             </span>
           </div>
-          <span className="text-[#024AD8] font-bold">智能推理引擎</span>
+          <span className="text-[var(--primary)] font-bold">智能推理引擎</span>
         </div>
       </div>
     </div>

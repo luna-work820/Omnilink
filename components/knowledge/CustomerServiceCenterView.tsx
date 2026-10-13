@@ -23,7 +23,8 @@ interface CustomerServiceCenterViewProps {
   isZh?: boolean
 }
 
-export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenterViewProps) {
+export function CustomerServiceCenterView({ isZh: _isZh }: CustomerServiceCenterViewProps) {
+  void _isZh
   // Knowledge Sources Config State
   const [enabledSources, setEnabledSources] = useState({
     brand: true,
@@ -197,29 +198,29 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
       {/* LEFT COLUMN: 知识来源配置 (Knowledge Sources Config Panel) */}
       <div
         id="cs-knowledge-sources-panel"
-        className="w-full lg:w-[320px] rounded-[24px] bg-white/70 backdrop-blur-[20px] backdrop-saturate-[180%] border border-white/60 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.04)] flex flex-col justify-between space-y-4 shrink-0"
+        className="w-full lg:w-[320px] rounded-[24px] bg-[var(--surface)]/70 backdrop-blur-[20px] backdrop-saturate-[180%] border border-[var(--surface)]/60 p-5 shadow-[0_8px_32px_var(--ink)] flex flex-col justify-between space-y-4 shrink-0"
       >
         <div className="space-y-4">
           {/* Header */}
-          <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB]/70">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]/70">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-[10px] bg-[#111827] text-white flex items-center justify-center">
-                <Bot size={16} className="text-purple-300" />
+              <div className="w-8 h-8 rounded-[10px] bg-[var(--ink)] text-[var(--surface)] flex items-center justify-center">
+                <Bot size={16} className="text-[var(--lavender)]" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-[#111827]">知识来源配置</h3>
-                <span className="text-[11px] text-[#6B7280]">AI 客服挂载语料库</span>
+                <h3 className="text-sm font-bold text-[var(--ink)]">知识来源配置</h3>
+                <span className="text-[11px] text-[var(--lavender)]">AI 客服挂载语料库</span>
               </div>
             </div>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-[var(--acid-sage)] animate-pulse" />
           </div>
 
           {/* Source Selection Checkboxes */}
           <div className="space-y-2">
-            <label className="text-xs font-bold text-[#111827] uppercase tracking-wider block">
+            <label className="text-xs font-bold text-[var(--ink)] uppercase tracking-wider block">
               知识来源
             </label>
-            <p className="text-[11px] text-[#6B7280]">
+            <p className="text-[11px] text-[var(--lavender)]">
               勾选允许对外客服机器人调用的知识库：
             </p>
 
@@ -228,19 +229,19 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
               <label
                 className={`p-3 rounded-[14px] border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                   enabledSources.brand
-                    ? 'bg-purple-50/60 border-purple-300 shadow-2xs'
-                    : 'bg-white/80 border-[#E5E7EB] opacity-60'
+                    ? 'bg-[var(--lavender)]/60 border-[var(--lavender)] shadow-2xs'
+                    : 'bg-[var(--surface)]/80 border-[var(--border)] opacity-60'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-[8px] bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 rounded-[8px] bg-[var(--lavender)] text-[var(--lavender)] flex items-center justify-center shrink-0">
                     <Building2 size={14} />
                   </div>
                   <div className="min-w-0">
-                    <span className="text-xs font-bold text-[#111827] block truncate">
+                    <span className="text-xs font-bold text-[var(--ink)] block truncate">
                       品牌与店铺信息
                     </span>
-                    <span className="text-[10px] text-[#6B7280]">
+                    <span className="text-[10px] text-[var(--lavender)]">
                       品牌定位、联系方式、社交矩阵
                     </span>
                   </div>
@@ -251,7 +252,7 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
                   onChange={(e) =>
                     setEnabledSources({ ...enabledSources, brand: e.target.checked })
                   }
-                  className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                  className="w-4 h-4 rounded text-[var(--lavender)] focus:ring-[var(--lavender)] cursor-pointer"
                 />
               </label>
 
@@ -259,19 +260,19 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
               <label
                 className={`p-3 rounded-[14px] border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                   enabledSources.product
-                    ? 'bg-purple-50/60 border-purple-300 shadow-2xs'
-                    : 'bg-white/80 border-[#E5E7EB] opacity-60'
+                    ? 'bg-[var(--lavender)]/60 border-[var(--lavender)] shadow-2xs'
+                    : 'bg-[var(--surface)]/80 border-[var(--border)] opacity-60'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-[8px] bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 rounded-[8px] bg-[var(--lavender)] text-[var(--lavender)] flex items-center justify-center shrink-0">
                     <Package size={14} />
                   </div>
                   <div className="min-w-0">
-                    <span className="text-xs font-bold text-[#111827] block truncate">
+                    <span className="text-xs font-bold text-[var(--ink)] block truncate">
                       产品知识
                     </span>
-                    <span className="text-[10px] text-[#6B7280]">
+                    <span className="text-[10px] text-[var(--lavender)]">
                       SKU 规格说明、认证、说明书
                     </span>
                   </div>
@@ -282,7 +283,7 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
                   onChange={(e) =>
                     setEnabledSources({ ...enabledSources, product: e.target.checked })
                   }
-                  className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                  className="w-4 h-4 rounded text-[var(--lavender)] focus:ring-[var(--lavender)] cursor-pointer"
                 />
               </label>
 
@@ -290,19 +291,19 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
               <label
                 className={`p-3 rounded-[14px] border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                   enabledSources.policy
-                    ? 'bg-purple-50/60 border-purple-300 shadow-2xs'
-                    : 'bg-white/80 border-[#E5E7EB] opacity-60'
+                    ? 'bg-[var(--lavender)]/60 border-[var(--lavender)] shadow-2xs'
+                    : 'bg-[var(--surface)]/80 border-[var(--border)] opacity-60'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-[8px] bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 rounded-[8px] bg-[var(--lavender)] text-[var(--lavender)] flex items-center justify-center shrink-0">
                     <ShieldCheck size={14} />
                   </div>
                   <div className="min-w-0">
-                    <span className="text-xs font-bold text-[#111827] block truncate">
+                    <span className="text-xs font-bold text-[var(--ink)] block truncate">
                       服务与政策
                     </span>
-                    <span className="text-[10px] text-[#6B7280]">
+                    <span className="text-[10px] text-[var(--lavender)]">
                       发货时效、运费规则、退换货细则
                     </span>
                   </div>
@@ -313,37 +314,37 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
                   onChange={(e) =>
                     setEnabledSources({ ...enabledSources, policy: e.target.checked })
                   }
-                  className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                  className="w-4 h-4 rounded text-[var(--lavender)] focus:ring-[var(--lavender)] cursor-pointer"
                 />
               </label>
             </div>
           </div>
 
           {/* Security Guard Notice */}
-          <div className="p-3 rounded-[14px] bg-[#111827] text-white space-y-1.5 shadow-sm">
-            <div className="flex items-center gap-1.5 text-purple-300 text-xs font-bold">
+          <div className="p-3 rounded-[14px] bg-[var(--ink)] text-[var(--surface)] space-y-1.5 shadow-sm">
+            <div className="flex items-center gap-1.5 text-[var(--lavender)] text-xs font-bold">
               <Lock size={12} />
               <span>内部私密知识隔离保护</span>
             </div>
-            <p className="text-[11px] text-gray-300 leading-relaxed">
+            <p className="text-[11px] text-[var(--lavender)] leading-relaxed">
               「产品研发」、「竞品分析」等内部研报知识库已默认物理隔离，严禁对外客服模型调用。
             </p>
           </div>
         </div>
 
         {/* Quick Testing Presets */}
-        <div className="space-y-2 pt-2 border-t border-[#E5E7EB]/60">
-          <span className="text-[11px] font-bold text-[#111827] block">常用测试提问</span>
+        <div className="space-y-2 pt-2 border-t border-[var(--border)]/60">
+          <span className="text-[11px] font-bold text-[var(--ink)] block">常用测试提问</span>
           <div className="space-y-1.5">
             {presetQuestions.map((q, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => handleSendMessage(q)}
-                className="w-full text-left p-2 rounded-[8px] bg-white/90 hover:bg-purple-50 text-[11px] text-[#111827] font-medium border border-[#E5E7EB] hover:border-purple-200 transition-colors flex items-center justify-between cursor-pointer truncate"
+                className="w-full text-left p-2 rounded-[8px] bg-[var(--surface)]/90 hover:bg-[var(--lavender)] text-[11px] text-[var(--ink)] font-medium border border-[var(--border)] hover:border-[var(--lavender)] transition-colors flex items-center justify-between cursor-pointer truncate"
               >
                 <span className="truncate">{q}</span>
-                <ChevronRight size={12} className="text-gray-400 shrink-0 ml-1" />
+                <ChevronRight size={12} className="text-[var(--lavender)] shrink-0 ml-1" />
               </button>
             ))}
           </div>
@@ -353,23 +354,23 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
       {/* RIGHT COLUMN: AI 客服聊天窗口 (Modern AI Chat UI matching Reference Image) */}
       <div
         id="cs-chat-window"
-        className="flex-1 rounded-[24px] bg-white/70 backdrop-blur-[20px] backdrop-saturate-[180%] border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.04)] flex flex-col justify-between overflow-hidden"
+        className="flex-1 rounded-[24px] bg-[var(--surface)]/70 backdrop-blur-[20px] backdrop-saturate-[180%] border border-[var(--surface)]/60 shadow-[0_8px_32px_var(--ink)] flex flex-col justify-between overflow-hidden"
       >
         {/* Chat Window Top Bar */}
-        <div className="px-5 py-3.5 bg-white/80 border-b border-[#E5E7EB]/70 flex items-center justify-between shrink-0">
+        <div className="px-5 py-3.5 bg-[var(--surface)]/80 border-b border-[var(--border)]/70 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-[12px] bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-xs">
+            <div className="w-9 h-9 rounded-[12px] bg-gradient-to-tr from-purple-600 to-indigo-600 text-[var(--surface)] flex items-center justify-center shadow-xs">
               <Bot size={18} />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h4 className="text-sm font-bold text-[#111827]">Omnilink 官方 AI 智能客服</h4>
-                <span className="px-1.5 py-0.2 rounded-[4px] bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <h4 className="text-sm font-bold text-[var(--ink)]">Omnilink 官方 AI 智能客服</h4>
+                <span className="px-1.5 py-0.2  bg-[var(--acid-sage)] text-[var(--acid-sage)] text-[10px] font-bold border border-[var(--acid-sage)] flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--acid-sage)]" />
                   在线 · 知识挂载中
                 </span>
               </div>
-              <p className="text-[10px] text-[#6B7280] mt-0.5">
+              <p className="text-[10px] text-[var(--lavender)] mt-0.5">
                 响应延迟 ~0.3s · 基于实时已挂载知识库推理
               </p>
             </div>
@@ -391,7 +392,7 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
                 },
               ])
             }}
-            className="px-2.5 py-1.5 rounded-[8px] bg-gray-100 hover:bg-gray-200 text-xs font-semibold text-[#111827] flex items-center gap-1 cursor-pointer transition-colors"
+            className="px-2.5 py-1.5 rounded-[8px] bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] text-xs font-semibold text-[var(--ink)] flex items-center gap-1 cursor-pointer transition-colors"
           >
             <RefreshCw size={12} />
             <span>清空对话</span>
@@ -416,8 +417,8 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
                 <div
                   className={`w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0 text-xs font-bold ${
                     isUser
-                      ? 'bg-[#111827] text-white shadow-2xs'
-                      : 'bg-purple-600 text-white shadow-xs'
+                      ? 'bg-[var(--ink)] text-[var(--surface)] shadow-2xs'
+                      : 'bg-[var(--lavender)] text-[var(--surface)] shadow-xs'
                   }`}
                 >
                   {isUser ? <User size={14} /> : <Bot size={14} />}
@@ -428,17 +429,17 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
                   <div
                     className={`p-4 rounded-[20px] text-xs leading-relaxed ${
                       isUser
-                        ? 'bg-[#111827] text-white rounded-tr-[4px] shadow-sm'
-                        : 'bg-white text-[#111827] rounded-tl-[4px] border border-[#E5E7EB] shadow-2xs'
+                        ? 'bg-[var(--ink)] text-[var(--surface)] rounded-tr-[4px] shadow-sm'
+                        : 'bg-[var(--surface)] text-[var(--ink)] rounded-tl-[4px] border border-[var(--border)] shadow-2xs'
                     }`}
                   >
                     <div className="whitespace-pre-line">{msg.content}</div>
 
                     {/* Citations Box (来源与引用展示) */}
                     {!isUser && msg.citations && msg.citations.length > 0 && (
-                      <div className="mt-3 pt-2.5 border-t border-purple-100/80 space-y-1.5">
-                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-purple-900">
-                          <FileText size={12} className="text-purple-600" />
+                      <div className="mt-3 pt-2.5 border-t border-[var(--lavender)]/80 space-y-1.5">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--lavender)]">
+                          <FileText size={12} className="text-[var(--lavender)]" />
                           <span>来源与引用：</span>
                         </div>
 
@@ -448,11 +449,11 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
                               key={cit.id}
                               type="button"
                               onClick={() => setSelectedCitationDetail(cit)}
-                              className="px-2.5 py-1 rounded-[6px] bg-purple-50 hover:bg-purple-100 text-purple-800 text-[10px] font-semibold border border-purple-200 transition-colors flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1 rounded-[6px] bg-[var(--lavender)] hover:bg-[var(--lavender)] text-[var(--lavender)] text-[10px] font-semibold border border-[var(--lavender)] transition-colors flex items-center gap-1 cursor-pointer"
                               title="点击查看引用切片全文"
                             >
                               <span>来源：{cit.sourceName}</span>
-                              <ExternalLink size={10} className="text-purple-500" />
+                              <ExternalLink size={10} className="text-[var(--lavender)]" />
                             </button>
                           ))}
                         </div>
@@ -462,7 +463,7 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
 
                   {/* Timestamp & Model */}
                   <div
-                    className={`flex items-center gap-2 text-[10px] text-[#6B7280] ${
+                    className={`flex items-center gap-2 text-[10px] text-[var(--lavender)] ${
                       isUser ? 'justify-end' : 'justify-start'
                     }`}
                   >
@@ -476,30 +477,30 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
 
           {isTyping && (
             <div className="flex gap-3 max-w-[85%] mr-auto">
-              <div className="w-8 h-8 rounded-[10px] bg-purple-600 text-white flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-[10px] bg-[var(--lavender)] text-[var(--surface)] flex items-center justify-center shrink-0">
                 <Bot size={14} />
               </div>
-              <div className="p-3.5 rounded-[20px] bg-white border border-[#E5E7EB] shadow-2xs flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-purple-400 animate-bounce" />
-                <span className="w-2 h-2 rounded-full bg-purple-500 animate-bounce [animation-delay:0.2s]" />
-                <span className="w-2 h-2 rounded-full bg-purple-600 animate-bounce [animation-delay:0.4s]" />
+              <div className="p-3.5 rounded-[20px] bg-[var(--surface)] border border-[var(--border)] shadow-2xs flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[var(--lavender)] animate-bounce" />
+                <span className="w-2 h-2 rounded-full bg-[var(--lavender)] animate-bounce [animation-delay:0.2s]" />
+                <span className="w-2 h-2 rounded-full bg-[var(--lavender)] animate-bounce [animation-delay:0.4s]" />
               </div>
             </div>
           )}
         </div>
 
         {/* Fixed Bottom Input Area (Ref Image 2: Clean input bar with icons) */}
-        <div className="p-4 bg-white/90 border-t border-[#E5E7EB]/70 space-y-2 shrink-0">
+        <div className="p-4 bg-[var(--surface)]/90 border-t border-[var(--border)]/70 space-y-2 shrink-0">
           <form
             onSubmit={(e) => {
               e.preventDefault()
               handleSendMessage()
             }}
-            className="relative flex items-center gap-2 bg-[#F9FAFB] p-1.5 rounded-[16px] border border-[#E5E7EB] focus-within:border-[#8B5CF6] focus-within:bg-white transition-all shadow-2xs"
+            className="relative flex items-center gap-2 bg-[var(--surface-muted)] p-1.5 rounded-[16px] border border-[var(--border)] focus-within:border-[var(--lavender)] focus-within:bg-[var(--surface)] transition-all shadow-2xs"
           >
             <button
               type="button"
-              className="p-2 rounded-[10px] text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+              className="p-2 rounded-[10px] text-[var(--lavender)] hover:text-[var(--lavender)] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer"
               title="引用知识库文件"
             >
               <Paperclip size={16} />
@@ -510,12 +511,12 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder="输入客户咨询问题进行 AI 问答测试（例如：这个产品多久发货？）..."
-              className="flex-1 bg-transparent text-xs text-[#111827] focus:outline-none px-2"
+              className="flex-1 bg-transparent text-xs text-[var(--ink)] focus:outline-none px-2"
             />
 
             <button
               type="button"
-              className="p-2 rounded-[10px] text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+              className="p-2 rounded-[10px] text-[var(--lavender)] hover:text-[var(--lavender)] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer"
               title="语音输入"
             >
               <Mic size={16} />
@@ -524,7 +525,7 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
             <button
               type="submit"
               disabled={!inputText.trim() || isTyping}
-              className="h-9 px-4 rounded-[12px] bg-[#111827] hover:bg-black disabled:bg-gray-200 text-white disabled:text-gray-400 text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+              className="h-9 px-4 rounded-[12px] bg-[var(--ink)] hover:bg-[var(--ink)] disabled:bg-[var(--surface-muted)] text-[var(--surface)] disabled:text-[var(--lavender)] text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
             >
               <span>发送</span>
               <Send size={12} />
@@ -537,41 +538,41 @@ export function CustomerServiceCenterView({ isZh = true }: CustomerServiceCenter
       {selectedCitationDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-[var(--ink)]/40 backdrop-blur-xs"
             onClick={() => setSelectedCitationDetail(null)}
           />
 
           <div
             id="citation-detail-modal"
-            className="relative w-full max-w-lg bg-white rounded-[20px] p-5 shadow-2xl border border-[#E5E7EB] z-10 space-y-3 animate-in zoom-in-95"
+            className="relative w-full max-w-lg bg-[var(--surface)] rounded-[20px] p-5 shadow-2xl border border-[var(--border)] z-10 space-y-3 animate-in zoom-in-95"
           >
-            <div className="flex items-center justify-between pb-2 border-b border-[#E5E7EB]">
+            <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
               <div className="flex items-center gap-2">
-                <FileText size={16} className="text-purple-600" />
-                <h4 className="text-xs font-bold text-[#111827]">
+                <FileText size={16} className="text-[var(--lavender)]" />
+                <h4 className="text-xs font-bold text-[var(--ink)]">
                   引用溯源：{selectedCitationDetail.sourceName}
                 </h4>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedCitationDetail(null)}
-                className="w-6 h-6 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs"
+                className="w-6 h-6 rounded-full bg-[var(--surface-muted)] text-[var(--lavender)] flex items-center justify-center text-xs"
               >
                 ×
               </button>
             </div>
 
-            <div className="p-3.5 rounded-[12px] bg-purple-50/60 border border-purple-200 text-xs text-[#111827] leading-relaxed">
-              <span className="font-bold text-purple-900 block mb-1">检索命中切片全文：</span>
+            <div className="p-3.5 rounded-[12px] bg-[var(--lavender)]/60 border border-[var(--lavender)] text-xs text-[var(--ink)] leading-relaxed">
+              <span className="font-bold text-[var(--lavender)] block mb-1">检索命中切片全文：</span>
               {selectedCitationDetail.excerpt}
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-[#6B7280]">
+            <div className="flex items-center justify-between text-[11px] text-[var(--lavender)]">
               <span>置信度：{(selectedCitationDetail.confidence * 100).toFixed(1)}%</span>
               <button
                 type="button"
                 onClick={() => setSelectedCitationDetail(null)}
-                className="px-3 py-1.5 rounded-[8px] bg-[#111827] text-white text-xs font-bold"
+                className="px-3 py-1.5 rounded-[8px] bg-[var(--ink)] text-[var(--surface)] text-xs font-bold"
               >
                 关闭
               </button>

@@ -1,106 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUser } from '@/lib/api/auth'
-import { createClientServer } from '@/lib/supabase/server'
-import { Database } from '@/lib/database.types'
 
-type Store = Database['public']['Tables']['stores']['Row']
-type StoreInsert = Database['public']['Tables']['stores']['Insert']
-
-/**
- * GET /api/stores — returns the caller's owned store.
- *
- * Authority chain (no client-trusted ids):
- *   1. requireUser()            → 401 if not authenticated
- *   2. server filters stores.owner_id = auth.uid()
- *
- * The previous implementation accepted ?owner_id= and queried via the
- * anon/browser Supabase client, which let any anonymous caller read any
- * user's store row (IDOR). This rewrite removes both vectors.
- */
-export async function GET(request: NextRequest) {
+export async function GET() {
   const auth = await requireUser()
   if (!auth.ok) return auth.response
   const { supabase, user } = auth
-
-  const { searchParams } = new URL(request.url)
-  // status is a legitimate business filter; owner_id is intentionally NOT
-  // accepted — the server derives ownership from the session.
-  const status = searchParams.get('status')
-
-  let query = supabase
-    .from('stores')
-    .select('id, owner_id, store_name, store_slug, industry_id, logo_url, description, currency, status, created_at, updated_at, industry_category')
-    .eq('owner_id', user.id)
-
-  if (status) {
-    query = query.eq('status', status)
-  }
-
-  const { data: stores, error } = await query
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
+  const { data: memberships, error: membershipError } = await supabase
+    .from('organization_members').select('organization_id, role').eq('user_id', user.id).eq('status', 'active')
+  if (membershipError) return NextResponse.json({ error: membershipError.message }, { status: 500 })
+  const organizationIds = (memberships ?? []).map((m) => m.organization_id)
+  if (!organizationIds.length) return NextResponse.json({ stores: [] })
+  const { data: stores, error } = await supabase.from('stores').select('*').in('organization_id', organizationIds).order('created_at', { ascending: false })
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ stores: stores ?? [] })
 }
 
-/**
- * POST /api/stores — create a store owned by the caller.
- *
- * Authority chain:
- *   1. requireUser()                            → 401 if not signed in
- *   2. server overrides owner_id = auth.uid()   → client cannot impersonate
- *   3. whitelist of insert columns              → no raw_data / id / etc.
- */
 export async function POST(request: NextRequest) {
   const auth = await requireUser()
   if (!auth.ok) return auth.response
-  const { user } = auth
-
-  let body: Partial<StoreInsert> & { owner_id?: string }
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
-  }
-
-  if (!body.store_name || !body.store_slug) {
-    return NextResponse.json(
-      { error: 'store_name and store_slug are required' },
-      { status: 400 },
-    )
-  }
-
-  // Whitelist of columns a client is allowed to set. Crucially, owner_id is
-  // NOT in this list — the server writes it from auth.uid() below.
-  const insert: StoreInsert = {
-    owner_id: user.id,
-    store_name: body.store_name,
-    store_slug: body.store_slug,
-    industry_id: body.industry_id ?? null,
-    industry_category: body.industry_category ?? null,
-    description: body.description ?? null,
-    logo_url: body.logo_url ?? null,
-    currency: body.currency ?? 'USD',
-    status: body.status ?? 'active',
-  }
-
-  // Note: the current merchant onboarding path uses createStoreAction
-  // (lib/stores/service.ts → initializeMerchantStore) which inserts
-  // store_settings in the same transaction; this endpoint is kept for
-  // future admin / migration use and explicitly uses the SSR client
-  // (cookie session) rather than the anon browser client.
-  const supabase = await createClientServer()
-  const { data: store, error } = await supabase
-    .from('stores')
-    .insert(insert)
-    .select('id, owner_id, store_name, store_slug, industry_id, logo_url, description, currency, status, created_at, updated_at, industry_category')
-    .single()
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  return NextResponse.json({ store }, { status: 201 })
+  const { supabase } = auth
+  let body: Record<string, unknown>
+  try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }) }
+  const organizationName = typeof body.organization_name === 'string' ? body.organization_name.trim() : typeof body.store_name === 'string' ? body.store_name.trim() : ''
+  const storeName = typeof body.store_name === 'string' ? body.store_name.trim() : organizationName
+  const organizationSlug = typeof body.organization_slug === 'string' ? body.organization_slug.trim() : organizationName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+  const storeSlug = typeof body.store_slug === 'string' ? body.store_slug.trim() : storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+  if (!organizationName || !storeName || !organizationSlug || !storeSlug) return NextResponse.json({ error: 'store_name is required' }, { status: 400 })
+  const { data, error } = await supabase.rpc('create_organization_and_store', {
+    p_organization_name: organizationName, p_organization_slug: organizationSlug,
+    p_store_name: storeName, p_store_slug: storeSlug,
+    p_currency: typeof body.currency === 'string' ? body.currency : 'CNY',
+  })
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const result = Array.isArray(data) ? data[0] : data
+  return NextResponse.json({ organization_id: result?.organization_id, store_id: result?.store_id }, { status: 201 })
 }

@@ -2,9 +2,9 @@
  * Tech (电光科技) — 高反差黑底 + 电光霓虹 + 极客硬朗切割。
  *
  * 视觉特征：
- * - 曜石黑背景 (#08090C)
- * - 硬朗科技 Surface (#101218)
- * - 电光青 (#00F0FF) / 电光紫 (#8B5CF6) 霓虹点缀
+ * - 曜石黑背景 (var(--plum))
+ * - 硬朗科技 Surface (var(--surface-muted))
+ * - 电光青 (var(--primary)) / 电光紫 (var(--lavender)) 霓虹点缀
  * - 4px 硬朗小圆角
  */
 
@@ -12,13 +12,13 @@ import type { ThemeDefinition, ThemeTokens } from './types'
 
 export const techTokens: ThemeTokens = {
   colors: {
-    primary: '#00F0FF',
-    background: '#08090C',
-    surface: '#101218',
-    text: '#F0F6FC',
-    muted: '#8B949E',
-    border: 'rgba(0, 240, 255, 0.22)',
-    accent: '#8B5CF6',
+    primary: 'var(--primary)',
+    background: 'var(--plum)',
+    surface: 'var(--surface-muted)',
+    text: 'var(--surface)',
+    muted: 'var(--lavender)',
+    border: 'var(--border)',
+    accent: 'var(--lavender)',
   },
   typography: {
     headingFont: 'var(--font-heading)',
@@ -27,8 +27,8 @@ export const techTokens: ThemeTokens = {
     bodyWeight: 400,
   },
   radius: {
-    card: '0.25rem',    // 4px
-    button: '0.25rem',
+    card: '0.5rem',     // 8px
+    button: '9999px',
     input: '0.25rem',
   },
   spacing: {
@@ -37,8 +37,8 @@ export const techTokens: ThemeTokens = {
     grid: '1.5rem',
   },
   shadows: {
-    card: '0 0 15px -3px rgba(0, 240, 255, 0.15)',
-    floating: '0 0 30px 0 rgba(0, 240, 255, 0.3)',
+    card: '0 0 15px -3px var(--border)',
+    floating: '0 0 30px 0 var(--lavender)',
   },
   motion: {
     duration: '150ms',

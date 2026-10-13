@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClientServer } from '@/lib/supabase/server'
 import { StoreCreateForm } from '@/components/onboarding/StoreCreateForm'
 import { logoutAction } from '@/app/actions/auth'
+import { getBrandProjectByUserId } from '@/lib/brand/workspace'
 import { LogOut, User, Sparkles } from 'lucide-react'
 
 function AsteriskIcon({ className = 'w-6 h-6', color = 'currentColor' }: { className?: string; color?: string }) {
@@ -33,41 +34,49 @@ export default async function OnboardingPage() {
     user = null
   }
 
-  // Fallback demo user for direct preview access
-  const currentUser = user ?? { email: 'merchant@omnilink.ai' }
+  if (!user) {
+    redirect('/login')
+  }
+
+  const existingProject = await getBrandProjectByUserId(user.id)
+  if (existingProject) {
+    redirect('/dashboard')
+  }
+
+  const currentUser = user
 
   return (
-    <div className="min-h-screen bg-[#F8F9FD] text-[#111827] flex flex-col justify-between">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--ink)] flex flex-col justify-between">
       {/* 顶部导航栏 */}
-      <header className="w-full bg-white/90 backdrop-blur-md border-b border-gray-200/80 px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-30">
+      <header className="w-full bg-[var(--surface)]/90 backdrop-blur-md border-b border-[var(--surface-muted)]/80 px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#38BDF8] via-[#A855F7] to-[#FB7185] flex items-center justify-center shadow-xs">
-            <AsteriskIcon className="w-5 h-5 text-white" color="#ffffff" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[var(--primary)] via-[var(--lavender)] to-[var(--plum)] flex items-center justify-center shadow-xs">
+            <AsteriskIcon className="w-5 h-5 text-[var(--surface)]" color="var(--surface)" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-heading text-base font-extrabold text-[#111827] tracking-tight">
+              <span className="font-heading text-base font-extrabold text-[var(--ink)] tracking-tight">
                 OMNILINK
               </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-[#E11D48] border border-rose-200">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--plum)] text-[var(--plum)] border border-[var(--plum)]">
                 Setup
               </span>
             </div>
-            <p className="text-[10px] text-[#6B7280]">AI-Native Commerce Infrastructure</p>
+            <p className="text-[10px] text-[var(--lavender)]">AI-Native Commerce Infrastructure</p>
           </div>
         </div>
 
         {/* 右侧用户邮箱与登出 */}
         <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 text-xs font-medium text-[#4B5563]">
-            <User size={13} className="text-gray-500" />
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--surface-muted)] text-xs font-medium text-[var(--ink)]">
+            <User size={13} className="text-[var(--lavender)]" />
             <span className="truncate max-w-[180px]">{currentUser.email}</span>
           </div>
 
           <form action={logoutAction}>
             <button
               type="submit"
-              className="px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-100 text-xs font-medium text-[#6B7280] hover:text-[#111827] flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-full border border-[var(--surface-muted)] hover:bg-[var(--surface-muted)] text-xs font-medium text-[var(--lavender)] hover:text-[var(--ink)] flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <LogOut size={13} />
               <span className="hidden sm:inline">退出登录</span>
@@ -82,11 +91,11 @@ export default async function OnboardingPage() {
       </main>
 
       {/* 底部版权 */}
-      <footer className="w-full border-t border-gray-200/80 bg-white px-4 sm:px-8 py-4 text-center text-xs text-[#9CA3AF]">
+      <footer className="w-full border-t border-[var(--surface-muted)]/80 bg-[var(--surface)] px-4 sm:px-8 py-4 text-center text-xs text-[var(--lavender)]">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>OMNILINK AI COMMERCE &copy; 2026. All rights reserved.</span>
-          <span className="flex items-center gap-1 text-[11px] text-[#6B7280]">
-            <Sparkles size={12} className="text-[#FB7185]" />
+          <span className="flex items-center gap-1 text-[11px] text-[var(--lavender)]">
+            <Sparkles size={12} className="text-[var(--plum)]" />
             <span>智能店铺节点初始化系统</span>
           </span>
         </div>

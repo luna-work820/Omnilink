@@ -13,6 +13,36 @@ import type {
 
 type JsonRecord = Record<string, unknown>
 
+type CatalogManagementVariant = {
+  sku_code: string | null
+  price: number | string | null
+  currency_code: string | null
+  availability_type: string | null
+  availability_value: number | string | null
+}
+
+type CatalogManagementMedia = {
+  id: string
+  storage_path: string | null
+  media_type: string | null
+  alt_text: string | null
+  metadata: unknown
+  created_at: string | null
+}
+
+type CatalogManagementRow = {
+  id: string
+  title: string | null
+  name?: string
+  description: string | null
+  status: string | null
+  details: unknown
+  updated_at: string | null
+  sku?: string | null
+  catalog_variants?: CatalogManagementVariant[] | null
+  catalog_media?: CatalogManagementMedia[] | null
+}
+
 function isRecord(
   value: unknown,
 ): value is JsonRecord {
@@ -46,26 +76,19 @@ export async function loadProductManagementModel(
 
   const targetId = isUuid(productId) ? productId : toValidUuid(productId)
 
-  const { data: dbData, error } =
-    await supabase
-      .from('products')
-      .select(`
-        id,
-        name,
-        sku,
-        description,
-        price,
-        currency,
-        inventory,
-        status,
-        raw_data,
-        updated_at
-      `)
-      .eq('id', targetId)
-      .maybeSingle()
+  const { data: catalogRow } = await supabase
+    .from('catalog_items')
+    .select('id, title, description, status, details, updated_at, catalog_variants(id, sku_code, price, currency_code, availability_type, availability_value), catalog_media(id, storage_path, media_type, alt_text, metadata, created_at)')
+    .eq('id', targetId)
+    .maybeSingle()
 
-  const data = dbData || {
+  const catalogData = catalogRow as CatalogManagementRow | null
+  const variant = Array.isArray(catalogData?.catalog_variants)
+    ? catalogData.catalog_variants[0]
+    : null
+  const data = catalogData || {
     id: productId,
+    title: 'Untitled Product',
     name: 'Untitled Product',
     sku: null,
     description: null,
@@ -73,14 +96,12 @@ export async function loadProductManagementModel(
     currency: 'CNY',
     inventory: 0,
     status: 'draft',
-    raw_data: {},
+    details: {},
     updated_at: new Date().toISOString(),
   }
 
-  const rawData = isRecord(
-    data.raw_data,
-  )
-    ? data.raw_data
+  const rawData = isRecord(data.details)
+    ? data.details
     : {}
 
   const canonical =
@@ -110,33 +131,30 @@ export async function loadProductManagementModel(
 
   return {
     id: data.id,
-    name: data.name ?? '',
-    sku: data.sku ?? null,
+    name: data.title ?? data.name ?? '',
+    sku: variant?.sku_code ?? data.sku ?? null,
     description:
       data.description ?? null,
 
     price:
-      typeof data.price === 'number'
-        ? data.price
-        : Number(data.price ?? 0),
+      variant?.price != null ? Number(variant.price) : 0,
 
     currency:
-      data.currency ?? 'CNY',
+      variant?.currency_code ?? 'CNY',
 
     inventory:
-      typeof data.inventory === 'number'
-        ? data.inventory
-        : Number(data.inventory ?? 0),
+      variant?.availability_type === 'stock'
+        ? Number(variant.availability_value ?? 0)
+        : 0,
 
     status: readStatus(
       data.status,
     ),
 
     categoryId:
-      (canonical as any).category_id ??
-      (typeof rawData.category_id === 'string'
+      typeof rawData.category_id === 'string'
         ? rawData.category_id
-        : null),
+        : null,
 
     category:
       canonical.category ??
@@ -171,36 +189,40 @@ export async function loadProductDetailModel(
 ): Promise<import('./product-detail-model').ProductDetailModel> {
   const { buildProductDetailModel } = await import('./product-detail-model')
   const product = await loadProductManagementModel(productId)
+  const targetId = isUuid(productId) ? productId : toValidUuid(productId)
 
   let media: import('./product-media').ProductMediaAsset[] = []
   try {
     const supabase = await createClientServer()
-    // NOTE: `product_assets` has no `position` column (never created by any
+    // NOTE: Catalog media has no `position` column (never created by any
     // migration). Selecting or ordering by it makes PostgREST fail the whole
     // query with 42703, so media silently came back empty even after a
     // successful upload. Gallery order falls back to upload order (created_at)
     // and `position` below is filled from the array index.
     const { data: mediaData } = await supabase
-      .from('product_assets')
-      .select('id, url, asset_type, metadata, created_at')
-      .eq('product_id', productId)
+      .from('catalog_media')
+      .select('id, storage_path, media_type, alt_text, metadata, created_at')
+      .eq('catalog_item_id', targetId)
       .order('created_at', { ascending: true })
 
     if (Array.isArray(mediaData)) {
-      media = mediaData.map((item: any, index: number) => ({
+      media = mediaData.map((item: CatalogManagementMedia, index: number) => {
+        const metadata = isRecord(item.metadata) ? item.metadata : {}
+        return {
         id: item.id,
-        url: item.url,
-        mediaType: item.asset_type === 'video' ? 'video' : 'image',
+        url: item.storage_path ?? '',
+        mediaType: item.media_type === 'video' ? 'video' : 'image',
         position: index,
-        alt: item.metadata?.alt ?? null,
-        mimeType: item.metadata?.mimeType ?? null,
-        width: item.metadata?.width ?? null,
-        height: item.metadata?.height ?? null,
-        duration: item.metadata?.duration ?? null,
-        metadata: item.metadata ?? {},
-      }))
+        alt: item.alt_text ?? (typeof metadata.alt === 'string' ? metadata.alt : null),
+        mimeType: typeof metadata.mimeType === 'string' ? metadata.mimeType : null,
+        width: typeof metadata.width === 'number' ? metadata.width : null,
+        height: typeof metadata.height === 'number' ? metadata.height : null,
+        duration: typeof metadata.duration === 'number' ? metadata.duration : null,
+        metadata,
+        }
+      })
     }
-  } catch (_e) {
+  } catch {
     media = []
   }
 
@@ -208,4 +230,3 @@ export async function loadProductDetailModel(
 
   return buildProductDetailModel(product, media, relations)
 }
-

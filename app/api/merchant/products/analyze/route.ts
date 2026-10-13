@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeProduct } from '@/lib/product-ai/gemini-analyzer'
+import { getOwnedStoreId, requireUser } from '@/lib/api/auth'
 
 export const runtime = 'nodejs'
 
@@ -8,6 +9,12 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
 export async function POST(request: NextRequest) {
+  const auth = await requireUser()
+  if (!auth.ok) return auth.response
+  if (!(await getOwnedStoreId(auth.supabase, auth.user))) {
+    return NextResponse.json({ error: 'Store not found' }, { status: 404 })
+  }
+
   try {
     const formData = await request.formData()
     const productName = (

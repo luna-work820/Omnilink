@@ -35,6 +35,22 @@ export interface ProductCategoryTemplate {
 }
 
 export const PRODUCT_CATEGORY_TEMPLATES: Record<string, ProductCategoryTemplate> = {
+  '服装': {
+    id: 'apparel-v1',
+    category: '服装',
+    titleZh: '服装规格',
+    titleEn: 'Apparel Specifications',
+    descriptionZh: '针对服装尺码与颜色的销售规格',
+    descriptionEn: 'Sale options for apparel sizes and colors',
+    fields: [
+      { key: 'material', nameZh: '材质', nameEn: 'Material', type: 'text', placeholderZh: '如：100%纯棉', placeholderEn: 'e.g. 100% Cotton' },
+    ],
+    variantPresets: [
+      // Start with one sale variant; merchants can add S/XL later when needed.
+      { code: 'size', nameZh: '尺码', nameEn: 'Size', defaultValues: ['M'] },
+      { code: 'color', nameZh: '颜色', nameEn: 'Color', defaultValues: ['黑色'] },
+    ],
+  },
   '太阳镜': {
     id: 'eyewear-sunglasses-v1',
     category: '太阳镜',
@@ -356,6 +372,19 @@ export function getCategoryTemplate(categoryOrKey?: string | null): ProductCateg
   const lower = trimmed.toLowerCase()
 
   // Fuzzy matching rules for synonyms
+  if (
+    lower.includes('服装') ||
+    lower.includes('女装') ||
+    lower.includes('男装') ||
+    lower.includes('上衣') ||
+    lower.includes('卫衣') ||
+    lower.includes('t恤') ||
+    lower.includes('apparel') ||
+    lower.includes('clothing')
+  ) {
+    return PRODUCT_CATEGORY_TEMPLATES['服装']
+  }
+
   if (
     lower.includes('太阳镜') ||
     lower.includes('墨镜') ||

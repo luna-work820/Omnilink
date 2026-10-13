@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Sparkles, Check, Edit2, Tag } from 'lucide-react'
+import { Sparkles, Check } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 import {
   suggestProductCategory,
@@ -79,20 +79,20 @@ export function ProductIdentitySection({
   const isSuggestionDifferent = suggestion && hasCategory && !isSuggestionApplied
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-5">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+    <div className="space-y-5 border-b border-[var(--border)] pb-8 pt-2">
+      <div className="flex items-center justify-between pb-3 border-b border-[var(--surface-muted)]">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-[4px] bg-blue-50 text-[#024AD8] flex items-center justify-center font-mono font-bold text-xs">
+          <div className="w-8 h-8  bg-[var(--primary)] text-[var(--primary)] flex items-center justify-center font-mono font-bold text-xs">
             01
           </div>
           <div>
-            <h2 className="text-sm font-bold text-slate-900">
-              {isZh ? '商品基本标识' : 'Product Identity'}
+            <h2 className="text-sm font-bold text-[var(--lavender)]">
+              {isZh ? '商品信息' : 'Product Information'}
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-[var(--lavender)] mt-0.5">
               {isZh
-                ? '商品核心名称、全局唯一商品编号与标准两级分类体系'
-                : 'Core product name, SKU identifier, and structured 2-level taxonomy'}
+                ? '名称、编号与商品分类'
+                : 'Name, identifier, and category'}
             </p>
           </div>
         </div>
@@ -101,7 +101,7 @@ export function ProductIdentitySection({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Product Name */}
         <div className="md:col-span-2">
-          <label htmlFor="workspace-name" className="block text-xs font-semibold text-slate-800 mb-1.5">
+          <label htmlFor="workspace-name" className="block text-xs font-semibold text-[var(--lavender)] mb-1.5">
             {isZh ? '商品名称 *' : 'Product Name *'}
           </label>
           <input
@@ -116,31 +116,31 @@ export function ProductIdentitySection({
                 ? '例如：经典款太阳镜 或 高性能无线降噪耳机'
                 : 'e.g. Ray-Ban Classic Sunglasses or Sony WH-1000XM6'
             }
-            className="w-full h-10 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#024AD8]/20 focus:border-[#024AD8] disabled:opacity-50 transition-all"
+            className="w-full h-10 px-3.5 rounded-xl bg-[var(--surface-muted)] border border-[var(--surface-muted)] text-xs font-semibold text-[var(--lavender)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] disabled:opacity-50 transition-all"
           />
         </div>
 
         {/* Suggestion Notification Box (Interactive, non-intrusive) */}
         {suggestion && (
-          <div className="md:col-span-2 p-3.5 rounded-xl bg-blue-50/60 border border-blue-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 transition-all">
+          <div className="md:col-span-2 p-3.5 rounded-xl bg-[var(--primary)]/60 border border-[var(--primary)]/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 transition-all">
             <div className="flex items-start sm:items-center gap-2.5">
-              <div className="w-6 h-6 rounded-lg bg-[#024AD8] text-white flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+              <div className="w-6 h-6 rounded-lg bg-[var(--primary)] text-[var(--surface)] flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
                 <Sparkles size={13} />
               </div>
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[11px] font-bold text-blue-950">
+                  <span className="text-[11px] font-bold text-[var(--primary)]">
                     {isZh ? '✨ 智能分类推荐' : '✨ Recommended Category'}
                   </span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-blue-200 text-[#024AD8] text-xs font-bold shadow-2xs">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[var(--surface)] border border-[var(--primary)] text-[var(--primary)] text-xs font-bold shadow-2xs">
                     {suggestion.path.join(' → ')}
                   </span>
-                  <span className="text-[10px] text-blue-600">
+                  <span className="text-[10px] text-[var(--primary)]">
                     ({(suggestion.confidence * 100).toFixed(0)}% {isZh ? '匹配度' : 'confidence'})
                   </span>
                 </div>
                 {isSuggestionDifferent && (
-                  <p className="text-[11px] text-slate-600">
+                  <p className="text-[11px] text-[var(--lavender)]">
                     {isZh
                       ? `当前已选:「${category}」| 规则推荐:「${suggestion.path.join(' → ')}」`
                       : `Current: "${category}" | Rule engine suggests: "${suggestion.path.join(' → ')}"`}
@@ -155,14 +155,14 @@ export function ProductIdentitySection({
                   type="button"
                   onClick={handleApplySuggestion}
                   disabled={disabled}
-                  className="h-7 px-3 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] text-white text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                  className="h-7 px-3  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
                 >
                   <Check size={12} />
                   <span>{isZh ? '采用此分类' : 'Apply'}</span>
                 </button>
               ) : (
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-[4px] border border-emerald-200">
-                  <Check size={12} className="text-emerald-600" />
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--acid-sage)] bg-[var(--acid-sage)] px-2.5 py-1  border border-[var(--acid-sage)]">
+                  <Check size={12} className="text-[var(--acid-sage)]" />
                   {isZh ? '已采用建议' : 'Applied'}
                 </span>
               )}
@@ -172,7 +172,7 @@ export function ProductIdentitySection({
 
         {/* SKU */}
         <div>
-          <label htmlFor="workspace-sku" className="block text-xs font-semibold text-slate-800 mb-1.5">
+          <label htmlFor="workspace-sku" className="block text-xs font-semibold text-[var(--lavender)] mb-1.5">
             {isZh ? '商品编号 / 货号' : 'Product SKU'}
           </label>
           <div className="relative">
@@ -183,7 +183,7 @@ export function ProductIdentitySection({
               onChange={(e) => setSku(e.target.value)}
               disabled={disabled}
               placeholder={isZh ? '例如：PROD-9021' : 'e.g. PROD-9021'}
-              className="w-full h-10 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#024AD8]/20 focus:border-[#024AD8] disabled:opacity-50 transition-all"
+              className="w-full h-10 px-3.5 rounded-xl bg-[var(--surface-muted)] border border-[var(--surface-muted)] text-xs font-mono text-[var(--lavender)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] disabled:opacity-50 transition-all"
             />
           </div>
         </div>
@@ -191,10 +191,10 @@ export function ProductIdentitySection({
         {/* Category Selector (Red-style Search + Popular + 2-Level Column Cascade) */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label htmlFor="workspace-category" className="block text-xs font-semibold text-slate-800">
+            <label htmlFor="workspace-category" className="block text-xs font-semibold text-[var(--lavender)]">
               {isZh ? '商品分类' : 'Product Category'}
             </label>
-            <span className="text-[10px] text-slate-400">
+            <span className="text-[10px] text-[var(--lavender)]">
               {isZh ? '支持搜索 / 热门胶囊 / 两级级联' : 'Search / Popular / 2-Level'}
             </span>
           </div>
@@ -211,4 +211,3 @@ export function ProductIdentitySection({
     </div>
   )
 }
-

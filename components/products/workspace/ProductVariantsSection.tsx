@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useRef, useState } from 'react'
-import { Plus, Trash2, AlertCircle, Sparkles, SlidersHorizontal, Check } from 'lucide-react'
+import { Plus, Trash2, AlertCircle, Sparkles, SlidersHorizontal } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 import type { ProductOption, ProductVariant } from '@/lib/products/variants/types'
 import type { VariantDraft } from '@/lib/products/domain-types'
@@ -64,12 +64,6 @@ export function ProductVariantsSection({
 }: ProductVariantsSectionProps) {
   const { isZh } = useLanguage()
 
-  // Derived, not synced: multi mode whenever dimensions or variants exist.
-  // After a confirmed reset both are empty, so the single banner shows —
-  // no extra "explicit" flag is needed.
-  const variantMode: 'single' | 'multi' =
-    options.length > 0 || variants.length > 0 ? 'multi' : 'single'
-
   const [error, setError] = useState('')
   const [batchPrice, setBatchPrice] = useState<string>('')
   const [batchInventory, setBatchInventory] = useState<string>('')
@@ -80,27 +74,6 @@ export function ProductVariantsSection({
   const nextTempId = (prefix: string) => {
     tempSeq.current += 1
     return `temp-${prefix}-${tempSeq.current}`
-  }
-
-  const handleModeChange = (mode: 'single' | 'multi') => {
-    if (mode === 'single') {
-      if (options.length > 0 || variants.length > 0) {
-        if (
-          window.confirm(
-            isZh
-              ? '切换为「单一商品」模式将重置已设置的销售维度和变体 SKU 列表，确认切换吗？'
-              : 'Switching to Single Product mode will clear current sales dimensions and variants. Continue?',
-          )
-        ) {
-          setOptions([])
-          setVariants([])
-        }
-      }
-      return
-    }
-    if (options.length === 0) {
-      addOption()
-    }
   }
 
   const addOption = (preset?: (typeof DIMENSION_PRESETS)[0]) => {
@@ -236,7 +209,7 @@ export function ProductVariantsSection({
     setError('')
   }
 
-  const updateVariant = (id: string, field: 'sku' | 'price' | 'inventory', value: string) => {
+  const updateVariant = (id: string, field: 'sku' | 'price' | 'inventory' | 'status', value: string) => {
     setVariants((prev) =>
       prev.map((v) => {
         if (v.id !== id) return v
@@ -244,6 +217,9 @@ export function ProductVariantsSection({
         if (field === 'price') {
           const num = parseFloat(value)
           return { ...v, price: value === '' || isNaN(num) ? null : num }
+        }
+        if (field === 'status') {
+          return { ...v, status: value as ProductVariant['status'] }
         }
         const num = parseInt(value, 10)
         return { ...v, inventory: value === '' || isNaN(num) ? null : num }
@@ -278,85 +254,21 @@ export function ProductVariantsSection({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-xs space-y-5">
+    <div className="space-y-5 border-b border-[var(--border)] pb-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[var(--surface-muted)] gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-[4px] bg-blue-50 text-[#024AD8] flex items-center justify-center font-mono font-bold text-xs shrink-0">
-            06
-          </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-extrabold text-slate-900">
-                {isZh ? '销售变体 (Sales Variants)' : 'Sales Variants'}
-              </h2>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {isZh
-                ? '描述顾客实际购买的不同可售版本（如颜色、尺码、容量等）。每个销售变体代表一个独立可购 SKU。'
-                : 'Define sellable variations (e.g. Color, Size, Capacity). Each variant represents an actual purchasing SKU.'}
-            </p>
+            <h2 className="text-base font-extrabold text-[var(--lavender)]">
+              {isZh ? '销售规格' : 'Sales Options'}
+            </h2>
           </div>
-        </div>
-
-        {/* Mode Selector Options */}
-        <div className="flex items-center gap-1.5 p-1 rounded-[4px] bg-slate-100/90 border border-slate-200/80">
-          <button
-            type="button"
-            onClick={() => handleModeChange('single')}
-            disabled={disabled}
-            className={`px-3 py-1 rounded-[4px] text-xs font-semibold transition-all cursor-pointer ${
-              variantMode === 'single'
-                ? 'bg-white text-[#024AD8] shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            {isZh ? '○ 单一商品' : '○ Single Product'}
-          </button>
-          <button
-            type="button"
-            onClick={() => handleModeChange('multi')}
-            disabled={disabled}
-            className={`px-3 py-1 rounded-[4px] text-xs font-semibold transition-all cursor-pointer ${
-              variantMode === 'multi'
-                ? 'bg-[#024AD8] text-white shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            {isZh ? '● 多种版本' : '● Multiple Variants'}
-          </button>
         </div>
       </div>
 
-      {/* Mode 1: Single Product Banner */}
-      {variantMode === 'single' && (
-        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-[4px] bg-blue-50 text-[#024AD8] flex items-center justify-center shrink-0">
-            <Check size={16} />
-          </div>
-          <div className="space-y-0.5">
-            <p className="font-bold text-slate-800">
-              {isZh ? '当前为「单一商品」模式' : 'Single Product Mode Active'}
-            </p>
-            <p className="text-[11px] text-slate-500">
-              {isZh
-                ? '商品将直接采用基本信息中的基础价格与初始库存作为全局唯一可售版本。无需配置销售维度。如需多颜色、多尺码版本，请选择「多种版本」。'
-                : 'The base price and inventory in Product Info apply directly to this single item without extra variants.'}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Mode 2: Multi-Variant Configuration */}
-      {variantMode === 'multi' && (
-        <div className="space-y-6">
+      <div className="space-y-6">
           {/* Preset quick buttons */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-800">
-                {isZh ? '快捷添加销售维度推荐' : 'Quick Add Recommended Sales Dimensions'}
-              </label>
-            </div>
             <div className="flex flex-wrap gap-2">
               {DIMENSION_PRESETS.map((preset) => {
                 const isAdded = options.some(
@@ -370,10 +282,10 @@ export function ProductVariantsSection({
                     type="button"
                     disabled={disabled || isAdded}
                     onClick={() => addOption(preset)}
-                    className={`px-2.5 py-1 rounded-[4px] text-xs font-medium border transition-all cursor-pointer flex items-center gap-1 ${
+                    className={`px-2.5 py-1  text-xs font-medium border transition-all cursor-pointer flex items-center gap-1 ${
                       isAdded
-                        ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
-                        : 'bg-white border-[#D1D1D1] text-[#1C1C1C] hover:bg-[#F7F7F7] hover:border-[#B0B0B0]'
+                        ? 'bg-[var(--surface-muted)] border-[var(--surface-muted)] text-[var(--lavender)] cursor-not-allowed'
+                        : 'bg-[var(--surface)] border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-muted)] hover:border-[var(--border)]'
                     }`}
                   >
                     <Plus size={12} />
@@ -387,14 +299,14 @@ export function ProductVariantsSection({
           {/* Option Items List (销售维度) */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-slate-900">
+              <h3 className="text-xs font-bold text-[var(--lavender)]">
                 {isZh ? '销售维度定义 (Sales Dimensions)' : 'Sales Dimension Definitions'}
               </h3>
               <button
                 type="button"
                 onClick={() => addOption()}
                 disabled={disabled}
-                className="px-3 py-1.5 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] active:bg-[#00226B] text-white text-xs font-medium flex items-center gap-1 cursor-pointer transition-all focus-visible:outline-2 focus-visible:outline-[#024AD8]"
+                className="px-3 py-1.5  bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-medium flex items-center gap-1 cursor-pointer transition-all focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
               >
                 <Plus size={13} />
                 <span>{isZh ? '＋ 添加销售维度' : 'Add Sales Dimension'}</span>
@@ -404,11 +316,11 @@ export function ProductVariantsSection({
             {options.map((option, optionIndex) => (
               <div
                 key={option.id}
-                className="p-4 rounded-xl bg-slate-50/80 border border-slate-200 space-y-3.5"
+                className="p-4 rounded-xl bg-[var(--surface-muted)]/80 border border-[var(--surface-muted)] space-y-3.5"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-800 mb-1">
+                    <label className="block text-[11px] font-bold text-[var(--lavender)] mb-1">
                       {isZh ? '销售维度名称 (如: 颜色, 尺码, 容量)' : 'Dimension Name'}
                     </label>
                     <input
@@ -417,11 +329,11 @@ export function ProductVariantsSection({
                       onChange={(e) => updateOption(optionIndex, 'name', e.target.value)}
                       placeholder={isZh ? '例如: 颜色' : 'e.g. Color'}
                       disabled={disabled}
-                      className="w-full h-8 px-2.5 rounded-[4px] bg-white border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#024AD8]"
+                      className="w-full h-8 px-2.5  bg-[var(--surface)] border border-[var(--surface-muted)] text-xs font-medium text-[var(--lavender)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-800 mb-1">
+                    <label className="block text-[11px] font-bold text-[var(--lavender)] mb-1">
                       {isZh ? '销售维度编码 (如: color, size)' : 'Dimension Code'}
                     </label>
                     <input
@@ -430,21 +342,21 @@ export function ProductVariantsSection({
                       onChange={(e) => updateOption(optionIndex, 'code', e.target.value)}
                       placeholder={isZh ? '例如: color' : 'e.g. color'}
                       disabled={disabled}
-                      className="w-full h-8 px-2.5 rounded-[4px] bg-white border border-slate-200 text-xs font-mono text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#024AD8]"
+                      className="w-full h-8 px-2.5  bg-[var(--surface)] border border-[var(--surface-muted)] text-xs font-mono text-[var(--lavender)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                     />
                   </div>
                 </div>
 
                 {/* Option Values */}
                 <div className="space-y-2">
-                  <label className="block text-[11px] font-bold text-slate-800">
+                  <label className="block text-[11px] font-bold text-[var(--lavender)]">
                     {isZh ? '选项值列表' : 'Option Values'}
                   </label>
                   <div className="flex flex-wrap gap-2 items-center">
                     {option.values.map((value, valueIndex) => (
                       <div
                         key={valueIndex}
-                        className="inline-flex items-center gap-1.5 px-2 py-1 rounded-[4px] bg-white border border-slate-200 shadow-2xs"
+                        className="inline-flex items-center gap-1.5 px-2 py-1  bg-[var(--surface)] border border-[var(--surface-muted)] shadow-2xs"
                       >
                         <input
                           type="text"
@@ -454,12 +366,12 @@ export function ProductVariantsSection({
                           }
                           placeholder={isZh ? '如: 黑色' : 'e.g. Black'}
                           disabled={disabled}
-                          className="h-6 w-24 text-xs font-medium text-slate-900 bg-transparent focus:outline-none"
+                          className="h-6 w-24 text-xs font-medium text-[var(--lavender)] bg-transparent focus:outline-none"
                         />
                         <button
                           type="button"
                           onClick={() => removeOptionValue(optionIndex, valueIndex)}
-                          className="text-slate-400 hover:text-[#D32F2F] font-bold text-xs px-0.5 cursor-pointer"
+                          className="text-[var(--lavender)] hover:text-[var(--plum)] font-bold text-xs px-0.5 cursor-pointer"
                           title={isZh ? '删除选项值' : 'Remove value'}
                         >
                           ✕
@@ -470,7 +382,7 @@ export function ProductVariantsSection({
                     <button
                       type="button"
                       onClick={() => addOptionValue(optionIndex)}
-                      className="px-2.5 py-1 rounded-[4px] bg-blue-50 hover:bg-blue-100 text-[#024AD8] text-xs font-bold transition-all cursor-pointer border border-blue-200 flex items-center gap-1"
+                      className="px-2.5 py-1  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--primary)] text-xs font-bold transition-all cursor-pointer border border-[var(--primary)] flex items-center gap-1"
                     >
                       <Plus size={11} />
                       <span>{isZh ? '添加选项值' : 'Add Value'}</span>
@@ -481,7 +393,7 @@ export function ProductVariantsSection({
                     <button
                       type="button"
                       onClick={() => removeOption(optionIndex)}
-                      className="text-xs text-[#D32F2F] hover:underline cursor-pointer flex items-center gap-1"
+                      className="text-xs text-[var(--plum)] hover:underline cursor-pointer flex items-center gap-1"
                     >
                       <Trash2 size={12} />
                       <span>{isZh ? '删除此销售维度' : 'Remove Dimension'}</span>
@@ -494,18 +406,18 @@ export function ProductVariantsSection({
 
           {/* Combination Preview & Generate Action Box */}
           {validOptions.length > 0 && (
-            <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50/80 to-slate-50 border border-blue-200 space-y-3">
+            <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50/80 to-slate-50 border border-[var(--primary)] space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-800">
+                    <span className="text-xs font-bold text-[var(--lavender)]">
                       {isZh ? '维度组合预览:' : 'Dimension Combination:'}
                     </span>
-                    <span className="text-xs font-bold text-[#024AD8]">
+                    <span className="text-xs font-bold text-[var(--primary)]">
                       {validOptions.map((o) => o.name).join(' × ')}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-[var(--lavender)]">
                     {isZh
                       ? `已设置 ${validOptions.length} 个销售维度，可产生 ${validOptions.map((o) => `${o.name}(${o.values.length})`).join(' × ')} = ${totalPossibleCombinations} 种销售版本`
                       : `${validOptions.length} dimensions configured resulting in ${totalPossibleCombinations} possible combinations`}
@@ -516,7 +428,7 @@ export function ProductVariantsSection({
                   type="button"
                   onClick={handleGenerateVariants}
                   disabled={disabled}
-                  className="px-4 py-2 bg-[#024AD8] hover:bg-[#003198] active:bg-[#00226B] text-white text-xs font-bold rounded-[4px] transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer focus-visible:outline-2 focus-visible:outline-[#024AD8]"
+                  className="px-4 py-2 bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold  transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
                 >
                   <Sparkles size={14} />
                   <span>{isZh ? '生成销售版本矩阵' : 'Generate Sales Variants Matrix'}</span>
@@ -526,7 +438,7 @@ export function ProductVariantsSection({
           )}
 
           {error && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-[#D32F2F] text-xs flex items-center gap-2">
+            <div className="p-3 rounded-xl bg-[var(--plum)] border border-[var(--plum)] text-[var(--plum)] text-xs flex items-center gap-2">
               <AlertCircle size={14} className="shrink-0" />
               <span>{error}</span>
             </div>
@@ -535,9 +447,9 @@ export function ProductVariantsSection({
           {/* Variants Matrix Table — reads directly from the controlled prop */}
           {variants.length > 0 && (
             <div className="space-y-3 pt-2">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-slate-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-[var(--surface-muted)]">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-bold text-slate-900">
+                  <h3 className="text-xs font-bold text-[var(--lavender)]">
                     {isZh
                       ? `已生成销售版本矩阵 (${variants.length} SKU)`
                       : `Generated Sales Variants (${variants.length} SKUs)`}
@@ -547,7 +459,7 @@ export function ProductVariantsSection({
                 <button
                   type="button"
                   onClick={() => setShowBatchToolbar((prev) => !prev)}
-                  className="text-xs text-[#024AD8] font-bold hover:underline cursor-pointer flex items-center gap-1"
+                  className="text-xs text-[var(--primary)] font-bold hover:underline cursor-pointer flex items-center gap-1"
                 >
                   <SlidersHorizontal size={13} />
                   <span>
@@ -564,19 +476,19 @@ export function ProductVariantsSection({
 
               {/* Batch Operations Bar */}
               {showBatchToolbar && (
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3 animate-in fade-in">
+                <div className="p-3 rounded-xl bg-[var(--surface-muted)] border border-[var(--surface-muted)] grid grid-cols-1 sm:grid-cols-3 gap-3 animate-in fade-in">
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
                       value={batchPrice}
                       onChange={(e) => setBatchPrice(e.target.value)}
                       placeholder={isZh ? '统一价格 (¥)' : 'Uniform Price'}
-                      className="h-8 px-2.5 rounded-[4px] bg-white border border-slate-200 text-xs w-28"
+                      className="h-8 px-2.5  bg-[var(--surface)] border border-[var(--surface-muted)] text-xs w-28"
                     />
                     <button
                       type="button"
                       onClick={handleBatchApplyPrice}
-                      className="h-8 px-2.5 rounded-[4px] bg-[#024AD8] text-white text-xs font-medium hover:bg-[#003198]"
+                      className="h-8 px-2.5  bg-[var(--primary)] text-[var(--surface)] text-xs font-medium hover:bg-[var(--primary)]"
                     >
                       {isZh ? '套用价格' : 'Apply'}
                     </button>
@@ -588,12 +500,12 @@ export function ProductVariantsSection({
                       value={batchInventory}
                       onChange={(e) => setBatchInventory(e.target.value)}
                       placeholder={isZh ? '统一库存' : 'Uniform Inventory'}
-                      className="h-8 px-2.5 rounded-[4px] bg-white border border-slate-200 text-xs w-24"
+                      className="h-8 px-2.5  bg-[var(--surface)] border border-[var(--surface-muted)] text-xs w-24"
                     />
                     <button
                       type="button"
                       onClick={handleBatchApplyInventory}
-                      className="h-8 px-2.5 rounded-[4px] bg-[#024AD8] text-white text-xs font-medium hover:bg-[#003198]"
+                      className="h-8 px-2.5  bg-[var(--primary)] text-[var(--surface)] text-xs font-medium hover:bg-[var(--primary)]"
                     >
                       {isZh ? '套用库存' : 'Apply'}
                     </button>
@@ -603,7 +515,7 @@ export function ProductVariantsSection({
                     <button
                       type="button"
                       onClick={handleAutoGenerateSkus}
-                      className="h-8 px-3 rounded-[4px] bg-white border border-[#D1D1D1] text-[#1C1C1C] text-xs font-medium hover:bg-[#F7F7F7]"
+                      className="h-8 px-3  bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] text-xs font-medium hover:bg-[var(--surface-muted)]"
                     >
                       {isZh ? '⚡ 自动生成所有空 SKU' : 'Auto Generate SKUs'}
                     </button>
@@ -612,10 +524,10 @@ export function ProductVariantsSection({
               )}
 
               {/* Matrix Table */}
-              <div className="overflow-x-auto border border-slate-200 rounded-xl">
+              <div className="overflow-x-auto border border-[var(--surface-muted)] rounded-xl">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
+                    <tr className="bg-[var(--surface-muted)] border-b border-[var(--surface-muted)] text-[var(--lavender)] font-bold">
                       <th className="py-2.5 px-3.5">
                         {isZh ? '销售版本 (维度组合)' : 'Sales Variant Combination'}
                       </th>
@@ -626,10 +538,10 @@ export function ProductVariantsSection({
                       <th className="py-2.5 px-3.5 text-right">{isZh ? '操作' : 'Action'}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-[var(--surface-muted)]">
                     {variants.map((variant) => (
-                      <tr key={variant.id} className="hover:bg-slate-50/60">
-                        <td className="py-2.5 px-3.5 font-bold text-slate-900">
+                      <tr key={variant.id} className="hover:bg-[var(--surface-muted)]/60">
+                        <td className="py-2.5 px-3.5 font-bold text-[var(--lavender)]">
                           {Object.values(variant.option_values as Record<string, string>).join(' / ')}
                         </td>
                         <td className="py-2.5 px-3.5">
@@ -639,7 +551,7 @@ export function ProductVariantsSection({
                             onChange={(e) => updateVariant(variant.id, 'sku', e.target.value)}
                             placeholder="SKU-001"
                             disabled={disabled}
-                            className="h-8 px-2.5 rounded-[4px] bg-white border border-slate-200 text-xs font-mono text-slate-900 w-36 focus:outline-none focus:ring-1 focus:ring-[#024AD8]"
+                            className="h-8 px-2.5  bg-[var(--surface)] border border-[var(--surface-muted)] text-xs font-mono text-[var(--lavender)] w-36 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                           />
                         </td>
                         <td className="py-2.5 px-3.5">
@@ -649,7 +561,7 @@ export function ProductVariantsSection({
                             onChange={(e) => updateVariant(variant.id, 'price', e.target.value)}
                             placeholder="0.00"
                             disabled={disabled}
-                            className="h-8 px-2.5 rounded-[4px] bg-white border border-slate-200 text-xs font-bold text-slate-900 w-24 focus:outline-none focus:ring-1 focus:ring-[#024AD8]"
+                            className="h-8 px-2.5  bg-[var(--surface)] border border-[var(--surface-muted)] text-xs font-bold text-[var(--lavender)] w-24 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                           />
                         </td>
                         <td className="py-2.5 px-3.5">
@@ -659,14 +571,15 @@ export function ProductVariantsSection({
                             onChange={(e) => updateVariant(variant.id, 'inventory', e.target.value)}
                             placeholder="100"
                             disabled={disabled}
-                            className="h-8 px-2.5 rounded-[4px] bg-white border border-slate-200 text-xs font-bold text-slate-900 w-20 focus:outline-none focus:ring-1 focus:ring-[#024AD8]"
+                            className="h-8 px-2.5  bg-[var(--surface)] border border-[var(--surface-muted)] text-xs font-bold text-[var(--lavender)] w-20 focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                           />
                         </td>
                         <td className="py-2.5 px-3.5">
                           <select
-                            value="active"
+                            value={variant.status}
+                            onChange={(e) => updateVariant(variant.id, 'status', e.target.value)}
                             disabled={disabled}
-                            className="h-8 px-2 rounded-[4px] bg-white border border-slate-200 text-xs font-medium text-slate-800"
+                            className="h-8 px-2  bg-[var(--surface)] border border-[var(--surface-muted)] text-xs font-medium text-[var(--lavender)]"
                           >
                             <option value="active">{isZh ? '在售' : 'Active'}</option>
                           </select>
@@ -675,7 +588,7 @@ export function ProductVariantsSection({
                           <button
                             type="button"
                             onClick={() => removeVariant(variant.id)}
-                            className="p-1 text-slate-400 hover:text-[#D32F2F] rounded-[4px] cursor-pointer transition-colors"
+                            className="p-1 text-[var(--lavender)] hover:text-[var(--plum)]  cursor-pointer transition-colors"
                             title={isZh ? '删除此不售版本' : 'Remove variant'}
                           >
                             <Trash2 size={13} />
@@ -689,7 +602,6 @@ export function ProductVariantsSection({
             </div>
           )}
         </div>
-      )}
-    </div>
+      </div>
   )
 }

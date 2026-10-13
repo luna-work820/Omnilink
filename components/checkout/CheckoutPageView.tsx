@@ -62,7 +62,7 @@ export default function CheckoutPageView({ store }: { store: StorefrontStore }) 
         </p>
         <Link
           href={`/store/${store.slug}`}
-          className="mt-6 inline-flex items-center gap-2 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] px-6 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--th-color-accent)]"
+          className="mt-6 inline-flex items-center gap-2 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] px-6 py-2.5 text-xs font-semibold text-[var(--surface)] transition-colors hover:bg-[var(--th-color-accent)]"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Return to Store</span>
@@ -156,7 +156,7 @@ export default function CheckoutPageView({ store }: { store: StorefrontStore }) 
           <div className="lg:col-span-7 flex flex-col gap-8">
             {/* Error Message */}
             {errorMsg && (
-              <div className="rounded-[var(--th-radius-input)] border border-red-500/30 bg-red-500/10 p-4 text-xs text-red-600 dark:text-red-400 flex items-start gap-2.5">
+              <div className="rounded-[var(--th-radius-input)] border border-[var(--plum)]/30 bg-[var(--plum)]/10 p-4 text-xs text-[var(--plum)] dark:text-[var(--plum)] flex items-start gap-2.5">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>{errorMsg}</span>
               </div>
@@ -165,7 +165,7 @@ export default function CheckoutPageView({ store }: { store: StorefrontStore }) 
             {/* 1. Contact Information */}
             <div className="rounded-[var(--th-radius-card)] border border-[var(--th-color-border)] bg-[var(--th-color-surface)] p-6 shadow-[var(--th-shadow-card)]">
               <h2 className="[font-family:var(--th-font-heading)] text-base [font-weight:var(--th-font-heading-weight)] text-[var(--th-color-text)] mb-4 flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--th-color-primary)] text-[10px] font-bold text-white">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--th-color-primary)] text-[10px] font-bold text-[var(--surface)]">
                   1
                 </span>
                 <span>Contact Details</span>
@@ -174,7 +174,7 @@ export default function CheckoutPageView({ store }: { store: StorefrontStore }) 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-semibold text-[var(--th-color-text)] mb-1">
-                    Full Name <span className="text-red-500">*</span>
+                    Full Name <span className="text-[var(--plum)]">*</span>
                   </label>
                   <input
                     type="text"
@@ -188,7 +188,7 @@ export default function CheckoutPageView({ store }: { store: StorefrontStore }) 
 
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-semibold text-[var(--th-color-text)] mb-1">
-                    Email Address <span className="text-red-500">*</span>
+                    Email Address <span className="text-[var(--plum)]">*</span>
                   </label>
                   <input
                     type="email"
@@ -244,7 +244,7 @@ export default function CheckoutPageView({ store }: { store: StorefrontStore }) 
             {/* 2. Delivery & Address */}
             <div className="rounded-[var(--th-radius-card)] border border-[var(--th-color-border)] bg-[var(--th-color-surface)] p-6 shadow-[var(--th-shadow-card)]">
               <h2 className="[font-family:var(--th-font-heading)] text-base [font-weight:var(--th-font-heading-weight)] text-[var(--th-color-text)] mb-4 flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--th-color-primary)] text-[10px] font-bold text-white">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--th-color-primary)] text-[10px] font-bold text-[var(--surface)]">
                   2
                 </span>
                 <span>Destination & Instructions</span>
@@ -320,7 +320,7 @@ export default function CheckoutPageView({ store }: { store: StorefrontStore }) 
             {/* 3. Preferred Follow-up Method */}
             <div className="rounded-[var(--th-radius-card)] border border-[var(--th-color-border)] bg-[var(--th-color-surface)] p-6 shadow-[var(--th-shadow-card)]">
               <h2 className="[font-family:var(--th-font-heading)] text-base [font-weight:var(--th-font-heading-weight)] text-[var(--th-color-text)] mb-4 flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--th-color-primary)] text-[10px] font-bold text-white">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--th-color-primary)] text-[10px] font-bold text-[var(--surface)]">
                   3
                 </span>
                 <span>Preferred Confirmation Method</span>
@@ -345,11 +345,11 @@ export default function CheckoutPageView({ store }: { store: StorefrontStore }) 
                   onClick={() => setContactPreference('whatsapp')}
                   className={`flex flex-col items-center gap-2 rounded-[var(--th-radius-button)] border p-4 text-center transition-all ${
                     contactPreference === 'whatsapp'
-                      ? 'border-emerald-600 bg-emerald-500/10 text-[var(--th-color-text)] font-semibold'
-                      : 'border-[var(--th-color-border)] bg-[var(--th-color-background)] text-[var(--th-color-muted)] hover:border-emerald-500/40'
+                      ? 'border-[var(--acid-sage)] bg-[var(--acid-sage)]/10 text-[var(--th-color-text)] font-semibold'
+                      : 'border-[var(--th-color-border)] bg-[var(--th-color-background)] text-[var(--th-color-muted)] hover:border-[var(--acid-sage)]/40'
                   }`}
                 >
-                  <MessageCircle className="h-5 w-5 text-emerald-600" />
+                  <MessageCircle className="h-5 w-5 text-[var(--acid-sage)]" />
                   <span className="text-xs">WhatsApp Chat</span>
                 </button>
 
@@ -454,7 +454,7 @@ export default function CheckoutPageView({ store }: { store: StorefrontStore }) 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[var(--th-color-accent)] disabled:opacity-50"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] py-3.5 text-sm font-semibold text-[var(--surface)] shadow-sm transition-all hover:bg-[var(--th-color-accent)] disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>

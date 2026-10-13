@@ -1,0 +1,12 @@
+{
+  "id": "multi-channel-product-content",
+  "version": "0.1.0",
+  "input_types": ["product", "product_assets", "merchant_profile", "brand_proposal"],
+  "output": "multi_channel_content_package",
+  "channels": ["xiaohongshu", "douyin", "product_page"],
+  "includes": ["content_strategy", "channel_copy", "image_brief", "review_checklist"],
+  "review_required": true,
+  "fact_trace_required": true,
+  "publishing": false,
+  "image_generation": "brief_only"
+}

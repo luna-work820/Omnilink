@@ -55,7 +55,7 @@ export async function analyzeProductWithAi(
   if (template && template.fields) {
     for (const field of template.fields) {
       const currentVal = attrMap.get(field.key.toLowerCase())
-      const isRequired = Boolean((field as any).required)
+      const isRequired = 'required' in field && Boolean(field.required)
       if (!currentVal && isRequired) {
         findings.push({
           id: `f-${field.key}`,

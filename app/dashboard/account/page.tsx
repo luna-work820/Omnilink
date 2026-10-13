@@ -22,19 +22,7 @@ export default async function AccountPage() {
   }
 
   if (!user) {
-    return (
-      <AccountView
-        currentStore={{
-          store_name: 'Omnilink 官方旗舰店',
-          id: 'demo-store',
-        }}
-        currentUser={{
-          email: 'merchant@omnilink.ai',
-          id: 'demo-user-id',
-          created_at: new Date().toISOString(),
-        }}
-      />
-    )
+    redirect('/login')
   }
 
   const store = await getStoreByOwnerId(user.id)
@@ -45,7 +33,7 @@ export default async function AccountPage() {
   return (
     <AccountView
       currentStore={{
-        store_name: store.store_name,
+        store_name: store.name,
         id: store.id,
       }}
       currentUser={{

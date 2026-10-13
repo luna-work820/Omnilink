@@ -1,157 +1,92 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUser, ownsProduct } from '@/lib/api/auth'
-import type { Database } from '@/lib/database.types'
 import { isUuid, toValidUuid } from '@/lib/utils/uuid'
 
-type ProductUpdate = Database['public']['Tables']['products']['Update']
-
-const PRODUCT_UPDATE_KEYS: (keyof ProductUpdate)[] = [
-  'sku', 'name', 'description', 'price', 'currency', 'inventory',
-  'status', 'raw_data',
-]
-
-function pickUpdate(body: unknown): ProductUpdate {
-  if (!body || typeof body !== 'object') return {} as ProductUpdate
-  const src = body as Record<string, unknown>
-  const out: Record<string, unknown> = {}
-  for (const k of PRODUCT_UPDATE_KEYS) {
-    if (k in src) out[k] = src[k]
-  }
-  return out as ProductUpdate
+type CatalogItemResponse = {
+  title: string | null
+  cover_image?: string | null
+  details?: unknown
+  catalog_variants?: Array<{
+    sku_code?: string | null
+    price?: number | string | null
+    currency_code?: string | null
+    availability_type?: string | null
+    availability_value?: number | string | null
+  }> | null
+  catalog_media?: Array<{ storage_path?: string | null }> | null
 }
 
-// GET /api/products/[id] - Get a product the caller owns.
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+function mapCatalogItem(item: CatalogItemResponse) {
+  const variant = item.catalog_variants?.[0]
+  const media = item.catalog_media?.[0]
+  return { ...item, name: item.title, sku: variant?.sku_code ?? null, price: variant ? Number(variant.price) : null, currency: variant?.currency_code ?? 'CNY', inventory: variant?.availability_type === 'stock' ? Number(variant.availability_value ?? 0) : null, image_url: media?.storage_path ?? item.cover_image ?? null, raw_data: item.details ?? {}, semantic_data: null }
+}
+
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const targetId = isUuid(id) ? id : toValidUuid(id)
   const auth = await requireUser()
   if (!auth.ok) return auth.response
-  const { supabase, user } = auth
-
-  const { owned } = await ownsProduct(supabase, user, id)
-  if (!owned) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  }
-
-  const { data: product, error } = await supabase
-    .from('products')
-    .select('id, store_id, sku, name, description, price, currency, inventory, status, raw_data, semantic_data, created_at, updated_at, product_assets(url, asset_type)')
-    .eq('id', targetId)
-    .single()
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 404 })
-  }
-  return NextResponse.json({ product })
+  const { owned } = await ownsProduct(auth.supabase, auth.user, targetId)
+  if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  const { data, error } = await auth.supabase.from('catalog_items').select('*, catalog_variants(*), catalog_media(*)').eq('id', targetId).single()
+  if (error || !data) return NextResponse.json({ error: error?.message ?? 'Not found' }, { status: 404 })
+  return NextResponse.json({ product: mapCatalogItem(data) })
 }
 
-// PATCH /api/products/[id] - Update a product the caller owns.
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const targetId = isUuid(id) ? id : toValidUuid(id)
   const auth = await requireUser()
   if (!auth.ok) return auth.response
-  const { supabase, user } = auth
-
-  const { owned, storeId } = await ownsProduct(supabase, user, id)
-  if (!owned) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  }
-
-  try {
-    const body = await request.json()
-    const update = pickUpdate(body)
-    const { data: existing } = await supabase
-      .from('products')
-      .select('id')
+  const { owned } = await ownsProduct(auth.supabase, auth.user, targetId)
+  if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  let body: Record<string, unknown>
+  try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }) }
+  const itemUpdate: Record<string, unknown> = {}
+  if (typeof body.name === 'string' || typeof body.title === 'string') itemUpdate.title = body.name ?? body.title
+  if (typeof body.description === 'string') itemUpdate.description = body.description
+  if (typeof body.status === 'string' && ['draft', 'active', 'archived'].includes(body.status)) itemUpdate.status = body.status
+  if (body.raw_data && typeof body.raw_data === 'object' && !Array.isArray(body.raw_data)) {
+    const { data: currentItem } = await auth.supabase
+      .from('catalog_items')
+      .select('details')
       .eq('id', targetId)
-      .maybeSingle()
-
-    let product
-    let error
-    if (existing) {
-      const res = await supabase
-        .from('products')
-        .update(update)
-        .eq('id', targetId)
-        .select()
-        .single()
-      product = res.data
-      error = res.error
-    } else {
-      const insertPayload = {
-        id: targetId,
-        store_id: storeId,
-        name: update.name || 'Untitled Product',
-        sku: update.sku || `SKU-${id}`,
-        price: update.price ?? 0,
-        currency: update.currency || 'CNY',
-        inventory: update.inventory ?? 0,
-        status: update.status || 'draft',
-        description: update.description || '',
-        raw_data: update.raw_data || {},
-      }
-      const res = await supabase
-        .from('products')
-        .upsert(insertPayload)
-        .select()
-        .single()
-      product = res.data
-      error = res.error
-    }
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-    return NextResponse.json({ product })
-  } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+      .single()
+    const currentDetails = currentItem?.details && typeof currentItem.details === 'object' && !Array.isArray(currentItem.details)
+      ? currentItem.details as Record<string, unknown>
+      : {}
+    itemUpdate.details = { ...currentDetails, ...body.raw_data }
   }
+  const { data: product, error: productError } = await auth.supabase.from('catalog_items').update(itemUpdate).eq('id', targetId).select('*, catalog_variants(*), catalog_media(*)').single()
+  if (productError || !product) return NextResponse.json({ error: productError?.message ?? 'Update failed' }, { status: 500 })
+  const variant = product.catalog_variants?.[0]
+  const variantUpdate: Record<string, unknown> = {}
+  if (typeof body.sku === 'string') variantUpdate.sku_code = body.sku
+  if (body.price !== undefined && Number.isFinite(Number(body.price))) variantUpdate.price = Number(body.price)
+  if (body.currency !== undefined) variantUpdate.currency_code = body.currency
+  if (body.inventory !== undefined && Number.isFinite(Number(body.inventory))) variantUpdate.availability_value = Math.max(0, Number(body.inventory))
+  if (variant && Object.keys(variantUpdate).length > 0) await auth.supabase.from('catalog_variants').update(variantUpdate).eq('id', variant.id)
+  return NextResponse.json({ product: mapCatalogItem(product) })
 }
 
-// DELETE /api/products/[id] - Delete a product the caller owns.
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const targetId = isUuid(id) ? id : toValidUuid(id)
   const auth = await requireUser()
   if (!auth.ok) return auth.response
-  const { supabase, user } = auth
-
-  const { owned } = await ownsProduct(supabase, user, id)
-  if (!owned) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  }
-
-  const { error } = await supabase.from('products').delete().eq('id', id)
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+  const { owned } = await ownsProduct(auth.supabase, auth.user, targetId)
+  if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  const { error } = await auth.supabase.from('catalog_items').delete().eq('id', targetId)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }
 
-// POST /api/products/[id] - (semantic processing) guarded; semantic layer is
-// non-functional pending schema/seed work — fail closed rather than open-write.
-export async function POST(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const auth = await requireUser()
   if (!auth.ok) return auth.response
   const { owned } = await ownsProduct(auth.supabase, auth.user, id)
-  if (!owned) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  }
-  return NextResponse.json(
-    { error: 'Semantic processing is currently disabled (pending DB foundation recovery).' },
-    { status: 501 },
-  )
+  if (!owned) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  return NextResponse.json({ error: 'Semantic processing is not enabled in the Catalog MVP.' }, { status: 501 })
 }

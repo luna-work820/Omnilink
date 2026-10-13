@@ -1,12 +1,14 @@
 'use server'
 
 import { createClientServer } from '@/lib/supabase/server'
+import { ownsStore } from '@/lib/api/auth'
 import type { StorefrontSchema } from '@/lib/storefront/schema'
 import {
   createDefaultSchema,
   normalizeStorefrontSchema,
   validateSchema,
 } from '@/lib/storefront/schema'
+import type { Json } from '@/lib/database.types'
 
 /**
  * Phase 1 — Template Data Service Actions
@@ -100,7 +102,7 @@ export async function saveTemplateSchemaAction(
       .from('templates')
       .update({
         layout_config: schema,
-      } as any)
+      } as unknown as Record<string, Json>)
       .eq('id', templateId)
 
     if (updateError) {
@@ -142,13 +144,7 @@ export async function applyTemplateToStoreAction(
     }
 
     // 1. 验证店铺所有权
-    const { data: store, error: storeError } = await supabase
-      .from('stores')
-      .select('id, owner_id')
-      .eq('id', storeId)
-      .single()
-
-    if (storeError || !store || store.owner_id !== user.id) {
+    if (!(await ownsStore(supabase, user, storeId))) {
       return { success: false, error: 'Store not found or forbidden' }
     }
 
@@ -194,7 +190,7 @@ export async function applyTemplateToStoreAction(
         store_id: storeId,
         theme_config: targetSchema,
         seo_config: {},
-      } as any,
+      } as unknown as Record<string, Json>,
       { onConflict: 'store_id' }
     )
 
@@ -210,7 +206,7 @@ export async function applyTemplateToStoreAction(
         template_id: templateId,
         sections: targetSchema.sections,
         published: true,
-      } as any,
+      } as unknown as Record<string, Json>,
       { onConflict: 'store_id' }
     )
 

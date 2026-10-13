@@ -61,16 +61,3 @@ export function convertPrice(
 
   return numPrice
 }
-
-export function formatPriceWithCurrency(
-  price: number | string,
-  currency: string = 'CNY',
-  locale: 'zh' | 'en' = 'zh'
-): string {
-  const numPrice = typeof price === 'number' ? price : parseFloat(price) || 0
-  const upperCurr = (currency || 'CNY').toUpperCase()
-  const symbol = upperCurr === 'USD' ? '$' : '¥'
-
-  return `${symbol}${numPrice.toFixed(2)}`
-}
-

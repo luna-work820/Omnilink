@@ -16,7 +16,7 @@ export default function NavbarCartButton() {
     >
       <ShoppingBag className="h-4 w-4" />
       {isHydrated && itemCount > 0 && (
-        <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--th-color-primary)] px-1 [font-family:var(--th-font-body)] text-[10px] font-bold text-white shadow-sm">
+        <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--th-color-primary)] px-1 [font-family:var(--th-font-body)] text-[10px] font-bold text-[var(--surface)] shadow-sm">
           {itemCount > 99 ? '99+' : itemCount}
         </span>
       )}

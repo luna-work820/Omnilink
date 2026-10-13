@@ -1,13 +1,24 @@
 import type { AttributeTemplateField } from './category-templates'
-import type { Database } from '@/lib/database.types'
-import type { SemanticField as ProcessorSemanticField } from '@/lib/semantic/types'
 
-type SemanticFieldRow =
-  Database['public']['Tables']['semantic_fields']['Row']
+/**
+ * Runtime mapping shape. This is intentionally local: the old
+ * The previous database-backed field table is gone from Catalog, but mapping
+ * and rule evaluation still consume this structural field description.
+ */
+type SemanticFieldRow = {
+  id: string
+  schema_id?: string
+  field_name: string
+  field_type?: string
+  display_name?: string | null
+  aliases?: string[] | unknown
+  normalization_rules?: Record<string, unknown> | null
+  required?: boolean | null
+  validation_rules?: Record<string, unknown> | null
+}
 
 export type SemanticFieldLike =
   | SemanticFieldRow
-  | ProcessorSemanticField
   | {
       id: string
       field_name: string

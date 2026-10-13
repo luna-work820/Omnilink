@@ -20,12 +20,10 @@ import type {
   SectionType,
   StorefrontSchema,
   StorefrontSection,
-  StoreContactConfig,
-  StoreSocialConfig,
 } from '@/lib/storefront/schema'
 import { createDefaultSchema } from '@/lib/storefront/schema'
 import type { StorefrontProduct } from '@/lib/storefront/types'
-import { getTheme, DEFAULT_THEME_ID, ALL_STYLES } from '@/lib/themes/registry'
+import { getTheme, DEFAULT_THEME_ID } from '@/lib/themes/registry'
 import PreviewCanvas, {
   type StorefrontEditorPage,
   DEFAULT_PREVIEW_PRODUCTS,
@@ -43,7 +41,6 @@ import {
   CHINESE_FONTS,
 } from '@/lib/storefront/theme-overrides'
 import {
-  Type,
   ArrowLeft,
   Eye,
   Save,
@@ -60,7 +57,6 @@ import {
   X,
   Trash2,
   Copy,
-  Check,
   ChevronUp,
   ChevronDown,
   AlignLeft,
@@ -99,36 +95,9 @@ const SECTION_LABELS: Record<SectionType, { zh: string; en: string }> = {
   footer: { zh: '页脚', en: 'Footer' },
 }
 
-/** 主题/视觉风格选项来自 ThemeRegistry 的 ALL_STYLES 官方列表。 */
-const AVAILABLE_THEMES = ALL_STYLES.map((t) => ({
-  id: t.id,
-  name: t.name,
-  description: t.description,
-}))
-
 /** 主题默认 accent（electric-violet primary）。 */
 const DEFAULT_ACCENT = getTheme(DEFAULT_THEME_ID).tokens.colors.primary
 const DEFAULT_RADIUS = 8
-
-/** 强调色预设。 */
-const ACCENT_PRESETS: Array<{ name: string; value: string }> = [
-  { name: 'HP电光蓝', value: '#024ad8' },
-  { name: '深海蓝', value: '#0e3191' },
-  { name: '电光紫', value: '#8B5CF6' },
-  { name: '靛蓝', value: '#4F46E5' },
-  { name: '天青', value: '#0EA5E9' },
-  { name: '翡翠', value: '#10B981' },
-  { name: '墨黑', value: '#111827' },
-]
-
-/** 圆角预设。 */
-const RADIUS_PRESETS: Array<{ label: string; value: number }> = [
-  { label: '直角', value: 0 },
-  { label: '紧凑', value: 8 },
-  { label: '现代', value: 16 },
-  { label: '圆润', value: 24 },
-  { label: '胶囊', value: 32 },
-]
 
 /** 精选配图库。 */
 const STOCK_IMAGES: Array<{ name: string; url: string }> = [
@@ -290,14 +259,14 @@ function AddSectionMenu({ isZh, onAdd }: { isZh: boolean; onAdd: (type: SectionT
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full py-2 bg-black hover:bg-black/90 text-white rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+        className="w-full py-2 bg-[var(--ink)] hover:bg-[var(--ink)]/90 text-[var(--surface)] rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
       >
         <Plus size={12} />
         <span>{isZh ? '添加分区' : 'Add Section'}</span>
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden py-1 z-30 animate-in fade-in slide-in-from-bottom-2 duration-150">
+        <div className="absolute bottom-full left-0 right-0 mb-1 bg-[var(--surface)] border border-[var(--surface-muted)] rounded-xl shadow-lg overflow-hidden py-1 z-30 animate-in fade-in slide-in-from-bottom-2 duration-150">
           {SECTION_TYPE_OPTIONS.map((opt) => (
             <button
               key={opt.type}
@@ -306,7 +275,7 @@ function AddSectionMenu({ isZh, onAdd }: { isZh: boolean; onAdd: (type: SectionT
                 onAdd(opt.type)
                 setIsOpen(false)
               }}
-              className="w-full text-left px-3 py-2 text-xs text-[#1D1D1F] hover:bg-black/5 font-semibold transition-colors cursor-pointer"
+              className="w-full text-left px-3 py-2 text-xs text-[#1D1D1F] hover:bg-[var(--ink)]/5 font-semibold transition-colors cursor-pointer"
             >
               {isZh ? SECTION_LABELS[opt.type].zh : opt.label}
             </button>
@@ -347,63 +316,19 @@ export default function StorefrontEditor({
   // 多页面状态
   const [activePage, setActivePage] = useState<StorefrontEditorPage>('homepage')
   const [selectedProductId, setSelectedProductId] = useState<string | null>(() => products[0]?.id || DEFAULT_PREVIEW_PRODUCTS[0]?.id || null)
-  const [cartPreviewMode, setCartPreviewMode] = useState<'filled' | 'empty'>('filled')
-
   // 首页 Section 状态
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
   const [deviceMode, setDeviceMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop')
-  const [activeTab, setActiveTab] = useState<'section' | 'theme' | 'global'>('section')
+  const [, setActiveTab] = useState<'section' | 'theme' | 'global'>('section')
   const [activeSubTab, setActiveSubTab] = useState<'content' | 'layout' | 'style'>('content')
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null)
-  const [newSectionType, setNewSectionType] = useState<SectionType>('hero')
 
   const displayProducts = useMemo(() => {
     return products.length > 0 ? products : getPreviewProductsForLanguage(isZh ? 'zh' : 'en')
   }, [products, isZh])
-
-  function updateGlobalInfo(
-    contactPartial: Partial<StoreContactConfig>,
-    socialPartial: Partial<StoreSocialConfig>,
-    brandName?: string
-  ) {
-    setSchema((prev) => {
-      const currentGlobal = prev.globalInfo || {}
-      const currentContact = prev.contact || currentGlobal.contact || {}
-      const currentSocial = prev.social || currentGlobal.social || {}
-      const newContact = { ...currentContact, ...contactPartial }
-      const newSocial = { ...currentSocial, ...socialPartial }
-      const newBrandName = brandName !== undefined ? brandName : currentGlobal.brandName
-
-      const newGlobal = {
-        ...currentGlobal,
-        brandName: newBrandName,
-        contact: newContact,
-        social: newSocial,
-      }
-
-      return {
-        ...prev,
-        globalInfo: newGlobal,
-        contact: newContact,
-        social: newSocial,
-        sections: prev.sections.map((sec) => {
-          if (sec.type === 'footer' && brandName !== undefined && brandName.trim()) {
-            return {
-              ...sec,
-              content: {
-                ...sec.content,
-                title: brandName,
-              },
-            }
-          }
-          return sec
-        }),
-      }
-    })
-  }
 
   // Schema is loaded on the server side and passed via initialSchema.
   // The client uses the initialSchema or falls back to a clean default schema.
@@ -565,8 +490,12 @@ export default function StorefrontEditor({
           showToast(res.error || (isZh ? '保存失败' : 'Save failed'), 'err')
         }
       } else {
-        await saveStorefrontSchemaAction(store.id, schema)
-        showToast(isZh ? '草稿已保存' : 'Draft saved')
+        const result = await saveStorefrontSchemaAction(store.id, schema)
+        if (result.success) {
+          showToast(isZh ? '草稿已保存' : 'Draft saved')
+        } else {
+          showToast(result.error || (isZh ? '保存失败' : 'Save failed'), 'err')
+        }
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to save'
@@ -605,8 +534,8 @@ export default function StorefrontEditor({
 
   return (
     <div
-      className={`flex flex-col h-[calc(100vh-90px)] min-h-[640px] bg-gray-50 rounded-2xl overflow-hidden border border-gray-200 ${
-        isFullscreen ? 'fixed inset-0 z-50 rounded-none h-screen bg-gray-50' : ''
+      className={`flex flex-col h-[calc(100vh-90px)] min-h-[640px] bg-[var(--surface-muted)] rounded-2xl overflow-hidden border border-[var(--surface-muted)] ${
+        isFullscreen ? 'fixed inset-0 z-50 rounded-none h-screen bg-[var(--surface-muted)]' : ''
       }`}
     >
       {/* Toast 反馈 */}
@@ -614,8 +543,8 @@ export default function StorefrontEditor({
         <div
           className={`absolute top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full text-xs font-semibold flex items-center gap-2 shadow-2xl border ${
             toast.type === 'ok'
-              ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
-              : 'bg-red-50 text-red-900 border-red-200'
+              ? 'bg-[var(--acid-sage)] text-[var(--acid-sage)] border-[var(--acid-sage)]'
+              : 'bg-[var(--plum)] text-[var(--plum)] border-[var(--plum)]'
           }`}
         >
           {toast.type === 'ok' ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
@@ -627,11 +556,11 @@ export default function StorefrontEditor({
       <div
         className="h-14 px-4 flex items-center justify-between shrink-0 z-20"
         style={{
-          background: 'rgba(255, 255, 255, 0.65)',
+          background: 'var(--surface)',
           backdropFilter: 'blur(20px) saturate(180%)',
           WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.4)',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.03)',
+          borderBottom: '1px solid var(--surface)',
+          boxShadow: '0 10px 30px var(--ink)',
         }}
       >
         <div className="flex items-center gap-2">
@@ -639,7 +568,7 @@ export default function StorefrontEditor({
             href={`/store/${store.store_slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-black/10 bg-white hover:bg-gray-50 text-gray-700 text-[11px] font-semibold shadow-2xs transition-all cursor-pointer"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[var(--ink)]/10 bg-[var(--surface)] hover:bg-[var(--surface-muted)] text-[var(--lavender)] text-[11px] font-semibold shadow-2xs transition-all cursor-pointer"
           >
             <span>{isZh ? '访问店铺' : 'Visit Store'}</span>
             <ExternalLink size={11} />
@@ -649,7 +578,7 @@ export default function StorefrontEditor({
             <>
               <a
                 href="/dashboard/storefront?tab=templates"
-                className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-black/10 bg-white hover:bg-gray-50 text-gray-700 text-[11px] font-semibold shadow-2xs transition-all cursor-pointer"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[var(--ink)]/10 bg-[var(--surface)] hover:bg-[var(--surface-muted)] text-[var(--lavender)] text-[11px] font-semibold shadow-2xs transition-all cursor-pointer"
               >
                 <ArrowLeft size={11} />
                 <span>{isZh ? '返回模板库' : 'Back to Templates'}</span>
@@ -658,7 +587,7 @@ export default function StorefrontEditor({
               {templateId && (
                 <a
                   href={`/dashboard/storefront/templates/${templateId}/preview`}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-black/10 bg-white hover:bg-gray-50 text-gray-700 text-[11px] font-semibold shadow-2xs transition-all cursor-pointer"
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-full border border-[var(--ink)]/10 bg-[var(--surface)] hover:bg-[var(--surface-muted)] text-[var(--lavender)] text-[11px] font-semibold shadow-2xs transition-all cursor-pointer"
                 >
                   <Eye size={11} />
                   <span>{isZh ? '预览模板' : 'Preview Template'}</span>
@@ -671,7 +600,7 @@ export default function StorefrontEditor({
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-1.5 rounded-full border border-black/10 bg-white hover:bg-gray-50 text-gray-700 shadow-2xs transition-all cursor-pointer"
+            className="p-1.5 rounded-full border border-[var(--ink)]/10 bg-[var(--surface)] hover:bg-[var(--surface-muted)] text-[var(--lavender)] shadow-2xs transition-all cursor-pointer"
             title={isFullscreen ? (isZh ? '退出全屏' : 'Exit Fullscreen') : isZh ? '全屏编辑' : 'Fullscreen'}
           >
             {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
@@ -681,7 +610,7 @@ export default function StorefrontEditor({
             <button
               onClick={handleSaveDraft}
               disabled={isSaving}
-              className="px-5 py-1.5 rounded-full bg-black hover:bg-black/90 text-white text-[11px] font-bold flex items-center gap-1.5 shadow-md transition-all disabled:opacity-50 cursor-pointer"
+              className="px-5 py-1.5 rounded-full bg-[var(--ink)] hover:bg-[var(--ink)]/90 text-[var(--surface)] text-[11px] font-bold flex items-center gap-1.5 shadow-md transition-all disabled:opacity-50 cursor-pointer"
             >
               {isSaving ? <RefreshCw size={12} className="animate-spin" /> : <Save size={12} />}
               <span>{isZh ? '保存模板' : 'Save Template'}</span>
@@ -691,7 +620,7 @@ export default function StorefrontEditor({
               <button
                 onClick={handleSaveDraft}
                 disabled={isSaving}
-                className="px-4 py-1.5 rounded-full border border-black/10 bg-white hover:bg-gray-50 text-gray-700 text-[11px] font-bold transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
+                className="px-4 py-1.5 rounded-full border border-[var(--ink)]/10 bg-[var(--surface)] hover:bg-[var(--surface-muted)] text-[var(--lavender)] text-[11px] font-bold transition-all shadow-2xs disabled:opacity-50 cursor-pointer"
               >
                 {isSaving ? <RefreshCw size={11} className="animate-spin inline mr-1" /> : null}
                 <span>{isZh ? '保存草稿' : 'Save Draft'}</span>
@@ -700,7 +629,7 @@ export default function StorefrontEditor({
               <button
                 onClick={handlePublish}
                 disabled={isPublishing}
-                className="px-5 py-1.5 rounded-full bg-black hover:bg-black/90 text-white text-[11px] font-bold flex items-center gap-1.5 shadow-md transition-all disabled:opacity-50 cursor-pointer"
+                className="px-5 py-1.5 rounded-full bg-[var(--ink)] hover:bg-[var(--ink)]/90 text-[var(--surface)] text-[11px] font-bold flex items-center gap-1.5 shadow-md transition-all disabled:opacity-50 cursor-pointer"
               >
                 {isPublishing ? <RefreshCw size={12} className="animate-spin" /> : <Send size={12} />}
                 <span>
@@ -732,17 +661,17 @@ export default function StorefrontEditor({
               : 'w-0 opacity-0 -translate-x-full pointer-events-none'
           }`}
           style={{
-            background: 'rgba(255, 255, 255, 0.65)',
+            background: 'var(--surface)',
             backdropFilter: 'blur(20px) saturate(180%)',
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            borderRight: '1px solid rgba(255, 255, 255, 0.4)',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.03)',
+            borderRight: '1px solid var(--surface)',
+            boxShadow: '0 10px 30px var(--ink)',
           }}
         >
           <div className="w-64 sm:w-72 flex flex-col h-full shrink-0">
             {/* 全局配置组 (Global Design System Shortcuts) */}
-            <div className="p-3 border-b border-black/[0.04]">
-              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 select-none">
+            <div className="p-3 border-b border-[var(--ink)]/[0.04]">
+              <div className="text-[10px] font-bold text-[var(--lavender)] uppercase tracking-wider mb-2 select-none">
                 {isZh ? '全局配置' : 'Global Settings'}
               </div>
               <div className="space-y-1">
@@ -754,8 +683,8 @@ export default function StorefrontEditor({
                   }}
                   className={`w-full px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
                     selectedSectionId === 'theme_design'
-                      ? 'bg-black text-white shadow-sm font-bold'
-                      : 'text-gray-700 hover:bg-black/5'
+                      ? 'bg-[var(--ink)] text-[var(--surface)] shadow-sm font-bold'
+                      : 'text-[var(--lavender)] hover:bg-[var(--ink)]/5'
                   }`}
                 >
                   <Palette size={13} />
@@ -765,14 +694,14 @@ export default function StorefrontEditor({
             </div>
 
             {/* 左栏头部：分区结构 */}
-            <div className="p-3 border-b border-black/[0.04] flex items-center justify-between">
+            <div className="p-3 border-b border-[var(--ink)]/[0.04] flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <Layers size={13} className="text-gray-400" />
-                <span className="text-xs font-bold text-gray-800">
+                <Layers size={13} className="text-[var(--lavender)]" />
+                <span className="text-xs font-bold text-[var(--lavender)]">
                   {isZh ? '分区结构' : 'Sections Structure'}
                 </span>
               </div>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-black/5 text-gray-500">
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--ink)]/5 text-[var(--lavender)]">
                 {schema.sections.length}
               </span>
             </div>
@@ -788,8 +717,8 @@ export default function StorefrontEditor({
                       onClick={() => selectSection(section.id)}
                       className={`group px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-between select-none ${
                         isSelected
-                          ? 'bg-black text-white shadow-sm font-bold'
-                          : 'bg-transparent text-[#1D1D1F] hover:bg-black/5'
+                          ? 'bg-[var(--ink)] text-[var(--surface)] shadow-sm font-bold'
+                          : 'bg-transparent text-[#1D1D1F] hover:bg-[var(--ink)]/5'
                       }`}
                     >
                       <div className="flex items-center gap-2 truncate">
@@ -797,7 +726,7 @@ export default function StorefrontEditor({
                           {isZh ? SECTION_LABELS[section.type].zh : SECTION_LABELS[section.type].en}
                         </span>
                         {!section.visible && (
-                          <EyeOff size={11} className={isSelected ? 'text-white/60' : 'text-gray-400'} />
+                          <EyeOff size={11} className={isSelected ? 'text-[var(--surface)]/60' : 'text-[var(--lavender)]'} />
                         )}
                       </div>
                       <div
@@ -813,7 +742,7 @@ export default function StorefrontEditor({
                           }}
                           disabled={index === 0}
                           className={`p-0.5 rounded disabled:opacity-30 ${
-                            isSelected ? 'hover:bg-white/10 text-white' : 'hover:bg-black/5 text-gray-400 hover:text-black'
+                            isSelected ? 'hover:bg-[var(--surface)]/10 text-[var(--surface)]' : 'hover:bg-[var(--ink)]/5 text-[var(--lavender)] hover:text-[var(--ink)]'
                           }`}
                           title={isZh ? '上移' : 'Move up'}
                         >
@@ -827,7 +756,7 @@ export default function StorefrontEditor({
                           }}
                           disabled={index === orderedSections.length - 1}
                           className={`p-0.5 rounded disabled:opacity-30 ${
-                            isSelected ? 'hover:bg-white/10 text-white' : 'hover:bg-black/5 text-gray-400 hover:text-black'
+                            isSelected ? 'hover:bg-[var(--surface)]/10 text-[var(--surface)]' : 'hover:bg-[var(--ink)]/5 text-[var(--lavender)] hover:text-[var(--ink)]'
                           }`}
                           title={isZh ? '下移' : 'Move down'}
                         >
@@ -840,7 +769,7 @@ export default function StorefrontEditor({
                             toggleSectionVisibility(section.id)
                           }}
                           className={`p-0.5 rounded ${
-                            isSelected ? 'hover:bg-white/10 text-white' : 'hover:bg-black/5 text-gray-400 hover:text-black'
+                            isSelected ? 'hover:bg-[var(--surface)]/10 text-[var(--surface)]' : 'hover:bg-[var(--ink)]/5 text-[var(--lavender)] hover:text-[var(--ink)]'
                           }`}
                           title={section.visible ? (isZh ? '隐藏' : 'Hide') : isZh ? '显示' : 'Show'}
                         >
@@ -853,7 +782,7 @@ export default function StorefrontEditor({
                             duplicateSection(section.id)
                           }}
                           className={`p-0.5 rounded ${
-                            isSelected ? 'hover:bg-white/10 text-white' : 'hover:bg-black/5 text-gray-400 hover:text-black'
+                            isSelected ? 'hover:bg-[var(--surface)]/10 text-[var(--surface)]' : 'hover:bg-[var(--ink)]/5 text-[var(--lavender)] hover:text-[var(--ink)]'
                           }`}
                           title={isZh ? '复制' : 'Duplicate'}
                         >
@@ -866,7 +795,7 @@ export default function StorefrontEditor({
                             deleteSection(section.id)
                           }}
                           className={`p-0.5 rounded ${
-                            isSelected ? 'hover:bg-white/10 text-white' : 'hover:bg-black/5 text-red-500'
+                            isSelected ? 'hover:bg-[var(--surface)]/10 text-[var(--surface)]' : 'hover:bg-[var(--ink)]/5 text-[var(--plum)]'
                           }`}
                           title={isZh ? '删除' : 'Delete'}
                         >
@@ -878,7 +807,7 @@ export default function StorefrontEditor({
                 })}
 
                 {/* Inline elegant + Add Section trigger */}
-                <div className="relative pt-3 border-t border-black/[0.04] mt-2">
+                <div className="relative pt-3 border-t border-[var(--ink)]/[0.04] mt-2">
                   <AddSectionMenu isZh={isZh} onAdd={addSection} />
                 </div>
               </div>
@@ -887,7 +816,7 @@ export default function StorefrontEditor({
         </div>
 
         {/* 中间：Live Preview Canvas */}
-        <div className="flex-1 bg-slate-100 overflow-hidden flex flex-col">
+        <div className="flex-1 bg-[var(--surface-muted)] overflow-hidden flex flex-col">
           <PreviewCanvas
             schema={schema}
             storeSlug={store.store_slug}
@@ -897,7 +826,6 @@ export default function StorefrontEditor({
             onPageChange={setActivePage}
             selectedProductId={selectedProductId}
             onProductChange={setSelectedProductId}
-            cartPreviewMode={cartPreviewMode}
             deviceMode={deviceMode}
             onDeviceModeChange={setDeviceMode}
             showControlBar={true}
@@ -913,26 +841,26 @@ export default function StorefrontEditor({
               : 'w-0 opacity-0 translate-x-full pointer-events-none'
           }`}
           style={{
-            background: 'rgba(255, 255, 255, 0.65)',
+            background: 'var(--surface)',
             backdropFilter: 'blur(20px) saturate(180%)',
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            borderLeft: '1px solid rgba(255, 255, 255, 0.4)',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.03)',
+            borderLeft: '1px solid var(--surface)',
+            boxShadow: '0 10px 30px var(--ink)',
           }}
         >
           {selectedSectionId !== null && (
             <>
               {/* Header inside the sliding drawer */}
-              <div className="p-3 border-b border-black/[0.04] flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
+              <div className="p-3 border-b border-[var(--ink)]/[0.04] flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--lavender)]">
                   {selectedSectionId === 'theme_design' ? (
                     <>
-                      <Palette size={13} className="text-gray-500" />
+                      <Palette size={13} className="text-[var(--lavender)]" />
                       <span>{isZh ? '全局主题设计' : 'Global Theme'}</span>
                     </>
                   ) : selectedSection ? (
                     <>
-                      <Layers size={13} className="text-gray-500" />
+                      <Layers size={13} className="text-[var(--lavender)]" />
                       <span>
                         {isZh ? '编辑分区: ' : 'Edit: '}
                         {isZh ? SECTION_LABELS[selectedSection.type].zh : SECTION_LABELS[selectedSection.type].en}
@@ -946,7 +874,7 @@ export default function StorefrontEditor({
                 <button
                   type="button"
                   onClick={() => setSelectedSectionId(null)}
-                  className="p-1 rounded-full text-gray-400 hover:text-gray-900 hover:bg-black/5 transition-all cursor-pointer"
+                  className="p-1 rounded-full text-[var(--lavender)] hover:text-[var(--lavender)] hover:bg-[var(--ink)]/5 transition-all cursor-pointer"
                   title={isZh ? '收起面板' : 'Close Panel'}
                 >
                   <X size={13} />
@@ -970,7 +898,6 @@ export default function StorefrontEditor({
                     onSubTabChange={setActiveSubTab}
                     onUpdateContent={(content) => updateSectionContent(selectedSection.id, content)}
                     onUpdateStyle={(style) => updateSectionStyle(selectedSection.id, style)}
-                    onToggleVisibility={() => toggleSectionVisibility(selectedSection.id)}
                     onDuplicate={() => duplicateSection(selectedSection.id)}
                     onDelete={() => deleteSection(selectedSection.id)}
                   />
@@ -992,7 +919,6 @@ function SectionProperties({
   onSubTabChange,
   onUpdateContent,
   onUpdateStyle,
-  onToggleVisibility,
   onDuplicate,
   onDelete,
 }: {
@@ -1002,7 +928,6 @@ function SectionProperties({
   onSubTabChange: (tab: 'content' | 'layout' | 'style') => void
   onUpdateContent: (content: Partial<StorefrontSection['content']>) => void
   onUpdateStyle: (style: Partial<SectionStyle>) => void
-  onToggleVisibility: () => void
   onDuplicate: () => void
   onDelete: () => void
 }) {
@@ -1026,24 +951,24 @@ function SectionProperties({
   return (
     <div className="space-y-4">
       {/* 模块标题与快捷操作 */}
-      <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-between">
+      <div className="p-3 rounded-xl bg-[var(--surface-muted)] border border-[var(--surface-muted)] flex items-center justify-between">
         <div className="min-w-0">
-          <div className="text-xs font-extrabold text-gray-900 truncate">
+          <div className="text-xs font-extrabold text-[var(--lavender)] truncate">
             {isZh ? SECTION_LABELS[t].zh : SECTION_LABELS[t].en}
           </div>
-          <div className="text-[10px] text-gray-400 font-mono">Type: {t}</div>
+          <div className="text-[10px] text-[var(--lavender)] font-mono">Type: {t}</div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={onDuplicate}
-            className="p-1.5 rounded hover:bg-white text-gray-700 transition-colors"
+            className="p-1.5 rounded hover:bg-[var(--surface)] text-[var(--lavender)] transition-colors"
             title={isZh ? '复制此模块' : 'Duplicate'}
           >
             <Copy size={13} />
           </button>
           <button
             onClick={onDelete}
-            className="p-1.5 rounded hover:bg-white text-red-500 transition-colors"
+            className="p-1.5 rounded hover:bg-[var(--surface)] text-[var(--plum)] transition-colors"
             title={isZh ? '删除此模块' : 'Delete'}
           >
             <Trash2 size={13} />
@@ -1052,7 +977,7 @@ function SectionProperties({
       </div>
 
       {/* 子 Tab：内容 / 布局 / 样式 */}
-      <div className="flex border-b border-gray-200 text-xs font-bold">
+      <div className="flex border-b border-[var(--surface-muted)] text-xs font-bold">
         {(
           [
             { key: 'content', zh: '内容', en: 'Content' },
@@ -1065,8 +990,8 @@ function SectionProperties({
             onClick={() => onSubTabChange(tab.key)}
             className={`pb-2 px-3 border-b-2 transition-colors ${
               activeSubTab === tab.key
-                ? 'border-[#FB7185] text-[#FB7185]'
-                : 'border-transparent text-gray-500 hover:text-gray-900'
+                ? 'border-[var(--plum)] text-[var(--plum)]'
+                : 'border-transparent text-[var(--lavender)] hover:text-[var(--lavender)]'
             }`}
           >
             {isZh ? tab.zh : tab.en}
@@ -1133,7 +1058,7 @@ function SectionProperties({
           )}
 
           {t === 'featured_products' && (
-            <div className="space-y-2 pt-2 border-t border-gray-200">
+            <div className="space-y-2 pt-2 border-t border-[var(--surface-muted)]">
               <ToggleField
                 label={isZh ? '显示商品价格' : 'Show product price'}
                 checked={c.showPrice !== false}
@@ -1143,9 +1068,9 @@ function SectionProperties({
           )}
 
           {t === 'testimonials' && (
-            <div className="space-y-3 pt-2 border-t border-gray-200">
+            <div className="space-y-3 pt-2 border-t border-[var(--surface-muted)]">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-gray-900">
+                <label className="text-xs font-bold text-[var(--lavender)]">
                   {isZh ? '顾客评测列表' : 'Testimonials List'}
                 </label>
                 <button
@@ -1160,16 +1085,16 @@ function SectionProperties({
                     })
                     onUpdateContent({ testimonialsList: list })
                   }}
-                  className="text-[11px] font-bold text-[#FB7185] hover:text-[#E11D48] flex items-center gap-1 cursor-pointer"
+                  className="text-[11px] font-bold text-[var(--plum)] hover:text-[var(--plum)] flex items-center gap-1 cursor-pointer"
                 >
                   <Plus size={12} />
                   <span>{isZh ? '添加评测' : 'Add Testimonial'}</span>
                 </button>
               </div>
               {(c.testimonialsList || []).map((item, idx) => (
-                <div key={idx} className="p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-2 relative">
+                <div key={idx} className="p-3 bg-[var(--surface-muted)] border border-[var(--surface-muted)] rounded-lg space-y-2 relative">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-gray-500 uppercase">#{idx + 1}</span>
+                    <span className="text-[10px] font-bold text-[var(--lavender)] uppercase">#{idx + 1}</span>
                     <button
                       type="button"
                       onClick={() => {
@@ -1177,7 +1102,7 @@ function SectionProperties({
                         list.splice(idx, 1)
                         onUpdateContent({ testimonialsList: list })
                       }}
-                      className="text-red-500 hover:text-red-700 p-1"
+                      className="text-[var(--plum)] hover:text-[var(--plum)] p-1"
                     >
                       <Trash2 size={12} />
                     </button>
@@ -1191,7 +1116,7 @@ function SectionProperties({
                       list[idx] = { ...list[idx], name: e.target.value }
                       onUpdateContent({ testimonialsList: list })
                     }}
-                    className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded bg-white"
+                    className="w-full px-2 py-1.5 text-xs border border-[var(--surface-muted)] rounded bg-[var(--surface)]"
                   />
                   <input
                     type="text"
@@ -1202,7 +1127,7 @@ function SectionProperties({
                       list[idx] = { ...list[idx], role: e.target.value }
                       onUpdateContent({ testimonialsList: list })
                     }}
-                    className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded bg-white"
+                    className="w-full px-2 py-1.5 text-xs border border-[var(--surface-muted)] rounded bg-[var(--surface)]"
                   />
                   <textarea
                     placeholder={isZh ? '评测评价' : 'Quote'}
@@ -1212,7 +1137,7 @@ function SectionProperties({
                       list[idx] = { ...list[idx], quote: e.target.value }
                       onUpdateContent({ testimonialsList: list })
                     }}
-                    className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded bg-white h-14 resize-none"
+                    className="w-full px-2 py-1.5 text-xs border border-[var(--surface-muted)] rounded bg-[var(--surface)] h-14 resize-none"
                   />
                 </div>
               ))}
@@ -1220,9 +1145,9 @@ function SectionProperties({
           )}
 
           {t === 'faq' && (
-            <div className="space-y-3 pt-2 border-t border-gray-200">
+            <div className="space-y-3 pt-2 border-t border-[var(--surface-muted)]">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-gray-900">
+                <label className="text-xs font-bold text-[var(--lavender)]">
                   {isZh ? '问答列表' : 'FAQ Items'}
                 </label>
                 <button
@@ -1235,16 +1160,16 @@ function SectionProperties({
                     })
                     onUpdateContent({ faqList: list })
                   }}
-                  className="text-[11px] font-bold text-[#FB7185] hover:text-[#E11D48] flex items-center gap-1 cursor-pointer"
+                  className="text-[11px] font-bold text-[var(--plum)] hover:text-[var(--plum)] flex items-center gap-1 cursor-pointer"
                 >
                   <Plus size={12} />
                   <span>{isZh ? '添加问答' : 'Add Question'}</span>
                 </button>
               </div>
               {(c.faqList || []).map((item, idx) => (
-                <div key={idx} className="p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-2 relative">
+                <div key={idx} className="p-3 bg-[var(--surface-muted)] border border-[var(--surface-muted)] rounded-lg space-y-2 relative">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-gray-500 uppercase">Q{idx + 1}</span>
+                    <span className="text-[10px] font-bold text-[var(--lavender)] uppercase">Q{idx + 1}</span>
                     <button
                       type="button"
                       onClick={() => {
@@ -1252,7 +1177,7 @@ function SectionProperties({
                         list.splice(idx, 1)
                         onUpdateContent({ faqList: list })
                       }}
-                      className="text-red-500 hover:text-red-700 p-1"
+                      className="text-[var(--plum)] hover:text-[var(--plum)] p-1"
                     >
                       <Trash2 size={12} />
                     </button>
@@ -1266,7 +1191,7 @@ function SectionProperties({
                       list[idx] = { ...list[idx], question: e.target.value }
                       onUpdateContent({ faqList: list })
                     }}
-                    className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded bg-white font-semibold"
+                    className="w-full px-2 py-1.5 text-xs border border-[var(--surface-muted)] rounded bg-[var(--surface)] font-semibold"
                   />
                   <textarea
                     placeholder={isZh ? '回答' : 'Answer'}
@@ -1276,7 +1201,7 @@ function SectionProperties({
                       list[idx] = { ...list[idx], answer: e.target.value }
                       onUpdateContent({ faqList: list })
                     }}
-                    className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded bg-white h-14 resize-none"
+                    className="w-full px-2 py-1.5 text-xs border border-[var(--surface-muted)] rounded bg-[var(--surface)] h-14 resize-none"
                   />
                 </div>
               ))}
@@ -1284,7 +1209,7 @@ function SectionProperties({
           )}
 
           {t === 'footer' && (
-            <div className="space-y-3 pt-2 border-t border-gray-200">
+            <div className="space-y-3 pt-2 border-t border-[var(--surface-muted)]">
               <ToggleField
                 label={isZh ? '显示信任背书徽章' : 'Show trust badges'}
                 checked={c.showTrustBadges !== false}
@@ -1313,8 +1238,8 @@ function SectionProperties({
           )}
 
           {hasPrimaryButton && (
-            <div className="space-y-2 pt-2 border-t border-gray-200">
-              <label className="text-xs font-bold text-gray-900">
+            <div className="space-y-2 pt-2 border-t border-[var(--surface-muted)]">
+              <label className="text-xs font-bold text-[var(--lavender)]">
                 {isZh ? '主按钮' : 'Primary Button'}
               </label>
               <input
@@ -1322,21 +1247,21 @@ function SectionProperties({
                 placeholder={isZh ? '按钮文字' : 'Button label'}
                 value={c.buttonText || ''}
                 onChange={(e) => onUpdateContent({ buttonText: e.target.value })}
-                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FB7185]"
+                className="w-full px-3 py-2 text-xs border border-[var(--surface-muted)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--plum)]"
               />
               <input
                 type="text"
                 placeholder={isZh ? '跳转链接 (/products)' : 'Button URL (/products)'}
                 value={c.buttonLink || ''}
                 onChange={(e) => onUpdateContent({ buttonLink: e.target.value })}
-                className="w-full px-3 py-2 text-xs font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FB7185]"
+                className="w-full px-3 py-2 text-xs font-mono border border-[var(--surface-muted)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--plum)]"
               />
             </div>
           )}
 
           {hasSecondaryButton && (
-            <div className="space-y-2 pt-2 border-t border-gray-200">
-              <label className="text-xs font-bold text-gray-900">
+            <div className="space-y-2 pt-2 border-t border-[var(--surface-muted)]">
+              <label className="text-xs font-bold text-[var(--lavender)]">
                 {isZh ? '次按钮' : 'Secondary Button'}
               </label>
               <input
@@ -1344,21 +1269,21 @@ function SectionProperties({
                 placeholder={isZh ? '按钮文字' : 'Button label'}
                 value={c.secondaryButtonText || ''}
                 onChange={(e) => onUpdateContent({ secondaryButtonText: e.target.value })}
-                className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FB7185]"
+                className="w-full px-3 py-2 text-xs border border-[var(--surface-muted)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--plum)]"
               />
               <input
                 type="text"
                 placeholder={isZh ? '跳转链接' : 'Button URL'}
                 value={c.secondaryButtonLink || ''}
                 onChange={(e) => onUpdateContent({ secondaryButtonLink: e.target.value })}
-                className="w-full px-3 py-2 text-xs font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FB7185]"
+                className="w-full px-3 py-2 text-xs font-mono border border-[var(--surface-muted)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--plum)]"
               />
             </div>
           )}
 
           {hasImage && (
-            <div className="space-y-2 pt-2 border-t border-gray-200">
-              <label className="text-xs font-bold text-gray-900">
+            <div className="space-y-2 pt-2 border-t border-[var(--surface-muted)]">
+              <label className="text-xs font-bold text-[var(--lavender)]">
                 {isZh ? '配图 URL' : 'Image URL'}
               </label>
               <input
@@ -1366,10 +1291,10 @@ function SectionProperties({
                 placeholder="https://..."
                 value={c.imageUrl || ''}
                 onChange={(e) => onUpdateContent({ imageUrl: e.target.value })}
-                className="w-full px-3 py-2 text-xs font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FB7185]"
+                className="w-full px-3 py-2 text-xs font-mono border border-[var(--surface-muted)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--plum)]"
               />
               <div className="space-y-1 pt-1">
-                <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                <div className="text-[10px] font-bold text-[var(--lavender)] uppercase tracking-wider">
                   {isZh ? '快捷配图' : 'Stock Library'}
                 </div>
                 <div className="grid grid-cols-1 gap-1">
@@ -1378,7 +1303,7 @@ function SectionProperties({
                       key={img.url}
                       type="button"
                       onClick={() => onUpdateContent({ imageUrl: img.url })}
-                      className="text-left px-2 py-1 text-[11px] font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 truncate"
+                      className="text-left px-2 py-1 text-[11px] font-medium text-[var(--lavender)] bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] rounded border border-[var(--surface-muted)] truncate"
                     >
                       {img.name}
                     </button>
@@ -1492,7 +1417,7 @@ function ThemePanel({
     <div className="space-y-4">
       {/* 默认字体设置 */}
       <div className="space-y-1.5 pb-1">
-        <label className="text-[11px] font-semibold text-gray-500">
+        <label className="text-[11px] font-semibold text-[var(--lavender)]">
           {isZh ? '界面展示字体' : 'Font Family'}
         </label>
         <div className="flex items-center gap-1.5">
@@ -1501,16 +1426,16 @@ function ThemePanel({
             <select
               value={schema.theme?.fontFamily || (currentLanguage === 'zh' ? CHINESE_FONTS[0].value : ENGLISH_FONTS[0].value)}
               onChange={(e) => onUpdateTheme({ fontFamily: e.target.value })}
-              className="w-full pl-2.5 pr-7 py-1.5 rounded-lg border border-gray-100 bg-white/70 backdrop-blur-xs text-[11px] font-semibold text-gray-800 shadow-2xs focus:outline-none transition-all cursor-pointer appearance-none"
+              className="w-full pl-2.5 pr-7 py-1.5 rounded-lg border border-[var(--surface-muted)] bg-[var(--surface)]/70 backdrop-blur-xs text-[11px] font-semibold text-[var(--lavender)] shadow-2xs focus:outline-none transition-all cursor-pointer appearance-none"
               style={{ fontFamily: schema.theme?.fontFamily }}
             >
               {(currentLanguage === 'zh' ? CHINESE_FONTS : ENGLISH_FONTS).map((font) => (
-                <option key={font.id} value={font.value} className="text-gray-900 bg-white text-xs">
+                <option key={font.id} value={font.value} className="text-[var(--lavender)] bg-[var(--surface)] text-xs">
                   {isZh ? font.label : font.nameEn}
                 </option>
               ))}
             </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[var(--lavender)]">
               <ChevronDown size={11} />
             </div>
           </div>
@@ -1520,7 +1445,7 @@ function ThemePanel({
             <button
               type="button"
               onClick={() => onUpdateTheme({ fontFamily: undefined })}
-              className="px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 hover:text-black flex items-center gap-1 cursor-pointer transition-colors"
+              className="px-1.5 py-0.5 text-[10px] font-semibold text-[var(--lavender)] hover:text-[var(--ink)] flex items-center gap-1 cursor-pointer transition-colors"
               title={isZh ? '恢复默认字体' : 'Restore Default Font'}
             >
               <RotateCcw size={10} />
@@ -1531,15 +1456,15 @@ function ThemePanel({
       </div>
 
       {/* 唯一主题色选择 (Brand Accent Color without Presets) */}
-      <div className="space-y-1.5 border-t border-gray-100 pt-3">
+      <div className="space-y-1.5 border-t border-[var(--surface-muted)] pt-3">
         <div className="flex items-center justify-between">
-          <label className="text-[11px] font-semibold text-gray-500">
+          <label className="text-[11px] font-semibold text-[var(--lavender)]">
             {isZh ? '主题色' : 'Theme Color'}
           </label>
           <button
             type="button"
             onClick={() => onUpdateTheme({ accent: undefined })}
-            className="text-[10px] font-semibold text-gray-500 hover:text-black flex items-center gap-1 cursor-pointer transition-colors"
+            className="text-[10px] font-semibold text-[var(--lavender)] hover:text-[var(--ink)] flex items-center gap-1 cursor-pointer transition-colors"
             title={isZh ? '恢复默认主题色' : 'Restore Default Accent'}
           >
             <RotateCcw size={10} />
@@ -1558,7 +1483,7 @@ function ThemePanel({
             />
             <label
               htmlFor={colorPickerId}
-              className="w-7 h-7 rounded-lg border border-gray-100 shadow-[inset_0_1px_1.5px_rgba(0,0,0,0.02)] flex items-center justify-center cursor-pointer transition-transform hover:scale-105"
+              className="w-7 h-7 rounded-lg border border-[var(--surface-muted)] shadow-[inset_0_1px_1.5px_var(--ink)] flex items-center justify-center cursor-pointer transition-transform hover:scale-105"
               style={{ backgroundColor: currentAccent }}
             />
           </div>
@@ -1566,18 +1491,18 @@ function ThemePanel({
             type="text"
             value={currentAccent}
             onChange={(e) => onUpdateTheme({ accent: e.target.value })}
-            className="w-24 px-2 py-1 text-[11px] font-mono uppercase font-semibold border border-gray-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-200"
+            className="w-24 px-2 py-1 text-[11px] font-mono uppercase font-semibold border border-[var(--surface-muted)] rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--plum)]"
           />
         </div>
       </div>
 
       {/* 界面圆角 - 改为滑块移动 (Border Radius Slider) */}
-      <div className="space-y-1.5 border-t border-gray-100 pt-3">
+      <div className="space-y-1.5 border-t border-[var(--surface-muted)] pt-3">
         <div className="flex items-center justify-between">
-          <label className="text-[11px] font-semibold text-gray-500">
+          <label className="text-[11px] font-semibold text-[var(--lavender)]">
             {isZh ? '界面圆角' : 'Border Radius'}
           </label>
-          <span className="text-[11px] font-mono font-bold text-gray-500">
+          <span className="text-[11px] font-mono font-bold text-[var(--lavender)]">
             {currentRadius}px
           </span>
         </div>
@@ -1590,7 +1515,7 @@ function ThemePanel({
             step="2"
             value={currentRadius}
             onChange={(e) => onUpdateTheme({ radius: parseInt(e.target.value) })}
-            className="w-full h-1 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-rose-500 focus:outline-none focus:ring-0"
+            className="w-full h-1 bg-[var(--surface-muted)] rounded-lg appearance-none cursor-pointer accent-rose-500 focus:outline-none focus:ring-0"
           />
         </div>
       </div>
@@ -1611,7 +1536,7 @@ function RadioGroup({
 }) {
   return (
     <div className="space-y-2">
-      <label className="text-xs font-bold text-gray-900">{label}</label>
+      <label className="text-xs font-bold text-[var(--lavender)]">{label}</label>
       <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0,1fr))` }}>
         {options.map((opt) => {
           const isSelected = value === opt.value
@@ -1621,8 +1546,8 @@ function RadioGroup({
               onClick={() => onChange(opt.value)}
               className={`py-2 px-1 rounded-lg text-xs font-bold border flex items-center justify-center gap-1 transition-all cursor-pointer ${
                 isSelected
-                  ? 'bg-[#FB7185] text-white border-[#FB7185]'
-                  : 'bg-gray-50 text-gray-900 border-gray-200 hover:border-[#FB7185]'
+                  ? 'bg-[var(--plum)] text-[var(--surface)] border-[var(--plum)]'
+                  : 'bg-[var(--surface-muted)] text-[var(--lavender)] border-[var(--surface-muted)] hover:border-[var(--plum)]'
               }`}
             >
               {opt.icon}
@@ -1648,16 +1573,16 @@ function ToggleField({
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className="w-full flex items-center justify-between p-2.5 rounded-lg bg-gray-50 border border-gray-200 hover:border-[#FECDD3] transition-colors"
+      className="w-full flex items-center justify-between p-2.5 rounded-lg bg-[var(--surface-muted)] border border-[var(--surface-muted)] hover:border-[#FECDD3] transition-colors"
     >
-      <span className="text-xs font-medium text-gray-900">{label}</span>
+      <span className="text-xs font-medium text-[var(--lavender)]">{label}</span>
       <span
         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-          checked ? 'bg-[#FB7185]' : 'bg-gray-300'
+          checked ? 'bg-[var(--plum)]' : 'bg-[var(--surface-muted)]'
         }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+          className={`inline-block h-4 w-4 transform rounded-full bg-[var(--surface)] transition-transform ${
             checked ? 'translate-x-4' : 'translate-x-0.5'
           }`}
         />
@@ -1681,7 +1606,7 @@ function NumberField({
 }) {
   return (
     <div>
-      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-2">
+      <label className="text-[10px] font-bold text-[var(--lavender)] uppercase tracking-wider block mb-2">
         {label}
       </label>
       <input
@@ -1693,7 +1618,7 @@ function NumberField({
           const n = parseInt(e.target.value)
           onChange(Number.isFinite(n) && n >= min ? Math.min(n, max) : min)
         }}
-        className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FB7185]"
+        className="w-full px-3 py-2 text-xs border border-[var(--surface-muted)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--plum)]"
       />
     </div>
   )
@@ -1710,14 +1635,14 @@ function TextField({
 }) {
   return (
     <div>
-      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-2">
+      <label className="text-[10px] font-bold text-[var(--lavender)] uppercase tracking-wider block mb-2">
         {label}
       </label>
       <input
         type="text"
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FB7185]"
+        className="w-full px-3 py-2 text-xs border border-[var(--surface-muted)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--plum)]"
       />
     </div>
   )
@@ -1734,114 +1659,14 @@ function TextArea({
 }) {
   return (
     <div>
-      <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-2">
+      <label className="text-[10px] font-bold text-[var(--lavender)] uppercase tracking-wider block mb-2">
         {label}
       </label>
       <textarea
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FB7185] h-24 resize-none"
+        className="w-full px-3 py-2 text-xs border border-[var(--surface-muted)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--plum)] h-24 resize-none"
       />
-    </div>
-  )
-}
-
-function GlobalInfoPanel({
-  schema,
-  isZh,
-  onUpdateGlobalInfo,
-}: {
-  schema: StorefrontSchema
-  isZh: boolean
-  onUpdateGlobalInfo: (
-    contact: Partial<StoreContactConfig>,
-    social: Partial<StoreSocialConfig>,
-    brandName?: string
-  ) => void
-}) {
-  const contact = schema.contact || schema.globalInfo?.contact || {}
-  const social = schema.social || schema.globalInfo?.social || {}
-  const brandName = schema.globalInfo?.brandName || ''
-
-  return (
-    <div className="space-y-5">
-      <div className="space-y-3">
-        <div className="text-xs font-extrabold text-gray-900">
-          {isZh ? '品牌标识' : 'Brand Identity'}
-        </div>
-        <TextField
-          label={isZh ? '品牌/店铺名称' : 'Brand Name'}
-          value={brandName}
-          onChange={(v) => onUpdateGlobalInfo({}, {}, v)}
-        />
-      </div>
-
-      <div className="space-y-3 border-t border-gray-200 pt-4">
-        <div className="text-xs font-extrabold text-gray-900">
-          {isZh ? '联系方式 (Contact)' : 'Contact Details'}
-        </div>
-        <TextField
-          label={isZh ? '客服邮箱' : 'Contact Email'}
-          value={contact.email || ''}
-          onChange={(v) => onUpdateGlobalInfo({ email: v }, {})}
-        />
-        <TextField
-          label={isZh ? '服务电话' : 'Phone Number'}
-          value={contact.phone || ''}
-          onChange={(v) => onUpdateGlobalInfo({ phone: v }, {})}
-        />
-        <TextField
-          label={isZh ? 'WhatsApp 号码' : 'WhatsApp Number'}
-          value={contact.whatsapp || ''}
-          onChange={(v) => onUpdateGlobalInfo({ whatsapp: v }, {})}
-        />
-        <TextField
-          label={isZh ? '工作室 / 地址' : 'Store Address'}
-          value={contact.address || ''}
-          onChange={(v) => onUpdateGlobalInfo({ address: v }, {})}
-        />
-        <TextField
-          label={isZh ? '专属咨询链接' : 'Contact URL'}
-          value={contact.contactUrl || ''}
-          onChange={(v) => onUpdateGlobalInfo({ contactUrl: v }, {})}
-        />
-      </div>
-
-      <div className="space-y-3 border-t border-gray-200 pt-4">
-        <div className="text-xs font-extrabold text-gray-900">
-          {isZh ? '社交媒体 (Social Channels)' : 'Social Channels'}
-        </div>
-        <TextField
-          label="Instagram"
-          value={social.instagram || ''}
-          onChange={(v) => onUpdateGlobalInfo({}, { instagram: v })}
-        />
-        <TextField
-          label="Facebook"
-          value={social.facebook || ''}
-          onChange={(v) => onUpdateGlobalInfo({}, { facebook: v })}
-        />
-        <TextField
-          label="YouTube"
-          value={social.youtube || ''}
-          onChange={(v) => onUpdateGlobalInfo({}, { youtube: v })}
-        />
-        <TextField
-          label="TikTok"
-          value={social.tiktok || ''}
-          onChange={(v) => onUpdateGlobalInfo({}, { tiktok: v })}
-        />
-        <TextField
-          label="X (Twitter)"
-          value={social.x || ''}
-          onChange={(v) => onUpdateGlobalInfo({}, { x: v })}
-        />
-        <TextField
-          label="LinkedIn"
-          value={social.linkedin || ''}
-          onChange={(v) => onUpdateGlobalInfo({}, { linkedin: v })}
-        />
-      </div>
     </div>
   )
 }

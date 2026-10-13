@@ -41,7 +41,7 @@ export default function CTA({ title, subtitle, action }: CTAProps) {
           {action && (
             <Link
               href={action.href}
-              className="mt-2 inline-flex items-center justify-center rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] px-6 py-3 text-sm font-semibold text-white transition-colors [transition-duration:var(--th-motion-duration)] [transition-timing-function:var(--th-motion-easing)] hover:bg-[var(--th-color-accent)]"
+              className="mt-2 inline-flex items-center justify-center rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] px-6 py-3 text-sm font-semibold text-[var(--surface)] transition-colors [transition-duration:var(--th-motion-duration)] [transition-timing-function:var(--th-motion-easing)] hover:bg-[var(--th-color-accent)]"
             >
               {action.label}
             </Link>

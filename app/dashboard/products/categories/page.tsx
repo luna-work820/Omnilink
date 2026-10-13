@@ -18,14 +18,19 @@ export default async function CategoriesPage() {
     const store = await getStoreByOwnerId(user.id).catch(() => null)
     if (store) {
       const { data: products } = await supabase
-        .from('products')
-        .select('id, category')
-        .eq('store_id', store.id)
+        .from('catalog_items')
+        .select('details')
+        .eq('organization_id', store.organization_id)
 
       if (products && products.length > 0) {
         const counts = new Map<string, number>()
         for (const p of products) {
-          const key = p.category?.trim() || '未分类'
+          const details = p.details && typeof p.details === 'object' && !Array.isArray(p.details)
+            ? p.details as Record<string, unknown>
+            : {}
+          const key = typeof details.category === 'string' && details.category.trim()
+            ? details.category.trim()
+            : '未分类'
           counts.set(key, (counts.get(key) ?? 0) + 1)
         }
         dbCategories = Array.from(counts.entries())

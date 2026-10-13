@@ -10,6 +10,8 @@ import { PRODUCT_RELATION_LABELS } from '@/lib/products/product-relations'
 import { useLanguage } from '@/context/LanguageContext'
 import { DEMO_PRODUCTS } from '@/lib/products/demo-data'
 
+const createRelationId = () => `rel-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
+
 interface ProductRelationsSectionProps {
   productId?: string
   relations: ProductRelation[]
@@ -118,7 +120,7 @@ export function ProductRelationsSection({
     if (isAlreadyLinked) return
 
     const newRel: ProductRelation = {
-      id: `rel-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      id: createRelationId(),
       sourceProductId: productId || '',
       targetProductId: candidate.id,
       relationType: relationType,
@@ -149,7 +151,7 @@ export function ProductRelationsSection({
       {/* Header */}
       <div className="flex items-center justify-between pb-4 border-b border-[var(--surface-muted)]">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-[4px] bg-[var(--surface-muted)] text-[var(--surface)] flex items-center justify-center font-mono font-extrabold text-sm shadow-xs shrink-0">
+          <div className="w-9 h-9  bg-[var(--surface-muted)] text-[var(--surface)] flex items-center justify-center font-mono font-extrabold text-sm shadow-xs shrink-0">
             05
           </div>
           <div>
@@ -157,7 +159,7 @@ export function ProductRelationsSection({
               <h2 className="text-base font-extrabold text-[var(--lavender)]">
                 {isZh ? '关联商品' : 'Related Products'}
               </h2>
-              <span className="px-2 py-0.5 rounded-[4px] text-[10px] font-bold bg-[var(--surface-muted)] text-[var(--lavender)] font-mono">
+              <span className="px-2 py-0.5  text-[10px] font-bold bg-[var(--surface-muted)] text-[var(--lavender)] font-mono">
                 {relations.length} 项关联
               </span>
             </div>
@@ -173,7 +175,7 @@ export function ProductRelationsSection({
           type="button"
           disabled={disabled}
           onClick={() => setIsOpen(true)}
-          className="px-3.5 py-2 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:bg-[var(--surface-muted)] disabled:text-[var(--lavender)] disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
+          className="px-3.5 py-2  bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:bg-[var(--surface-muted)] disabled:text-[var(--lavender)] disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
         >
           <Plus size={14} />
           <span>{isZh ? '添加关联商品' : 'Add Related Product'}</span>
@@ -194,10 +196,10 @@ export function ProductRelationsSection({
                     <img
                       src={rel.targetProduct.thumbnailUrl}
                       alt={rel.targetProduct.name}
-                      className="h-10 w-10 rounded-[4px] object-cover border border-[var(--surface-muted)] shrink-0"
+                      className="h-10 w-10  object-cover border border-[var(--surface-muted)] shrink-0"
                     />
                   ) : (
-                    <div className="h-10 w-10 rounded-[4px] bg-[var(--surface-muted)] border border-[var(--surface-muted)] flex items-center justify-center shrink-0">
+                    <div className="h-10 w-10  bg-[var(--surface-muted)] border border-[var(--surface-muted)] flex items-center justify-center shrink-0">
                       <Link2 size={16} className="text-[var(--lavender)]" />
                     </div>
                   )}
@@ -207,7 +209,7 @@ export function ProductRelationsSection({
                       {rel.targetProduct.name}
                     </div>
                     <div className="mt-0.5 flex items-center gap-2 text-[11px]">
-                      <span className="px-1.5 py-0.2 rounded-[4px] bg-[var(--primary)] text-[var(--primary)] font-bold border border-[var(--primary)] text-[10px]">
+                      <span className="px-1.5 py-0.2  bg-[var(--primary)] text-[var(--primary)] font-bold border border-[var(--primary)] text-[10px]">
                         {PRODUCT_RELATION_LABELS[rel.relationType] || rel.relationType}
                       </span>
                       {rel.targetProduct.sku && (
@@ -228,7 +230,7 @@ export function ProductRelationsSection({
                   type="button"
                   disabled={disabled}
                   onClick={() => handleRemove(rel.id)}
-                  className="p-1.5 rounded-[4px] text-[var(--lavender)] hover:text-[var(--plum)] hover:bg-[var(--plum)] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
+                  className="p-1.5  text-[var(--lavender)] hover:text-[var(--plum)] hover:bg-[var(--plum)] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
                   title={isZh ? '移除关联' : 'Remove relation'}
                 >
                   <X size={16} />
@@ -268,7 +270,7 @@ export function ProductRelationsSection({
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 text-[var(--lavender)] hover:text-[var(--lavender)] hover:bg-[var(--surface-muted)]/60 rounded-[4px] cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
+                className="p-1.5 text-[var(--lavender)] hover:text-[var(--lavender)] hover:bg-[var(--surface-muted)]/60  cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
               >
                 <X size={18} />
               </button>
@@ -284,7 +286,7 @@ export function ProductRelationsSection({
                 <select
                   value={relationType}
                   onChange={(e) => setRelationType(e.target.value as ProductRelationType)}
-                  className="w-full h-9 rounded-[4px] border border-[var(--surface-muted)] px-3 text-xs bg-[var(--surface-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:bg-[var(--surface)] transition-all font-medium text-[var(--lavender)]"
+                  className="w-full h-9  border border-[var(--surface-muted)] px-3 text-xs bg-[var(--surface-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:bg-[var(--surface)] transition-all font-medium text-[var(--lavender)]"
                 >
                   {relationTypes.map((type) => (
                     <option key={type} value={type}>
@@ -309,7 +311,7 @@ export function ProductRelationsSection({
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder={isZh ? '按商品名称、编号或分类搜索...' : 'Search by name, SKU or category...'}
-                    className="w-full h-9 rounded-[4px] border border-[var(--surface-muted)] pl-9 pr-3 text-xs outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/20 transition-all bg-[var(--surface)]"
+                    className="w-full h-9  border border-[var(--surface-muted)] pl-9 pr-3 text-xs outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/20 transition-all bg-[var(--surface)]"
                   />
                 </div>
               </div>
@@ -345,10 +347,10 @@ export function ProductRelationsSection({
                               <img
                                 src={candidate.image_url}
                                 alt={candidate.name}
-                                className="h-10 w-10 rounded-[4px] object-cover border border-[var(--surface-muted)] shrink-0"
+                                className="h-10 w-10  object-cover border border-[var(--surface-muted)] shrink-0"
                               />
                             ) : (
-                              <div className="h-10 w-10 rounded-[4px] bg-[var(--surface-muted)] border border-[var(--surface-muted)] flex items-center justify-center shrink-0">
+                              <div className="h-10 w-10  bg-[var(--surface-muted)] border border-[var(--surface-muted)] flex items-center justify-center shrink-0">
                                 <Package size={16} className="text-[var(--lavender)]" />
                               </div>
                             )}
@@ -377,7 +379,7 @@ export function ProductRelationsSection({
                             type="button"
                             onClick={() => handleAddRelation(candidate)}
                             disabled={isLinked}
-                            className={`px-3 py-1.5 rounded-[4px] text-xs font-bold transition-all shrink-0 flex items-center gap-1 cursor-pointer ${
+                            className={`px-3 py-1.5  text-xs font-bold transition-all shrink-0 flex items-center gap-1 cursor-pointer ${
                               isLinked
                                 ? 'bg-[var(--surface-muted)] text-[var(--lavender)] cursor-not-allowed border border-[var(--surface-muted)]'
                                 : 'bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] shadow-xs focus-visible:outline-2 focus-visible:outline-[var(--primary)]'
@@ -415,7 +417,7 @@ export function ProductRelationsSection({
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="px-4 py-2 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-all shadow-xs cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
+                className="px-4 py-2  bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-all shadow-xs cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
               >
                 {isZh ? '完成' : 'Done'}
               </button>
@@ -426,4 +428,3 @@ export function ProductRelationsSection({
     </section>
   )
 }
-

@@ -1,0 +1,18 @@
+[
+  {
+    "test": "Test A",
+    "store": "Omnilink P0 Empty Industry",
+    "industry": "",
+    "finalUrl": "http://localhost:3000/onboarding",
+    "pass": false,
+    "errors": []
+  },
+  {
+    "test": "Test B",
+    "store": "Omnilink P0 Eyewear",
+    "industry": "Eyewear",
+    "finalUrl": "http://localhost:3000/onboarding",
+    "pass": false,
+    "errors": []
+  }
+]

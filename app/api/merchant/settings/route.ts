@@ -26,9 +26,10 @@ export async function PATCH(request: NextRequest) {
 
     const updatedStore = await updateStoreBaseCurrency(user.id, base_currency)
     return NextResponse.json({ success: true, store: updatedStore })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to update store settings'
     return NextResponse.json(
-      { error: error?.message || 'Failed to update store settings' },
+      { error: message },
       { status: 500 }
     )
   }

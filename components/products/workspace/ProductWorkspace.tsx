@@ -3,18 +3,18 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, CheckCircle2, AlertCircle, Loader2, ChevronDown } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useLanguage } from '@/context/LanguageContext'
+import { UiverseButton } from '@/components/ui/UiverseButton'
 
-import { ProductIdentitySection } from './ProductIdentitySection'
 import { ProductMediaSection } from './ProductMediaSection'
-import { ProductCommercialSection } from './ProductCommercialSection'
-import { ProductDescriptionSection } from './ProductDescriptionSection'
-import { ProductKnowledgeSection } from './ProductKnowledgeSection'
-import { ProductRelationsSection } from './ProductRelationsSection'
-import { ProductAttributesSection, type ProductAttributeValue } from './ProductAttributesSection'
-import { ProductVariantsSection } from './ProductVariantsSection'
-import { FuturePreviewModal } from './FuturePreviewModal'
+import type { ProductAttributeValue } from './ProductAttributesSection'
+import { ProductBasicInfo } from '@/components/product/create/ProductBasicInfo'
+import type { BasicProductFormData } from '@/components/product/create/types'
+import { ProductAttributesPanel, type AttributeRow } from '@/components/product/create/ProductAttributesPanel'
+import { VariantMatrixTable, type VariantMatrixRow } from '@/components/product/create/VariantMatrixTable'
 
 import { ProductMediaUploaderRef, ExistingAsset } from '@/components/products/ProductMediaUploader'
 import type { ProductOption, ProductVariant } from '@/lib/products/variants/types'
@@ -24,6 +24,28 @@ import { getProductSaveMessage } from '@/lib/products/product-save-errors'
 import { saveProductManagement } from '@/lib/products/product-management-save'
 import type { ProductManagementModel } from '@/lib/products/product-management-model'
 import { DEMO_PRODUCTS } from '@/lib/products/demo-data'
+import { MilkdownDetailEditor } from './MilkdownDetailEditor'
+import { ProductDocumentsSection } from '@/components/products/ProductDocumentsSection'
+
+const MemoProductMediaSection = React.memo(ProductMediaSection)
+const MemoProductAttributesPanel = React.memo(ProductAttributesPanel)
+
+function parseDetailMarkdown(value: string): string {
+  if (!value.trim()) return ''
+  try {
+    const parsed = JSON.parse(value) as { format?: string; source?: unknown; blocks?: unknown }
+    if (parsed && parsed.format === 'markdown' && typeof parsed.source === 'string') return parsed.source
+    if (parsed && Array.isArray(parsed.blocks)) {
+      return parsed.blocks
+        .filter((block): block is { type: 'text'; content: string } => Boolean(block && typeof block === 'object' && (block as Record<string, unknown>).type === 'text' && typeof (block as Record<string, unknown>).content === 'string'))
+        .map((block) => block.content.replace(/<br\s*\/?>(\n)?/gi, '\n').replace(/<[^>]+>/g, ''))
+        .join('\n\n')
+    }
+  } catch {
+    return value
+  }
+  return value
+}
 
 interface ProductWorkspaceProps {
   productId?: string
@@ -40,6 +62,7 @@ interface ProductWorkspaceProps {
     options?: ProductOption[]
     variants?: ProductVariant[]
     existingAssets?: ExistingAsset[]
+    detailContent?: string
   }
 }
 
@@ -60,10 +83,13 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
   const [sku, setSku] = useState(initialData?.sku || demoFallback?.sku || '')
   const [category, setCategory] = useState(initialData?.category || demoFallback?.category || '')
   const [categoryId, setCategoryId] = useState<string | null>(initialData?.categoryId || null)
+  const [origin, setOrigin] = useState('')
   const [price, setPrice] = useState<string | number>(initialData?.price ?? demoFallback?.price ?? '')
   const [currency, setCurrency] = useState(initialData?.currency || demoFallback?.currency || 'CNY')
   const [inventory, setInventory] = useState<string | number>(initialData?.inventory ?? demoFallback?.inventory ?? 100)
-  const [description, setDescription] = useState(initialData?.description || demoFallback?.description || '')
+  const [description, setDescription] = useState(initialData?.description || '')
+  const [detailMarkdown, setDetailMarkdown] = useState(() => parseDetailMarkdown(initialData?.detailContent || ''))
+  const detailContent = detailMarkdown
   const [status, setStatus] = useState<'active' | 'draft' | 'archived'>(initialData?.status || demoFallback?.status || 'active')
 
   // Options & Variants
@@ -71,47 +97,19 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
     if (initialData?.options && initialData.options.length > 0) {
       return initialData.options
     }
-    if (demoFallback?.options && demoFallback.options.length > 0) {
-      return demoFallback.options.map((opt, idx) => ({
-        id: opt.id,
-        product_id: productId || '',
-        name: opt.name,
-        code: opt.code,
-        position: idx,
-        values: opt.values,
-        created_at: new Date().toISOString(),
-      }))
-    }
     return []
   })
   const [variants, setVariants] = useState<ProductVariant[]>(() => {
     if (initialData?.variants && initialData.variants.length > 0) {
       return initialData.variants
     }
-    if (demoFallback?.variants && demoFallback.variants.length > 0) {
-      return demoFallback.variants.map((v) => ({
-        id: v.id,
-        product_id: productId || '',
-        sku: v.sku,
-        price: v.price,
-        currency: demoFallback.currency || 'CNY',
-        inventory: v.inventory,
-        status: (v.status || 'active') as 'draft' | 'active' | 'archived',
-        option_values: v.option_values,
-        raw_data: null,
-        semantic_data: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }))
-    }
     return []
   })
 
   // Canonical attributes (category-template driven spec editing)
   const [attributeValues, setAttributeValues] = useState<ProductAttributeValue[]>([])
-  const [attributesLoading, setAttributesLoading] = useState(false)
-  const [attributesError, setAttributesError] = useState<string | null>(null)
-  const [attributesLegacy, setAttributesLegacy] = useState(false)
+  const [editorRows, setEditorRows] = useState<AttributeRow[]>([])
+  const [variantMatrixRows, setVariantMatrixRows] = useState<VariantMatrixRow[]>([])
   // Keys as last loaded from the server — the save routine diffs against
   // these to build the `deletions` list and to detect removed variants.
   const loadedAttributeKeysRef = useRef<string[]>([])
@@ -141,13 +139,7 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
   })
 
   // Future Preview Modal State
-  const [previewModalOpen, setPreviewModalOpen] = useState(false)
-  const [previewModalTitle, setPreviewModalTitle] = useState('')
-
-  const handleOpenPreview = (title: string) => {
-    setPreviewModalTitle(title)
-    setPreviewModalOpen(true)
-  }
+  const [previewMode, setPreviewMode] = useState<'page' | 'info'>('info')
 
   // Save State Controller
   const saveControllerRef = useRef<ReturnType<typeof createProductSaveController> | null>(null)
@@ -182,8 +174,6 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
     if (!initialData) {
       setIsLoading(true)
     }
-    setAttributesLoading(true)
-
     try {
       const [mgmtSettled, assetsSettled, optionsSettled, variantsSettled, relationsSettled, attributesSettled] = await Promise.allSettled([
         fetch(`/api/merchant/products/${productId}/management`),
@@ -230,15 +220,35 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
       if (optionsSettled.status === 'fulfilled' && optionsSettled.value.ok) {
         const optionsData = await optionsSettled.value.json()
         if (Array.isArray(optionsData.options)) {
-          setOptions(optionsData.options)
+          const nextOptions = optionsData.options as ProductOption[]
+          setOptions(nextOptions)
+          setEditorRows((current) => [
+            ...current.filter((row) => row.role === 'trait'),
+            ...nextOptions.map((option) => ({
+              id: option.id,
+              role: 'variant' as const,
+              key: option.code,
+              label: option.name,
+              value: '',
+              values: option.values,
+            })),
+          ])
         }
       }
 
       if (variantsSettled.status === 'fulfilled' && variantsSettled.value.ok) {
         const variantsData = await variantsSettled.value.json()
         if (Array.isArray(variantsData.variants)) {
-          setVariants(variantsData.variants)
-          loadedVariantIdsRef.current = variantsData.variants.map((v: ProductVariant) => v.id)
+          const nextVariants = variantsData.variants as ProductVariant[]
+          setVariants(nextVariants)
+          setVariantMatrixRows(nextVariants.map((variant) => ({
+            key: Object.entries(variant.option_values).sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => `${key}=${value}`).join('|'),
+            optionValues: variant.option_values,
+            sku: variant.sku || '',
+            price: variant.price == null ? '' : String(variant.price),
+            inventory: variant.inventory == null ? '' : String(variant.inventory),
+          })))
+          loadedVariantIdsRef.current = nextVariants.map((v) => v.id)
         }
       }
 
@@ -246,19 +256,25 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
         if (attributesSettled.value.ok) {
           const canonical = await attributesSettled.value.json()
           if (Array.isArray(canonical?.attributes)) {
-            setAttributeValues(canonical.attributes)
+            const nextAttributes = canonical.attributes as ProductAttributeValue[]
+            setAttributeValues(nextAttributes)
+            setEditorRows((current) => [
+              ...nextAttributes.map((attribute) => ({
+                id: `trait-${attribute.fieldKey}`,
+                role: 'trait' as const,
+                key: attribute.fieldKey,
+                label: attribute.label || attribute.fieldKey,
+                value: attribute.value,
+                values: [],
+                unit: attribute.unit || undefined,
+              })),
+              ...current.filter((row) => row.role === 'variant'),
+            ])
             loadedAttributeKeysRef.current = canonical.attributes.map(
               (a: ProductAttributeValue) => a.fieldKey,
             )
-            setAttributesLegacy(Boolean(canonical.is_legacy))
-            setAttributesError(null)
           }
-        } else {
-          setAttributesError(
-            isZh ? '商品属性加载失败，可重试' : 'Failed to load attributes — retry available',
-          )
         }
-        setAttributesLoading(false)
       }
 
       if (relationsSettled.status === 'fulfilled' && relationsSettled.value.ok) {
@@ -275,12 +291,8 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
   }, [productId, demoFallback, initialData, getSaveController, isZh])
 
   useEffect(() => {
-    let isMounted = true
     if (productId) {
       loadProductDetails()
-    }
-    return () => {
-      isMounted = false
     }
   }, [productId, loadProductDetails])
 
@@ -328,6 +340,9 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
             raw_data: {
               category,
               category_id: categoryId || null,
+              origin,
+              detail_content: detailContent,
+              detail_content_blocks: { version: 2, format: 'markdown', source: detailMarkdown },
               seo: { title: seoTitle, description: seoDescription },
             },
           }),
@@ -349,15 +364,23 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
       // Save Product Management (Basic Fields + SEO)
       await saveProductManagement({
         productId: targetProductId,
-        basic: {
+          basic: {
           name: name.trim(),
           sku: sku.trim() || null,
           description: description.trim() || null,
           price: Number(price || 0),
           currency: currency || 'CNY',
           inventory: Number(inventory || 0),
-          status,
-        },
+            status,
+            raw_data: {
+              category,
+              category_id: categoryId || null,
+              origin,
+              detail_content: detailContent,
+              detail_content_blocks: { version: 2, format: 'markdown', source: detailMarkdown },
+              seo: { title: seoTitle, description: seoDescription },
+            },
+          },
         category: category || null,
         categoryId: categoryId || null,
         seo: { title: seoTitle, description: seoDescription },
@@ -468,7 +491,6 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
           )
           if (putRes.ok) {
             loadedAttributeKeysRef.current = currentKeys
-            setAttributesLegacy(false)
           } else {
             console.error('Error saving canonical attributes:', await putRes.text())
           }
@@ -518,18 +540,18 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
   }
 
   return (
-    <form onSubmit={handleSave} className="max-w-7xl mx-auto space-y-6 pb-24">
+    <form onSubmit={handleSave} className="mx-auto max-w-[1440px] space-y-5 pb-12">
       {/* Top Fixed Header Bar */}
-      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200/90 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3.5 mb-6 flex items-center justify-between gap-3 shadow-2xs">
+      <div className="sticky top-0 z-20 bg-[var(--surface)]/95 backdrop-blur-md border-b border-[var(--surface-muted)]/90 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3.5 mb-6 flex items-center justify-between gap-3 shadow-2xs">
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard/products"
-            className="w-8 h-8 rounded-[4px] bg-slate-100 hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-700 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2"
+            className="w-8 h-8  bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] border border-[var(--surface-muted)] flex items-center justify-center text-[var(--lavender)] transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2"
           >
             <ArrowLeft size={16} />
           </Link>
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-base font-bold text-slate-900 leading-none">
+            <h1 className="text-base font-bold text-[var(--lavender)] leading-none">
               {productId
                 ? name || (isZh ? '未命名商品' : 'Untitled Product')
                 : isZh
@@ -537,68 +559,48 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
                 : 'New Product'}
             </h1>
             {/* SKU Badge */}
-            <span className="px-2 py-0.5 rounded-[4px] bg-slate-100 text-slate-600 border border-slate-200 text-[11px] font-mono">
+            <span className="px-2 py-0.5  bg-[var(--surface-muted)] text-[var(--lavender)] border border-[var(--surface-muted)] text-[11px] font-mono">
               {isZh ? '编号' : 'SKU'}: {sku || '—'}
             </span>
-            {/* Product Status Badge */}
-            {status === 'active' && (
-              <span className="px-2 py-0.5 rounded-[4px] bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
-                {isZh ? '已上架' : 'Active'}
-              </span>
-            )}
-            {status === 'draft' && (
-              <span className="px-2 py-0.5 rounded-[4px] bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold">
-                {isZh ? '草稿箱' : 'Draft'}
-              </span>
-            )}
-            {status === 'archived' && (
-              <span className="px-2 py-0.5 rounded-[4px] bg-slate-100 text-slate-600 border border-slate-200 text-[11px] font-bold">
-                {isZh ? '已归档' : 'Archived'}
-              </span>
-            )}
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           {/* Save Status Indicator */}
           {isSaving || saveSnapshot.state === 'saving' ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-blue-50 text-[#024AD8] text-xs font-semibold border border-blue-200">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1  bg-[var(--primary)] text-[var(--primary)] text-xs font-semibold border border-[var(--primary)]">
               <Loader2 size={12} className="animate-spin" />
               <span>{isZh ? '正在保存...' : 'Saving...'}</span>
             </span>
           ) : saveSnapshot.state === 'failed' || error ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-rose-50 text-[#D32F2F] text-xs font-semibold border border-rose-200">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1  bg-[var(--plum)] text-[var(--plum)] text-xs font-semibold border border-[var(--plum)]">
               <AlertCircle size={12} />
               <span>{isZh ? '保存失败' : 'Save Failed'}</span>
             </span>
           ) : saveSnapshot.state === 'saved' || success ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1  bg-[var(--acid-sage)] text-[var(--acid-sage)] text-xs font-semibold border border-[var(--acid-sage)]">
               <CheckCircle2 size={12} />
               <span>{isZh ? '已保存' : 'Saved'}</span>
             </span>
           ) : saveSnapshot.dirty ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-amber-50 text-amber-700 text-xs font-medium border border-amber-200">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1  bg-[var(--acid-sage)] text-[var(--acid-sage)] text-xs font-medium border border-[var(--acid-sage)]">
               <span>{isZh ? '有未保存更改' : 'Unsaved Changes'}</span>
             </span>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-slate-100 text-slate-600 text-xs font-medium border border-slate-200">
-              <span>{isZh ? '就绪' : 'Ready'}</span>
-            </span>
-          )}
+          ) : null}
 
           {/* Cancel Button (HP Secondary) */}
           <Link
             href="/dashboard/products"
-            className="px-3.5 py-1.5 rounded-[4px] border border-[#D1D1D1] bg-white text-[#1C1C1C] text-xs font-medium hover:bg-[#F7F7F7] hover:border-[#B0B0B0] transition-all hidden sm:inline-block focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2"
+            className="ui-secondary hidden h-11 items-center justify-center px-4 text-xs font-medium sm:inline-flex"
           >
             {isZh ? '取消' : 'Cancel'}
           </Link>
 
           {/* Save Button (HP Primary Blue) */}
-          <button
+          <UiverseButton
             type="submit"
             disabled={isSaving || isLoading}
-            className="px-4 py-1.5 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] active:bg-[#00226B] disabled:bg-[#E2E2E2] disabled:text-[#9E9E9E] disabled:cursor-not-allowed text-white text-xs font-medium transition-all shadow-2xs flex items-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2"
+            className="h-11 text-xs"
           >
             {isSaving ? (
               <Loader2 size={13} className="animate-spin" />
@@ -612,19 +614,19 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
                   : 'Saving...'
                 : productId
                 ? isZh
-                  ? '保存修改'
-                  : 'Save Changes'
+                  ? '保存'
+                  : 'Save'
                 : isZh
                 ? '立即创建商品'
                 : 'Create Product'}
             </span>
-          </button>
+          </UiverseButton>
         </div>
       </div>
 
       {/* Non-blocking Banners */}
       {error && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-[#D32F2F] text-xs flex items-center justify-between gap-2.5">
+        <div className="p-4 rounded-xl bg-[var(--plum)] border border-[var(--plum)] text-[var(--plum)] text-xs flex items-center justify-between gap-2.5">
           <div className="flex items-center gap-2">
             <AlertCircle size={16} className="shrink-0" />
             <span className="font-semibold">{error}</span>
@@ -632,7 +634,7 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
           <button
             type="button"
             onClick={() => setError('')}
-            className="text-[11px] font-semibold text-rose-700 hover:text-rose-900 cursor-pointer"
+            className="text-[11px] font-semibold text-[var(--plum)] hover:text-[var(--plum)] cursor-pointer"
           >
             {isZh ? '忽略' : 'Dismiss'}
           </button>
@@ -640,170 +642,249 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
       )}
 
       {success && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between gap-2.5">
+        <div className="p-4 rounded-xl bg-[var(--acid-sage)] border border-[var(--acid-sage)] text-[var(--acid-sage)] text-xs flex items-center justify-between gap-2.5">
           <div className="flex items-center gap-2">
-            <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />
+            <CheckCircle2 size={16} className="shrink-0 text-[var(--acid-sage)]" />
             <span className="font-semibold">{success}</span>
           </div>
           <button
             type="button"
             onClick={() => setSuccess('')}
-            className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-900 cursor-pointer"
+            className="text-[11px] font-semibold text-[var(--acid-sage)] hover:text-[var(--acid-sage)] cursor-pointer"
           >
             {isZh ? '关闭' : 'Close'}
           </button>
         </div>
       )}
 
-      {/* Structured Section Grid with Defined Hierarchy */}
-      <div className="space-y-6">
-        {/* ZONE 1: PRODUCT CORE ZONE */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 01 Product Identity [PRIMARY] */}
-          <div className="lg:col-span-2">
-            <ProductIdentitySection
-              name={name}
-              setName={setName}
-              sku={sku}
-              setSku={setSku}
-              category={category}
-              setCategory={setCategory}
-              categoryId={categoryId}
-              setCategoryId={setCategoryId}
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="min-w-0 space-y-5">
+          <ProductBasicInfo
+            formData={{
+              title: name,
+              sku,
+              category,
+              categoryId,
+              price: String(price ?? ''),
+              currency: 'CNY',
+              origin,
+              inventory: String(inventory ?? ''),
+              description,
+            }}
+            knowledgeProductId={productId}
+            onChange={(updates: Partial<BasicProductFormData>) => {
+              if (updates.title !== undefined) setName(updates.title)
+              if (updates.category !== undefined) setCategory(updates.category)
+              if (updates.categoryId !== undefined) setCategoryId(updates.categoryId)
+              if (updates.price !== undefined) {
+                setPrice(updates.price)
+                setCurrency('CNY')
+              }
+              if (updates.inventory !== undefined) setInventory(updates.inventory)
+              if (updates.origin !== undefined) setOrigin(updates.origin)
+              if (updates.description !== undefined) setDescription(updates.description)
+            }}
+            disabled={isSaving}
+          />
+
+          <div className="space-y-4 rounded-[12px] border border-[var(--border)] bg-[var(--surface)]/40 p-3">
+            <MemoProductAttributesPanel
+              rows={editorRows}
+              onChange={(nextRows) => {
+                setEditorRows(nextRows)
+                setAttributeValues(
+                  nextRows
+                    .filter((row) => row.role === 'trait' && row.value.trim())
+                    .map((row) => ({
+                      fieldKey: row.key,
+                      label: row.label,
+                      value: row.value,
+                      type: row.unit ? 'number' : 'text',
+                      unit: row.unit || null,
+                      source: 'manual' as const,
+                      confidence: 1,
+                      isStandard: false,
+                    })),
+                )
+                setOptions(
+                  nextRows
+                    .filter((row) => row.role === 'variant')
+                    .map((row, position) => ({
+                      id: options.some((option) => option.id === row.id) ? row.id : `temp-option-${position}`,
+                      product_id: productId || '',
+                      name: row.label,
+                      code: row.key,
+                      position,
+                      values: row.values,
+                      created_at: new Date().toISOString(),
+                    })),
+                )
+              }}
+              disabled={isSaving}
+            />
+
+            <VariantMatrixTable
+              axes={editorRows
+                .filter((row) => row.role === 'variant' && row.values.length > 0)
+                .map((row) => ({ code: row.key, name: row.label, values: row.values }))}
+              rows={variantMatrixRows}
+              onChange={(nextRows) => {
+                setVariantMatrixRows(nextRows)
+                const previousByKey = new Map(
+                  variants.map((variant) => [
+                    Object.entries(variant.option_values).sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => `${key}=${value}`).join('|'),
+                    variant,
+                  ]),
+                )
+                const now = new Date().toISOString()
+                setVariants(nextRows.map((row) => {
+                  const existing = previousByKey.get(row.key)
+                  return {
+                    id: existing?.id || `temp-${row.key}`,
+                    product_id: productId || '',
+                    sku: row.sku || null,
+                    price: row.price ? Number(row.price) : null,
+                    currency: existing?.currency || 'CNY',
+                    inventory: row.inventory ? Number(row.inventory) : null,
+                    status: existing?.status || 'draft',
+                    option_values: row.optionValues,
+                    raw_data: existing?.raw_data || null,
+                    semantic_data: existing?.semantic_data || null,
+                    created_at: existing?.created_at || now,
+                    updated_at: now,
+                  }
+                }))
+              }}
+              basePrice={String(price || '')}
+              baseInventory={String(inventory || '')}
+              baseSku={sku || 'SKU-ITEM'}
+              currency="CNY"
               disabled={isSaving}
             />
           </div>
 
-          {/* 02 Product Media [SECONDARY] */}
-          <div className="lg:col-span-1">
-            <ProductMediaSection
+          <section className="space-y-4 pb-8">
+            <div className="pb-3">
+              <h2 className="text-sm font-semibold text-[var(--text-primary)]">{isZh ? '商品详情' : 'Product description'}</h2>
+            </div>
+            <MilkdownDetailEditor
+              value={detailMarkdown}
+              onChange={(value) => {
+                setPreviewMode('info')
+                setDetailMarkdown(value)
+              }}
+              onFocus={() => setPreviewMode('info')}
+              readOnly={isSaving}
+              placeholder={isZh ? '输入商品详情…' : 'Write product details…'}
+            />
+            <ProductDocumentsSection
+              productId={productId}
+              productName={name}
+              productImageUrl={existingAssets.find((asset) => asset.asset_type === 'image')?.url}
+            />
+          </section>
+
+        </div>
+
+        <ProductLivePreview
+          mode={previewMode}
+          onModeChange={setPreviewMode}
+          productId={productId}
+          mediaUploaderRef={mediaUploaderRef}
+          name={name}
+          category={category}
+          price={price}
+          currency={currency}
+          inventory={inventory}
+          existingAssets={existingAssets}
+          attributes={attributeValues}
+          detailMarkdown={detailMarkdown}
+        />
+      </div>
+
+    </form>
+  )
+}
+
+interface ProductLivePreviewProps {
+  mode: 'page' | 'info'
+  onModeChange: (mode: 'page' | 'info') => void
+  productId?: string
+  mediaUploaderRef: React.RefObject<ProductMediaUploaderRef | null>
+  name: string
+  category: string
+  price: string | number
+  currency: string
+  inventory: string | number
+  existingAssets: ExistingAsset[]
+  attributes: ProductAttributeValue[]
+  detailMarkdown: string
+}
+
+const ProductLivePreview = React.memo(function ProductLivePreview({
+  mode,
+  onModeChange,
+  productId,
+  mediaUploaderRef,
+  name,
+  category,
+  price,
+  currency,
+  inventory,
+  existingAssets,
+  attributes,
+  detailMarkdown,
+}: ProductLivePreviewProps) {
+  const { isZh } = useLanguage()
+  const [isPreviewOpen, setIsPreviewOpen] = useState(true)
+  const cover = existingAssets.find((asset) => asset.asset_type === 'image')
+  const formatPrice = `${currency === 'USD' ? '$' : '¥'}${Number(price || 0).toFixed(2)}`
+  const visibleAttributes = attributes.filter((attribute) => attribute.value.trim()).slice(0, 6)
+
+  return (
+    <aside className="min-w-0 lg:sticky lg:top-24">
+      <div className="overflow-hidden bg-transparent">
+        <div className="flex items-center justify-end gap-2 px-4 py-3">
+          <div className="flex items-center gap-1 rounded-full bg-[var(--surface-muted)] p-1" role="tablist" aria-label={isZh ? '预览类型' : 'Preview type'}>
+            <button type="button" role="tab" aria-selected={mode === 'page'} onClick={() => onModeChange('page')} className={`min-h-8 rounded-full px-3 text-[11px] font-semibold transition-colors ${mode === 'page' ? 'bg-[var(--surface)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
+              {isZh ? '商品页' : 'Page'}
+            </button>
+            <button type="button" role="tab" aria-selected={mode === 'info'} onClick={() => onModeChange('info')} className={`min-h-8 rounded-full px-3 text-[11px] font-semibold transition-colors ${mode === 'info' ? 'bg-[var(--surface)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
+              {isZh ? '商品页信息图' : 'Info graphic'}
+            </button>
+          </div>
+          <button type="button" onClick={() => setIsPreviewOpen((open) => !open)} className="grid h-8 w-8 place-items-center rounded-full text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--primary)]" aria-expanded={isPreviewOpen} aria-label={isPreviewOpen ? (isZh ? '收起预览' : 'Collapse preview') : (isZh ? '展开预览' : 'Expand preview')} title={isPreviewOpen ? (isZh ? '收起预览' : 'Collapse preview') : (isZh ? '展开预览' : 'Expand preview')}>
+            <ChevronDown size={16} className={`transition-transform ${isPreviewOpen ? '' : '-rotate-90'}`} aria-hidden="true" />
+          </button>
+        </div>
+
+        {isPreviewOpen && (mode === 'page' ? (
+          <div className="space-y-3 p-4">
+            <MemoProductMediaSection
               productId={productId}
               existingAssets={existingAssets}
               mediaUploaderRef={mediaUploaderRef}
             />
           </div>
-
-          {/* 03 Commercial [PRIMARY] */}
-          <div className="lg:col-span-1">
-            <ProductCommercialSection
-              price={price}
-              setPrice={setPrice}
-              currency={currency}
-              setCurrency={setCurrency}
-              inventory={inventory}
-              setInventory={setInventory}
-              status={status}
-              setStatus={setStatus}
-              disabled={isSaving}
-            />
+        ) : (
+          <div className="bg-transparent p-4">
+            <div className="mx-auto max-w-[340px] space-y-5">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">{category || (isZh ? '商品信息' : 'Product')}</p>
+                <h3 className="mt-2 text-2xl font-semibold leading-tight text-[var(--text-primary)]">{name || (isZh ? '未命名商品' : 'Untitled product')}</h3>
+                <div className="mt-5 aspect-[5/3] overflow-hidden rounded-[14px] bg-[var(--surface-muted)]">{cover ? <img src={cover.url} alt="" className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-xs text-[var(--text-muted)]">{isZh ? '商品媒体' : 'Product media'}</div>}</div>
+                <div className="mt-4 flex items-end justify-between"><span className="text-xs text-[var(--text-secondary)]">{isZh ? `库存 ${inventory || 0}` : `${inventory || 0} in stock`}</span><strong className="text-xl text-[var(--text-primary)]">{formatPrice}</strong></div>
+                <div className="mt-5 grid grid-cols-2 gap-2">{visibleAttributes.slice(0, 4).map((attribute) => <div key={attribute.fieldKey} className="rounded-[12px] bg-[var(--surface-muted)] p-3"><p className="text-[10px] text-[var(--text-muted)]">{attribute.label || attribute.fieldKey}</p><p className="mt-1 truncate text-xs font-semibold text-[var(--text-primary)]">{attribute.value}{attribute.unit ? ` ${attribute.unit}` : ''}</p></div>)}</div>
+              </div>
+              {detailMarkdown.trim() && (
+                <div className="product-detail-preview pt-2 text-sm leading-7 text-[var(--text-secondary)]">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{detailMarkdown.replace(/<br\s*\/?>(\n)?/gi, '\n')}</ReactMarkdown>
+                </div>
+              )}
+            </div>
           </div>
-
-          {/* 04 Description [SECONDARY] */}
-          <div className="lg:col-span-2">
-            <ProductDescriptionSection
-              description={description}
-              setDescription={setDescription}
-              productName={name}
-              category={category}
-              disabled={isSaving}
-            />
-          </div>
-        </div>
-
-        {/* ZONE 2: SPECIFICATIONS & SALES VARIANTS（与创建端同源：品类模板 + 变体矩阵） */}
-        <div className="space-y-6">
-          <ProductAttributesSection
-            productId={productId}
-            category={category}
-            categoryId={categoryId}
-            attributeValues={attributeValues}
-            onChangeAttributeValues={setAttributeValues}
-            isLoading={attributesLoading}
-            isLegacyFallback={attributesLegacy}
-            error={attributesError}
-            onRetry={loadProductDetails}
-            disabled={isSaving}
-            onOpenPreview={handleOpenPreview}
-          />
-
-          <ProductVariantsSection
-            productId={productId}
-            options={options}
-            setOptions={setOptions}
-            variants={variants}
-            setVariants={setVariants}
-            disabled={isSaving}
-          />
-        </div>
-
-        {/* ZONE 3: PRODUCT RELATIONSHIPS */}
-        <div>
-          <ProductRelationsSection
-            productId={productId}
-            relations={relations}
-            onChange={setRelations}
-            disabled={isSaving}
-          />
-        </div>
-
-        {/* ZONE 4: PRODUCT DOCUMENTS & KNOWLEDGE */}
-        <div>
-          <ProductKnowledgeSection
-            productId={productId}
-            onOpenPreview={handleOpenPreview}
-          />
-        </div>
+        ))}
       </div>
-
-      {/* Bottom Action Footer Bar */}
-      <div className="pt-6 border-t border-slate-200 flex items-center justify-between">
-        <Link
-          href="/dashboard/products"
-          className="text-xs font-semibold text-slate-600 hover:text-[#024AD8] transition-colors"
-        >
-          ← {isZh ? '返回商品列表' : 'Back to Product List'}
-        </Link>
-
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard/products"
-            className="px-4 py-2 rounded-[4px] border border-[#D1D1D1] bg-white text-[#1C1C1C] text-xs font-medium hover:bg-[#F7F7F7] hover:border-[#B0B0B0] transition-all focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2"
-          >
-            {isZh ? '取消' : 'Cancel'}
-          </Link>
-          <button
-            type="submit"
-            disabled={isSaving || isLoading}
-            className="px-6 py-2 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] active:bg-[#00226B] disabled:bg-[#E2E2E2] disabled:text-[#9E9E9E] disabled:cursor-not-allowed text-white text-xs font-medium transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2"
-          >
-            {isSaving ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              <Save size={14} />
-            )}
-            <span>
-              {isSaving
-                ? isZh
-                  ? '正在保存...'
-                  : 'Saving...'
-                : productId
-                ? isZh
-                  ? '保存修改'
-                  : 'Save Changes'
-                : isZh
-                ? '立即创建商品'
-                : 'Create Product'}
-            </span>
-          </button>
-        </div>
-      </div>
-
-      {/* Future Capability Preview Modal */}
-      <FuturePreviewModal
-        isOpen={previewModalOpen}
-        title={previewModalTitle}
-        onClose={() => setPreviewModalOpen(false)}
-      />
-    </form>
+    </aside>
   )
-}
+})

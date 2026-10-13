@@ -34,6 +34,7 @@ type NavbarProps = {
 export default function Navbar({ store, navItems, cta }: NavbarProps) {
   const items: NavItem[] = navItems ?? [
     { label: 'Home', href: `/store/${store.slug}` },
+    { label: '发现商家', href: '/discover' },
   ]
 
   return (
@@ -57,7 +58,7 @@ export default function Navbar({ store, navItems, cta }: NavbarProps) {
           ) : (
             <span
               aria-hidden
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--th-radius-input)] bg-[var(--th-color-primary)] [font-family:var(--th-font-heading)] text-xs font-bold text-white"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--th-radius-input)] bg-[var(--th-color-primary)] [font-family:var(--th-font-heading)] text-xs font-bold text-[var(--surface)]"
             >
               {store.name.trim().charAt(0).toUpperCase() || 'S'}
             </span>
@@ -88,7 +89,7 @@ export default function Navbar({ store, navItems, cta }: NavbarProps) {
           {cta && (
             <Link
               href={cta.href}
-              className="hidden shrink-0 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] px-4 py-1.5 text-sm font-semibold text-white transition-colors [transition-duration:var(--th-motion-duration)] [transition-timing-function:var(--th-motion-easing)] hover:bg-[var(--th-color-accent)] md:inline-flex"
+              className="hidden shrink-0 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] px-4 py-1.5 text-sm font-semibold text-[var(--surface)] transition-colors [transition-duration:var(--th-motion-duration)] [transition-timing-function:var(--th-motion-easing)] hover:bg-[var(--th-color-accent)] md:inline-flex"
             >
               {cta.label}
             </Link>

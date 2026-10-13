@@ -27,18 +27,6 @@ interface PluginsPageProps {
 const CATEGORIES_ZH = ['全部', '商业', '数据', '营销', '设计', '开发', '物流', '分析', '自动化']
 const CATEGORIES_EN = ['All', 'Commerce', 'Data', 'Marketing', 'Design', 'Development', 'Logistics', 'Analytics', 'Automation']
 
-const CATEGORY_MAP: Record<string, string> = {
-  全部: 'All',
-  商业: 'Commerce',
-  数据: 'Data',
-  营销: 'Marketing',
-  设计: 'Design',
-  开发: 'Development',
-  物流: 'Logistics',
-  分析: 'Analytics',
-  自动化: 'Automation',
-}
-
 export function PluginsPage({
   addedPluginIds,
   onToggleAddPlugin,
@@ -84,19 +72,19 @@ export function PluginsPage({
   const renderPluginIcon = (type: PluginItem['iconType']) => {
     switch (type) {
       case 'translate':
-        return <Globe size={18} className="text-[#024AD8]" />
+        return <Globe size={18} className="text-[var(--primary)]" />
       case 'seo':
-        return <FileSearch size={18} className="text-[#024AD8]" />
+        return <FileSearch size={18} className="text-[var(--primary)]" />
       case 'analytics':
-        return <BarChart3 size={18} className="text-[#024AD8]" />
+        return <BarChart3 size={18} className="text-[var(--primary)]" />
       case 'image':
-        return <ImageIcon size={18} className="text-[#024AD8]" />
+        return <ImageIcon size={18} className="text-[var(--primary)]" />
       case 'shipping':
-        return <Truck size={18} className="text-[#024AD8]" />
+        return <Truck size={18} className="text-[var(--primary)]" />
       case 'crm':
-        return <Users2 size={18} className="text-[#024AD8]" />
+        return <Users2 size={18} className="text-[var(--primary)]" />
       default:
-        return <Wrench size={18} className="text-[#024AD8]" />
+        return <Wrench size={18} className="text-[var(--primary)]" />
     }
   }
 
@@ -108,15 +96,15 @@ export function PluginsPage({
       <div className="space-y-4">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#024AD8]" />
-            <span className="text-[11px] font-bold text-[#024AD8] uppercase tracking-wider">
+            <span className="w-2 h-2 rounded-full bg-[var(--primary)]" />
+            <span className="text-[11px] font-bold text-[var(--primary)] uppercase tracking-wider">
               Omnilink Tools & Connectors
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#111827]">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--ink)]">
             {isZh ? '插件' : 'Plugins'}
           </h1>
-          <p className="text-sm text-[#6B7280]">
+          <p className="text-sm text-[var(--lavender)]">
             {isZh
               ? '为你的 Omnilink 工作流增加工具、连接器与专业功能。'
               : 'Add tools, connectors, and specialized capabilities to your Omnilink workflow.'}
@@ -127,13 +115,13 @@ export function PluginsPage({
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
           {/* Search Input */}
           <div className="relative w-full sm:max-w-md">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--lavender)]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={isZh ? '搜索插件...' : 'Search plugins...'}
-              className="w-full h-10 pl-9 pr-4 bg-white rounded-[6px] border border-[#D1D5DB] hover:border-[#9CA3AF] focus:border-[#024AD8] focus:ring-1 focus:ring-[#024AD8] text-xs sm:text-sm text-[#111827] focus:outline-none shadow-2xs"
+              className="w-full h-10 pl-9 pr-4 bg-[var(--surface)] rounded-[6px] border border-[var(--border)] hover:border-[var(--lavender)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] text-xs sm:text-sm text-[var(--ink)] focus:outline-none shadow-2xs"
             />
           </div>
 
@@ -146,10 +134,10 @@ export function PluginsPage({
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`h-8 px-3 rounded-[4px] text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  className={`h-8 px-3  text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                     active
-                      ? 'bg-[#024AD8] text-white shadow-xs'
-                      : 'bg-white hover:bg-[#F7F7F7] border border-[#D1D1D1] text-[#4B5563] hover:text-[#111827]'
+                      ? 'bg-[var(--primary)] text-[var(--surface)] shadow-xs'
+                      : 'bg-[var(--surface)] hover:bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--ink)] hover:text-[var(--ink)]'
                   }`}
                 >
                   {cat}
@@ -170,20 +158,20 @@ export function PluginsPage({
             <div
               key={plugin.id}
               id={`plugin-card-${plugin.id}`}
-              className="bg-white rounded-xl border border-[#E5E7EB] hover:border-[#024AD8]/60 p-5 flex flex-col justify-between transition-all duration-150 shadow-2xs hover:shadow-xs group"
+              className="bg-[var(--surface)] rounded-xl border border-[var(--border)] hover:border-[var(--primary)]/60 p-5 flex flex-col justify-between transition-all duration-150 shadow-2xs hover:shadow-xs group"
             >
               <div className="space-y-3.5">
                 {/* Top Row: Icon, Title, Rating */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-[6px] bg-[#EFF4FF] border border-[#D0E0FC] flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-[6px] bg-[var(--surface-muted)] border border-[var(--border)] flex items-center justify-center shrink-0">
                       {renderPluginIcon(plugin.iconType)}
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-[#111827] group-hover:text-[#024AD8] transition-colors">
+                      <h3 className="text-sm font-bold text-[var(--ink)] group-hover:text-[var(--primary)] transition-colors">
                         {isZh ? plugin.nameZh : plugin.name}
                       </h3>
-                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-[#6B7280]">
+                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-[var(--lavender)]">
                         <span>{plugin.developer}</span>
                         <span>·</span>
                         <span>{plugin.usesCount} {isZh ? '次使用' : 'uses'}</span>
@@ -192,14 +180,14 @@ export function PluginsPage({
                   </div>
 
                   {/* Rating Stars */}
-                  <div className="flex items-center text-amber-500 text-[11px] font-bold">
-                    <Star size={12} className="fill-amber-400 text-amber-400 mr-0.5" />
+                  <div className="flex items-center text-[var(--acid-sage)] text-[11px] font-bold">
+                    <Star size={12} className="fill-amber-400 text-[var(--acid-sage)] mr-0.5" />
                     <span>5.0</span>
                   </div>
                 </div>
 
                 {/* Description */}
-                <p className="text-xs text-[#4B5563] leading-relaxed line-clamp-2">
+                <p className="text-xs text-[var(--ink)] leading-relaxed line-clamp-2">
                   {isZh ? plugin.descriptionZh : plugin.description}
                 </p>
 
@@ -208,7 +196,7 @@ export function PluginsPage({
                   {(isZh ? plugin.tagsZh : plugin.tags).map((tag, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-0.5 rounded-[4px] bg-[#F3F4F6] text-[#4B5563] text-[11px] font-medium"
+                      className="px-2 py-0.5  bg-[var(--surface-muted)] text-[var(--ink)] text-[11px] font-medium"
                     >
                       {tag}
                     </span>
@@ -217,8 +205,8 @@ export function PluginsPage({
               </div>
 
               {/* Bottom Action Row */}
-              <div className="pt-4 mt-4 border-t border-[#F3F4F6] flex items-center justify-between">
-                <span className="text-[11px] text-[#9CA3AF]">
+              <div className="pt-4 mt-4 border-t border-[var(--surface-muted)] flex items-center justify-between">
+                <span className="text-[11px] text-[var(--lavender)]">
                   {isZh ? '支持自动同步' : 'Auto-sync ready'}
                 </span>
 
@@ -226,15 +214,15 @@ export function PluginsPage({
                   type="button"
                   id={`btn-toggle-plugin-${plugin.id}`}
                   onClick={() => onToggleAddPlugin(plugin.id)}
-                  className={`h-8 px-3.5 rounded-[4px] text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  className={`h-8 px-3.5  text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                     isAdded
-                      ? 'bg-white hover:bg-[#F7F7F7] border border-[#D1D1D1] text-[#1C1C1C]'
-                      : 'bg-[#024AD8] hover:bg-[#003198] active:bg-[#00226B] text-white shadow-xs'
+                      ? 'bg-[var(--surface)] hover:bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--ink)]'
+                      : 'bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] shadow-xs'
                   }`}
                 >
                   {isAdded ? (
                     <>
-                      <Check size={13} className="text-emerald-600" />
+                      <Check size={13} className="text-[var(--acid-sage)]" />
                       <span>{isZh ? '已添加' : 'Added'}</span>
                     </>
                   ) : (
@@ -253,57 +241,57 @@ export function PluginsPage({
       {/* ============================================================
           3. BOTTOM SECTION: MY PLUGINS (我的插件)
           ============================================================ */}
-      <div className="pt-8 border-t border-[#E5E7EB] space-y-4">
+      <div className="pt-8 border-t border-[var(--border)] space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-[#111827]">
+            <h2 className="text-base sm:text-lg font-bold text-[var(--ink)]">
               {isZh ? '我的插件' : 'My Active Plugins'}
             </h2>
-            <p className="text-xs text-[#6B7280]">
+            <p className="text-xs text-[var(--lavender)]">
               {isZh
                 ? '已连接到你当前店铺与工作流的插件。'
                 : 'Plugins currently connected to your store and workflows.'}
             </p>
           </div>
-          <span className="px-2.5 py-1 rounded-[4px] bg-[#EFF4FF] text-[#024AD8] text-xs font-bold">
+          <span className="px-2.5 py-1  bg-[var(--surface-muted)] text-[var(--primary)] text-xs font-bold">
             {installedPlugins.length} {isZh ? '个启用中' : 'Active'}
           </span>
         </div>
 
         {installedPlugins.length === 0 ? (
-          <div className="p-8 text-center bg-white rounded-xl border border-dashed border-[#D1D5DB] text-xs text-[#6B7280]">
+          <div className="p-8 text-center bg-[var(--surface)] rounded-xl border border-dashed border-[var(--border)] text-xs text-[var(--lavender)]">
             {isZh ? '尚未添加任何插件。点击上方卡片快速启用。' : 'No active plugins. Click Add on any card above to enable.'}
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-[#E5E7EB] divide-y divide-[#F3F4F6] overflow-hidden shadow-2xs">
+          <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] divide-y divide-[var(--surface-muted)] overflow-hidden shadow-2xs">
             {installedPlugins.map((plugin) => (
               <div
                 key={plugin.id}
-                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#FAFAFA] transition-colors"
+                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[var(--surface-muted)] transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-[4px] bg-[#EFF4FF] border border-[#D0E0FC] flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8  bg-[var(--surface-muted)] border border-[var(--border)] flex items-center justify-center shrink-0">
                     {renderPluginIcon(plugin.iconType)}
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-[#111827]">
+                    <h4 className="text-xs font-bold text-[var(--ink)]">
                       {isZh ? plugin.nameZh : plugin.name}
                     </h4>
-                    <p className="text-[11px] text-[#6B7280]">
+                    <p className="text-[11px] text-[var(--lavender)]">
                       {isZh ? plugin.descriptionZh : plugin.description}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--acid-sage)] text-[var(--acid-sage)] text-[10px] font-bold border border-[var(--acid-sage)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--acid-sage)] animate-pulse" />
                     {isZh ? '正常运行' : 'Active'}
                   </span>
                   <button
                     type="button"
                     onClick={() => onToggleAddPlugin(plugin.id)}
-                    className="p-1.5 rounded-[4px] text-[#9CA3AF] hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                    className="p-1.5  text-[var(--lavender)] hover:text-[var(--plum)] hover:bg-[var(--plum)] transition-colors cursor-pointer"
                     title={isZh ? '移除插件' : 'Remove Plugin'}
                   >
                     <Trash2 size={14} />

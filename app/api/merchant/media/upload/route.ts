@@ -87,10 +87,19 @@ export async function POST(request: NextRequest) {
       assetId,
     })
 
+    const { data: catalogItem, error: catalogItemError } = await supabase
+      .from('catalog_items')
+      .select('organization_id')
+      .eq('id', productId)
+      .maybeSingle()
+    if (catalogItemError || !catalogItem) {
+      return NextResponse.json({ error: catalogItemError?.message ?? 'Product not found' }, { status: 404 })
+    }
+
     // Idempotency Check
     const { data: existingAsset, error: existingAssetError } =
       await supabase
-        .from('product_assets')
+        .from('catalog_media')
         .select('*')
         .eq('id', assetId)
         .maybeSingle()
@@ -104,7 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingAsset) {
-      if (existingAsset.product_id !== productId) {
+      if (existingAsset.catalog_item_id !== productId) {
         return NextResponse.json(
           {
             error: 'Asset ID already belongs to another product.',
@@ -288,16 +297,15 @@ export async function POST(request: NextRequest) {
 
       // DB Registration with upsert
       const { data: asset, error: assetError } = await supabase
-        .from('product_assets')
+        .from('catalog_media')
         .upsert(
           {
             id: assetId,
-            product_id: productId,
-            asset_type: 'public',
-            url: publicUrl,
-            storage_key: publicStorageKey,
-            file_hash: fileHash,
-            size_bytes: file.size,
+            organization_id: catalogItem.organization_id,
+            catalog_item_id: productId,
+            media_type: 'image',
+            media_role: 'generated',
+            storage_path: publicUrl,
             metadata,
           },
           {

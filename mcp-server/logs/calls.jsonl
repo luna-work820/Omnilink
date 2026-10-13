@@ -1,0 +1,4 @@
+{"ts":"2026-09-11T06:11:47.775Z","tool":"search_products","args":{"query":"","limit":3},"error":"TypeError: fetch failed"}
+{"ts":"2026-09-11T06:19:44.298Z","tool":"search_products","args":{"query":"","limit":3},"error":"TypeError: fetch failed"}
+{"ts":"2026-10-03T13:48:34.220Z","tool":"search_products","args":{"query":"","limit":3},"error":"TypeError: fetch failed"}
+{"ts":"2026-10-03T14:04:45.751Z","tool":"search_products","args":{"query":"","limit":3},"error":"TypeError: fetch failed"}

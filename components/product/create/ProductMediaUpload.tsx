@@ -2,7 +2,7 @@
 
 import React, { useRef } from 'react'
 import Image from 'next/image'
-import { UploadCloud, X, Image as ImageIcon } from 'lucide-react'
+import { UploadCloud, X } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 import type { ImageFileItem } from './types'
 
@@ -53,20 +53,20 @@ export function ProductMediaUpload({
 
   return (
     <div className="space-y-3.5">
-      {/* 模块标题与指引说明 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2.5 border-b border-slate-100 gap-1">
+      {/* 商品媒体库 */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2.5 border-b border-[var(--surface-muted)] gap-1">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-[#EFF4FF] text-[#024AD8] flex items-center justify-center font-bold text-xs">
-            03
+          <div className="w-6 h-6 rounded-md bg-[var(--surface-muted)] text-[var(--primary)] flex items-center justify-center font-bold text-xs">
+            <UploadCloud size={13} />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-900">
-              {isZh ? '商品图片' : 'Product Media'}
+            <h3 className="text-sm font-bold text-[var(--lavender)]">
+              {isZh ? '商品媒体库' : 'Product media library'}
             </h3>
           </div>
         </div>
-        <span className="text-[11px] text-slate-400">
-          {isZh ? `支持拖拽或选择上传，首张默认为商品主图（${images.length}/${maxImages}）` : `Drag & drop or click to upload, 1st is cover (${images.length}/${maxImages})`}
+        <span className="text-[11px] text-[var(--lavender)]">
+          {isZh ? `${images.length}/${maxImages} 个媒体` : `${images.length}/${maxImages} media`}
         </span>
       </div>
 
@@ -89,7 +89,7 @@ export function ProductMediaUpload({
         {images.map((item, idx) => (
           <div
             key={item.previewUrl}
-            className="group relative aspect-square rounded-[4px] border border-slate-200 overflow-hidden bg-slate-50 transition-all"
+            className="group relative aspect-square  border border-[var(--surface-muted)] overflow-hidden bg-[var(--surface-muted)] transition-all"
           >
             <Image
               src={item.previewUrl}
@@ -102,7 +102,7 @@ export function ProductMediaUpload({
 
             {/* 主图角标 */}
             {idx === 0 && (
-              <span className="absolute top-1.5 left-1.5 bg-[#024AD8] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-[2px] shadow-xs">
+              <span className="absolute top-1.5 left-1.5 bg-[var(--primary)] text-[var(--surface)] text-[10px] font-bold px-1.5 py-0.5 rounded-[2px] shadow-xs">
                 {isZh ? '主图' : 'Cover'}
               </span>
             )}
@@ -112,14 +112,14 @@ export function ProductMediaUpload({
               <button
                 type="button"
                 onClick={() => handleRemoveImage(idx)}
-                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-[2px] bg-black/60 hover:bg-[#D32F2F] text-white flex items-center justify-center transition-colors cursor-pointer"
+                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-[2px] bg-[var(--ink)]/60 hover:bg-[var(--plum)] text-[var(--surface)] flex items-center justify-center transition-colors cursor-pointer"
                 title={isZh ? '移除图片' : 'Remove image'}
               >
                 <X size={12} />
               </button>
             )}
 
-            <div className="absolute bottom-0 inset-x-0 bg-black/40 text-white text-[10px] px-1.5 py-0.5 truncate">
+            <div className="absolute bottom-0 inset-x-0 bg-[var(--ink)]/40 text-[var(--surface)] text-[10px] px-1.5 py-0.5 truncate">
               {item.file.name}
             </div>
           </div>
@@ -136,19 +136,19 @@ export function ProductMediaUpload({
               e.preventDefault()
               if (!disabled) handleSelectFiles(e.dataTransfer.files)
             }}
-            className={`aspect-square rounded-[4px] border-2 border-dashed flex flex-col items-center justify-center p-3 text-center transition-all cursor-pointer select-none ${
+            className={`aspect-square  border-2 border-dashed flex flex-col items-center justify-center p-3 text-center transition-all cursor-pointer select-none ${
               disabled
-                ? 'opacity-50 border-slate-200 bg-slate-50 cursor-not-allowed'
-                : 'border-slate-300 hover:border-[#024AD8] bg-slate-50/50 hover:bg-[#EFF4FF]/30'
+                ? 'opacity-50 border-[var(--surface-muted)] bg-[var(--surface-muted)] cursor-not-allowed'
+                : 'border-[var(--surface-muted)] hover:border-[var(--primary)] bg-[var(--surface-muted)]/50 hover:bg-[var(--surface-muted)]/30'
             }`}
           >
-            <div className="w-8 h-8 rounded-[4px] bg-white border border-slate-200 text-slate-400 flex items-center justify-center mb-1.5 shadow-2xs">
-              <UploadCloud size={16} className="text-[#024AD8]" />
+            <div className="w-8 h-8  bg-[var(--surface)] border border-[var(--surface-muted)] text-[var(--lavender)] flex items-center justify-center mb-1.5 shadow-2xs">
+              <UploadCloud size={16} className="text-[var(--primary)]" />
             </div>
-            <span className="text-xs font-bold text-slate-800">
+            <span className="text-xs font-bold text-[var(--lavender)]">
               {isZh ? '上传图片' : 'Upload Images'}
             </span>
-            <span className="text-[10px] text-slate-400 mt-0.5">
+            <span className="text-[10px] text-[var(--lavender)] mt-0.5">
               {isZh ? 'JPG, PNG, WebP ≤10M' : 'JPG, PNG, WebP ≤10M'}
             </span>
           </div>

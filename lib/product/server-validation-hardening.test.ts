@@ -328,13 +328,8 @@ describe('Server Validation Hardening (Phase 3C-2)', () => {
       ...scanFiles(path.join(rootDir, 'lib')),
     ]
 
-    const allowedFiles = [
-      path.join(rootDir, 'lib/semantic/processor.ts'),
-    ]
-
     const violations: string[] = []
     for (const filePath of allSourceFiles) {
-      if (allowedFiles.includes(filePath)) continue
       const content = fs.readFileSync(filePath, 'utf-8')
       if (productSemanticsWritePattern.test(content)) {
         violations.push(filePath)

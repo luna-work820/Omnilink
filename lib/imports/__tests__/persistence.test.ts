@@ -38,11 +38,6 @@ vi.mock('@/lib/products/variants/service', () => ({
   createProductVariant: vi.fn(() => ({ id: 'test-variant-id' })),
 }))
 
-// Mock semantic pipeline
-vi.mock('@/lib/product/semantic-pipeline', () => ({
-  runSemanticPipeline: vi.fn(),
-}))
-
 describe('Import Persistence - Legacy Single SKU', () => {
   it('should handle legacy single SKU import (no variants)', () => {
     const analysis: ImportAnalysis = {

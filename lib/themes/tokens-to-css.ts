@@ -4,7 +4,7 @@
  * 输入一份 ThemeTokens，输出形如：
  *
  *   [data-theme="electric-violet"] {
- *     --th-color-primary: #8B5CF6;
+ *     --th-color-primary: var(--lavender);
  *     --th-font-heading: var(--font-heading);
  *     --th-radius-card: 0.5rem;
  *     ...

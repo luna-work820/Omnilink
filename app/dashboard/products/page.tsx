@@ -6,30 +6,29 @@ import { ProductsView } from '@/components/product/ProductsView'
 import { ProductsSkeleton } from '@/components/product/ProductsSkeleton'
 import { DEMO_PRODUCTS } from '@/lib/products/demo-data'
 
-const PRODUCT_SELECT =
-  'id, store_id, sku, name, description, price, currency, inventory, status, raw_data, semantic_data, created_at, updated_at'
+const PRODUCT_SELECT = 'id, title, description, cover_image, details, status, created_at, catalog_variants(id, sku_code, price, currency_code, availability_type, availability_value), catalog_media(storage_path, media_role)'
 
 function mapDbProductToRow(db: Record<string, any>): ProductRow {
-  const raw = db.raw_data && typeof db.raw_data === 'object' ? db.raw_data : {}
+  const raw = db.details && typeof db.details === 'object' ? db.details : {}
   const category =
     (typeof raw.category === 'string' && raw.category.trim() ? raw.category : null) ||
     (typeof raw.category_id === 'string' && raw.category_id.trim() ? raw.category_id : null) ||
     null
 
   const imageUrl =
-    (typeof raw.image_url === 'string' && raw.image_url.trim() ? raw.image_url : null) ||
-    (Array.isArray(raw.images) && raw.images[0]?.url ? raw.images[0].url : null) ||
+    (Array.isArray(db.catalog_media) && db.catalog_media[0]?.storage_path ? db.catalog_media[0].storage_path : null) ||
+    (typeof db.cover_image === 'string' && db.cover_image.trim() ? db.cover_image : null) ||
     null
 
   return {
     id: db.id,
-    name: db.name ?? '',
+    name: db.title ?? '',
     category,
-    price: db.price,
-    inventory: db.inventory,
+    price: db.catalog_variants?.[0]?.price ?? null,
+    inventory: db.catalog_variants?.[0]?.availability_type === 'stock' ? db.catalog_variants?.[0]?.availability_value ?? 0 : null,
     image_url: imageUrl,
-    semantic_data: db.semantic_data,
-    sku: db.sku,
+    semantic_data: null,
+    sku: db.catalog_variants?.[0]?.sku_code ?? null,
     status: db.status,
     sales_count: 0,
   }
@@ -37,17 +36,27 @@ function mapDbProductToRow(db: Record<string, any>): ProductRow {
 
 async function getRealProducts(storeId: string): Promise<ProductRow[]> {
   const supabase = await createClientServer()
+  const { data: store } = await supabase.from('stores').select('organization_id').eq('id', storeId).single()
+  if (!store) return []
   const { data: products, error } = await supabase
-    .from('products')
+    .from('catalog_items')
     .select(PRODUCT_SELECT)
-    .eq('store_id', storeId)
+    .eq('organization_id', store.organization_id)
+    .neq('status', 'archived')
     .order('created_at', { ascending: false })
     .limit(50)
 
   if (error || !products) {
     return []
   }
-  return products.map(mapDbProductToRow)
+  const { data: channel } = await supabase.from('sales_channels').select('id')
+    .eq('organization_id', store.organization_id).eq('code', 'storefront').eq('channel_type', 'storefront').eq('status', 'active').limit(1).maybeSingle()
+  const { data: assignments } = channel
+    ? await supabase.from('catalog_item_channels').select('catalog_item_id, is_visible, is_purchasable')
+      .eq('store_id', storeId).eq('channel_id', channel.id)
+    : { data: [] }
+  const visibleIds = new Set((assignments ?? []).filter((row) => row.is_visible).map((row) => row.catalog_item_id))
+  return products.map((product) => ({ ...mapDbProductToRow(product), consumer_visible: visibleIds.has(product.id), channel_visibility_supported: true }))
 }
 
 async function ProductsListContent() {

@@ -3,10 +3,11 @@
 import { useState, useRef, useEffect, useCallback, useMemo, type CSSProperties } from 'react'
 import { useLanguage } from '@/context/LanguageContext'
 import type { StorefrontSchema } from '@/lib/storefront/schema'
-import type { StorefrontProduct, StorefrontStore, OrderConfirmationDTO } from '@/lib/storefront/types'
+import type { StorefrontProduct, StorefrontStore } from '@/lib/storefront/types'
+import type { OrderConfirmationDTO } from '@/lib/orders/types'
 import { storefrontThemeOverrides } from '@/lib/storefront/theme-overrides'
 import { resolveStorefrontLanguage } from '@/lib/storefront/locale'
-import { PREVIEW_MARKETS, getMarketByCode, type PreviewMarket } from '@/lib/storefront/markets'
+import { getMarketByCode } from '@/lib/storefront/markets'
 import { convertPrice } from '@/lib/store/currency'
 import ThemeRoot from '@/components/theme/ThemeRoot'
 import DynamicSectionRenderer from '@/components/storefront/DynamicSectionRenderer'
@@ -156,13 +157,10 @@ interface PreviewCanvasProps {
   onPageChange?: (page: StorefrontEditorPage) => void
   selectedProductId?: string | null
   onProductChange?: (id: string) => void
-  cartPreviewMode?: 'filled' | 'empty'
   deviceMode?: DeviceMode
   onDeviceModeChange?: (mode: DeviceMode) => void
   previewMarket?: 'CN' | 'US'
-  onMarketChange?: (market: 'CN' | 'US') => void
   previewLanguage?: 'zh' | 'en'
-  onLanguageChange?: (lang: 'zh' | 'en') => void
   showControlBar?: boolean
   className?: string
   rightPanelOpen?: boolean
@@ -177,13 +175,10 @@ export default function PreviewCanvas({
   onPageChange,
   selectedProductId: externalSelectedProductId,
   onProductChange,
-  cartPreviewMode = 'filled',
   deviceMode: externalDeviceMode,
   onDeviceModeChange,
   previewMarket: externalPreviewMarket,
-  onMarketChange,
   previewLanguage: externalPreviewLanguage,
-  onLanguageChange,
   showControlBar = true,
   className = '',
   rightPanelOpen = false,
@@ -232,18 +227,10 @@ export default function PreviewCanvas({
   const currentMarket = getMarketByCode(currentMarketCode)
 
   // 独立语言 (Language) 控制：zh / en
-  const [internalLang, setInternalLang] = useState<'zh' | 'en'>(
+  const [internalLang] = useState<'zh' | 'en'>(
     resolveStorefrontLanguage(schema.theme?.language, isZh ? 'zh' : 'en')
   )
   const effectiveLanguage = externalPreviewLanguage ?? internalLang
-
-  const handleLanguageSelect = (lang: 'zh' | 'en') => {
-    if (onLanguageChange) {
-      onLanguageChange(lang)
-    } else {
-      setInternalLang(lang)
-    }
-  }
 
   const [zoomPercent, setZoomPercent] = useState<number>(100)
   const [contentHeight, setContentHeight] = useState<number>(900)
@@ -381,21 +368,21 @@ export default function PreviewCanvas({
   ]
 
   return (
-    <div className={`flex flex-col h-full w-full bg-slate-100 overflow-hidden ${className}`}>
+    <div className={`flex flex-col h-full w-full bg-[var(--surface-muted)] overflow-hidden ${className}`}>
       {/* 预览控制栏 (Preview Toolbar) */}
       {showControlBar && (
         <div
-          className="h-12 px-4 flex items-center justify-between gap-3 shrink-0 z-10 text-xs text-gray-700 select-none"
+          className="h-12 px-4 flex items-center justify-between gap-3 shrink-0 z-10 text-xs text-[var(--lavender)] select-none"
           style={{
-            background: 'rgba(255, 255, 255, 0.65)',
+            background: 'var(--surface)',
             backdropFilter: 'blur(20px) saturate(180%)',
             WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.4)',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.03)',
+            borderBottom: '1px solid var(--surface)',
+            boxShadow: '0 10px 30px var(--ink)',
           }}
         >
           {/* 左侧：页面切换 Tabs (Page Switcher with Apple Segmented style) */}
-          <div className="flex items-center gap-0.5 bg-black/[0.04] p-0.5 rounded-lg border border-black/[0.01] overflow-x-auto">
+          <div className="flex items-center gap-0.5 bg-[var(--ink)]/[0.04] p-0.5 rounded-lg border border-[var(--ink)]/[0.01] overflow-x-auto">
             {pagesList.map((p) => {
               const Icon = p.icon
               const isActive = activePage === p.id
@@ -411,11 +398,11 @@ export default function PreviewCanvas({
                       : 'gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold'
                   } ${
                     isActive
-                      ? 'bg-white text-black shadow-[0_1.5px_3px_rgba(0,0,0,0.08),0_0.5px_1px_rgba(0,0,0,0.04)] font-bold'
-                      : 'text-gray-500 hover:text-gray-900'
+                      ? 'bg-[var(--surface)] text-[var(--ink)] shadow-[0_1.5px_3px_var(--ink),0_0.5px_1px_var(--ink)] font-bold'
+                      : 'text-[var(--lavender)] hover:text-[var(--lavender)]'
                   }`}
                 >
-                  <Icon size={12} className={isActive ? 'text-black' : 'text-gray-400'} />
+                  <Icon size={12} className={isActive ? 'text-[var(--ink)]' : 'text-[var(--lavender)]'} />
                   {!rightPanelOpen && <span>{isZh ? p.labelZh : p.labelEn}</span>}
                 </button>
               )
@@ -428,7 +415,7 @@ export default function PreviewCanvas({
               <select
                 value={selectedProductId || products[0]?.id || ''}
                 onChange={(e) => handleProductChange(e.target.value)}
-                className="w-full max-w-[200px] px-2 py-1 text-[11px] font-semibold bg-white border border-gray-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-black/10 truncate cursor-pointer hover:bg-gray-50 transition-colors"
+                className="w-full max-w-[200px] px-2 py-1 text-[11px] font-semibold bg-[var(--surface)] border border-[var(--surface-muted)] rounded-lg focus:outline-none focus:ring-1 focus:ring-[var(--ink)]/10 truncate cursor-pointer hover:bg-[var(--surface-muted)] transition-colors"
                 title={isZh ? '选择预览商品' : 'Select Preview Product'}
               >
                 {products.map((p) => (
@@ -444,14 +431,14 @@ export default function PreviewCanvas({
           <div className="flex items-center gap-2 sm:gap-3">
 
             {/* 设备切换 */}
-            <div className="flex items-center gap-0.5 bg-black/[0.04] p-0.5 rounded-lg border border-black/[0.01]">
+            <div className="flex items-center gap-0.5 bg-[var(--ink)]/[0.04] p-0.5 rounded-lg border border-[var(--ink)]/[0.01]">
               <button
                 type="button"
                 onClick={() => setDeviceMode('desktop')}
                 className={`p-1 rounded-md transition-all cursor-pointer ${
                   deviceMode === 'desktop'
-                    ? 'bg-white text-black shadow-[0_1.5px_3px_rgba(0,0,0,0.08),0_0.5px_1px_rgba(0,0,0,0.04)]'
-                    : 'text-gray-500 hover:text-gray-900'
+                    ? 'bg-[var(--surface)] text-[var(--ink)] shadow-[0_1.5px_3px_var(--ink),0_0.5px_1px_var(--ink)]'
+                    : 'text-[var(--lavender)] hover:text-[var(--lavender)]'
                 }`}
                 title={isZh ? '桌面端' : 'Desktop'}
               >
@@ -463,8 +450,8 @@ export default function PreviewCanvas({
                 onClick={() => setDeviceMode('tablet')}
                 className={`p-1 rounded-md transition-all cursor-pointer ${
                   deviceMode === 'tablet'
-                    ? 'bg-white text-black shadow-[0_1.5px_3px_rgba(0,0,0,0.08),0_0.5px_1px_rgba(0,0,0,0.04)]'
-                    : 'text-gray-500 hover:text-gray-900'
+                    ? 'bg-[var(--surface)] text-[var(--ink)] shadow-[0_1.5px_3px_var(--ink),0_0.5px_1px_var(--ink)]'
+                    : 'text-[var(--lavender)] hover:text-[var(--lavender)]'
                 }`}
                 title={isZh ? '平板' : 'Tablet'}
               >
@@ -476,8 +463,8 @@ export default function PreviewCanvas({
                 onClick={() => setDeviceMode('mobile')}
                 className={`p-1 rounded-md transition-all cursor-pointer ${
                   deviceMode === 'mobile'
-                    ? 'bg-white text-black shadow-[0_1.5px_3px_rgba(0,0,0,0.08),0_0.5px_1px_rgba(0,0,0,0.04)]'
-                    : 'text-gray-500 hover:text-gray-900'
+                    ? 'bg-[var(--surface)] text-[var(--ink)] shadow-[0_1.5px_3px_var(--ink),0_0.5px_1px_var(--ink)]'
+                    : 'text-[var(--lavender)] hover:text-[var(--lavender)]'
                 }`}
                 title={isZh ? '手机' : 'Mobile'}
               >
@@ -486,14 +473,14 @@ export default function PreviewCanvas({
             </div>
 
             {/* 极简滑块缩放控制 (Minimalist Elegant Slider) */}
-            <div className="hidden sm:flex items-center gap-2 bg-black/[0.02] hover:bg-black/[0.04] px-2.5 py-1 rounded-lg border border-black/[0.03] transition-colors">
+            <div className="hidden sm:flex items-center gap-2 bg-[var(--ink)]/[0.02] hover:bg-[var(--ink)]/[0.04] px-2.5 py-1 rounded-lg border border-[var(--ink)]/[0.03] transition-colors">
               <button
                 type="button"
                 onClick={() => {
                   setZoomPercent((prev) => Math.max(25, prev - 5))
                   setIsAutoFit(false)
                 }}
-                className="p-0.5 text-gray-400 hover:text-black rounded transition-colors cursor-pointer"
+                className="p-0.5 text-[var(--lavender)] hover:text-[var(--ink)] rounded transition-colors cursor-pointer"
                 title={isZh ? '缩小' : 'Zoom Out'}
               >
                 <ZoomOut size={11} />
@@ -509,8 +496,8 @@ export default function PreviewCanvas({
                   setZoomPercent(Number(e.target.value))
                   setIsAutoFit(false)
                 }}
-                style={{ accentColor: '#000' }}
-                className="w-16 sm:w-20 h-1 rounded-lg appearance-none cursor-pointer bg-black/10 hover:bg-black/20 transition-colors"
+                style={{ accentColor: 'var(--ink)' }}
+                className="w-16 sm:w-20 h-1 rounded-lg appearance-none cursor-pointer bg-[var(--ink)]/10 hover:bg-[var(--ink)]/20 transition-colors"
               />
 
               <button
@@ -519,13 +506,13 @@ export default function PreviewCanvas({
                   setZoomPercent((prev) => Math.min(150, prev + 5))
                   setIsAutoFit(false)
                 }}
-                className="p-0.5 text-gray-400 hover:text-black rounded transition-colors cursor-pointer"
+                className="p-0.5 text-[var(--lavender)] hover:text-[var(--ink)] rounded transition-colors cursor-pointer"
                 title={isZh ? '放大' : 'Zoom In'}
               >
                 <ZoomIn size={11} />
               </button>
 
-              <span className="font-mono text-[10px] font-bold text-gray-600 w-8 text-right select-none">
+              <span className="font-mono text-[10px] font-bold text-[var(--lavender)] w-8 text-right select-none">
                 {zoomPercent}%
               </span>
 
@@ -533,7 +520,7 @@ export default function PreviewCanvas({
                 type="button"
                 onClick={handleFit}
                 className={`p-0.5 rounded transition-all cursor-pointer ${
-                  isAutoFit ? 'text-black font-bold' : 'text-gray-400 hover:text-black'
+                  isAutoFit ? 'text-[var(--ink)] font-bold' : 'text-[var(--lavender)] hover:text-[var(--ink)]'
                 }`}
                 title={isZh ? '自适应' : 'Auto Fit'}
               >
@@ -550,7 +537,7 @@ export default function PreviewCanvas({
         className="flex-1 overflow-auto p-8 flex justify-center items-start relative select-none group"
         style={{
           backgroundImage:
-            'radial-gradient(circle, rgba(0, 0, 0, 0.05) 1px, transparent 1px)',
+            'radial-gradient(circle, var(--ink) 1px, transparent 1px)',
           backgroundSize: '20px 20px',
         }}
       >
@@ -558,11 +545,11 @@ export default function PreviewCanvas({
         <div
           className="absolute bottom-6 right-6 z-30 flex items-center gap-1.5 px-2 py-1 rounded-full border opacity-0 group-hover:opacity-100 transition-opacity duration-300"
           style={{
-            background: 'rgba(255, 255, 255, 0.7)',
+            background: 'var(--surface)',
             backdropFilter: 'blur(10px)',
             WebkitBackdropFilter: 'blur(10px)',
-            borderColor: 'rgba(0, 0, 0, 0.05)',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+            borderColor: 'var(--ink)',
+            boxShadow: '0 4px 12px var(--ink)',
           }}
         >
           <button
@@ -571,7 +558,7 @@ export default function PreviewCanvas({
               setZoomPercent((prev) => Math.max(25, prev - 5))
               setIsAutoFit(false)
             }}
-            className="p-1 text-gray-500 hover:text-black rounded-full hover:bg-black/5 transition-all cursor-pointer"
+            className="p-1 text-[var(--lavender)] hover:text-[var(--ink)] rounded-full hover:bg-[var(--ink)]/5 transition-all cursor-pointer"
             title={isZh ? '缩小' : 'Zoom Out'}
           >
             <ZoomOut size={12} />
@@ -582,7 +569,7 @@ export default function PreviewCanvas({
               setZoomPercent((prev) => Math.min(150, prev + 5))
               setIsAutoFit(false)
             }}
-            className="p-1 text-gray-500 hover:text-black rounded-full hover:bg-black/5 transition-all cursor-pointer"
+            className="p-1 text-[var(--lavender)] hover:text-[var(--ink)] rounded-full hover:bg-[var(--ink)]/5 transition-all cursor-pointer"
             title={isZh ? '放大' : 'Zoom In'}
           >
             <ZoomIn size={12} />
@@ -591,7 +578,7 @@ export default function PreviewCanvas({
             type="button"
             onClick={handleFit}
             className={`p-1 rounded-full transition-all cursor-pointer ${
-              isAutoFit ? 'text-black bg-black/5 font-bold' : 'text-gray-500 hover:text-black hover:bg-black/5'
+              isAutoFit ? 'text-[var(--ink)] bg-[var(--ink)]/5 font-bold' : 'text-[var(--lavender)] hover:text-[var(--ink)] hover:bg-[var(--ink)]/5'
             }`}
             title={isZh ? '自适应' : 'Fit Screen'}
           >
@@ -609,7 +596,7 @@ export default function PreviewCanvas({
         >
           {/* 设备模拟视口 (Device Viewport Frame) */}
           <div
-            className="bg-white overflow-hidden transition-all duration-200"
+            className="bg-[var(--surface)] overflow-hidden transition-all duration-200"
             style={{
               width: `${currentPreset.viewportWidth}px`,
               minHeight: `${currentPreset.viewportHeight}px`,
@@ -620,22 +607,22 @@ export default function PreviewCanvas({
               top: 0,
               left: '50%',
               marginLeft: `-${currentPreset.viewportWidth / 2}px`,
-              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.08)',
+              boxShadow: '0 20px 40px var(--ink)',
             }}
           >
             {/* 手机/平板 Top Bar 装饰 */}
             {deviceMode === 'mobile' && (
-              <div className="h-6 bg-slate-900 flex items-center justify-center shrink-0 z-30 relative">
-                <div className="w-20 h-3.5 bg-black rounded-b-xl flex items-center justify-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-slate-800" />
-                  <div className="w-8 h-1 rounded-full bg-slate-800" />
+              <div className="h-6 bg-[var(--surface-muted)] flex items-center justify-center shrink-0 z-30 relative">
+                <div className="w-20 h-3.5 bg-[var(--ink)] rounded-b-xl flex items-center justify-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[var(--surface-muted)]" />
+                  <div className="w-8 h-1 rounded-full bg-[var(--surface-muted)]" />
                 </div>
               </div>
             )}
 
             {deviceMode === 'tablet' && (
-              <div className="h-4 bg-slate-800 flex items-center justify-center shrink-0 z-30 relative">
-                <div className="w-2 h-2 rounded-full bg-slate-600" />
+              <div className="h-4 bg-[var(--surface-muted)] flex items-center justify-center shrink-0 z-30 relative">
+                <div className="w-2 h-2 rounded-full bg-[var(--surface-muted)]" />
               </div>
             )}
 

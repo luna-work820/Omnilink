@@ -1,10 +1,8 @@
 import { createClientServer } from '@/lib/supabase/server'
-import { Database } from '@/lib/database.types'
-import { randomUUID } from 'crypto'
 
-type StoreInsert = Database['public']['Tables']['stores']['Insert']
-type StoreSettingsInsert = Database['public']['Tables']['store_settings']['Insert']
+type StoreCurrency = 'CNY' | 'USD'
 
+/** Create an organization and its first store through the transactional RPC. */
 export async function initializeMerchantStore(params: {
   owner_id: string
   store_name: string
@@ -14,161 +12,70 @@ export async function initializeMerchantStore(params: {
   description?: string | null
   currency?: string | null
 }): Promise<string> {
-  const { owner_id, store_name, industry_id, industry_category, logo_url, description, currency } = params
   const supabase = await createClientServer()
-
-  // Idempotency: in this MVP one merchant owns exactly one store.
-  // If the owner already has a store, return it instead of creating a
-  // duplicate (which would otherwise collide on the store_slug UNIQUE
-  // constraint and surface as an uncaught Server Components error #441).
-  const { data: existingStore, error: existingStoreError } = await supabase
-    .from('stores')
-    .select('id')
-    .eq('owner_id', owner_id)
-    .maybeSingle()
-
-  if (existingStoreError) {
-    throw new Error(`Failed to look up existing store: ${existingStoreError.message}`)
+  const { data: userData, error: authError } = await supabase.auth.getUser()
+  if (authError || !userData.user || userData.user.id !== params.owner_id) {
+    throw new Error('Cannot create a store for a different user')
   }
 
-  if (existingStore) {
-    // Optionally update existing store info with new avatar / category if provided
-    if (logo_url || industry_category || store_name) {
-      await supabase
-        .from('stores')
-        .update({
-          ...(store_name ? { store_name } : {}),
-          ...(logo_url ? { logo_url } : {}),
-          ...(industry_category ? { industry_category } : {}),
-          ...(description ? { description } : {}),
-        })
-        .eq('id', existingStore.id)
-    }
+  const name = params.store_name.trim()
+  const slug = name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  if (!name || !slug) throw new Error('A valid store name is required')
 
-    // Recover store_settings for an existing store that is missing it.
-    const { data: existingSettings, error: settingsLookupError } = await supabase
-      .from('store_settings')
-      .select('id')
-      .eq('store_id', existingStore.id)
-      .maybeSingle()
-
-    if (settingsLookupError) {
-      throw new Error(`Failed to verify store settings: ${settingsLookupError.message}`)
-    }
-
-    if (!existingSettings) {
-      const { error: settingsInsertError } = await supabase
-        .from('store_settings')
-        .insert({
-          store_id: existingStore.id,
-          theme_config: {},
-          seo_config: {},
-        } as StoreSettingsInsert)
-
-      if (settingsInsertError) {
-        throw new Error(`Failed to create store settings: ${settingsInsertError.message}`)
-      }
-    }
-
-    return existingStore.id
-  }
-
-  // Genuinely new merchant: build a human-readable base slug, then verify it
-  // does not collide with an existing slug before inserting. Use a short
-  // random suffix only when a real collision is detected (e.g. a different
-  // merchant already claimed the same name).
-  const baseSlug =
-    store_name.trim().toLowerCase().replace(/\s+/g, '-') || 'store'
-
-  const { data: slugConflict, error: slugLookupError } = await supabase
-    .from('stores')
-    .select('id')
-    .eq('store_slug', baseSlug)
-    .maybeSingle()
-
-  if (slugLookupError) {
-    throw new Error(`Failed to verify store slug: ${slugLookupError.message}`)
-  }
-
-  const store_slug = slugConflict
-    ? `${baseSlug}-${randomUUID().slice(0, 8)}`
-    : baseSlug
-
-    const baseCurrency = (currency === 'USD' ? 'USD' : 'CNY')
-    const { data: store, error: storeError } = await supabase
-    .from('stores')
-    .insert({
-      owner_id,
-      store_name,
-      store_slug,
-      industry_id: industry_id ?? null,
-      industry_category: industry_category ?? null,
-      logo_url: logo_url ?? null,
-      description: description ?? null,
-      base_currency: baseCurrency,
-      currency: baseCurrency,
-    } as StoreInsert)
-    .select('id')
-    .single()
-
-  if (storeError) {
-    throw new Error(`Failed to create store: ${storeError.message}`)
-  }
-
-  if (!store) {
-    throw new Error('Failed to create store: no store returned')
-  }
-
-  const store_id = store.id
-
-  const { error: settingsError } = await supabase
-    .from('store_settings')
-    .insert({
-      store_id,
-      theme_config: {},
-      seo_config: {},
-    } as StoreSettingsInsert)
-
-  if (settingsError) {
-    throw new Error(`Failed to create store settings: ${settingsError.message}`)
-  }
-
-  return store_id
+  const { data, error } = await supabase.rpc('create_organization_and_store', {
+    p_organization_name: name,
+    p_organization_slug: slug,
+    p_store_name: name,
+    p_store_slug: slug,
+    p_currency: params.currency === 'USD' ? 'USD' : 'CNY',
+  })
+  if (error) throw new Error(`Failed to create store: ${error.message}`)
+  const result = Array.isArray(data) ? data[0] : data
+  if (!result?.store_id) throw new Error('Failed to create store: no store returned')
+  return result.store_id
 }
 
-export async function getStoreByOwnerId(owner_id: string) {
+/** Resolve the user's first editable store through active organization membership. */
+export async function getStoreByOwnerId(userId: string) {
   const supabase = await createClientServer()
-  const { data: store, error } = await supabase
-    .from('stores')
-    .select(`
-      *,
-      industries (*)
-    `)
-    .eq('owner_id', owner_id)
-    .single()
+  const { data: memberships, error: membershipError } = await supabase
+    .from('organization_members')
+    .select('organization_id')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .in('role', ['owner', 'admin', 'editor'])
+  if (membershipError || !memberships?.length) return null
 
-  if (error) {
-    return null
-  }
-
-  return store
-}
-
-export async function updateStoreBaseCurrency(owner_id: string, base_currency: 'CNY' | 'USD') {
-  const supabase = await createClientServer()
   const { data, error } = await supabase
     .from('stores')
-    .update({
-      base_currency,
-      currency: base_currency,
-    })
-    .eq('owner_id', owner_id)
-    .select()
-    .single()
+    .select('id, organization_id, name, slug, currency')
+    .in('organization_id', memberships.map((membership) => membership.organization_id))
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
 
-  if (error) {
-    throw new Error(`Failed to update store base currency: ${error.message}`)
+  if (error || !data) return null
+  return {
+    ...data,
+    // Compatibility DTOs for existing dashboard/editor components.
+    store_name: data.name,
+    store_slug: data.slug,
+    base_currency: data.currency,
+    industries: null,
   }
+}
 
+export async function updateStoreBaseCurrency(userId: string, currency: StoreCurrency) {
+  const supabase = await createClientServer()
+  const store = await getStoreByOwnerId(userId)
+  if (!store) throw new Error('No editable store found for this user')
+
+  const { data, error } = await supabase
+    .from('stores')
+    .update({ currency })
+    .eq('id', store.id)
+    .select('id, organization_id, name, slug, currency')
+    .single()
+  if (error) throw new Error(`Failed to update store currency: ${error.message}`)
   return data
 }

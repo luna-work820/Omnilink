@@ -15,7 +15,6 @@ import {
   ChevronDown,
   HardDrive,
   Copy,
-  Share2,
   RotateCcw,
   CheckSquare,
   Square,
@@ -24,11 +23,6 @@ import {
   Database,
   Layers,
   UploadCloud,
-  FileSpreadsheet,
-  FileCode,
-  Globe,
-  Trash2,
-  SlidersHorizontal,
   ShieldCheck,
   Cpu,
   Crosshair,
@@ -58,6 +52,8 @@ import { GeneralFolderWorkspace } from './GeneralFolderWorkspace'
 import { SkillMarketplaceModal } from './SkillMarketplaceModal'
 import { KnowledgeMarketplaceView } from './KnowledgeMarketplaceView'
 import { RightSkillsArtifactsDrawer } from './RightSkillsArtifactsDrawer'
+
+const createUserMessageId = () => `user-msg-${Date.now()}`
 
 const DEFAULT_PRODUCT_FILE_SOURCES: KnowledgeFileSource[] = [
   {
@@ -240,14 +236,14 @@ export function UnifiedKnowledgeSpaceView({
   const [newFolderDesc, setNewFolderDesc] = useState('')
 
   // AI Model Selection State
-  const [selectedModelId, setSelectedModelId] = useState<string>('gemini-2-5-pro')
+  const [selectedModelId, setSelectedModelId] = useState<string>('gemini-2.5-flash')
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState<boolean>(false)
   const modelDropdownRef = useRef<HTMLDivElement>(null)
 
   // AI Skill Selection State
   const [activeSkillIds, setActiveSkillIds] = useState<string[]>([
-    'skill-compliance',
-    'skill-competitor',
+    'merchant-profile',
+    'brand-proposal',
   ])
   const [isSkillMarketplaceOpen, setIsSkillMarketplaceOpen] = useState<boolean>(false)
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState<boolean>(false)
@@ -395,13 +391,13 @@ export function UnifiedKnowledgeSpaceView({
     }
   }
 
-  // Send AI query & dynamically generate new artifact
-  const handleSendQuery = (text?: string, specificSkill?: AiSkillItem) => {
+  // Send a source-grounded query to the selected server-side model.
+  const handleSendQuery = async (text?: string, specificSkill?: AiSkillItem) => {
     const q = text || queryInput
     if (!q.trim()) return
 
     const userMessage: ChatMessage = {
-      id: `user-msg-${Date.now()}`,
+      id: createUserMessageId(),
       sender: 'user',
       content: q.trim(),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -411,60 +407,74 @@ export function UnifiedKnowledgeSpaceView({
     if (!text) setQueryInput('')
     setIsSynthesizing(true)
 
-    setTimeout(() => {
-      const activeSkillNames = specificSkill
-        ? specificSkill.name
-        : AI_SKILLS_LIBRARY.filter((s) => activeSkillIds.includes(s.id))
-            .map((s) => s.name)
-            .join(' + ')
+    try {
+      const selectedFolders = folders.filter((folder) => selectedFolderIdsForAi.includes(folder.id))
+      const response = await fetch('/api/knowledge/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          prompt: q.trim(),
+          model: selectedModelId,
+          skill: specificSkill && {
+            id: specificSkill.id,
+            name: specificSkill.name,
+            description: specificSkill.description,
+          },
+          context: selectedFolders.flatMap((folder) => (folder.sources || []).map((source) => ({
+            title: source.name,
+            summary: source.summary || folder.description,
+          }))),
+        }),
+      })
+      const payload = await response.json() as { content?: string; error?: string; model?: string }
+      if (!response.ok || !payload.content) throw new Error(payload.error || '模型没有返回结果。')
 
+      const activeSkillNames = specificSkill?.name || '通用知识库问答'
       const generatedTitle = specificSkill
         ? `${specificSkill.name}分析报告 · ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-        : `深度研报：${q.slice(0, 18)}...`
-
-      const botContent = `### 📑 基于【${activeSkillNames || '通用研报推理'}】的深度分析结果\n\n已检索并对标您已勾选的 **${selectedFolderIdsForAi.length} 个知识库**：\n\n1. **核心执行摘要**：针对「${q.trim()}」，综合知识库中的硬件参数、认证协议与市场调研数据，方案具备高度商业可行性与合规保障。\n2. **关键参数矩阵对比**：相比行业平均水平，在关键效能指标上提升约 18%-32%，且物料供应链交期可控。\n3. **落地执行建议**：已自动提炼出 3 条高优先级任务，并建议同步更新至产品知识与电商资料库中。`
+        : `知识库回答：${q.slice(0, 18)}…`
+      const botContent = payload.content
 
       const botMessage: ChatMessage = {
         id: `ai-msg-${Date.now() + 1}`,
         sender: 'assistant',
         content: botContent,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        citations: [
-          {
-            id: `cit-${Date.now()}`,
-            sourceId: 'src-auto',
-            sourceName: '知识库动态切片_v2.pdf',
-            excerpt: '系统自动从当前选中的知识库中提取与问题高度相关的段落。',
-            confidence: 0.98,
-          },
-        ],
         modelUsed:
-          AI_RESEARCH_MODELS_DATA.find((m) => m.id === selectedModelId)?.name ||
-          'Gemini 2.5 Pro',
+          AI_RESEARCH_MODELS_DATA.find((m) => m.id === payload.model)?.name ||
+          '已选模型',
       }
 
       setResearchMessages((prev) => [...prev, botMessage])
-      setIsSynthesizing(false)
-
       // Auto-save new artifact to right drawer
       const newArtifact: SavedArtifact = {
         id: `art-${Date.now()}`,
         title: generatedTitle,
         type: specificSkill ? specificSkill.id : 'custom_analysis',
-        typeLabel: specificSkill ? `✨ ${specificSkill.name}` : '📊 深度研报',
-        summary: `基于所选知识库执行「${activeSkillNames}」，生成结构化洞察与建议。`,
-        keywords: ['智能分析', '深度洞察', specificSkill ? specificSkill.name : '研报'],
+        typeLabel: specificSkill ? specificSkill.name : '知识库回答',
+        summary: `基于所选来源执行「${activeSkillNames}」。`,
+        keywords: ['知识库', specificSkill ? specificSkill.name : '问答'],
         content: botContent,
         createdAt: '刚刚',
         sourceCount: selectedFolderIdsForAi.length,
-        sourcesText: `关联 ${selectedFolderIdsForAi.length} 个来源文档`,
+        sourcesText: `已提供 ${selectedFolders.reduce((count, folder) => count + (folder.sources || []).length, 0)} 个来源摘要`,
         pinned: false,
-        wordCount: 920,
+        wordCount: botContent.replace(/\s/g, '').length,
         skillId: specificSkill?.id,
       }
 
       setSavedArtifacts((prev) => [newArtifact, ...prev])
-    }, 700)
+    } catch (error) {
+      setResearchMessages((prev) => [...prev, {
+        id: `ai-error-${Date.now()}`,
+        sender: 'assistant',
+        content: `无法完成本次请求：${error instanceof Error ? error.message : '请稍后重试。'}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }])
+    } finally {
+      setIsSynthesizing(false)
+    }
   }
 
   // Filter folders
@@ -608,7 +618,7 @@ export function UnifiedKnowledgeSpaceView({
                       type="button"
                       id="open-knowledge-marketplace-btn"
                       onClick={() => setIsMarketplaceModalOpen(true)}
-                      className="px-2 py-1 rounded-[4px] bg-[var(--surface-muted)] hover:bg-[var(--border)] text-[var(--ink)] hover:text-[var(--ink)] text-xs font-medium transition-colors cursor-pointer flex items-center gap-1"
+                      className="px-2 py-1  bg-[var(--surface-muted)] hover:bg-[var(--border)] text-[var(--ink)] hover:text-[var(--ink)] text-xs font-medium transition-colors cursor-pointer flex items-center gap-1"
                       title="行业权威知识库中心"
                     >
                       <ShoppingBag size={11} />
@@ -619,7 +629,7 @@ export function UnifiedKnowledgeSpaceView({
                       type="button"
                       id="create-new-knowledge-base-btn"
                       onClick={() => setIsCreateFolderModalOpen(true)}
-                      className="px-2 py-1 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-colors cursor-pointer flex items-center gap-0.5"
+                      className="px-2 py-1  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-colors cursor-pointer flex items-center gap-0.5"
                       title="新建知识库"
                     >
                       <Plus size={11} />
@@ -659,7 +669,7 @@ export function UnifiedKnowledgeSpaceView({
                       value={sourceSearchTerm}
                       onChange={(e) => setSourceSearchTerm(e.target.value)}
                       placeholder="筛选..."
-                      className="w-full h-6 pl-5 pr-1.5 rounded-[4px] bg-[var(--surface-muted)] border border-[var(--border)] text-[11px] text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
+                      className="w-full h-6 pl-5 pr-1.5  bg-[var(--surface-muted)] border border-[var(--border)] text-[11px] text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
                     />
                   </div>
                 </div>
@@ -774,12 +784,14 @@ export function UnifiedKnowledgeSpaceView({
                   type="button"
                   id="model-selector-btn"
                   onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
-                  className="px-2.5 py-1 rounded-[4px] bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] border border-[var(--border)] text-xs font-bold text-[var(--ink)] flex items-center gap-1.5 cursor-pointer transition-colors"
+                  aria-label="选择 AI 模型"
+                  aria-expanded={isModelDropdownOpen}
+                  className="px-2.5 py-1  bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] border border-[var(--border)] text-xs font-bold text-[var(--ink)] flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
                   <Bot size={13} className="text-[var(--primary)]" />
                   <span>
                     {AI_RESEARCH_MODELS_DATA.find((m) => m.id === selectedModelId)
-                      ?.name || 'Gemini 2.5 Pro'}
+                      ?.name || 'Gemini 2.5 Flash'}
                   </span>
                   <ChevronDown size={11} className="text-[var(--lavender)]" />
                 </button>
@@ -794,7 +806,7 @@ export function UnifiedKnowledgeSpaceView({
                           setSelectedModelId(model.id)
                           setIsModelDropdownOpen(false)
                         }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-[4px] transition-colors cursor-pointer flex items-center justify-between text-xs font-semibold ${
+                        className={`w-full text-left px-2.5 py-1.5  transition-colors cursor-pointer flex items-center justify-between text-xs font-semibold ${
                           selectedModelId === model.id
                             ? 'bg-[var(--primary)] text-[var(--primary)] font-bold'
                             : 'text-[var(--ink)] hover:bg-[var(--surface-muted)]'
@@ -818,7 +830,7 @@ export function UnifiedKnowledgeSpaceView({
                     setResearchMessages([])
                   }
                 }}
-                className="p-1.5 rounded-[4px] text-[var(--lavender)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer"
+                className="p-1.5  text-[var(--lavender)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer"
                 title="清空对话"
               >
                 <RotateCcw size={13} />
@@ -950,7 +962,7 @@ export function UnifiedKnowledgeSpaceView({
                               {msg.citations.map((cit) => (
                                 <span
                                   key={cit.id}
-                                  className="px-2 py-0.5 rounded-[4px] bg-[var(--primary)] text-[var(--primary)] text-[10px] font-medium border border-[var(--primary)]"
+                                  className="px-2 py-0.5  bg-[var(--primary)] text-[var(--primary)] text-[10px] font-medium border border-[var(--primary)]"
                                 >
                                   {cit.sourceName}
                                 </span>
@@ -1036,7 +1048,7 @@ export function UnifiedKnowledgeSpaceView({
                   key={idx}
                   type="button"
                   onClick={() => handleSendQuery(chip.label)}
-                  className="px-2.5 py-1 rounded-[4px] bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--ink)] hover:text-[var(--ink)] text-[11px] font-medium transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+                  className="px-2.5 py-1  bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--ink)] hover:text-[var(--ink)] text-[11px] font-medium transition-colors cursor-pointer shrink-0 whitespace-nowrap"
                 >
                   {chip.label}
                 </button>
@@ -1057,7 +1069,7 @@ export function UnifiedKnowledgeSpaceView({
                   type="button"
                   id="plus-action-menu-btn"
                   onClick={() => setIsPlusMenuOpen(!isPlusMenuOpen)}
-                  className="w-8 h-8 rounded-[4px] bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-muted)] flex items-center justify-center cursor-pointer transition-colors shadow-2xs"
+                  className="w-8 h-8  bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-muted)] flex items-center justify-center cursor-pointer transition-colors shadow-2xs"
                   title="上传文件或挂载技能"
                 >
                   <Plus size={15} />
@@ -1071,7 +1083,7 @@ export function UnifiedKnowledgeSpaceView({
                         setIsPlusMenuOpen(false)
                         setIsQuickUploadModalOpen(true)
                       }}
-                      className="w-full text-left p-2 rounded-[4px] hover:bg-[var(--primary)] text-xs font-semibold text-[var(--ink)] flex items-center gap-2 cursor-pointer"
+                      className="w-full text-left p-2  hover:bg-[var(--primary)] text-xs font-semibold text-[var(--ink)] flex items-center gap-2 cursor-pointer"
                     >
                       <FileText size={13} className="text-[var(--primary)]" />
                       <span>上传新来源文件</span>
@@ -1082,7 +1094,7 @@ export function UnifiedKnowledgeSpaceView({
                         setIsPlusMenuOpen(false)
                         setIsSkillMarketplaceOpen(true)
                       }}
-                      className="w-full text-left p-2 rounded-[4px] hover:bg-[var(--primary)] text-xs font-semibold text-[var(--ink)] flex items-center gap-2 cursor-pointer"
+                      className="w-full text-left p-2  hover:bg-[var(--primary)] text-xs font-semibold text-[var(--ink)] flex items-center gap-2 cursor-pointer"
                     >
                       <Sparkles size={13} className="text-[var(--primary)]" />
                       <span>挂载分析技能</span>
@@ -1103,7 +1115,7 @@ export function UnifiedKnowledgeSpaceView({
               <button
                 type="submit"
                 disabled={!queryInput.trim() || isSynthesizing}
-                className="w-8 h-8 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] disabled:bg-[var(--surface-muted)] text-[var(--surface)] disabled:text-[var(--lavender)] flex items-center justify-center transition-all cursor-pointer disabled:cursor-not-allowed shrink-0"
+                className="w-8 h-8  bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] disabled:bg-[var(--surface-muted)] text-[var(--surface)] disabled:text-[var(--lavender)] flex items-center justify-center transition-all cursor-pointer disabled:cursor-not-allowed shrink-0"
                 title="发送"
               >
                 <Send size={13} className={isSynthesizing ? 'animate-pulse' : ''} />
@@ -1119,7 +1131,7 @@ export function UnifiedKnowledgeSpaceView({
           isCollapsed={isRightDrawerCollapsed}
           onToggleCollapse={() => setIsRightDrawerCollapsed(!isRightDrawerCollapsed)}
           artifacts={savedArtifacts}
-          onSelectArtifact={(art) => {
+          onSelectArtifact={() => {
             // Optional: insert reference or highlight
           }}
           onDeleteArtifact={(artId) => {
@@ -1174,7 +1186,6 @@ export function UnifiedKnowledgeSpaceView({
 
             <div className="flex-1 overflow-y-auto custom-scroll pr-1">
               <KnowledgeMarketplaceView
-                isZh={isZh}
                 addedCenterBaseIds={addedCenterBaseIds}
                 onToggleAddCenterBase={onToggleAddCenterBase}
               />
@@ -1221,7 +1232,7 @@ export function UnifiedKnowledgeSpaceView({
                   value={newFolderTitle}
                   onChange={(e) => setNewFolderTitle(e.target.value)}
                   placeholder="例如：2026年夏季新品营销素材库"
-                  className="w-full h-9 px-3 rounded-[4px] bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
+                  className="w-full h-9 px-3  bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
                   autoFocus
                 />
               </div>
@@ -1235,7 +1246,7 @@ export function UnifiedKnowledgeSpaceView({
                   onChange={(e) => setNewFolderDesc(e.target.value)}
                   placeholder="简述知识库包含的文档范围与用途..."
                   rows={3}
-                  className="w-full p-2.5 rounded-[4px] bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
+                  className="w-full p-2.5  bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
                 />
               </div>
 
@@ -1243,14 +1254,14 @@ export function UnifiedKnowledgeSpaceView({
                 <button
                   type="button"
                   onClick={() => setIsCreateFolderModalOpen(false)}
-                  className="px-3 py-1.5 rounded-[4px] bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-[var(--ink)] text-xs font-medium cursor-pointer"
+                  className="px-3 py-1.5  bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-[var(--ink)] text-xs font-medium cursor-pointer"
                 >
                   取消
                 </button>
                 <button
                   type="submit"
                   disabled={!newFolderTitle.trim()}
-                  className="px-4 py-1.5 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] disabled:bg-[var(--surface-muted)] text-[var(--surface)] disabled:text-[var(--lavender)] text-xs font-bold cursor-pointer"
+                  className="px-4 py-1.5  bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] disabled:bg-[var(--surface-muted)] text-[var(--surface)] disabled:text-[var(--lavender)] text-xs font-bold cursor-pointer"
                 >
                   创建
                 </button>
@@ -1326,7 +1337,7 @@ export function UnifiedKnowledgeSpaceView({
                   value={quickUploadName}
                   onChange={(e) => setQuickUploadName(e.target.value)}
                   placeholder="例如：2026_Q3_声学算法实测报告.pdf"
-                  className="w-full h-9 px-3 rounded-[4px] bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
+                  className="w-full h-9 px-3  bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
                   autoFocus
                 />
               </div>
@@ -1338,7 +1349,7 @@ export function UnifiedKnowledgeSpaceView({
                 <select
                   value={quickUploadTargetFolder}
                   onChange={(e) => setQuickUploadTargetFolder(e.target.value)}
-                  className="w-full h-9 px-3 rounded-[4px] bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
+                  className="w-full h-9 px-3  bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--ink)] focus:outline-none focus:border-[var(--primary)]"
                 >
                   {folders.map((f) => (
                     <option key={f.id} value={f.id}>
@@ -1352,14 +1363,14 @@ export function UnifiedKnowledgeSpaceView({
                 <button
                   type="button"
                   onClick={() => setIsQuickUploadModalOpen(false)}
-                  className="px-3 py-1.5 rounded-[4px] bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-[var(--ink)] text-xs font-medium cursor-pointer"
+                  className="px-3 py-1.5  bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-[var(--ink)] text-xs font-medium cursor-pointer"
                 >
                   取消
                 </button>
                 <button
                   type="submit"
                   disabled={!quickUploadName.trim()}
-                  className="px-4 py-1.5 rounded-[4px] bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] disabled:bg-[var(--surface-muted)] text-[var(--surface)] disabled:text-[var(--lavender)] text-xs font-bold cursor-pointer"
+                  className="px-4 py-1.5  bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] disabled:bg-[var(--surface-muted)] text-[var(--surface)] disabled:text-[var(--lavender)] text-xs font-bold cursor-pointer"
                 >
                   确认上传
                 </button>

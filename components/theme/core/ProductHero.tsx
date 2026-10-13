@@ -291,7 +291,7 @@ function ProductGallery({
             {badges.map((badge) => (
               <span
                 key={badge}
-                className="rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm"
+                className="rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] px-2 py-0.5 text-[11px] font-semibold text-[var(--surface)] shadow-sm"
               >
                 {badge}
               </span>
@@ -364,7 +364,7 @@ function ProductCommercialInfo({
         {formatPrice(price, currency)}
       </p>
       {isOutOfStock && (
-        <span className="rounded-[var(--th-radius-button)] bg-red-100 dark:bg-red-950/50 px-2.5 py-0.5 text-xs font-semibold text-red-600 dark:text-red-400">
+        <span className="rounded-[var(--th-radius-button)] bg-[var(--plum)] dark:bg-[var(--plum)]/50 px-2.5 py-0.5 text-xs font-semibold text-[var(--plum)] dark:text-[var(--plum)]">
           Out of Stock
         </span>
       )}
@@ -406,7 +406,7 @@ function ProductVariantSelector({
                   onClick={() => onOptionSelect(opt.name, valName)}
                   className={`rounded-[var(--th-radius-button)] px-4 py-2 text-xs font-medium transition-all ${
                     isSelected
-                      ? 'bg-[var(--th-color-primary)] text-white shadow-xs ring-2 ring-[var(--th-color-primary)]/30'
+                      ? 'bg-[var(--th-color-primary)] text-[var(--surface)] shadow-xs ring-2 ring-[var(--th-color-primary)]/30'
                       : 'border border-[var(--th-color-border)] bg-[var(--th-color-surface)] text-[var(--th-color-text)] hover:border-[var(--th-color-primary)]/50'
                   }`}
                 >
@@ -477,11 +477,11 @@ function ProductCommerceActions({
           type="button"
           onClick={onAddToCart}
           disabled={isOutOfStock}
-          className={`flex-1 flex items-center justify-center gap-2.5 h-11 rounded-[var(--th-radius-button)] px-6 text-sm font-semibold text-white shadow-sm transition-all [transition-duration:var(--th-motion-duration)] [transition-timing-function:var(--th-motion-easing)] ${
+          className={`flex-1 flex items-center justify-center gap-2.5 h-11 rounded-[var(--th-radius-button)] px-6 text-sm font-semibold text-[var(--surface)] shadow-sm transition-all [transition-duration:var(--th-motion-duration)] [transition-timing-function:var(--th-motion-easing)] ${
             addedAnimation
-              ? 'bg-emerald-600 scale-[0.99]'
+              ? 'bg-[var(--acid-sage)] scale-[0.99]'
               : isOutOfStock
-              ? 'bg-neutral-400 cursor-not-allowed opacity-60'
+              ? 'bg-[var(--surface-muted)] cursor-not-allowed opacity-60'
               : 'bg-[var(--th-color-primary)] hover:bg-[var(--th-color-accent)] active:scale-[0.99]'
           }`}
         >
@@ -505,7 +505,7 @@ function ProductCommerceActions({
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-2 rounded-[var(--th-radius-button)] border border-emerald-600/30 bg-emerald-500/10 px-4 py-2.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 rounded-[var(--th-radius-button)] border border-[var(--acid-sage)]/30 bg-[var(--acid-sage)]/10 px-4 py-2.5 text-xs font-semibold text-[var(--acid-sage)] dark:text-[var(--acid-sage)] hover:bg-[var(--acid-sage)]/20 transition-colors"
           >
             <MessageCircle className="h-3.5 w-3.5" />
             <span>WhatsApp Inquiry</span>

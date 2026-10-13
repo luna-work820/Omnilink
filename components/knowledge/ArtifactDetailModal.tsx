@@ -9,8 +9,6 @@ import {
   Pin,
   PinOff,
   Sparkles,
-  Share2,
-  FileText,
   Clock,
   Layers,
 } from 'lucide-react'
@@ -58,32 +56,32 @@ export function ArtifactDetailModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-150">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/40 backdrop-blur-xs"
+        className="fixed inset-0 bg-[var(--ink)]/40 backdrop-blur-xs"
         onClick={onClose}
       />
 
       {/* Modal Card */}
       <div
-        className="relative w-full max-w-3xl bg-white border border-[#E5E7EB] rounded-2xl shadow-2xl text-[#111827] overflow-hidden flex flex-col max-h-[88vh] z-10 animate-in zoom-in-95 duration-150"
+        className="relative w-full max-w-3xl bg-[var(--surface)] border border-[var(--border)] rounded-2xl shadow-2xl text-[var(--ink)] overflow-hidden flex flex-col max-h-[88vh] z-10 animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[#E5E7EB] bg-[#F9FAFB] flex items-start justify-between gap-4 shrink-0">
+        <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--surface-muted)] flex items-start justify-between gap-4 shrink-0">
           <div className="space-y-1.5 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#024AD8] border border-blue-100 text-xs font-bold">
+              <span className="px-2.5 py-0.5 rounded-full bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)] text-xs font-bold">
                 {artifact.typeLabel}
               </span>
-              <span className="text-xs text-[#6B7280] flex items-center gap-1">
+              <span className="text-xs text-[var(--lavender)] flex items-center gap-1">
                 <Clock size={12} />
                 {artifact.createdAt}
               </span>
-              <span className="text-xs text-[#6B7280] flex items-center gap-1">
+              <span className="text-xs text-[var(--lavender)] flex items-center gap-1">
                 <Layers size={12} />
                 {artifact.sourcesText}
               </span>
             </div>
-            <h2 className="text-base sm:text-lg font-bold text-[#111827] leading-snug truncate">
+            <h2 className="text-base sm:text-lg font-bold text-[var(--ink)] leading-snug truncate">
               {artifact.title}
             </h2>
           </div>
@@ -93,10 +91,10 @@ export function ArtifactDetailModal({
               <button
                 type="button"
                 onClick={() => onTogglePin(artifact.id)}
-                className={`p-2 rounded-[4px] border transition-colors cursor-pointer ${
+                className={`p-2  border transition-colors cursor-pointer ${
                   artifact.pinned
-                    ? 'bg-amber-50 border-amber-200 text-amber-600'
-                    : 'bg-white border-[#D1D5DB] text-[#4B5563] hover:text-[#111827] hover:bg-[#F3F4F6]'
+                    ? 'bg-[var(--acid-sage)] border-[var(--acid-sage)] text-[var(--acid-sage)]'
+                    : 'bg-[var(--surface)] border-[var(--border)] text-[var(--ink)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)]'
                 }`}
                 title={artifact.pinned ? '取消置顶' : '置顶固定'}
               >
@@ -107,16 +105,16 @@ export function ArtifactDetailModal({
             <button
               type="button"
               onClick={handleCopy}
-              className="p-2 rounded-[4px] bg-white border border-[#D1D5DB] text-[#374151] hover:text-[#111827] hover:bg-[#F3F4F6] transition-colors cursor-pointer"
+              className="p-2  bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer"
               title="复制 Markdown 内容"
             >
-              {copied ? <Check size={15} className="text-emerald-600" /> : <Copy size={15} />}
+              {copied ? <Check size={15} className="text-[var(--acid-sage)]" /> : <Copy size={15} />}
             </button>
 
             <button
               type="button"
               onClick={handleDownload}
-              className="p-2 rounded-[4px] bg-white border border-[#D1D5DB] text-[#374151] hover:text-[#111827] hover:bg-[#F3F4F6] transition-colors cursor-pointer"
+              className="p-2  bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer"
               title="导出为 Markdown 文件"
             >
               <Download size={15} />
@@ -125,7 +123,7 @@ export function ArtifactDetailModal({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-[4px] bg-white border border-[#D1D5DB] text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] transition-colors cursor-pointer ml-1"
+              className="p-2  bg-[var(--surface)] border border-[var(--border)] text-[var(--lavender)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer ml-1"
             >
               <X size={16} />
             </button>
@@ -133,35 +131,35 @@ export function ArtifactDetailModal({
         </div>
 
         {/* Markdown Body */}
-        <div className="p-6 overflow-y-auto flex-1 custom-scroll space-y-4 bg-white text-[#374151]">
+        <div className="p-6 overflow-y-auto flex-1 custom-scroll space-y-4 bg-[var(--surface)] text-[var(--ink)]">
           <div className="prose prose-sm max-w-none text-xs sm:text-sm leading-relaxed">
             <ReactMarkdown
               components={{
                 h3({ children }) {
                   return (
-                    <h3 className="text-base font-bold text-[#024AD8] mt-4 mb-2 pb-1 border-b border-[#E5E7EB]">
+                    <h3 className="text-base font-bold text-[var(--primary)] mt-4 mb-2 pb-1 border-b border-[var(--border)]">
                       {children}
                     </h3>
                   )
                 },
                 h4({ children }) {
                   return (
-                    <h4 className="text-sm font-bold text-[#111827] mt-3 mb-1.5">
+                    <h4 className="text-sm font-bold text-[var(--ink)] mt-3 mb-1.5">
                       {children}
                     </h4>
                   )
                 },
                 strong({ children }) {
-                  return <b className="font-bold text-[#111827]">{children}</b>
+                  return <b className="font-bold text-[var(--ink)]">{children}</b>
                 },
                 p({ children }) {
-                  return <p className="text-[#374151] leading-relaxed my-2">{children}</p>
+                  return <p className="text-[var(--ink)] leading-relaxed my-2">{children}</p>
                 },
                 ul({ children }) {
-                  return <ul className="list-disc pl-5 my-2 space-y-1.5 text-[#374151]">{children}</ul>
+                  return <ul className="list-disc pl-5 my-2 space-y-1.5 text-[var(--ink)]">{children}</ul>
                 },
                 li({ children }) {
-                  return <li className="text-[#374151]">{children}</li>
+                  return <li className="text-[var(--ink)]">{children}</li>
                 },
               }}
             >
@@ -171,7 +169,7 @@ export function ArtifactDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3.5 bg-[#F9FAFB] border-t border-[#E5E7EB] flex items-center justify-between text-xs text-[#6B7280] shrink-0">
+        <div className="px-6 py-3.5 bg-[var(--surface-muted)] border-t border-[var(--border)] flex items-center justify-between text-xs text-[var(--lavender)] shrink-0">
           <span>{artifact.wordCount ? `字数统计：约 ${artifact.wordCount} 字` : '研报已自动归档'}</span>
 
           <div className="flex items-center gap-2">
@@ -182,7 +180,7 @@ export function ArtifactDetailModal({
                   onInsertToChat(artifact)
                   onClose()
                 }}
-                className="px-3 py-1.5 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3 py-1.5  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Sparkles size={13} />
                 <span>基于此研报继续深聊</span>
@@ -192,7 +190,7 @@ export function ArtifactDetailModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 rounded-[4px] bg-white border border-[#D1D5DB] hover:bg-[#F3F4F6] text-[#374151] text-xs font-semibold cursor-pointer"
+              className="px-3 py-1.5  bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-[var(--ink)] text-xs font-semibold cursor-pointer"
             >
               关闭
             </button>

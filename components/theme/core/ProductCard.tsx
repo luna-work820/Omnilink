@@ -73,7 +73,7 @@ export default function ProductCard({ product, showPrice = true }: ProductCardPr
             {badges.map((badge) => (
               <span
                 key={badge}
-                className="rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] px-2 py-0.5 text-[11px] font-semibold text-white"
+                className="rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] px-2 py-0.5 text-[11px] font-semibold text-[var(--surface)]"
               >
                 {badge}
               </span>

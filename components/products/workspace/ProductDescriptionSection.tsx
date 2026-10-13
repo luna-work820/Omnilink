@@ -37,14 +37,14 @@ export function ProductDescriptionSection({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+    <div className="space-y-5 border-b border-[var(--border)] pb-8 pt-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--surface-muted)]">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-[4px] bg-blue-50 text-[#024AD8] flex items-center justify-center font-mono font-bold text-xs">
+          <div className="w-8 h-8  bg-[var(--primary)] text-[var(--primary)] flex items-center justify-center font-mono font-bold text-xs">
             04
           </div>
           <div>
-            <h2 className="text-sm font-bold text-slate-900">
+            <h2 className="text-sm font-bold text-[var(--lavender)]">
               {isZh ? '商品详细描述' : 'Description'}
             </h2>
           </div>
@@ -54,15 +54,15 @@ export function ProductDescriptionSection({
           type="button"
           onClick={handleAIAssist}
           disabled={disabled || isAIAssisting}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-semibold border border-violet-200 transition-colors cursor-pointer disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--lavender)] hover:bg-[var(--lavender)] text-[var(--lavender)] text-xs font-semibold border border-[var(--lavender)] transition-colors cursor-pointer disabled:opacity-50"
         >
-          <Sparkles size={13} className="text-violet-600" />
+          <Sparkles size={13} className="text-[var(--lavender)]" />
           <span>{isAIAssisting ? (isZh ? 'AI 正在整理...' : 'AI Assisting...') : isZh ? 'AI 智能生成描述' : 'AI Assist'}</span>
         </button>
       </div>
 
-      <div className="p-3 rounded-xl bg-violet-50/50 border border-violet-100/80 text-xs text-violet-900 flex items-start gap-2">
-        <HelpCircle size={14} className="text-violet-600 shrink-0 mt-0.5" />
+      <div className="p-3 rounded-xl bg-[var(--lavender)]/50 border border-[var(--lavender)]/80 text-xs text-[var(--lavender)] flex items-start gap-2">
+        <HelpCircle size={14} className="text-[var(--lavender)] shrink-0 mt-0.5" />
         <span className="leading-relaxed">
           {isZh
             ? '说明：AI 可以根据已有商品名称与品类信息辅助整理结构化描述与关键卖点。'
@@ -71,7 +71,7 @@ export function ProductDescriptionSection({
       </div>
 
       <div>
-        <label htmlFor="workspace-description" className="block text-xs font-semibold text-slate-800 mb-1.5">
+        <label htmlFor="workspace-description" className="block text-xs font-semibold text-[var(--lavender)] mb-1.5">
           {isZh ? '商品描述与核心功能' : 'Description & Highlights'}
         </label>
         <textarea
@@ -85,7 +85,7 @@ export function ProductDescriptionSection({
               ? '输入该商品的卖点、材质参数、适用人群及使用说明...'
               : 'Enter product selling points, parameters, target audience, and usage guides...'
           }
-          className="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 leading-relaxed disabled:opacity-50 transition-all"
+          className="w-full p-3.5 rounded-xl bg-[var(--surface-muted)] border border-[var(--surface-muted)] text-xs text-[var(--lavender)] focus:outline-none focus:ring-2 focus:ring-[var(--lavender)]/20 focus:border-[var(--lavender)] leading-relaxed disabled:opacity-50 transition-all"
         />
       </div>
     </div>

@@ -3,8 +3,6 @@ import { requireUser, ownsProduct } from '@/lib/api/auth'
 import {
   getProductContents,
   createProductContent,
-  updateProductContent,
-  deleteProductContent,
 } from '@/lib/products/attribute-domains-service'
 
 export async function GET(

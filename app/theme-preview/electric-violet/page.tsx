@@ -40,7 +40,7 @@ export const metadata = {
 /** 预览专属分隔条：仅开发预览 chrome，用 Tailwind 基础中性色，不建设计系统。 */
 function PreviewDivider({ label }: { label: string }) {
   return (
-    <div className="border-y border-dashed border-neutral-300 bg-neutral-100 px-4 py-2 text-center font-mono text-[11px] uppercase tracking-[0.3em] text-neutral-500">
+    <div className="border-y border-dashed border-[var(--surface-muted)] bg-[var(--surface-muted)] px-4 py-2 text-center font-mono text-[11px] uppercase tracking-[0.3em] text-[var(--lavender)]">
       {label}
     </div>
   )
@@ -52,7 +52,7 @@ export default function ElectricVioletPreviewPage() {
   }
 
   return (
-    <main className="bg-white">
+    <main className="bg-[var(--surface)]">
       <PreviewDivider label="Electric Violet — Homepage" />
       <ThemeRoot themeId="electric-violet">
         <Homepage

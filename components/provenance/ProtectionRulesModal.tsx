@@ -45,29 +45,29 @@ export function ProtectionRulesModal({ isOpen, onClose }: ProtectionRulesModalPr
   ]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs transition-opacity">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[var(--surface-muted)]/60 backdrop-blur-xs transition-opacity">
       <div
-        className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[8px] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200"
+        className="w-full max-w-2xl bg-[var(--surface)] dark:bg-[var(--surface-muted)] rounded-[8px] shadow-2xl border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-[var(--surface-muted)] dark:border-[var(--surface-muted)] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-[4px] bg-[#024AD8]/10 text-[#024AD8] flex items-center justify-center">
+            <div className="w-8 h-8  bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center">
               <ShieldCheck size={18} />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              <h3 className="text-sm font-bold text-[var(--lavender)] dark:text-[var(--surface)]">
                 作品来源与保护机制
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[var(--lavender)]">
                 Omnilink 原创资产基础设施运行规范
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-[4px] flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="w-7 h-7  flex items-center justify-center text-[var(--lavender)] hover:text-[var(--lavender)] hover:bg-[var(--surface-muted)] dark:hover:bg-[var(--surface-muted)] transition-colors cursor-pointer"
           >
             <X size={15} />
           </button>
@@ -76,49 +76,49 @@ export function ProtectionRulesModal({ isOpen, onClose }: ProtectionRulesModalPr
         {/* Content */}
         <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
           {/* Core Philosophy Banner */}
-          <div className="p-4 rounded-[6px] bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 space-y-2">
-            <div className="font-bold text-slate-900 dark:text-white text-xs">
+          <div className="p-4 rounded-[6px] bg-[var(--surface-muted)] dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] space-y-2">
+            <div className="font-bold text-[var(--lavender)] dark:text-[var(--surface)] text-xs">
               核心原则
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center pt-1">
-              <div className="p-2 rounded-[4px] bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60">
-                <div className="font-bold text-slate-800 dark:text-slate-200">作品有来源</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">创作者原始归属</div>
+              <div className="p-2  bg-[var(--surface)] dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)] dark:border-[var(--surface-muted)]/60">
+                <div className="font-bold text-[var(--lavender)] dark:text-[var(--lavender)]">作品有来源</div>
+                <div className="text-[10px] text-[var(--lavender)] mt-0.5">创作者原始归属</div>
               </div>
-              <div className="p-2 rounded-[4px] bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60">
-                <div className="font-bold text-slate-800 dark:text-slate-200">商品有出处</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">商业化明确绑定</div>
+              <div className="p-2  bg-[var(--surface)] dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)] dark:border-[var(--surface-muted)]/60">
+                <div className="font-bold text-[var(--lavender)] dark:text-[var(--lavender)]">商品有出处</div>
+                <div className="text-[10px] text-[var(--lavender)] mt-0.5">商业化明确绑定</div>
               </div>
-              <div className="p-2 rounded-[4px] bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60">
-                <div className="font-bold text-slate-800 dark:text-slate-200">使用有权限</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">授权关系透明化</div>
+              <div className="p-2  bg-[var(--surface)] dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)] dark:border-[var(--surface-muted)]/60">
+                <div className="font-bold text-[var(--lavender)] dark:text-[var(--lavender)]">使用有权限</div>
+                <div className="text-[10px] text-[var(--lavender)] mt-0.5">授权关系透明化</div>
               </div>
-              <div className="p-2 rounded-[4px] bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700/60">
-                <div className="font-bold text-slate-800 dark:text-slate-200">平台可验证</div>
-                <div className="text-[10px] text-slate-400 mt-0.5">全域自动识别拦截</div>
+              <div className="p-2  bg-[var(--surface)] dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)] dark:border-[var(--surface-muted)]/60">
+                <div className="font-bold text-[var(--lavender)] dark:text-[var(--lavender)]">平台可验证</div>
+                <div className="text-[10px] text-[var(--lavender)] mt-0.5">全域自动识别拦截</div>
               </div>
             </div>
           </div>
 
           {/* Relationship Lifecycle */}
           <div>
-            <div className="font-bold text-slate-900 dark:text-white mb-3">
+            <div className="font-bold text-[var(--lavender)] dark:text-[var(--surface)] mb-3">
               完整链路流转
             </div>
             <div className="space-y-2.5">
               {steps.map((s) => (
                 <div
                   key={s.num}
-                  className="p-3 rounded-[4px] border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850/60 transition-colors flex gap-3"
+                  className="p-3  border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] hover:bg-[var(--surface-muted)] dark:hover:bg-[var(--surface-muted)]/60 transition-colors flex gap-3"
                 >
-                  <span className="font-mono font-bold text-[#024AD8] text-xs pt-0.5">
+                  <span className="font-mono font-bold text-[var(--primary)] text-xs pt-0.5">
                     {s.num}
                   </span>
                   <div>
-                    <div className="font-semibold text-slate-800 dark:text-slate-200">
+                    <div className="font-semibold text-[var(--lavender)] dark:text-[var(--lavender)]">
                       {s.title}
                     </div>
-                    <div className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                    <div className="text-[11px] text-[var(--lavender)] mt-0.5 leading-relaxed">
                       {s.desc}
                     </div>
                   </div>
@@ -129,11 +129,11 @@ export function ProtectionRulesModal({ isOpen, onClose }: ProtectionRulesModalPr
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-800 flex justify-end bg-slate-50/50 dark:bg-slate-850/50">
+        <div className="px-6 py-3 border-t border-[var(--surface-muted)] dark:border-[var(--surface-muted)] flex justify-end bg-[var(--surface-muted)]/50 dark:bg-[var(--surface-muted)]/50">
           <button
             type="button"
             onClick={onClose}
-            className="h-8 px-5 rounded-[4px] bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-semibold hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors cursor-pointer"
+            className="h-8 px-5  bg-[var(--surface-muted)] dark:bg-[var(--surface)] text-[var(--surface)] dark:text-[var(--lavender)] text-xs font-semibold hover:bg-[var(--surface-muted)] dark:hover:bg-[var(--surface-muted)] transition-colors cursor-pointer"
           >
             了解并关闭
           </button>

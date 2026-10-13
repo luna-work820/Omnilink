@@ -26,11 +26,11 @@ export interface CategoryBreadcrumb {
  */
 export const SEED_CATEGORIES: Category[] = [
   // ----------------------------------------------------
-  // Level 1: 服饰鞋包 (apparel-accessories)
+  // MVP aesthetic commerce set: visual products with a low-variant starting point.
   // ----------------------------------------------------
   {
     id: 'cat-apparel',
-    name: '服饰鞋包',
+    name: '服装',
     nameEn: 'Apparel & Accessories',
     slug: 'apparel-accessories',
     parentId: null,
@@ -61,13 +61,63 @@ export const SEED_CATEGORIES: Category[] = [
     keywords: ['男装', '夹克', '西服', '牛仔裤', 'POLO衫', '卫衣', '工装裤', '羽绒服'],
   },
   {
+    id: 'cat-apparel-tops',
+    name: 'T恤与衬衫',
+    nameEn: 'T-Shirts & Shirts',
+    slug: 'tops',
+    parentId: 'cat-apparel',
+    sortOrder: 3,
+    isActive: true,
+    keywords: ['T恤', '衬衫', 'Polo衫', '背心', '上衣'],
+  },
+  {
+    id: 'cat-apparel-dresses',
+    name: '连衣裙',
+    nameEn: 'Dresses',
+    slug: 'dresses',
+    parentId: 'cat-apparel',
+    sortOrder: 4,
+    isActive: true,
+    keywords: ['连衣裙', '长裙', '短裙', '吊带裙'],
+  },
+  {
+    id: 'cat-apparel-knitwear',
+    name: '卫衣与针织',
+    nameEn: 'Sweaters & Knitwear',
+    slug: 'sweaters-knitwear',
+    parentId: 'cat-apparel',
+    sortOrder: 5,
+    isActive: true,
+    keywords: ['卫衣', '毛衣', '针织衫', '开衫', '套头衫'],
+  },
+  {
+    id: 'cat-apparel-outerwear',
+    name: '外套',
+    nameEn: 'Outerwear',
+    slug: 'outerwear',
+    parentId: 'cat-apparel',
+    sortOrder: 6,
+    isActive: true,
+    keywords: ['夹克', '西装', '风衣', '大衣', '羽绒服'],
+  },
+  {
+    id: 'cat-apparel-bottoms',
+    name: '裤装与半身裙',
+    nameEn: 'Bottoms & Skirts',
+    slug: 'bottoms-skirts',
+    parentId: 'cat-apparel',
+    sortOrder: 7,
+    isActive: true,
+    keywords: ['裤子', '牛仔裤', '阔腿裤', '短裤', '半身裙'],
+  },
+  {
     id: 'cat-apparel-shoes',
     name: '鞋靴',
     nameEn: 'Footwear & Shoes',
     slug: 'shoes',
     parentId: 'cat-apparel',
     templateKey: 'sports-shoes-v1',
-    sortOrder: 3,
+    sortOrder: 8,
     isActive: true,
     isPopular: true,
     keywords: ['鞋靴', '皮鞋', '高跟鞋', '马丁靴', '拖鞋', '凉鞋', '雪地靴', '休闲鞋'],
@@ -78,7 +128,7 @@ export const SEED_CATEGORIES: Category[] = [
     nameEn: 'Bags & Luggage',
     slug: 'bags',
     parentId: 'cat-apparel',
-    sortOrder: 4,
+    sortOrder: 9,
     isActive: true,
     isPopular: true,
     keywords: ['箱包', '双肩包', '单肩包', '手提包', '行李箱', '斜挎包', '钱包', '卡包'],
@@ -89,7 +139,7 @@ export const SEED_CATEGORIES: Category[] = [
     nameEn: 'Underwear & Loungewear',
     slug: 'underwear-loungewear',
     parentId: 'cat-apparel',
-    sortOrder: 5,
+    sortOrder: 10,
     isActive: true,
     keywords: ['内衣', '文胸', '睡衣', '家居服', '内裤', '保暖内衣', '袜子', '丝袜'],
   },
@@ -99,7 +149,7 @@ export const SEED_CATEGORIES: Category[] = [
     nameEn: 'Fashion Accessories',
     slug: 'fashion-accessories',
     parentId: 'cat-apparel',
-    sortOrder: 6,
+    sortOrder: 11,
     isActive: true,
     keywords: ['配饰', '帽子', '围巾', '皮带', '手套', '领带', '丝巾', '袖扣'],
   },
@@ -322,13 +372,83 @@ export const SEED_CATEGORIES: Category[] = [
   // ----------------------------------------------------
   {
     id: 'cat-jewelry-eyewear',
-    name: '珠宝配饰与眼镜',
-    nameEn: 'Jewelry, Watches & Eyewear',
+    name: '饰品',
+    nameEn: 'Accessories',
     slug: 'jewelry-eyewear',
     parentId: null,
     icon: 'Glasses',
     sortOrder: 5,
     isActive: true,
+  },
+  {
+    id: 'cat-accessories-earrings',
+    name: '耳饰',
+    nameEn: 'Earrings',
+    slug: 'earrings',
+    parentId: 'cat-jewelry-eyewear',
+    sortOrder: 2,
+    isActive: true,
+    keywords: ['耳环', '耳钉', '耳夹', '耳坠', '耳饰'],
+  },
+  {
+    id: 'cat-accessories-necklaces',
+    name: '项链',
+    nameEn: 'Necklaces',
+    slug: 'necklaces',
+    parentId: 'cat-jewelry-eyewear',
+    sortOrder: 3,
+    isActive: true,
+    keywords: ['项链', '锁骨链', '吊坠', '毛衣链', '长项链'],
+  },
+  {
+    id: 'cat-accessories-bracelets',
+    name: '手链',
+    nameEn: 'Bracelets',
+    slug: 'bracelets',
+    parentId: 'cat-jewelry-eyewear',
+    sortOrder: 4,
+    isActive: true,
+    keywords: ['手链', '串珠', '脚链'],
+  },
+  {
+    id: 'cat-accessories-rings',
+    name: '戒指',
+    nameEn: 'Rings',
+    slug: 'rings',
+    parentId: 'cat-jewelry-eyewear',
+    sortOrder: 5,
+    isActive: true,
+    keywords: ['戒指', '对戒', '开口戒', '尾戒'],
+  },
+  {
+    id: 'cat-accessories-hair',
+    name: '发饰',
+    nameEn: 'Hair Accessories',
+    slug: 'hair-accessories',
+    parentId: 'cat-jewelry-eyewear',
+    sortOrder: 6,
+    isActive: true,
+    keywords: ['发夹', '发箍', '发带', '发簪', '头饰'],
+  },
+  {
+    id: 'cat-accessories-bangles',
+    name: '手镯',
+    nameEn: 'Bangles',
+    slug: 'bangles',
+    parentId: 'cat-jewelry-eyewear',
+    sortOrder: 7,
+    isActive: true,
+    keywords: ['手镯', '玉镯', '开口镯', '镯子'],
+  },
+  {
+    id: 'cat-accessories-brooches',
+    name: '胸针',
+    nameEn: 'Brooches',
+    slug: 'brooches',
+    parentId: 'cat-jewelry-eyewear',
+    sortOrder: 8,
+    isActive: true,
+    keywords: ['胸针', '别针', '领针', '徽章'],
   },
   {
     id: 'cat-eyewear-sunglasses',
@@ -390,7 +510,7 @@ export const SEED_CATEGORIES: Category[] = [
   // ----------------------------------------------------
   {
     id: 'cat-home',
-    name: '家居家装',
+    name: '家居',
     nameEn: 'Home & Living',
     slug: 'home-living',
     parentId: null,
@@ -430,23 +550,115 @@ export const SEED_CATEGORIES: Category[] = [
   },
   {
     id: 'cat-home-kitchen',
-    name: '厨房卫浴',
-    nameEn: 'Kitchen & Bath',
-    slug: 'kitchen-bath',
+    name: '厨房与餐饮',
+    nameEn: 'Kitchen & Dining',
+    slug: 'kitchen-dining',
     parentId: 'cat-home',
     sortOrder: 4,
     isActive: true,
-    keywords: ['炒锅', '餐具', '水杯', '保温杯', '刀具', '花洒', '马桶', '毛巾架'],
+    keywords: ['炒锅', '餐具', '水杯', '保温杯', '刀具', '咖啡器具'],
   },
   {
     id: 'cat-home-daily',
-    name: '日用收纳',
+    name: '收纳整理',
     nameEn: 'Storage & Organization',
     slug: 'storage-organization',
     parentId: 'cat-home',
     sortOrder: 5,
     isActive: true,
     keywords: ['收纳盒', '衣架', '纸巾', '垃圾桶', '清洁剂', '香薰', '除湿袋'],
+  },
+  {
+    id: 'cat-home-bathroom',
+    name: '浴室用品',
+    nameEn: 'Bathroom',
+    slug: 'bathroom',
+    parentId: 'cat-home',
+    sortOrder: 6,
+    isActive: true,
+    keywords: ['花洒', '毛巾架', '浴室收纳', '洗漱用品', '浴室镜'],
+  },
+  {
+    id: 'cat-home-cleaning',
+    name: '清洁日用',
+    nameEn: 'Household Supplies',
+    slug: 'household-supplies',
+    parentId: 'cat-home',
+    sortOrder: 7,
+    isActive: true,
+    keywords: ['清洁剂', '垃圾桶', '拖把', '纸品', '衣架', '除湿'],
+  },
+
+  // Level 1: 装饰 (decor)
+  {
+    id: 'cat-decor',
+    name: '装饰',
+    nameEn: 'Decor',
+    slug: 'decor',
+    parentId: null,
+    icon: 'Compass',
+    sortOrder: 8,
+    isActive: true,
+  },
+  {
+    id: 'cat-decor-objects',
+    name: '家居装饰',
+    nameEn: 'Decor Objects',
+    slug: 'decor-objects',
+    parentId: 'cat-decor',
+    sortOrder: 1,
+    isActive: true,
+    keywords: ['摆件', '花瓶', '相框', '托盘', '雕塑', '装饰画', '镜子'],
+  },
+  {
+    id: 'cat-decor-wall',
+    name: '墙面装饰',
+    nameEn: 'Wall Decor',
+    slug: 'wall-decor',
+    parentId: 'cat-decor',
+    sortOrder: 2,
+    isActive: true,
+    keywords: ['装饰画', '挂画', '墙饰', '壁饰', '挂毯'],
+  },
+  {
+    id: 'cat-decor-vases',
+    name: '花瓶与器皿',
+    nameEn: 'Vases & Decorative Vessels',
+    slug: 'vases-decorative-vessels',
+    parentId: 'cat-decor',
+    sortOrder: 3,
+    isActive: true,
+    keywords: ['花瓶', '花器', '托盘', '果盘', '装饰碗'],
+  },
+  {
+    id: 'cat-decor-fragrance',
+    name: '香薰蜡烛',
+    nameEn: 'Home Fragrance',
+    slug: 'home-fragrance',
+    parentId: 'cat-decor',
+    sortOrder: 4,
+    isActive: true,
+    keywords: ['香薰', '蜡烛', '扩香', '无火香薰', '香氛'],
+  },
+  {
+    id: 'cat-decor-plants',
+    name: '花艺绿植',
+    nameEn: 'Plants & Floral',
+    slug: 'plants-floral',
+    parentId: 'cat-decor',
+    sortOrder: 5,
+    isActive: true,
+    keywords: ['花艺', '绿植', '干花', '永生花', '盆栽', '花束'],
+  },
+  {
+    id: 'cat-decor-lighting',
+    name: '氛围灯具',
+    nameEn: 'Ambient Lighting',
+    slug: 'ambient-lighting',
+    parentId: 'cat-decor',
+    sortOrder: 6,
+    isActive: true,
+    keywords: ['氛围灯', '台灯', '壁灯', '落地灯', '灯串'],
   },
 
   // ----------------------------------------------------
@@ -459,7 +671,7 @@ export const SEED_CATEGORIES: Category[] = [
     slug: 'food-beverages',
     parentId: null,
     icon: 'Coffee',
-    sortOrder: 7,
+    sortOrder: 8,
     isActive: true,
   },
   {
@@ -525,7 +737,7 @@ export const SEED_CATEGORIES: Category[] = [
     slug: 'mom-baby-toys',
     parentId: null,
     icon: 'Baby',
-    sortOrder: 8,
+    sortOrder: 9,
     isActive: true,
   },
   {
@@ -579,7 +791,7 @@ export const SEED_CATEGORIES: Category[] = [
     slug: 'pet-supplies',
     parentId: null,
     icon: 'Dog',
-    sortOrder: 9,
+    sortOrder: 10,
     isActive: true,
   },
   {
@@ -634,7 +846,7 @@ export const SEED_CATEGORIES: Category[] = [
     slug: 'automotive-hardware',
     parentId: null,
     icon: 'Car',
-    sortOrder: 10,
+    sortOrder: 11,
     isActive: true,
   },
   {
@@ -669,17 +881,55 @@ export const SEED_CATEGORIES: Category[] = [
   },
 ]
 
+// First-release taxonomy: inspired by Xiaohongshu's visual lifestyle lanes,
+// intentionally excluding high-complexity categories from the initial picker.
+const MVP_CATEGORY_IDS = new Set([
+  'cat-apparel',
+  'cat-apparel-women',
+  'cat-apparel-men',
+  'cat-apparel-tops',
+  'cat-apparel-dresses',
+  'cat-apparel-knitwear',
+  'cat-apparel-outerwear',
+  'cat-apparel-bottoms',
+  'cat-apparel-accessories',
+  'cat-jewelry-eyewear',
+  'cat-eyewear-sunglasses',
+  'cat-accessories-earrings',
+  'cat-accessories-necklaces',
+  'cat-accessories-bracelets',
+  'cat-accessories-rings',
+  'cat-accessories-hair',
+  'cat-accessories-bangles',
+  'cat-accessories-brooches',
+  'cat-home',
+  'cat-home-furniture',
+  'cat-home-textiles',
+  'cat-home-lighting',
+  'cat-home-kitchen',
+  'cat-home-daily',
+  'cat-home-bathroom',
+  'cat-home-cleaning',
+  'cat-decor',
+  'cat-decor-objects',
+  'cat-decor-wall',
+  'cat-decor-vases',
+  'cat-decor-fragrance',
+  'cat-decor-plants',
+  'cat-decor-lighting',
+])
+
 /**
  * Returns tree representation of all active categories (Level 1 with children Level 2)
  */
 export function getCategoryTree(): CategoryTreeItem[] {
   const rootCategories = SEED_CATEGORIES.filter(
-    (c) => c.parentId === null && c.isActive
+    (c) => c.parentId === null && c.isActive && MVP_CATEGORY_IDS.has(c.id)
   ).sort((a, b) => a.sortOrder - b.sortOrder)
 
   return rootCategories.map((root) => {
     const children = SEED_CATEGORIES.filter(
-      (c) => c.parentId === root.id && c.isActive
+      (c) => c.parentId === root.id && c.isActive && MVP_CATEGORY_IDS.has(c.id)
     ).sort((a, b) => a.sortOrder - b.sortOrder)
 
     return {
@@ -796,7 +1046,7 @@ export function getCategoryTemplateKey(categoryIdOrName?: string | null): string
  * Return popular categories for quick selection
  */
 export function getPopularCategories(): Category[] {
-  return SEED_CATEGORIES.filter((c) => c.isPopular && c.parentId !== null)
+  return SEED_CATEGORIES.filter((c) => c.isPopular && c.parentId !== null && MVP_CATEGORY_IDS.has(c.id))
 }
 
 /**
@@ -819,7 +1069,7 @@ export function searchCategories(query: string): Array<{
   }> = []
 
   // Check secondary categories first
-  const secondaryCategories = SEED_CATEGORIES.filter((c) => c.parentId !== null)
+  const secondaryCategories = SEED_CATEGORIES.filter((c) => c.parentId !== null && MVP_CATEGORY_IDS.has(c.id))
 
   for (const cat of secondaryCategories) {
     const parent = getCategoryById(cat.parentId)

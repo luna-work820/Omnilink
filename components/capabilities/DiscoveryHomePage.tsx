@@ -82,10 +82,10 @@ export function DiscoveryHomePage({
       <section className="flex flex-col items-center justify-center text-center space-y-7 max-w-3xl mx-auto">
         {/* Main Title & Subtitle */}
         <div className="space-y-2">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#111827] tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-[var(--ink)] tracking-tight">
             {isZh ? '你想要什么服务？' : 'What service are you looking for?'}
           </h1>
-          <p className="text-sm sm:text-base text-[#6B7280] font-normal">
+          <p className="text-sm sm:text-base text-[var(--lavender)] font-normal">
             {isZh
               ? '搜索能力、Agent、个人或组织'
               : 'Search capabilities, agents, people, or organizations'}
@@ -94,8 +94,8 @@ export function DiscoveryHomePage({
 
         {/* Minimalist AI Search Box */}
         <div className="w-full relative">
-          <div className="relative flex items-center w-full bg-white rounded-xl border border-[#D1D5DB] hover:border-[#9CA3AF] focus-within:border-[#024AD8] focus-within:ring-2 focus-within:ring-[#024AD8]/15 transition-all shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
-            <Search size={18} className="text-[#9CA3AF] ml-4 shrink-0" />
+          <div className="relative flex items-center w-full bg-[var(--surface)] rounded-xl border border-[var(--border)] hover:border-[var(--lavender)] focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary)]/15 transition-all shadow-[0_2px_12px_var(--ink)]">
+            <Search size={18} className="text-[var(--lavender)] ml-4 shrink-0" />
             <input
               type="text"
               value={searchQuery}
@@ -103,13 +103,13 @@ export function DiscoveryHomePage({
               onFocus={() => setIsTyping(true)}
               onBlur={() => setIsTyping(false)}
               placeholder={placeholders[placeholderIndex]}
-              className="w-full h-13 pl-3 pr-20 bg-transparent text-sm sm:text-base text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none"
+              className="w-full h-13 pl-3 pr-20 bg-transparent text-sm sm:text-base text-[var(--ink)] placeholder:text-[var(--lavender)] focus:outline-none"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={handleClearSearch}
-                className="absolute right-16 p-1 text-[#9CA3AF] hover:text-[#111827] cursor-pointer"
+                className="absolute right-16 p-1 text-[var(--lavender)] hover:text-[var(--ink)] cursor-pointer"
                 title="清空"
               >
                 <X size={16} />
@@ -124,9 +124,9 @@ export function DiscoveryHomePage({
                     handleApplyPresetQuery(placeholders[placeholderIndex])
                   }
                 }}
-                className="h-9 px-3.5 rounded-[6px] bg-[#024AD8] hover:bg-[#003198] active:bg-[#00226B] text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                className="h-9 px-3.5 rounded-[6px] bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
               >
-                <Sparkles size={13} className="text-white" />
+                <Sparkles size={13} className="text-[var(--surface)]" />
                 <span>AI</span>
               </button>
             </div>
@@ -134,7 +134,7 @@ export function DiscoveryHomePage({
 
           {/* Quick preset query pills */}
           <div className="flex flex-wrap items-center justify-center gap-2 mt-3.5">
-            <span className="text-[11px] text-[#9CA3AF] mr-1">
+            <span className="text-[11px] text-[var(--lavender)] mr-1">
               {isZh ? '热门探索：' : 'Suggestions:'}
             </span>
             {placeholders.slice(0, 4).map((query, idx) => (
@@ -142,7 +142,7 @@ export function DiscoveryHomePage({
                 key={idx}
                 type="button"
                 onClick={() => handleApplyPresetQuery(query)}
-                className="px-2.5 py-1 rounded-[4px] bg-[#F9FAFB] hover:bg-[#F3F4F6] border border-[#E5E7EB] hover:border-[#D1D5DB] text-[11px] text-[#4B5563] hover:text-[#111827] transition-all cursor-pointer"
+                className="px-2.5 py-1  bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] border border-[var(--border)] hover:border-[var(--border)] text-[11px] text-[var(--ink)] hover:text-[var(--ink)] transition-all cursor-pointer"
               >
                 {query}
               </button>
@@ -159,19 +159,19 @@ export function DiscoveryHomePage({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="w-full text-left bg-white rounded-xl border border-[#E5E7EB] shadow-lg p-5 mt-4 space-y-4"
+              className="w-full text-left bg-[var(--surface)] rounded-xl border border-[var(--border)] shadow-lg p-5 mt-4 space-y-4"
             >
-              <div className="flex items-center justify-between border-b border-[#F3F4F6] pb-3">
+              <div className="flex items-center justify-between border-b border-[var(--surface-muted)] pb-3">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#024AD8]" />
-                  <h3 className="text-xs font-bold text-[#111827] uppercase tracking-wider">
+                  <span className="w-2 h-2 rounded-full bg-[var(--primary)]" />
+                  <h3 className="text-xs font-bold text-[var(--ink)] uppercase tracking-wider">
                     {isZh ? '综合能力匹配结果' : 'Cross-Category Match Results'}
                   </h3>
                 </div>
                 <button
                   type="button"
                   onClick={handleClearSearch}
-                  className="text-xs text-[#9CA3AF] hover:text-[#111827] cursor-pointer"
+                  className="text-xs text-[var(--lavender)] hover:text-[var(--ink)] cursor-pointer"
                 >
                   {isZh ? '收起' : 'Close'}
                 </button>
@@ -180,16 +180,16 @@ export function DiscoveryHomePage({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                 {/* 1. Recommended People */}
                 {recommendations.people.length > 0 && (
-                  <div className="p-3 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] space-y-2">
-                    <div className="flex items-center justify-between text-[11px] font-bold text-[#6B7280]">
-                      <span className="flex items-center gap-1.5 text-[#024AD8]">
+                  <div className="p-3 rounded-lg bg-[var(--surface-muted)] border border-[var(--border)] space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-[var(--lavender)]">
+                      <span className="flex items-center gap-1.5 text-[var(--primary)]">
                         <UserCheck size={13} />
                         <span>{isZh ? '专业个人 · People' : 'People'}</span>
                       </span>
                       <button
                         type="button"
                         onClick={() => onNavigateTab('people')}
-                        className="text-[#024AD8] hover:underline cursor-pointer"
+                        className="text-[var(--primary)] hover:underline cursor-pointer"
                       >
                         {isZh ? '更多个人' : 'More'} →
                       </button>
@@ -198,7 +198,7 @@ export function DiscoveryHomePage({
                       <div
                         key={p.id}
                         onClick={() => onSelectPerson && onSelectPerson(p.id)}
-                        className="flex items-center justify-between gap-3 p-2 bg-white rounded-[6px] border border-[#E5E7EB] hover:border-[#024AD8] transition-all cursor-pointer group"
+                        className="flex items-center justify-between gap-3 p-2 bg-[var(--surface)] rounded-[6px] border border-[var(--border)] hover:border-[var(--primary)] transition-all cursor-pointer group"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <Image
@@ -207,18 +207,18 @@ export function DiscoveryHomePage({
                             width={32}
                             height={32}
                             referrerPolicy="no-referrer"
-                            className="w-8 h-8 rounded-full object-cover border border-[#E5E7EB] shrink-0"
+                            className="w-8 h-8 rounded-full object-cover border border-[var(--border)] shrink-0"
                           />
                           <div className="min-w-0">
-                            <div className="text-xs font-bold text-[#111827] group-hover:text-[#024AD8] truncate">
+                            <div className="text-xs font-bold text-[var(--ink)] group-hover:text-[var(--primary)] truncate">
                               {p.name}
                             </div>
-                            <div className="text-[10px] text-[#6B7280] truncate">
+                            <div className="text-[10px] text-[var(--lavender)] truncate">
                               {isZh ? p.roleZh : p.role} · {isZh ? p.locationZh : p.location}
                             </div>
                           </div>
                         </div>
-                        <span className="text-[11px] font-semibold text-[#024AD8] group-hover:translate-x-0.5 transition-transform shrink-0">
+                        <span className="text-[11px] font-semibold text-[var(--primary)] group-hover:translate-x-0.5 transition-transform shrink-0">
                           {isZh ? '查看' : 'View'}
                         </span>
                       </div>
@@ -228,16 +228,16 @@ export function DiscoveryHomePage({
 
                 {/* 2. Recommended Organization */}
                 {recommendations.organizations.length > 0 && (
-                  <div className="p-3 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] space-y-2">
-                    <div className="flex items-center justify-between text-[11px] font-bold text-[#6B7280]">
-                      <span className="flex items-center gap-1.5 text-[#024AD8]">
+                  <div className="p-3 rounded-lg bg-[var(--surface-muted)] border border-[var(--border)] space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-[var(--lavender)]">
+                      <span className="flex items-center gap-1.5 text-[var(--primary)]">
                         <Building2 size={13} />
                         <span>{isZh ? '承接组织 · Organization' : 'Organization'}</span>
                       </span>
                       <button
                         type="button"
                         onClick={() => onNavigateTab('organizations')}
-                        className="text-[#024AD8] hover:underline cursor-pointer"
+                        className="text-[var(--primary)] hover:underline cursor-pointer"
                       >
                         {isZh ? '更多组织' : 'More'} →
                       </button>
@@ -246,22 +246,22 @@ export function DiscoveryHomePage({
                       <div
                         key={org.id}
                         onClick={() => onSelectOrg && onSelectOrg(org.id)}
-                        className="flex items-center justify-between gap-3 p-2 bg-white rounded-[6px] border border-[#E5E7EB] hover:border-[#024AD8] transition-all cursor-pointer group"
+                        className="flex items-center justify-between gap-3 p-2 bg-[var(--surface)] rounded-[6px] border border-[var(--border)] hover:border-[var(--primary)] transition-all cursor-pointer group"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-8 h-8 rounded-[4px] bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                          <div className="w-8 h-8  bg-[var(--surface-muted)] text-[var(--surface)] text-[10px] font-bold flex items-center justify-center shrink-0">
                             {org.logo}
                           </div>
                           <div className="min-w-0">
-                            <div className="text-xs font-bold text-[#111827] group-hover:text-[#024AD8] truncate">
+                            <div className="text-xs font-bold text-[var(--ink)] group-hover:text-[var(--primary)] truncate">
                               {org.name}
                             </div>
-                            <div className="text-[10px] text-[#6B7280] truncate">
+                            <div className="text-[10px] text-[var(--lavender)] truncate">
                               {isZh ? org.typeZh : org.type} · {isZh ? org.serviceScopeZh : org.serviceScope}
                             </div>
                           </div>
                         </div>
-                        <span className="text-[11px] font-semibold text-[#024AD8] group-hover:translate-x-0.5 transition-transform shrink-0">
+                        <span className="text-[11px] font-semibold text-[var(--primary)] group-hover:translate-x-0.5 transition-transform shrink-0">
                           {isZh ? '合作' : 'Partner'}
                         </span>
                       </div>
@@ -271,16 +271,16 @@ export function DiscoveryHomePage({
 
                 {/* 3. Recommended Agent */}
                 {recommendations.agents.length > 0 && (
-                  <div className="p-3 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] space-y-2">
-                    <div className="flex items-center justify-between text-[11px] font-bold text-[#6B7280]">
-                      <span className="flex items-center gap-1.5 text-[#024AD8]">
+                  <div className="p-3 rounded-lg bg-[var(--surface-muted)] border border-[var(--border)] space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-[var(--lavender)]">
+                      <span className="flex items-center gap-1.5 text-[var(--primary)]">
                         <Bot size={13} />
                         <span>{isZh ? '执行智能体 · Agent' : 'Agent'}</span>
                       </span>
                       <button
                         type="button"
                         onClick={() => onNavigateTab('agents')}
-                        className="text-[#024AD8] hover:underline cursor-pointer"
+                        className="text-[var(--primary)] hover:underline cursor-pointer"
                       >
                         {isZh ? '更多 Agent' : 'More'} →
                       </button>
@@ -290,20 +290,20 @@ export function DiscoveryHomePage({
                       return (
                         <div
                           key={agent.id}
-                          className="flex items-center justify-between gap-3 p-2 bg-white rounded-[6px] border border-[#E5E7EB] hover:border-[#024AD8] transition-all"
+                          className="flex items-center justify-between gap-3 p-2 bg-[var(--surface)] rounded-[6px] border border-[var(--border)] hover:border-[var(--primary)] transition-all"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div
-                              className="w-8 h-8 rounded-[4px] flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                              className="w-8 h-8  flex items-center justify-center text-[var(--surface)] text-[10px] font-bold shrink-0"
                               style={{ backgroundColor: agent.colorTheme }}
                             >
                               {agent.agentAvatar}
                             </div>
                             <div className="min-w-0">
-                              <div className="text-xs font-bold text-[#111827] truncate">
+                              <div className="text-xs font-bold text-[var(--ink)] truncate">
                                 {isZh ? agent.nameZh : agent.name}
                               </div>
-                              <div className="text-[10px] text-[#6B7280] truncate">
+                              <div className="text-[10px] text-[var(--lavender)] truncate">
                                 {isZh ? agent.taskTypeZh : agent.taskType}
                               </div>
                             </div>
@@ -311,10 +311,10 @@ export function DiscoveryHomePage({
                           <button
                             type="button"
                             onClick={() => onToggleAddAgent && onToggleAddAgent(agent.id)}
-                            className={`px-2.5 py-1 rounded-[4px] text-[11px] font-bold cursor-pointer transition-colors shrink-0 ${
+                            className={`px-2.5 py-1  text-[11px] font-bold cursor-pointer transition-colors shrink-0 ${
                               isAdded
-                                ? 'bg-[#F3F4F6] text-[#4B5563] border border-[#D1D5DB]'
-                                : 'bg-[#024AD8] hover:bg-[#003198] text-white'
+                                ? 'bg-[var(--surface-muted)] text-[var(--ink)] border border-[var(--border)]'
+                                : 'bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)]'
                             }`}
                           >
                             {isAdded ? (isZh ? '已添加' : 'Added') : isZh ? '添加' : 'Add'}
@@ -327,16 +327,16 @@ export function DiscoveryHomePage({
 
                 {/* 4. Recommended Plugin */}
                 {recommendations.plugins.length > 0 && (
-                  <div className="p-3 rounded-lg bg-[#F9FAFB] border border-[#E5E7EB] space-y-2">
-                    <div className="flex items-center justify-between text-[11px] font-bold text-[#6B7280]">
-                      <span className="flex items-center gap-1.5 text-[#024AD8]">
+                  <div className="p-3 rounded-lg bg-[var(--surface-muted)] border border-[var(--border)] space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-[var(--lavender)]">
+                      <span className="flex items-center gap-1.5 text-[var(--primary)]">
                         <Wrench size={13} />
                         <span>{isZh ? '实用插件 · Plugin' : 'Plugin'}</span>
                       </span>
                       <button
                         type="button"
                         onClick={() => onNavigateTab('plugins')}
-                        className="text-[#024AD8] hover:underline cursor-pointer"
+                        className="text-[var(--primary)] hover:underline cursor-pointer"
                       >
                         {isZh ? '更多插件' : 'More'} →
                       </button>
@@ -346,17 +346,17 @@ export function DiscoveryHomePage({
                       return (
                         <div
                           key={plugin.id}
-                          className="flex items-center justify-between gap-3 p-2 bg-white rounded-[6px] border border-[#E5E7EB] hover:border-[#024AD8] transition-all"
+                          className="flex items-center justify-between gap-3 p-2 bg-[var(--surface)] rounded-[6px] border border-[var(--border)] hover:border-[var(--primary)] transition-all"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-8 h-8 rounded-[4px] bg-blue-50 border border-blue-100 flex items-center justify-center text-[#024AD8] text-xs font-bold shrink-0">
+                            <div className="w-8 h-8  bg-[var(--primary)] border border-[var(--primary)] flex items-center justify-center text-[var(--primary)] text-xs font-bold shrink-0">
                               <Wrench size={13} />
                             </div>
                             <div className="min-w-0">
-                              <div className="text-xs font-bold text-[#111827] truncate">
+                              <div className="text-xs font-bold text-[var(--ink)] truncate">
                                 {isZh ? plugin.nameZh : plugin.name}
                               </div>
-                              <div className="text-[10px] text-[#6B7280] truncate">
+                              <div className="text-[10px] text-[var(--lavender)] truncate">
                                 {isZh ? plugin.tagsZh.join(' · ') : plugin.tags.join(' · ')}
                               </div>
                             </div>
@@ -364,10 +364,10 @@ export function DiscoveryHomePage({
                           <button
                             type="button"
                             onClick={() => onToggleAddPlugin && onToggleAddPlugin(plugin.id)}
-                            className={`px-2.5 py-1 rounded-[4px] text-[11px] font-bold cursor-pointer transition-colors shrink-0 ${
+                            className={`px-2.5 py-1  text-[11px] font-bold cursor-pointer transition-colors shrink-0 ${
                               isAdded
-                                ? 'bg-[#F3F4F6] text-[#4B5563] border border-[#D1D5DB]'
-                                : 'bg-[#024AD8] hover:bg-[#003198] text-white'
+                                ? 'bg-[var(--surface-muted)] text-[var(--ink)] border border-[var(--border)]'
+                                : 'bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)]'
                             }`}
                           >
                             {isAdded ? (isZh ? '已添加' : 'Added') : isZh ? '添加' : 'Add'}
@@ -386,20 +386,20 @@ export function DiscoveryHomePage({
       {/* ============================================================
           2. FOUR EDITORIAL GATEWAY LAYERS (下方四个能力入口)
           ============================================================ */}
-      <section className="space-y-4 pt-4 border-t border-[#E5E7EB]">
+      <section className="space-y-4 pt-4 border-t border-[var(--border)]">
         {/* Layer 1: Plugins */}
         <div
           id="gateway-plugins"
-          className="group relative p-6 bg-white hover:bg-[#FAFAFA] rounded-xl border border-[#E5E7EB] hover:border-[#024AD8] transition-all duration-200 shadow-2xs"
+          className="group relative p-6 bg-[var(--surface)] hover:bg-[var(--surface-muted)] rounded-xl border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-200 shadow-2xs"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1.5 min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-[#024AD8] uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-[var(--primary)] uppercase tracking-wider">
                   01 · Plugins
                 </span>
               </div>
-              <h2 className="text-lg sm:text-xl font-bold text-[#111827]">
+              <h2 className="text-lg sm:text-xl font-bold text-[var(--ink)]">
                 {isZh ? '专业工具与连接器' : 'Professional Tools & Connectors'}
               </h2>
               <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -407,7 +407,7 @@ export function DiscoveryHomePage({
                   (ex, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-0.5 rounded-[4px] bg-[#F3F4F6] text-[#4B5563] text-xs font-medium"
+                      className="px-2 py-0.5  bg-[var(--surface-muted)] text-[var(--ink)] text-xs font-medium"
                     >
                       {ex}
                     </span>
@@ -419,7 +419,7 @@ export function DiscoveryHomePage({
             <button
               type="button"
               onClick={() => onNavigateTab('plugins')}
-              className="h-9 px-4 rounded-[4px] bg-white hover:bg-[#F7F7F7] border border-[#D1D1D1] hover:border-[#B0B0B0] text-xs font-bold text-[#1C1C1C] transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+              className="h-9 px-4  bg-[var(--surface)] hover:bg-[var(--surface-muted)] border border-[var(--border)] hover:border-[var(--border)] text-xs font-bold text-[var(--ink)] transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
             >
               <span>{isZh ? '浏览插件' : 'Browse Plugins'}</span>
               <ArrowRight size={13} />
@@ -430,16 +430,16 @@ export function DiscoveryHomePage({
         {/* Layer 2: Agents */}
         <div
           id="gateway-agents"
-          className="group relative p-6 bg-white hover:bg-[#FAFAFA] rounded-xl border border-[#E5E7EB] hover:border-[#024AD8] transition-all duration-200 shadow-2xs"
+          className="group relative p-6 bg-[var(--surface)] hover:bg-[var(--surface-muted)] rounded-xl border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-200 shadow-2xs"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1.5 min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-[#024AD8] uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-[var(--primary)] uppercase tracking-wider">
                   02 · Agents
                 </span>
               </div>
-              <h2 className="text-lg sm:text-xl font-bold text-[#111827]">
+              <h2 className="text-lg sm:text-xl font-bold text-[var(--ink)]">
                 {isZh ? '更复杂的智能能力' : 'Advanced Intelligent Workers'}
               </h2>
               <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -447,7 +447,7 @@ export function DiscoveryHomePage({
                   (ex, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-0.5 rounded-[4px] bg-[#F3F4F6] text-[#4B5563] text-xs font-medium"
+                      className="px-2 py-0.5  bg-[var(--surface-muted)] text-[var(--ink)] text-xs font-medium"
                     >
                       {ex}
                     </span>
@@ -459,7 +459,7 @@ export function DiscoveryHomePage({
             <button
               type="button"
               onClick={() => onNavigateTab('agents')}
-              className="h-9 px-4 rounded-[4px] bg-white hover:bg-[#F7F7F7] border border-[#D1D1D1] hover:border-[#B0B0B0] text-xs font-bold text-[#1C1C1C] transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+              className="h-9 px-4  bg-[var(--surface)] hover:bg-[var(--surface-muted)] border border-[var(--border)] hover:border-[var(--border)] text-xs font-bold text-[var(--ink)] transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
             >
               <span>{isZh ? '浏览 Agent' : 'Explore Agents'}</span>
               <ArrowRight size={13} />
@@ -470,23 +470,23 @@ export function DiscoveryHomePage({
         {/* Layer 3: People */}
         <div
           id="gateway-people"
-          className="group relative p-6 bg-white hover:bg-[#FAFAFA] rounded-xl border border-[#E5E7EB] hover:border-[#024AD8] transition-all duration-200 shadow-2xs"
+          className="group relative p-6 bg-[var(--surface)] hover:bg-[var(--surface-muted)] rounded-xl border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-200 shadow-2xs"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1.5 min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-[#024AD8] uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-[var(--primary)] uppercase tracking-wider">
                   03 · People
                 </span>
               </div>
-              <h2 className="text-lg sm:text-xl font-bold text-[#111827]">
+              <h2 className="text-lg sm:text-xl font-bold text-[var(--ink)]">
                 {isZh ? '找到拥有专业能力的人' : 'Find People with Proven Expertise'}
               </h2>
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 {['Photographer', 'Designer', 'Marketer', 'Developer'].map((ex, idx) => (
                   <span
                     key={idx}
-                    className="px-2 py-0.5 rounded-[4px] bg-[#F3F4F6] text-[#4B5563] text-xs font-medium"
+                    className="px-2 py-0.5  bg-[var(--surface-muted)] text-[var(--ink)] text-xs font-medium"
                   >
                     {ex}
                   </span>
@@ -497,7 +497,7 @@ export function DiscoveryHomePage({
             <button
               type="button"
               onClick={() => onNavigateTab('people')}
-              className="h-9 px-4 rounded-[4px] bg-white hover:bg-[#F7F7F7] border border-[#D1D1D1] hover:border-[#B0B0B0] text-xs font-bold text-[#1C1C1C] transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+              className="h-9 px-4  bg-[var(--surface)] hover:bg-[var(--surface-muted)] border border-[var(--border)] hover:border-[var(--border)] text-xs font-bold text-[var(--ink)] transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
             >
               <span>{isZh ? '发现个人' : 'Discover People'}</span>
               <ArrowRight size={13} />
@@ -508,16 +508,16 @@ export function DiscoveryHomePage({
         {/* Layer 4: Organizations */}
         <div
           id="gateway-organizations"
-          className="group relative p-6 bg-white hover:bg-[#FAFAFA] rounded-xl border border-[#E5E7EB] hover:border-[#024AD8] transition-all duration-200 shadow-2xs"
+          className="group relative p-6 bg-[var(--surface)] hover:bg-[var(--surface-muted)] rounded-xl border border-[var(--border)] hover:border-[var(--primary)] transition-all duration-200 shadow-2xs"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1.5 min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-[#024AD8] uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-[var(--primary)] uppercase tracking-wider">
                   04 · Organizations
                 </span>
               </div>
-              <h2 className="text-lg sm:text-xl font-bold text-[#111827]">
+              <h2 className="text-lg sm:text-xl font-bold text-[var(--ink)]">
                 {isZh ? '找到可以承接完整需求的团队' : 'Find Teams & Companies for Complete Needs'}
               </h2>
               <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -525,7 +525,7 @@ export function DiscoveryHomePage({
                   (ex, idx) => (
                     <span
                       key={idx}
-                      className="px-2 py-0.5 rounded-[4px] bg-[#F3F4F6] text-[#4B5563] text-xs font-medium"
+                      className="px-2 py-0.5  bg-[var(--surface-muted)] text-[var(--ink)] text-xs font-medium"
                     >
                       {ex}
                     </span>
@@ -537,7 +537,7 @@ export function DiscoveryHomePage({
             <button
               type="button"
               onClick={() => onNavigateTab('organizations')}
-              className="h-9 px-4 rounded-[4px] bg-white hover:bg-[#F7F7F7] border border-[#D1D1D1] hover:border-[#B0B0B0] text-xs font-bold text-[#1C1C1C] transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+              className="h-9 px-4  bg-[var(--surface)] hover:bg-[var(--surface-muted)] border border-[var(--border)] hover:border-[var(--border)] text-xs font-bold text-[var(--ink)] transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
             >
               <span>{isZh ? '发现组织' : 'Discover Organizations'}</span>
               <ArrowRight size={13} />

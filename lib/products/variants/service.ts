@@ -1,11 +1,12 @@
+import { randomUUID } from 'node:crypto'
 import { createClientServer } from '@/lib/supabase/server'
-import type { 
-  ProductOption, 
-  ProductVariant, 
-  CreateProductOptionInput, 
+import type {
+  ProductOption,
+  ProductVariant,
+  CreateProductOptionInput,
   UpdateProductOptionInput,
   CreateProductVariantInput,
-  UpdateProductVariantInput 
+  UpdateProductVariantInput,
 } from './types'
 import {
   normalizeOptionCode,
@@ -15,601 +16,419 @@ import {
   isValidVariantStatus,
   validateVariantForPublish,
   validateInventory,
-  validateOptionValues
+  validateOptionValues,
 } from './validation'
 
-/**
- * Get authenticated user and their store
- */
+type JsonRecord = Record<string, unknown>
+
+function asRecord(value: unknown): JsonRecord {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as JsonRecord
+    : {}
+}
+
+function asStringRecord(value: unknown): Record<string, string> {
+  const record = asRecord(value)
+  return Object.fromEntries(
+    Object.entries(record).filter(([, item]) => typeof item === 'string'),
+  ) as Record<string, string>
+}
+
+function mapVariant(row: JsonRecord): ProductVariant {
+  const details = asRecord(row.details)
+  return {
+    id: String(row.id),
+    product_id: String(row.catalog_item_id),
+    sku: typeof row.sku_code === 'string' ? row.sku_code : null,
+    price: row.price == null ? null : Number(row.price),
+    currency: String(row.currency_code || 'CNY'),
+    inventory: row.availability_type === 'stock' && row.availability_value != null
+      ? Number(row.availability_value)
+      : null,
+    status: typeof details.status === 'string' && isValidVariantStatus(details.status)
+      ? details.status
+      : 'draft',
+    option_values: asStringRecord(details.option_values),
+    raw_data: asRecord(details.raw_data),
+    semantic_data: asRecord(details.semantic_data),
+    created_at: String(row.created_at),
+    updated_at: String(row.updated_at),
+  }
+}
+
+function mapOptions(detailsValue: unknown): ProductOption[] {
+  if (!Array.isArray(detailsValue)) return []
+  return detailsValue
+    .filter((item): item is JsonRecord => Boolean(item && typeof item === 'object'))
+    .map((item) => ({
+      id: String(item.id),
+      product_id: String(item.product_id),
+      name: String(item.name),
+      code: String(item.code),
+      position: Number(item.position ?? 0),
+      values: Array.isArray(item.values)
+        ? item.values.filter((value): value is string => typeof value === 'string')
+        : [],
+      created_at: String(item.created_at),
+    }))
+    .sort((a, b) => a.position - b.position)
+}
+
 async function getAuthenticatedContext() {
   const supabase = await createClientServer()
-  
   const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    throw new Error('Unauthorized')
-  }
-  
+  if (userError || !user) throw new Error('Unauthorized')
+
   const { data: store, error: storeError } = await supabase
     .from('stores')
-    .select('id')
-    .eq('owner_id', user.id)
+    .select('id, organization_id')
+    .in('organization_id', (await supabase
+      .from('organization_members')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .in('role', ['owner', 'admin', 'editor'])).data?.map((row) => row.organization_id) ?? [])
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle()
-  
-  if (storeError) {
-    throw new Error(storeError.message)
-  }
-  
-  if (!store) {
-    throw new Error('Store not found')
-  }
-  
-  return { supabase, user, store }
+  if (storeError) throw new Error(storeError.message)
+  if (!store) throw new Error('Store not found')
+  if (!store.organization_id) throw new Error('Store organization not found')
+
+  return { supabase, organizationId: store.organization_id }
 }
 
-/**
- * Verify product belongs to the authenticated user's store
- */
-async function verifyProductOwnership(productId: string, storeId: string) {
-  const supabase = await createClientServer()
-  
-  const { data: product, error } = await supabase
-    .from('products')
-    .select('id, store_id')
+async function verifyProductOwnership(
+  supabase: Awaited<ReturnType<typeof createClientServer>>,
+  productId: string,
+  organizationId: string,
+) {
+  const { data, error } = await supabase
+    .from('catalog_items')
+    .select('id, organization_id')
     .eq('id', productId)
-    .single()
-  
-  if (error) {
-    throw new Error(error.message)
-  }
-  
-  if (!product) {
-    throw new Error('Product not found')
-  }
-  
-  if (product.store_id !== storeId) {
-    throw new Error('Product does not belong to your store')
-  }
-  
-  return product
+    .eq('organization_id', organizationId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!data) throw new Error('Product not found')
+  return data
 }
 
-/**
- * Verify variant belongs to the authenticated user's store
- */
-async function verifyVariantOwnership(variantId: string, storeId: string) {
-  const supabase = await createClientServer()
-  
-  const { data: variant, error } = await supabase
-    .from('product_variants')
-    .select('id, product_id')
+async function verifyVariantOwnership(
+  supabase: Awaited<ReturnType<typeof createClientServer>>,
+  productId: string,
+  variantId: string,
+  organizationId: string,
+) {
+  const { data, error } = await supabase
+    .from('catalog_variants')
+    .select('id, catalog_item_id, organization_id')
     .eq('id', variantId)
+    .eq('catalog_item_id', productId)
+    .eq('organization_id', organizationId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!data) throw new Error('Variant not found')
+  return data
+}
+
+async function readProductDetails(
+  supabase: Awaited<ReturnType<typeof createClientServer>>,
+  productId: string,
+  organizationId: string,
+) {
+  await verifyProductOwnership(supabase, productId, organizationId)
+  const { data, error } = await supabase
+    .from('catalog_items')
+    .select('details')
+    .eq('id', productId)
+    .eq('organization_id', organizationId)
     .single()
-  
-  if (error) {
-    throw new Error(error.message)
-  }
-  
-  if (!variant) {
-    throw new Error('Variant not found')
-  }
-  
-  // Verify the product belongs to the store
-  await verifyProductOwnership(variant.product_id, storeId)
-  
-  return variant
+  if (error) throw new Error(error.message)
+  return asRecord(data?.details)
 }
 
-/**
- * Check SKU uniqueness within a store
- */
-async function checkSKUUniqueness(storeId: string, sku: string, excludeVariantId?: string): Promise<boolean> {
-  const supabase = await createClientServer()
-  
-  // First, get all variants with the SKU
-  const { data: variants, error: variantError } = await supabase
-    .from('product_variants')
-    .select('id, product_id')
-    .eq('sku', sku)
-  
-  if (variantError) {
-    throw new Error(variantError.message)
-  }
-  
-  if (!variants || variants.length === 0) {
-    return true // No variants with this SKU
-  }
-  
-  // Filter out the excluded variant ID
-  const filteredVariants = excludeVariantId 
-    ? variants.filter(v => v.id !== excludeVariantId)
-    : variants
-  
-  if (filteredVariants.length === 0) {
-    return true // Only the excluded variant has this SKU
-  }
-  
-  // Check if any of the remaining variants belong to products in the store
-  const productIds = filteredVariants.map(v => v.product_id)
-  
-  const { data: products, error: productError } = await supabase
-    .from('products')
+async function updateProductDetails(
+  supabase: Awaited<ReturnType<typeof createClientServer>>,
+  productId: string,
+  organizationId: string,
+  details: JsonRecord,
+) {
+  const { data, error } = await supabase
+    .from('catalog_items')
+    .update({ details })
+    .eq('id', productId)
+    .eq('organization_id', organizationId)
+    .select('details')
+    .single()
+  if (error) throw new Error(error.message)
+  return asRecord(data?.details)
+}
+
+async function checkSKUUniqueness(
+  supabase: Awaited<ReturnType<typeof createClientServer>>,
+  organizationId: string,
+  sku: string,
+  excludeVariantId?: string,
+) {
+  let query = supabase
+    .from('catalog_variants')
     .select('id')
-    .in('id', productIds)
-    .eq('store_id', storeId)
-  
-  if (productError) {
-    throw new Error(productError.message)
-  }
-  
-  // If any product belongs to the store, SKU is not unique
-  return (products?.length ?? 0) === 0
+    .eq('organization_id', organizationId)
+    .eq('sku_code', sku)
+  if (excludeVariantId) query = query.neq('id', excludeVariantId)
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
+  return (data?.length ?? 0) === 0
 }
 
-/**
- * Check for duplicate option_values within a product
- */
-async function checkOptionValuesUniqueness(productId: string, optionValues: Record<string, string>, excludeVariantId?: string): Promise<boolean> {
-  const supabase = await createClientServer()
-  
+async function checkOptionValuesUniqueness(
+  supabase: Awaited<ReturnType<typeof createClientServer>>,
+  productId: string,
+  organizationId: string,
+  optionValues: Record<string, string>,
+  excludeVariantId?: string,
+) {
+  const { data, error } = await supabase
+    .from('catalog_variants')
+    .select('id, details')
+    .eq('catalog_item_id', productId)
+    .eq('organization_id', organizationId)
+  if (error) throw new Error(error.message)
   const canonical = canonicalizeOptionValues(optionValues)
-  
-  // Get all variants for this product
-  const { data: variants, error } = await supabase
-    .from('product_variants')
-    .select('id, option_values')
-    .eq('product_id', productId)
-  
-  if (error) {
-    throw new Error(error.message)
-  }
-  
-  for (const variant of variants || []) {
-    if (excludeVariantId && variant.id === excludeVariantId) {
-      continue
-    }
-    
-    const variantCanonical = canonicalizeOptionValues(variant.option_values as Record<string, string>)
-    if (variantCanonical === canonical) {
-      return false // Duplicate found
-    }
-  }
-  
-  return true // No duplicates
+  return !(data || []).some((variant) => {
+    if (excludeVariantId && variant.id === excludeVariantId) return false
+    return canonicalizeOptionValues(asStringRecord(asRecord(variant.details).option_values)) === canonical
+  })
 }
-
-// ============================================================================
-// Product Options
-// ============================================================================
 
 export async function getProductOptions(productId: string): Promise<ProductOption[]> {
-  const { supabase, store } = await getAuthenticatedContext()
-  
-  // Verify product ownership
-  await verifyProductOwnership(productId, store.id)
-  
-  const { data, error } = await supabase
-    .from('product_options')
-    .select('*')
-    .eq('product_id', productId)
-    .order('position', { ascending: true })
-  
-  if (error) {
-    throw new Error(error.message)
-  }
-  
-  return data || []
+  const { supabase, organizationId } = await getAuthenticatedContext()
+  const details = await readProductDetails(supabase, productId, organizationId)
+  return mapOptions(details.options).map((option) => ({ ...option, product_id: productId }))
 }
 
 export async function createProductOption(
   productId: string,
-  input: CreateProductOptionInput
+  input: CreateProductOptionInput,
 ): Promise<ProductOption> {
-  const { supabase, store } = await getAuthenticatedContext()
-  
-  // Verify product ownership
-  await verifyProductOwnership(productId, store.id)
-  
-  // Validate input
+  const { supabase, organizationId } = await getAuthenticatedContext()
+  const details = await readProductDetails(supabase, productId, organizationId)
   const normalizedCode = normalizeOptionCode(input.code)
-  if (!isValidOptionCode(normalizedCode)) {
-    throw new Error('Invalid option code format')
-  }
-  
+  if (!isValidOptionCode(normalizedCode)) throw new Error('Invalid option code format')
   const valuesValidation = validateOptionValues(input.values)
-  if (!valuesValidation.valid) {
-    throw new Error(valuesValidation.error)
-  }
-  
-  // Check for duplicate code
-  const { data: existing } = await supabase
-    .from('product_options')
-    .select('id')
-    .eq('product_id', productId)
-    .eq('code', normalizedCode)
-    .maybeSingle()
-  
-  if (existing) {
+  if (!valuesValidation.valid) throw new Error(valuesValidation.error)
+
+  const options = mapOptions(details.options).map((option) => ({ ...option, product_id: productId }))
+  if (options.some((option) => option.code === normalizedCode)) {
     throw new Error('Option with this code already exists for this product')
   }
-  
-  const { data, error } = await supabase
-    .from('product_options')
-    .insert({
-      product_id: productId,
-      name: input.name,
-      code: normalizedCode,
-      position: input.position ?? 0,
-      values: input.values
-    })
-    .select()
-    .single()
-  
-  if (error) {
-    throw new Error(error.message)
+  const option: ProductOption = {
+    id: randomUUID(),
+    product_id: productId,
+    name: input.name,
+    code: normalizedCode,
+    position: input.position ?? 0,
+    values: input.values,
+    created_at: new Date().toISOString(),
   }
-  
-  return data
+  await updateProductDetails(supabase, productId, organizationId, {
+    ...details,
+    options: [...options, option],
+  })
+  return option
 }
 
 export async function updateProductOption(
   productId: string,
   optionId: string,
-  input: UpdateProductOptionInput
+  input: UpdateProductOptionInput,
 ): Promise<ProductOption> {
-  const { supabase, store } = await getAuthenticatedContext()
-  
-  // Verify product ownership
-  await verifyProductOwnership(productId, store.id)
-  
-  // Verify option belongs to product
-  const { data: existingOption, error: optionError } = await supabase
-    .from('product_options')
-    .select('id')
-    .eq('id', optionId)
-    .eq('product_id', productId)
-    .single()
-  
-  if (optionError || !existingOption) {
-    throw new Error('Option not found or does not belong to this product')
+  const { supabase, organizationId } = await getAuthenticatedContext()
+  const details = await readProductDetails(supabase, productId, organizationId)
+  const options = mapOptions(details.options).map((option) => ({ ...option, product_id: productId }))
+  const index = options.findIndex((option) => option.id === optionId)
+  if (index < 0) throw new Error('Option not found or does not belong to this product')
+
+  const current = options[index]
+  const code = input.code === undefined ? current.code : normalizeOptionCode(input.code)
+  if (!isValidOptionCode(code)) throw new Error('Invalid option code format')
+  if (options.some((option) => option.id !== optionId && option.code === code)) {
+    throw new Error('Option with this code already exists for this product')
   }
-  
-  // Build update object
-  const update: Partial<CreateProductOptionInput> = {}
-  
-  if (input.name !== undefined) {
-    update.name = input.name
+  const values = input.values === undefined ? current.values : input.values
+  const valuesValidation = validateOptionValues(values)
+  if (!valuesValidation.valid) throw new Error(valuesValidation.error)
+
+  const updated = {
+    ...current,
+    name: input.name ?? current.name,
+    code,
+    position: input.position ?? current.position,
+    values,
   }
-  
-  if (input.code !== undefined) {
-    const normalizedCode = normalizeOptionCode(input.code)
-    if (!isValidOptionCode(normalizedCode)) {
-      throw new Error('Invalid option code format')
-    }
-    
-    // Check for duplicate code (excluding current option)
-    const { data: duplicate } = await supabase
-      .from('product_options')
-      .select('id')
-      .eq('product_id', productId)
-      .eq('code', normalizedCode)
-      .neq('id', optionId)
-      .maybeSingle()
-    
-    if (duplicate) {
-      throw new Error('Option with this code already exists for this product')
-    }
-    
-    update.code = normalizedCode
-  }
-  
-  if (input.position !== undefined) {
-    update.position = input.position
-  }
-  
-  if (input.values !== undefined) {
-    const valuesValidation = validateOptionValues(input.values)
-    if (!valuesValidation.valid) {
-      throw new Error(valuesValidation.error)
-    }
-    update.values = input.values
-  }
-  
-  const { data, error } = await supabase
-    .from('product_options')
-    .update(update)
-    .eq('id', optionId)
-    .select()
-    .single()
-  
-  if (error) {
-    throw new Error(error.message)
-  }
-  
-  return data
+  options[index] = updated
+  await updateProductDetails(supabase, productId, organizationId, { ...details, options })
+  return updated
 }
 
-export async function deleteProductOption(
-  productId: string,
-  optionId: string
-): Promise<boolean> {
-  const { supabase, store } = await getAuthenticatedContext()
-  
-  // Verify product ownership
-  await verifyProductOwnership(productId, store.id)
-  
-  // Verify option belongs to product
-  const { data: existingOption, error: optionError } = await supabase
-    .from('product_options')
-    .select('id')
-    .eq('id', optionId)
-    .eq('product_id', productId)
-    .single()
-  
-  if (optionError || !existingOption) {
+export async function deleteProductOption(productId: string, optionId: string): Promise<boolean> {
+  const { supabase, organizationId } = await getAuthenticatedContext()
+  const details = await readProductDetails(supabase, productId, organizationId)
+  const options = mapOptions(details.options).map((option) => ({ ...option, product_id: productId }))
+  if (!options.some((option) => option.id === optionId)) {
     throw new Error('Option not found or does not belong to this product')
   }
-  
-  const { error } = await supabase
-    .from('product_options')
-    .delete()
-    .eq('id', optionId)
-  
-  if (error) {
-    throw new Error(error.message)
-  }
-  
+  await updateProductDetails(supabase, productId, organizationId, {
+    ...details,
+    options: options.filter((option) => option.id !== optionId),
+  })
   return true
 }
 
-// ============================================================================
-// Product Variants
-// ============================================================================
-
 export async function getProductVariants(productId: string): Promise<ProductVariant[]> {
-  const { supabase, store } = await getAuthenticatedContext()
-  
-  // Verify product ownership
-  await verifyProductOwnership(productId, store.id)
-  
+  const { supabase, organizationId } = await getAuthenticatedContext()
+  await verifyProductOwnership(supabase, productId, organizationId)
   const { data, error } = await supabase
-    .from('product_variants')
+    .from('catalog_variants')
     .select('*')
-    .eq('product_id', productId)
+    .eq('catalog_item_id', productId)
+    .eq('organization_id', organizationId)
     .order('created_at', { ascending: true })
-  
-  if (error) {
-    throw new Error(error.message)
-  }
-  
-  return data || []
+  if (error) throw new Error(error.message)
+  return (data || []).map((row) => mapVariant(row as JsonRecord))
 }
 
-export async function getProductVariant(
-  productId: string,
-  variantId: string
-): Promise<ProductVariant> {
-  const { supabase, store } = await getAuthenticatedContext()
-  
-  // Verify product ownership
-  await verifyProductOwnership(productId, store.id)
-  
+export async function getProductVariant(productId: string, variantId: string): Promise<ProductVariant> {
+  const { supabase, organizationId } = await getAuthenticatedContext()
+  await verifyVariantOwnership(supabase, productId, variantId, organizationId)
   const { data, error } = await supabase
-    .from('product_variants')
+    .from('catalog_variants')
     .select('*')
     .eq('id', variantId)
-    .eq('product_id', productId)
+    .eq('catalog_item_id', productId)
+    .eq('organization_id', organizationId)
     .single()
-  
-  if (error) {
-    throw new Error(error.message)
-  }
-  
-  return data
+  if (error) throw new Error(error.message)
+  return mapVariant(data as JsonRecord)
 }
 
 export async function createProductVariant(
   productId: string,
-  input: CreateProductVariantInput
+  input: CreateProductVariantInput,
 ): Promise<ProductVariant> {
-  const { supabase, store } = await getAuthenticatedContext()
-  
-  // Verify product ownership
-  await verifyProductOwnership(productId, store.id)
-  
-  // Validate SKU if provided
-  if (input.sku) {
-    if (!isValidSKU(input.sku)) {
-      throw new Error('Invalid SKU format')
-    }
-    
-    // Check SKU uniqueness within store
-    const isUnique = await checkSKUUniqueness(store.id, input.sku)
-    if (!isUnique) {
-      throw new Error('SKU already exists in this store')
-    }
+  const { supabase, organizationId } = await getAuthenticatedContext()
+  await verifyProductOwnership(supabase, productId, organizationId)
+  if (input.sku && !isValidSKU(input.sku)) throw new Error('Invalid SKU format')
+  if (input.sku && !(await checkSKUUniqueness(supabase, organizationId, input.sku))) {
+    throw new Error('SKU already exists in this store')
   }
-  
-  // Validate inventory if provided
   if (input.inventory !== undefined) {
-    const inventoryValidation = validateInventory(input.inventory)
-    if (!inventoryValidation.valid) {
-      throw new Error(inventoryValidation.error)
-    }
+    const validation = validateInventory(input.inventory)
+    if (!validation.valid) throw new Error(validation.error)
   }
-  
-  // Validate status
-  if (input.status && !isValidVariantStatus(input.status)) {
-    throw new Error('Invalid variant status')
-  }
-  
-  // Validate for publish if status is active
+  if (input.status && !isValidVariantStatus(input.status)) throw new Error('Invalid variant status')
   if (input.status === 'active') {
-    const publishValidation = validateVariantForPublish({
-      sku: input.sku ?? null,
-      price: input.price ?? null,
-      option_values: input.option_values
-    })
-    if (!publishValidation.valid) {
-      throw new Error(publishValidation.error)
-    }
+    const validation = validateVariantForPublish({ sku: input.sku ?? null, price: input.price ?? null, option_values: input.option_values })
+    if (!validation.valid) throw new Error(validation.error)
   }
-  
-  // Check for duplicate option_values
-  const isUnique = await checkOptionValuesUniqueness(productId, input.option_values)
-  if (!isUnique) {
+  if (!(await checkOptionValuesUniqueness(supabase, productId, organizationId, input.option_values))) {
     throw new Error('Variant with these option values already exists')
   }
-  
+
   const { data, error } = await supabase
-    .from('product_variants')
+    .from('catalog_variants')
     .insert({
-      product_id: productId,
-      sku: input.sku || null,
-      price: input.price || null,
-      currency: input.currency || 'USD',
-      inventory: input.inventory ?? null,
-      status: input.status || 'draft',
-      option_values: input.option_values,
-      raw_data: input.raw_data || null,
-      semantic_data: input.semantic_data || null
+      organization_id: organizationId,
+      catalog_item_id: productId,
+      sku_code: input.sku || null,
+      title: input.sku || 'Variant',
+      price: input.price ?? 0,
+      currency_code: input.currency || 'CNY',
+      availability_type: 'stock',
+      availability_value: input.inventory ?? null,
+      details: {
+        option_values: input.option_values,
+        raw_data: input.raw_data ?? {},
+        semantic_data: input.semantic_data ?? {},
+        status: input.status || 'draft',
+      },
     })
-    .select()
+    .select('*')
     .single()
-  
-  if (error) {
-    throw new Error(error.message)
-  }
-  
-  return data
+  if (error) throw new Error(error.message)
+  return mapVariant(data as JsonRecord)
 }
 
 export async function updateProductVariant(
   productId: string,
   variantId: string,
-  input: UpdateProductVariantInput
+  input: UpdateProductVariantInput,
 ): Promise<ProductVariant> {
-  const { supabase, store } = await getAuthenticatedContext()
-  
-  // Verify variant ownership
-  await verifyVariantOwnership(variantId, store.id)
-  
-  // Build update object
-  const update: Partial<CreateProductVariantInput> = {}
-  
-  if (input.sku !== undefined) {
-    if (input.sku) {
-      if (!isValidSKU(input.sku)) {
-        throw new Error('Invalid SKU format')
-      }
-      
-      // Check SKU uniqueness within store (excluding current variant)
-      const isUnique = await checkSKUUniqueness(store.id, input.sku, variantId)
-      if (!isUnique) {
-        throw new Error('SKU already exists in this store')
-      }
-    }
-    update.sku = input.sku
-  }
-  
-  if (input.price !== undefined) {
-    update.price = input.price
-  }
-  
-  if (input.currency !== undefined) {
-    update.currency = input.currency
-  }
-  
-  if (input.inventory !== undefined) {
-    const inventoryValidation = validateInventory(input.inventory)
-    if (!inventoryValidation.valid) {
-      throw new Error(inventoryValidation.error)
-    }
-    update.inventory = input.inventory
-  }
-  
-  if (input.status !== undefined) {
-    if (!isValidVariantStatus(input.status)) {
-      throw new Error('Invalid variant status')
-    }
-    
-    // Validate for publish if status is being set to active
-    if (input.status === 'active') {
-      // Get current variant data for validation
-      const { data: currentVariant } = await supabase
-        .from('product_variants')
-        .select('sku, price, option_values')
-        .eq('id', variantId)
-        .single()
-      
-      if (!currentVariant) {
-        throw new Error('Variant not found')
-      }
-      
-      const currentPrice = input.price !== undefined ? input.price : (currentVariant.price as number | null)
-      const currentSKU = input.sku !== undefined ? input.sku : (currentVariant.sku as string | null)
-      const currentOptionValues = input.option_values !== undefined ? input.option_values : (currentVariant.option_values as Record<string, string>)
-      
-      const publishValidation = validateVariantForPublish({
-        sku: currentSKU,
-        price: currentPrice,
-        option_values: currentOptionValues
-      })
-      if (!publishValidation.valid) {
-        throw new Error(publishValidation.error)
-      }
-    }
-    
-    update.status = input.status
-  }
-  
-  if (input.option_values !== undefined) {
-    // Check for duplicate option_values (excluding current variant)
-    const isUnique = await checkOptionValuesUniqueness(productId, input.option_values, variantId)
-    if (!isUnique) {
-      throw new Error('Variant with these option values already exists')
-    }
-    update.option_values = input.option_values
-  }
-  
-  if (input.raw_data !== undefined) {
-    update.raw_data = input.raw_data
-  }
-  
-  if (input.semantic_data !== undefined) {
-    update.semantic_data = input.semantic_data
-  }
-  
-  const { data, error } = await supabase
-    .from('product_variants')
-    .update(update)
+  const { supabase, organizationId } = await getAuthenticatedContext()
+  await verifyVariantOwnership(supabase, productId, variantId, organizationId)
+  const { data: current, error: currentError } = await supabase
+    .from('catalog_variants')
+    .select('*')
     .eq('id', variantId)
-    .select()
+    .eq('catalog_item_id', productId)
+    .eq('organization_id', organizationId)
     .single()
-  
-  if (error) {
-    throw new Error(error.message)
+  if (currentError) throw new Error(currentError.message)
+
+  const currentVariant = mapVariant(current as JsonRecord)
+  if (input.sku && !isValidSKU(input.sku)) throw new Error('Invalid SKU format')
+  if (input.sku && !(await checkSKUUniqueness(supabase, organizationId, input.sku, variantId))) {
+    throw new Error('SKU already exists in this store')
   }
-  
-  return data
+  if (input.inventory !== undefined) {
+    const validation = validateInventory(input.inventory)
+    if (!validation.valid) throw new Error(validation.error)
+  }
+  if (input.status !== undefined && !isValidVariantStatus(input.status)) throw new Error('Invalid variant status')
+  const optionValues = input.option_values ?? currentVariant.option_values
+  if (input.option_values && !(await checkOptionValuesUniqueness(supabase, productId, organizationId, optionValues, variantId))) {
+    throw new Error('Variant with these option values already exists')
+  }
+  const status = input.status ?? currentVariant.status
+  if (status === 'active') {
+    const validation = validateVariantForPublish({ sku: input.sku ?? currentVariant.sku, price: input.price ?? currentVariant.price, option_values: optionValues })
+    if (!validation.valid) throw new Error(validation.error)
+  }
+
+  const { data, error } = await supabase
+    .from('catalog_variants')
+    .update({
+      sku_code: input.sku !== undefined ? input.sku : current.sku_code,
+      price: input.price !== undefined ? input.price : current.price,
+      currency_code: input.currency !== undefined ? input.currency : current.currency_code,
+      availability_value: input.inventory !== undefined ? input.inventory : current.availability_value,
+      details: {
+        ...asRecord(current.details),
+        option_values: optionValues,
+        status,
+        ...(input.raw_data !== undefined ? { raw_data: input.raw_data } : {}),
+        ...(input.semantic_data !== undefined ? { semantic_data: input.semantic_data } : {}),
+      },
+    })
+    .eq('id', variantId)
+    .eq('catalog_item_id', productId)
+    .eq('organization_id', organizationId)
+    .select('*')
+    .single()
+  if (error) throw new Error(error.message)
+  return mapVariant(data as JsonRecord)
 }
 
-export async function deleteProductVariant(
-  productId: string,
-  variantId: string
-): Promise<boolean> {
-  const { supabase, store } = await getAuthenticatedContext()
-  
-  // Verify variant ownership
-  await verifyVariantOwnership(variantId, store.id)
-  
+export async function deleteProductVariant(productId: string, variantId: string): Promise<boolean> {
+  const { supabase, organizationId } = await getAuthenticatedContext()
+  await verifyVariantOwnership(supabase, productId, variantId, organizationId)
   const { error } = await supabase
-    .from('product_variants')
+    .from('catalog_variants')
     .delete()
     .eq('id', variantId)
-  
-  if (error) {
-    throw new Error(error.message)
-  }
-  
+    .eq('catalog_item_id', productId)
+    .eq('organization_id', organizationId)
+  if (error) throw new Error(error.message)
   return true
 }

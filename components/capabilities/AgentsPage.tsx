@@ -5,13 +5,7 @@ import {
   Search,
   Check,
   Plus,
-  Bot,
-  Sparkles,
   Zap,
-  CheckCircle2,
-  Cpu,
-  Layers,
-  Activity,
   Trash2,
 } from 'lucide-react'
 import { INITIAL_AGENTS } from './mockData'
@@ -72,15 +66,15 @@ export function AgentsPage({
       <div className="space-y-4">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#024AD8]" />
-            <span className="text-[11px] font-bold text-[#024AD8] uppercase tracking-wider">
+            <span className="w-2 h-2 rounded-full bg-[var(--primary)]" />
+            <span className="text-[11px] font-bold text-[var(--primary)] uppercase tracking-wider">
               Autonomous Intelligence
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#111827]">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[var(--ink)]">
             {isZh ? 'Agent' : 'Agents'}
           </h1>
-          <p className="text-sm text-[#6B7280]">
+          <p className="text-sm text-[var(--lavender)]">
             {isZh
               ? '让 AI 从执行单一步骤，进一步处理完整任务。'
               : 'Empower AI to move beyond single-turn steps to handle end-to-end task execution.'}
@@ -91,13 +85,13 @@ export function AgentsPage({
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
           {/* Search Input */}
           <div className="relative w-full sm:max-w-md">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--lavender)]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={isZh ? '搜索 Agent...' : 'Search agents...'}
-              className="w-full h-10 pl-9 pr-4 bg-white rounded-[6px] border border-[#D1D5DB] hover:border-[#9CA3AF] focus:border-[#024AD8] focus:ring-1 focus:ring-[#024AD8] text-xs sm:text-sm text-[#111827] focus:outline-none shadow-2xs"
+              className="w-full h-10 pl-9 pr-4 bg-[var(--surface)] rounded-[6px] border border-[var(--border)] hover:border-[var(--lavender)] focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] text-xs sm:text-sm text-[var(--ink)] focus:outline-none shadow-2xs"
             />
           </div>
 
@@ -110,10 +104,10 @@ export function AgentsPage({
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`h-8 px-3 rounded-[4px] text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  className={`h-8 px-3  text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                     active
-                      ? 'bg-[#024AD8] text-white shadow-xs'
-                      : 'bg-white hover:bg-[#F7F7F7] border border-[#D1D1D1] text-[#4B5563] hover:text-[#111827]'
+                      ? 'bg-[var(--primary)] text-[var(--surface)] shadow-xs'
+                      : 'bg-[var(--surface)] hover:bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--ink)] hover:text-[var(--ink)]'
                   }`}
                 >
                   {cat}
@@ -134,7 +128,7 @@ export function AgentsPage({
             <div
               key={agent.id}
               id={`agent-card-${agent.id}`}
-              className="bg-white rounded-xl border border-[#E5E7EB] hover:border-[#024AD8]/70 p-5 flex flex-col justify-between transition-all duration-200 shadow-2xs hover:shadow-xs group relative overflow-hidden"
+              className="bg-[var(--surface)] rounded-xl border border-[var(--border)] hover:border-[var(--primary)]/70 p-5 flex flex-col justify-between transition-all duration-200 shadow-2xs hover:shadow-xs group relative overflow-hidden"
             >
               {/* Subtle top accent bar */}
               <div
@@ -147,42 +141,42 @@ export function AgentsPage({
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-11 h-11 rounded-[6px] flex items-center justify-center text-white text-xs font-bold shrink-0 relative shadow-sm"
+                      className="w-11 h-11 rounded-[6px] flex items-center justify-center text-[var(--surface)] text-xs font-bold shrink-0 relative shadow-sm"
                       style={{ backgroundColor: agent.colorTheme }}
                     >
                       <span>{agent.agentAvatar}</span>
-                      <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+                      <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[var(--acid-sage)] ring-2 ring-[var(--surface)]" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-[#111827] group-hover:text-[#024AD8] transition-colors">
+                      <h3 className="text-sm font-bold text-[var(--ink)] group-hover:text-[var(--primary)] transition-colors">
                         {isZh ? agent.nameZh : agent.name}
                       </h3>
-                      <p className="text-[11px] font-medium text-[#6B7280]">
+                      <p className="text-[11px] font-medium text-[var(--lavender)]">
                         {isZh ? agent.taskTypeZh : agent.taskType}
                       </p>
                     </div>
                   </div>
 
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-[4px] bg-[#F3F4F6] text-[#4B5563]">
+                  <span className="text-[10px] font-semibold px-2 py-0.5  bg-[var(--surface-muted)] text-[var(--ink)]">
                     {agent.usesCount} {isZh ? '调用' : 'runs'}
                   </span>
                 </div>
 
                 {/* Description */}
-                <p className="text-xs text-[#4B5563] leading-relaxed">
+                <p className="text-xs text-[var(--ink)] leading-relaxed">
                   {isZh ? agent.descriptionZh : agent.description}
                 </p>
 
                 {/* What it can perform (可以完成什么) */}
-                <div className="p-3 rounded-lg bg-[#F9FAFB] border border-[#F3F4F6] space-y-1.5">
-                  <div className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider flex items-center gap-1">
-                    <Zap size={11} className="text-[#024AD8]" />
+                <div className="p-3 rounded-lg bg-[var(--surface-muted)] border border-[var(--surface-muted)] space-y-1.5">
+                  <div className="text-[10px] font-bold text-[var(--lavender)] uppercase tracking-wider flex items-center gap-1">
+                    <Zap size={11} className="text-[var(--primary)]" />
                     <span>{isZh ? '可以完成什么' : 'Autonomous Capabilities'}</span>
                   </div>
                   <ul className="space-y-1">
                     {(isZh ? agent.canPerformZh : agent.canPerform).map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-1.5 text-[11px] text-[#374151]">
-                        <span className="text-[#024AD8] font-bold shrink-0">•</span>
+                      <li key={idx} className="flex items-start gap-1.5 text-[11px] text-[var(--ink)]">
+                        <span className="text-[var(--primary)] font-bold shrink-0">•</span>
                         <span className="leading-snug">{item}</span>
                       </li>
                     ))}
@@ -191,8 +185,8 @@ export function AgentsPage({
               </div>
 
               {/* Footer Meta & Action */}
-              <div className="pt-4 mt-4 border-t border-[#F3F4F6] flex items-center justify-between">
-                <span className="text-[11px] text-[#9CA3AF]">
+              <div className="pt-4 mt-4 border-t border-[var(--surface-muted)] flex items-center justify-between">
+                <span className="text-[11px] text-[var(--lavender)]">
                   {isZh ? '由' : 'By'} {agent.createdBy}
                 </span>
 
@@ -200,15 +194,15 @@ export function AgentsPage({
                   type="button"
                   id={`btn-toggle-agent-${agent.id}`}
                   onClick={() => onToggleAddAgent(agent.id)}
-                  className={`h-8 px-3.5 rounded-[4px] text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  className={`h-8 px-3.5  text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                     isAdded
-                      ? 'bg-white hover:bg-[#F7F7F7] border border-[#D1D1D1] text-[#1C1C1C]'
-                      : 'bg-[#024AD8] hover:bg-[#003198] active:bg-[#00226B] text-white shadow-xs'
+                      ? 'bg-[var(--surface)] hover:bg-[var(--surface-muted)] border border-[var(--border)] text-[var(--ink)]'
+                      : 'bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] shadow-xs'
                   }`}
                 >
                   {isAdded ? (
                     <>
-                      <Check size={13} className="text-emerald-600" />
+                      <Check size={13} className="text-[var(--acid-sage)]" />
                       <span>{isZh ? '已添加' : 'Added'}</span>
                     </>
                   ) : (
@@ -227,60 +221,60 @@ export function AgentsPage({
       {/* ============================================================
           3. BOTTOM SECTION: MY AGENTS
           ============================================================ */}
-      <div className="pt-8 border-t border-[#E5E7EB] space-y-4">
+      <div className="pt-8 border-t border-[var(--border)] space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-[#111827]">
+            <h2 className="text-base sm:text-lg font-bold text-[var(--ink)]">
               {isZh ? '我的 Agent 队列' : 'My Active Agents'}
             </h2>
-            <p className="text-xs text-[#6B7280]">
+            <p className="text-xs text-[var(--lavender)]">
               {isZh
                 ? '已授权并在后台随时待命处理业务的智能 Agent。'
                 : 'Agents authorized to monitor and process business workflows on your behalf.'}
             </p>
           </div>
-          <span className="px-2.5 py-1 rounded-[4px] bg-[#EFF4FF] text-[#024AD8] text-xs font-bold">
+          <span className="px-2.5 py-1  bg-[var(--surface-muted)] text-[var(--primary)] text-xs font-bold">
             {installedAgents.length} {isZh ? '个待命' : 'Standby'}
           </span>
         </div>
 
         {installedAgents.length === 0 ? (
-          <div className="p-8 text-center bg-white rounded-xl border border-dashed border-[#D1D5DB] text-xs text-[#6B7280]">
+          <div className="p-8 text-center bg-[var(--surface)] rounded-xl border border-dashed border-[var(--border)] text-xs text-[var(--lavender)]">
             {isZh ? '尚未添加任何 Agent。点击上方添加即可启用。' : 'No active agents. Click Add on any agent above to enable.'}
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-[#E5E7EB] divide-y divide-[#F3F4F6] overflow-hidden shadow-2xs">
+          <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] divide-y divide-[var(--surface-muted)] overflow-hidden shadow-2xs">
             {installedAgents.map((agent) => (
               <div
                 key={agent.id}
-                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#FAFAFA] transition-colors"
+                className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[var(--surface-muted)] transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-8 h-8 rounded-[4px] flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+                    className="w-8 h-8  flex items-center justify-center text-[var(--surface)] text-[10px] font-bold shrink-0"
                     style={{ backgroundColor: agent.colorTheme }}
                   >
                     {agent.agentAvatar}
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-[#111827]">
+                    <h4 className="text-xs font-bold text-[var(--ink)]">
                       {isZh ? agent.nameZh : agent.name}
                     </h4>
-                    <p className="text-[11px] text-[#6B7280]">
+                    <p className="text-[11px] text-[var(--lavender)]">
                       {isZh ? agent.taskTypeZh : agent.taskType} · {isZh ? '由' : 'By'} {agent.createdBy}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--acid-sage)] text-[var(--acid-sage)] text-[10px] font-bold border border-[var(--acid-sage)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--acid-sage)]" />
                     {isZh ? '待命中' : 'Standby'}
                   </span>
                   <button
                     type="button"
                     onClick={() => onToggleAddAgent(agent.id)}
-                    className="p-1.5 rounded-[4px] text-[#9CA3AF] hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                    className="p-1.5  text-[var(--lavender)] hover:text-[var(--plum)] hover:bg-[var(--plum)] transition-colors cursor-pointer"
                     title={isZh ? '移除 Agent' : 'Remove Agent'}
                   >
                     <Trash2 size={14} />

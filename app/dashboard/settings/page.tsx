@@ -19,22 +19,28 @@ export default async function SettingsPage() {
     user = null
   }
 
-  if (!user) {
-    return (
-      <SettingsView
-        currentStore={{
-          store_name: 'Omnilink 官方旗舰店',
-          store_slug: 'omnilink-flagship',
-          industries: { name: '智能硬件与数码' },
-        }}
-      />
-    )
+  const localPreview = process.env.NODE_ENV !== 'production' && !user
+
+  if (!user && !localPreview) {
+    redirect('/login')
   }
 
-  const store = await getStoreByOwnerId(user.id)
-  if (!store) {
+  const store = user ? await getStoreByOwnerId(user.id) : null
+  if (!store && !localPreview) {
     redirect('/onboarding')
   }
 
-  return <SettingsView currentStore={store} />
+  return <SettingsView currentStore={store ? {
+    store_name: store.name,
+    store_slug: store.slug,
+    base_currency: store.currency,
+    currency: store.currency,
+    industries: null,
+  } : {
+    store_name: '演示商家',
+    store_slug: 'omnilink-demo',
+    base_currency: 'CNY',
+    currency: 'CNY',
+    industries: { name: '零售百货' },
+  }} />
 }

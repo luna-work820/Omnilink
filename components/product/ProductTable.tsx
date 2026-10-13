@@ -12,7 +12,6 @@ import {
   Square,
   Download,
   Edit2,
-  Trash2,
   Eye,
 } from 'lucide-react'
 import { EmptyState } from '@/components/dashboard/kit'
@@ -30,6 +29,8 @@ export type ProductRow = {
   image_url?: string | null
   semantic_data?: unknown
   sales_count?: number
+  consumer_visible?: boolean
+  channel_visibility_supported?: boolean
 }
 
 type FilterStatus = 'all' | 'active' | 'draft' | 'low_stock'
@@ -40,24 +41,24 @@ const STATUS_CONFIG: Record<
 > = {
   active: {
     label: '已发布',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700 font-bold',
-    border: 'border-emerald-200',
-    dot: 'bg-emerald-500 ring-2 ring-emerald-300/50 animate-pulse',
+    bg: 'bg-[var(--acid-sage)]',
+    text: 'text-[var(--acid-sage)] font-bold',
+    border: 'border-[var(--acid-sage)]',
+    dot: 'bg-[var(--acid-sage)] ring-2 ring-[var(--acid-sage)]/50 animate-pulse',
   },
   draft: {
     label: '草稿',
-    bg: 'bg-amber-50',
-    text: 'text-amber-800 font-bold',
-    border: 'border-amber-200',
-    dot: 'bg-amber-500 ring-2 ring-amber-300/50',
+    bg: 'bg-[var(--acid-sage)]',
+    text: 'text-[var(--acid-sage)] font-bold',
+    border: 'border-[var(--acid-sage)]',
+    dot: 'bg-[var(--acid-sage)] ring-2 ring-[var(--acid-sage)]/50',
   },
   archived: {
     label: '已下架',
-    bg: 'bg-slate-100',
-    text: 'text-slate-600 font-semibold',
-    border: 'border-slate-200',
-    dot: 'bg-slate-400',
+    bg: 'bg-[var(--surface-muted)]',
+    text: 'text-[var(--lavender)] font-semibold',
+    border: 'border-[var(--surface-muted)]',
+    dot: 'bg-[var(--surface-muted)]',
   },
 }
 
@@ -66,7 +67,7 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table')
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const { t, isZh } = useLanguage()
+  const { t } = useLanguage()
 
   // 过滤逻辑
   const filtered = useMemo(() => {
@@ -147,25 +148,25 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
           <div className="relative w-full sm:w-64">
             <Search
               size={14}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--lavender)] pointer-events-none"
             />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="搜索商品名称、编号或分类..."
               aria-label="搜索商品"
-              className="w-full h-9 pl-9 pr-4 rounded-full bg-slate-100/80 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#024AD8] focus:border-[#024AD8] transition-all"
+              className="w-full h-9 pl-9 pr-4 rounded-full bg-[var(--surface-muted)]/80 border border-[var(--surface-muted)] text-xs text-[var(--lavender)] placeholder:text-[var(--lavender)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all"
             />
           </div>
 
-          <div className="flex items-center p-0.5 rounded-full bg-slate-100 border border-slate-200 shrink-0">
+          <div className="flex items-center p-0.5 rounded-full bg-[var(--surface-muted)] border border-[var(--surface-muted)] shrink-0">
             <button
               type="button"
               onClick={() => setViewMode('table')}
               className={`p-1.5 rounded-full transition-all cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-white text-[#024AD8] shadow-xs font-semibold'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-[var(--surface)] text-[var(--primary)] shadow-xs font-semibold'
+                  : 'text-[var(--lavender)] hover:text-[var(--lavender)]'
               }`}
               title="表格视图"
             >
@@ -176,8 +177,8 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded-full transition-all cursor-pointer ${
                 viewMode === 'grid'
-                  ? 'bg-white text-[#024AD8] shadow-xs font-semibold'
-                  : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-[var(--surface)] text-[var(--primary)] shadow-xs font-semibold'
+                  : 'text-[var(--lavender)] hover:text-[var(--lavender)]'
               }`}
               title="网格视图"
             >
@@ -189,9 +190,9 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
 
       {/* 批量操作工具条 (当有选择时浮现) */}
       {selectedIds.length > 0 && (
-        <div className="p-3 rounded-xl bg-slate-900 text-white flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-200 shadow-md">
+        <div className="p-3 rounded-xl bg-[var(--surface-muted)] text-[var(--surface)] flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-200 shadow-md">
           <div className="flex items-center gap-2 text-xs font-semibold pl-2">
-            <CheckSquare size={16} className="text-amber-400" />
+            <CheckSquare size={16} className="text-[var(--acid-sage)]" />
             <span>已选择 {selectedIds.length} 项商品</span>
           </div>
 
@@ -201,15 +202,15 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
               onClick={() =>
                 alert(`已启动 ${selectedIds.length} 个商品的语义重构任务`)
               }
-              className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-full bg-[var(--surface)]/10 hover:bg-[var(--surface)]/20 text-[var(--surface)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <Sparkles size={13} className="text-amber-400" />
+              <Sparkles size={13} className="text-[var(--acid-sage)]" />
               <span>批量处理</span>
             </button>
             <button
               type="button"
               onClick={() => alert(`正在导出 ${selectedIds.length} 项商品`)}
-              className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-full bg-[var(--surface)]/10 hover:bg-[var(--surface)]/20 text-[var(--surface)] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Download size={13} />
               <span>导出数据</span>
@@ -217,7 +218,7 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
             <button
               type="button"
               onClick={() => setSelectedIds([])}
-              className="px-3 py-1.5 rounded-full bg-white text-slate-900 hover:bg-slate-100 text-xs font-bold transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-full bg-[var(--surface)] text-[var(--lavender)] hover:bg-[var(--surface-muted)] text-xs font-bold transition-colors cursor-pointer"
             >
               取消选择
             </button>
@@ -237,7 +238,7 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
             !query ? (
               <Link
                 href="/dashboard/products/new"
-                className="px-5 py-2.5 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] text-white text-xs font-semibold shadow-xs transition-all inline-flex items-center gap-1.5"
+                className="px-5 py-2.5  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-xs font-semibold shadow-xs transition-all inline-flex items-center gap-1.5"
               >
                 <Plus size={14} />
                 <span>{t.products.addProduct}</span>
@@ -247,64 +248,64 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
         />
       ) : viewMode === 'table' ? (
         /* 表格视图：无详细描述列，整洁利落的精炼布局 */
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs">
-          <table className="w-full text-left text-xs bg-white">
+        <div className="overflow-x-auto rounded-xl border border-[var(--surface-muted)] bg-[var(--surface)] shadow-2xs">
+          <table className="w-full text-left text-xs bg-[var(--surface)]">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-600 font-semibold select-none">
+              <tr className="border-b border-[var(--surface-muted)] bg-[var(--surface-muted)]/80 text-[var(--lavender)] font-semibold select-none">
                 <th className="py-3.5 px-4 w-10 text-center">
                   <button
                     type="button"
                     onClick={toggleSelectAll}
-                    className="text-slate-400 hover:text-slate-900 inline-flex items-center justify-center cursor-pointer"
+                    className="text-[var(--lavender)] hover:text-[var(--lavender)] inline-flex items-center justify-center cursor-pointer"
                     title="全选"
                   >
                     {selectedIds.length === filtered.length && filtered.length > 0 ? (
-                      <CheckSquare size={16} className="text-[#024AD8]" />
+                      <CheckSquare size={16} className="text-[var(--primary)]" />
                     ) : (
                       <Square size={16} />
                     )}
                   </button>
                 </th>
-                <th className="py-3.5 px-4 font-semibold text-slate-700 min-w-[220px]">
+                <th className="py-3.5 px-4 font-semibold text-[var(--lavender)] min-w-[220px]">
                   商品名称
                 </th>
-                <th className="py-3.5 px-4 font-semibold text-slate-700 min-w-[120px]">
+                <th className="py-3.5 px-4 font-semibold text-[var(--lavender)] min-w-[120px]">
                   商品编号
                 </th>
-                <th className="py-3.5 px-4 font-semibold text-slate-700 min-w-[100px]">
+                <th className="py-3.5 px-4 font-semibold text-[var(--lavender)] min-w-[100px]">
                   商品分类
                 </th>
-                <th className="py-3.5 px-4 font-semibold text-slate-700 min-w-[90px]">
+                <th className="py-3.5 px-4 font-semibold text-[var(--lavender)] min-w-[90px]">
                   售价
                 </th>
-                <th className="py-3.5 px-4 font-semibold text-slate-700 min-w-[90px]">
+                <th className="py-3.5 px-4 font-semibold text-[var(--lavender)] min-w-[90px]">
                   库存
                 </th>
-                <th className="py-3.5 px-4 font-semibold text-slate-700 min-w-[100px]">
+                <th className="py-3.5 px-4 font-semibold text-[var(--lavender)] min-w-[100px]">
                   状态
                 </th>
-                <th className="py-3.5 px-4 font-semibold text-slate-700 text-right min-w-[110px]">
+                <th className="py-3.5 px-4 font-semibold text-[var(--lavender)] text-right min-w-[110px]">
                   操作
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[var(--surface-muted)]">
               {filtered.map((p) => {
                 const isSelected = selectedIds.includes(p.id)
                 const statusKey = p.status || 'active'
                 const statusInfo = STATUS_CONFIG[statusKey] || {
                   label: statusKey === 'draft' ? '草稿' : '已发布',
-                  bg: 'bg-slate-50',
-                  text: 'text-slate-600',
-                  border: 'border-slate-200',
-                  dot: 'bg-slate-400',
+                  bg: 'bg-[var(--surface-muted)]',
+                  text: 'text-[var(--lavender)]',
+                  border: 'border-[var(--surface-muted)]',
+                  dot: 'bg-[var(--surface-muted)]',
                 }
 
                 return (
                   <tr
                     key={p.id}
-                    className={`hover:bg-slate-50/90 transition-colors ${
-                      isSelected ? 'bg-blue-50/40' : ''
+                    className={`hover:bg-[var(--surface-muted)]/90 transition-colors ${
+                      isSelected ? 'bg-[var(--primary)]/40' : ''
                     }`}
                   >
                     {/* 选择框 */}
@@ -312,10 +313,10 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
                       <button
                         type="button"
                         onClick={(e) => toggleSelectOne(p.id, e)}
-                        className="text-slate-400 hover:text-slate-900 inline-flex items-center justify-center cursor-pointer"
+                        className="text-[var(--lavender)] hover:text-[var(--lavender)] inline-flex items-center justify-center cursor-pointer"
                       >
                         {isSelected ? (
-                          <CheckSquare size={16} className="text-[#024AD8]" />
+                          <CheckSquare size={16} className="text-[var(--primary)]" />
                         ) : (
                           <Square size={16} />
                         )}
@@ -325,7 +326,7 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
                     {/* 商品主图 + 名称 (含 Hover 放大预览效果) */}
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="group/img relative w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center transition-all duration-300 hover:border-[#024AD8] hover:shadow-md cursor-pointer">
+                        <div className="group/img relative w-10 h-10 rounded-lg bg-[var(--surface-muted)] border border-[var(--surface-muted)] shrink-0 flex items-center justify-center transition-all duration-300 hover:border-[var(--primary)] hover:shadow-md cursor-pointer">
                           {p.image_url ? (
                             <>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -336,15 +337,15 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
                               />
                               {/* 悬浮弹出高分辨率大图预览框 */}
                               <div className="absolute left-12 top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 invisible group-hover/img:opacity-100 group-hover/img:visible transition-all duration-200 ease-out scale-95 group-hover/img:scale-100">
-                                <div className="p-1.5 bg-white rounded-xl shadow-2xl border border-slate-200 ring-1 ring-slate-900/10 backdrop-blur-md">
+                                <div className="p-1.5 bg-[var(--surface)] rounded-xl shadow-2xl border border-[var(--surface-muted)] ring-1 ring-[var(--lavender)]/10 backdrop-blur-md">
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
                                   <img
                                     src={p.image_url}
                                     alt={p.name}
-                                    className="w-36 h-36 object-cover rounded-lg bg-slate-50 shadow-inner"
+                                    className="w-36 h-36 object-cover rounded-lg bg-[var(--surface-muted)] shadow-inner"
                                   />
                                   <div className="mt-1.5 px-1 max-w-[144px]">
-                                    <p className="text-[11px] font-bold text-slate-900 truncate">
+                                    <p className="text-[11px] font-bold text-[var(--lavender)] truncate">
                                       {p.name}
                                     </p>
                                   </div>
@@ -352,7 +353,7 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
                               </div>
                             </>
                           ) : (
-                            <Package size={18} className="text-slate-400" />
+                            <Package size={18} className="text-[var(--lavender)]" />
                           )}
                         </div>
 
@@ -360,7 +361,7 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
                           <Link
                             href={`/dashboard/products/${p.id}/edit`}
                             prefetch={true}
-                            className="font-bold text-slate-900 hover:text-[#024AD8] transition-colors truncate block"
+                            className="font-bold text-[var(--lavender)] hover:text-[var(--primary)] transition-colors truncate block"
                             title={p.name}
                           >
                             {p.name}
@@ -370,19 +371,19 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
                     </td>
 
                     {/* 商品编号 */}
-                    <td className="py-3.5 px-4 font-mono text-slate-600 font-medium">
-                      {p.sku || <span className="text-slate-300 font-normal">未设置</span>}
+                    <td className="py-3.5 px-4 font-mono text-[var(--lavender)] font-medium">
+                      {p.sku || <span className="text-[var(--lavender)] font-normal">未设置</span>}
                     </td>
 
                     {/* 商品分类 */}
                     <td className="py-3.5 px-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-100 text-[11px] font-medium text-slate-700 border border-slate-200/60">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[var(--surface-muted)] text-[11px] font-medium text-[var(--lavender)] border border-[var(--surface-muted)]/60">
                         {p.category || '通用'}
                       </span>
                     </td>
 
                     {/* 售价 */}
-                    <td className="py-3.5 px-4 font-bold text-slate-900 text-sm">
+                    <td className="py-3.5 px-4 font-bold text-[var(--lavender)] text-sm">
                       {p.price != null && p.price !== '' ? `¥${Number(p.price).toFixed(2)}` : '—'}
                     </td>
 
@@ -391,8 +392,8 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${
                           (Number(p.inventory) || 0) < 100
-                            ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                            : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            ? 'bg-[var(--acid-sage)] text-[var(--acid-sage)] border border-[var(--acid-sage)]'
+                            : 'bg-[var(--acid-sage)] text-[var(--acid-sage)] border border-[var(--acid-sage)]'
                         }`}
                       >
                         {p.inventory ?? 0} 件
@@ -415,7 +416,7 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
                         <Link
                           href={`/dashboard/products/${p.id}/edit`}
                           prefetch={true}
-                          className="p-1.5 text-slate-500 hover:text-[#024AD8] hover:bg-blue-50 rounded-[4px] transition-colors"
+                          className="p-1.5 text-[var(--lavender)] hover:text-[var(--primary)] hover:bg-[var(--primary)]  transition-colors"
                           title="编辑商品"
                         >
                           <Edit2 size={14} />
@@ -423,7 +424,7 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
                         <Link
                           href={`/dashboard/products/${p.id}`}
                           prefetch={true}
-                          className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-[4px] transition-colors"
+                          className="p-1.5 text-[var(--lavender)] hover:text-[var(--lavender)] hover:bg-[var(--surface-muted)]  transition-colors"
                           title="查看"
                         >
                           <Eye size={14} />
@@ -470,15 +471,15 @@ function FilterPill({
       onClick={onClick}
       className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
         active
-          ? 'bg-[#024AD8] text-white shadow-xs'
-          : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+          ? 'bg-[var(--primary)] text-[var(--surface)] shadow-xs'
+          : 'bg-[var(--surface-muted)] text-[var(--lavender)] hover:text-[var(--lavender)] hover:bg-[var(--surface-muted)]'
       }`}
     >
       <span>{label}</span>
       {count != null && (
         <span
           className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-            active ? 'bg-white/20 text-white' : 'bg-white text-slate-800'
+            active ? 'bg-[var(--surface)]/20 text-[var(--surface)]' : 'bg-[var(--surface)] text-[var(--lavender)]'
           }`}
         >
           {count}
@@ -501,29 +502,29 @@ function ProductCard({
     <Link
       href={`/dashboard/products/${p.id}/edit`}
       prefetch={true}
-      className={`group relative bg-white border rounded-[8px] p-3 flex flex-col justify-between transition-all duration-200 hover:shadow-md hover:border-[#024AD8] cursor-pointer ${
+      className={`group relative bg-[var(--surface)] border rounded-[8px] p-3 flex flex-col justify-between transition-all duration-200 hover:shadow-md hover:border-[var(--primary)] cursor-pointer ${
         selected
-          ? 'border-[#024AD8] ring-2 ring-[#024AD8] shadow-xs'
-          : 'border-slate-200'
+          ? 'border-[var(--primary)] ring-2 ring-[var(--primary)] shadow-xs'
+          : 'border-[var(--surface-muted)]'
       }`}
     >
       {/* 顶部多选复选框 */}
       <button
         type="button"
         onClick={onToggleSelect}
-        className="absolute top-2.5 left-2.5 z-10 p-1 rounded-[4px] bg-white/90 backdrop-blur-xs text-slate-900 shadow-2xs hover:bg-white transition-all cursor-pointer"
+        className="absolute top-2.5 left-2.5 z-10 p-1  bg-[var(--surface)]/90 backdrop-blur-xs text-[var(--lavender)] shadow-2xs hover:bg-[var(--surface)] transition-all cursor-pointer"
         title="选择商品"
       >
         {selected ? (
-          <CheckSquare size={14} className="text-[#024AD8]" />
+          <CheckSquare size={14} className="text-[var(--primary)]" />
         ) : (
-          <Square size={14} className="text-slate-400" />
+          <Square size={14} className="text-[var(--lavender)]" />
         )}
       </button>
 
       <div>
         {/* 商品图：方形圆角 + Hover 放大 */}
-        <div className="w-full aspect-square rounded-[6px] overflow-hidden bg-slate-50 border border-slate-100 flex items-center justify-center relative">
+        <div className="w-full aspect-square rounded-[6px] overflow-hidden bg-[var(--surface-muted)] border border-[var(--surface-muted)] flex items-center justify-center relative">
           {p.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -532,32 +533,32 @@ function ProductCard({
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
-            <Package size={24} strokeWidth={1.5} className="text-slate-400" />
+            <Package size={24} strokeWidth={1.5} className="text-[var(--lavender)]" />
           )}
         </div>
 
         <div className="min-w-0 mt-2.5 space-y-1">
           <div className="flex items-center justify-between gap-1 text-[10px]">
-            <span className="font-mono text-slate-400 truncate">
+            <span className="font-mono text-[var(--lavender)] truncate">
               {p.sku || '未设置'}
             </span>
-            <span className="font-semibold text-slate-500 truncate">
+            <span className="font-semibold text-[var(--lavender)] truncate">
               {p.category || '通用'}
             </span>
           </div>
 
           <h4
-            className="text-xs font-bold text-slate-900 truncate group-hover:text-[#024AD8] transition-colors"
+            className="text-xs font-bold text-[var(--lavender)] truncate group-hover:text-[var(--primary)] transition-colors"
             title={p.name}
           >
             {p.name}
           </h4>
 
           <div className="flex items-center justify-between pt-1">
-            <span className="text-xs font-extrabold text-[#024AD8]">
+            <span className="text-xs font-extrabold text-[var(--primary)]">
               {p.price != null && p.price !== '' ? `¥${Number(p.price).toFixed(2)}` : '未定价'}
             </span>
-            <span className="text-[10px] text-slate-500 font-medium">
+            <span className="text-[10px] text-[var(--lavender)] font-medium">
               库存: {p.inventory ?? 0}
             </span>
           </div>

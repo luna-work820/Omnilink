@@ -4,10 +4,9 @@ import type { Database } from '@/lib/database.types'
 
 type StoreUpdate = Database['public']['Tables']['stores']['Update']
 
-// Columns a merchant may update on their own store (never owner_id / id).
+// Columns a workspace member may update on their store (never tenant identity).
 const STORE_UPDATE_KEYS: (keyof StoreUpdate)[] = [
-  'store_name', 'store_slug', 'industry_id', 'industry_category',
-  'logo_url', 'description', 'currency', 'status',
+  'name', 'slug', 'domain', 'locale', 'timezone', 'currency', 'brand_kit', 'settings',
 ]
 
 function pickUpdate(body: unknown): StoreUpdate {

@@ -1148,28 +1148,15 @@ export interface AiResearchModelOption {
 
 export const AI_RESEARCH_MODELS_DATA: AiResearchModelOption[] = [
   {
-    id: 'gemini-2-5-pro',
-    name: 'Gemini 2.5 Pro',
-    tag: '深度研报',
-    description: '支持超长跨文档联合推理与研报合成，逻辑严密',
-  },
-  {
-    id: 'gemini-2-5-flash',
+    id: 'gemini-2.5-flash',
     name: 'Gemini 2.5 Flash',
-    tag: '极速响应',
-    description: '轻量秒级检索与关键信息快速定位',
+    tag: '跨文档分析',
+    description: '用于长上下文资料归纳与结构化分析。',
   },
   {
-    id: 'claude-3-7-sonnet',
-    name: 'Claude 3.7 Sonnet',
-    tag: '长文研究',
-    description: '深度思维链分析，适合复杂大纲与多章节撰写',
-  },
-  {
-    id: 'deepseek-r1',
-    name: 'DeepSeek R1',
-    tag: '深度思考',
-    description: '针对复杂算法、物料成本及严密逻辑推理优化',
+    id: 'deepseek-chat',
+    name: 'DeepSeek Chat',
+    tag: '中文推理',
+    description: '用于中文商家资料、规则与文案推理。',
   },
 ]
-

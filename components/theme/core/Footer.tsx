@@ -50,7 +50,7 @@ export default function Footer({ store, links }: FooterProps) {
           ) : (
             <span
               aria-hidden
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--th-radius-input)] bg-[var(--th-color-primary)] [font-family:var(--th-font-heading)] text-xs font-bold text-white"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--th-radius-input)] bg-[var(--th-color-primary)] [font-family:var(--th-font-heading)] text-xs font-bold text-[var(--surface)]"
             >
               {store.name.trim().charAt(0).toUpperCase() || 'S'}
             </span>

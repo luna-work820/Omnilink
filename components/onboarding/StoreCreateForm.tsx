@@ -10,6 +10,7 @@ export function StoreCreateForm() {
   const [storeName, setStoreName] = useState('')
   const [logoUrl, setLogoUrl] = useState('')
   const [productCategory, setProductCategory] = useState('3C数码 & 消费电子')
+  const [concept, setConcept] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -27,7 +28,7 @@ export function StoreCreateForm() {
     formData.set('store_name', storeName.trim())
     formData.set('industry_category', productCategory)
     formData.set('logo_url', logoUrl)
-    formData.set('description', '')
+    formData.set('description', concept.trim())
     formData.set('currency', 'CNY')
 
     try {
@@ -56,9 +57,9 @@ export function StoreCreateForm() {
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      <div className="bg-white rounded-3xl p-6 sm:p-10 border border-gray-200/90 shadow-[0_12px_36px_rgba(0,0,0,0.04)]">
+      <div className="bg-[var(--surface)] rounded-3xl p-6 sm:p-10 border border-[var(--surface-muted)]/90 shadow-[0_12px_36px_var(--ink)]">
         <div className="mb-8 text-center">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#111827] tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--ink)] tracking-tight">
             设置你的专属店铺
           </h2>
         </div>
@@ -69,13 +70,13 @@ export function StoreCreateForm() {
 
           {/* 2. 店铺名称 */}
           <div className="space-y-1.5">
-            <label htmlFor="store_name" className="text-xs font-bold text-[#111827] flex items-center justify-between">
+            <label htmlFor="store_name" className="text-xs font-bold text-[var(--ink)] flex items-center justify-between">
               <span className="flex items-center gap-1">
-                <Store size={13} className="text-[#E11D48]" />
+                <Store size={13} className="text-[var(--plum)]" />
                 <span>店铺名称 (Store Name)</span>
-                <span className="text-rose-500">*</span>
+                <span className="text-[var(--plum)]">*</span>
               </span>
-              <span className="text-[10px] font-normal text-[#9CA3AF]">
+              <span className="text-[10px] font-normal text-[var(--lavender)]">
                 {storeName.length}/40
               </span>
             </label>
@@ -88,7 +89,7 @@ export function StoreCreateForm() {
               required
               maxLength={40}
               placeholder="例如：极光数码旗舰店"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#FB7185] focus:ring-4 focus:ring-[#FB7185]/15 outline-none text-sm text-[#111827] placeholder-gray-400 bg-[#FAFAFC] focus:bg-white transition-all font-medium"
+              className="w-full px-4 py-3 rounded-xl border border-[var(--surface-muted)] focus:border-[var(--plum)] focus:ring-4 focus:ring-[var(--plum)]/15 outline-none text-sm text-[var(--ink)] placeholder-gray-400 bg-[var(--surface-muted)] focus:bg-[var(--surface)] transition-all font-medium"
             />
           </div>
 
@@ -98,9 +99,24 @@ export function StoreCreateForm() {
             onChange={setProductCategory}
           />
 
+          <div className="space-y-1.5">
+            <label htmlFor="brand_concept" className="text-xs font-bold text-[var(--ink)]">
+              品牌概念 <span className="text-[10px] font-normal text-[var(--lavender)]">可选</span>
+            </label>
+            <textarea
+              id="brand_concept"
+              value={concept}
+              onChange={(e) => setConcept(e.target.value)}
+              maxLength={240}
+              rows={3}
+              placeholder="例如：高对比霓虹、液态金属质感、赛博潮流视觉"
+              className="w-full px-4 py-3 rounded-xl border border-[var(--surface-muted)] focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 outline-none text-sm text-[var(--ink)] placeholder-gray-400 bg-[var(--surface-muted)] focus:bg-[var(--surface)] transition-all font-medium resize-none"
+            />
+          </div>
+
           {/* 错误提示 */}
           {error && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs px-4 py-3 rounded-xl animate-in fade-in flex items-center gap-2">
+            <div className="bg-[var(--plum)] border border-[var(--plum)] text-[var(--plum)] text-xs px-4 py-3 rounded-xl animate-in fade-in flex items-center gap-2">
               <span className="font-bold">⚠️</span>
               <span>{error}</span>
             </div>
@@ -111,7 +127,7 @@ export function StoreCreateForm() {
             <button
               type="submit"
               disabled={isSubmitting || !storeName.trim()}
-              className="w-full py-3.5 px-6 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] active:bg-[#00226B] text-white text-sm font-medium transition-all flex items-center justify-center gap-2 cursor-pointer disabled:bg-[#E2E2E2] disabled:text-[#9E9E9E] disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2"
+              className="w-full py-3.5 px-6  bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] text-sm font-medium transition-all flex items-center justify-center gap-2 cursor-pointer disabled:bg-[var(--surface-muted)] disabled:text-[var(--lavender)] disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2"
             >
               {isSubmitting ? (
                 <>

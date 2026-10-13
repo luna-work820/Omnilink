@@ -18,8 +18,8 @@ export default function CurrencyPage() {
               key={c.code}
               className={`flex items-center gap-3 px-4 py-3.5 rounded-lg border transition-colors ${
                 c.code === 'CNY'
-                  ? 'bg-white border-iris/60'
-                  : 'bg-gray-50 border-gray-200 opacity-60'
+                  ? 'bg-[var(--surface)] border-iris/60'
+                  : 'bg-[var(--surface-muted)] border-[var(--surface-muted)] opacity-60'
               }`}
             >
               <input
@@ -29,8 +29,8 @@ export default function CurrencyPage() {
                 disabled={c.code !== 'CNY'}
                 className="accent-iris"
               />
-              <span className="text-sm font-semibold text-gray-800">{c.code}</span>
-              <span className="text-xs text-gray-500">{c.label}</span>
+              <span className="text-sm font-semibold text-[var(--lavender)]">{c.code}</span>
+              <span className="text-xs text-[var(--lavender)]">{c.label}</span>
               {c.code === 'CNY' && (
                 <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-iris text-iris">
                   当前
@@ -39,7 +39,7 @@ export default function CurrencyPage() {
             </label>
           ))}
         </div>
-        <p className="mt-6 pt-5 border-t border-gray-100 text-xs text-gray-400 leading-relaxed">
+        <p className="mt-6 pt-5 border-t border-[var(--surface-muted)] text-xs text-[var(--lavender)] leading-relaxed">
           多币种切换功能即将上线，当前店铺默认使用人民币（CNY）。
         </p>
       </GlassCard>

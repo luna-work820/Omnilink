@@ -150,13 +150,13 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs transition-opacity">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[var(--surface-muted)]/60 backdrop-blur-xs transition-opacity">
       <div
-        className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-[8px] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200"
+        className="w-full max-w-2xl bg-[var(--surface)] dark:bg-[var(--surface-muted)] rounded-[8px] shadow-2xl border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header & 4-Step Indicator */}
-        <div className="px-6 pt-5 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <div className="px-6 pt-5 pb-4 border-b border-[var(--surface-muted)] dark:border-[var(--surface-muted)] flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto text-xs">
             {[
               { num: '01', title: '上传作品' },
@@ -175,10 +175,10 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
                   <span
                     className={`font-mono text-[11px] font-bold px-1.5 py-0.5 rounded-[3px] transition-colors ${
                       isActive
-                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                        ? 'bg-[var(--surface-muted)] text-[var(--surface)] dark:bg-[var(--surface)] dark:text-[var(--lavender)]'
                         : isPassed
-                        ? 'bg-blue-50 text-[#024AD8] dark:bg-blue-950/40 dark:text-blue-400'
-                        : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'
+                        ? 'bg-[var(--primary)] text-[var(--primary)] dark:bg-[var(--primary)]/40 dark:text-[var(--primary)]'
+                        : 'bg-[var(--surface-muted)] text-[var(--lavender)] dark:bg-[var(--surface-muted)] dark:text-[var(--lavender)]'
                     }`}
                   >
                     {step.num}
@@ -186,15 +186,15 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
                   <span
                     className={`font-medium ${
                       isActive
-                        ? 'text-slate-900 dark:text-white font-semibold'
+                        ? 'text-[var(--lavender)] dark:text-[var(--surface)] font-semibold'
                         : isPassed
-                        ? 'text-slate-700 dark:text-slate-300'
-                        : 'text-slate-400 dark:text-slate-500'
+                        ? 'text-[var(--lavender)] dark:text-[var(--lavender)]'
+                        : 'text-[var(--lavender)] dark:text-[var(--lavender)]'
                     }`}
                   >
                     {step.title}
                   </span>
-                  {idx < 3 && <span className="text-slate-300 dark:text-slate-700 mx-1">/</span>}
+                  {idx < 3 && <span className="text-[var(--lavender)] dark:text-[var(--lavender)] mx-1">/</span>}
                 </div>
               )
             })}
@@ -202,7 +202,7 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
 
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-[4px] flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="w-7 h-7  flex items-center justify-center text-[var(--lavender)] hover:text-[var(--lavender)] hover:bg-[var(--surface-muted)] dark:hover:bg-[var(--surface-muted)] transition-colors cursor-pointer"
           >
             <X size={15} />
           </button>
@@ -214,10 +214,10 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
           {currentStep === 1 && (
             <div className="space-y-5">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold text-[var(--lavender)] dark:text-[var(--surface)]">
                   上传原创作品
                 </h3>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-[var(--lavender)] mt-1">
                   上传你的原始设计稿件，用于建立作品的唯一数字指纹。
                 </p>
               </div>
@@ -235,13 +235,13 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
                 }}
                 className={`relative rounded-[6px] border-2 border-dashed p-8 text-center transition-all flex flex-col items-center justify-center cursor-pointer ${
                   dragOver
-                    ? 'border-[#024AD8] bg-blue-50/40 dark:bg-blue-950/20'
-                    : 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-850 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    ? 'border-[var(--primary)] bg-[var(--primary)]/40 dark:bg-[var(--primary)]/20'
+                    : 'border-[var(--surface-muted)] dark:border-[var(--surface-muted)] bg-[var(--surface-muted)]/50 dark:bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)] dark:hover:bg-[var(--surface-muted)]'
                 }`}
               >
                 {selectedImage ? (
                   <div className="flex flex-col items-center gap-3">
-                    <div className="w-40 h-28 rounded-[4px] overflow-hidden border border-slate-200 dark:border-slate-700 relative shadow-sm">
+                    <div className="w-40 h-28  overflow-hidden border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] relative shadow-sm">
                       <Image
                         src={selectedImage}
                         alt="Selected Artwork"
@@ -251,26 +251,26 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      <span className="text-xs font-semibold text-[var(--lavender)] dark:text-[var(--lavender)]">
                         已载入原创稿件
                       </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
+                      <span className="text-[10px] text-[var(--lavender)] font-mono">
                         (28.4 MB · High Res)
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[11px] text-[var(--lavender)]">
                       拖入新文件或点击下方预设直接替换
                     </p>
                   </div>
                 ) : (
                   <>
-                    <div className="w-11 h-11 rounded-[4px] bg-white dark:bg-slate-800 shadow-2xs flex items-center justify-center text-[#024AD8] mb-3">
+                    <div className="w-11 h-11  bg-[var(--surface)] dark:bg-[var(--surface-muted)] shadow-2xs flex items-center justify-center text-[var(--primary)] mb-3">
                       <UploadCloud size={22} />
                     </div>
-                    <div className="text-xs font-bold text-slate-900 dark:text-white">
-                      拖入作品 或 <span className="text-[#024AD8] underline">选择文件</span>
+                    <div className="text-xs font-bold text-[var(--lavender)] dark:text-[var(--surface)]">
+                      拖入作品 或 <span className="text-[var(--primary)] underline">选择文件</span>
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-1.5">
+                    <p className="text-[11px] text-[var(--lavender)] mt-1.5">
                       支持 PSD / AI / SVG / PDF / PNG / JPG / WEBP
                     </p>
                   </>
@@ -279,7 +279,7 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
 
               {/* Fast Preset Selector */}
               <div>
-                <div className="text-[11px] font-semibold text-slate-500 mb-2">
+                <div className="text-[11px] font-semibold text-[var(--lavender)] mb-2">
                   快速载入演示作品稿件：
                 </div>
                 <div className="grid grid-cols-3 gap-2.5">
@@ -288,10 +288,10 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
                       key={preset.name}
                       type="button"
                       onClick={() => handleApplyPreset(preset)}
-                      className={`p-2 rounded-[4px] border text-left flex flex-col gap-1.5 transition-all cursor-pointer ${
+                      className={`p-2  border text-left flex flex-col gap-1.5 transition-all cursor-pointer ${
                         selectedImage === preset.image
-                          ? 'border-[#024AD8] bg-blue-50/40 dark:bg-blue-950/30 ring-1 ring-[#024AD8]'
-                          : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                          ? 'border-[var(--primary)] bg-[var(--primary)]/40 dark:bg-[var(--primary)]/30 ring-1 ring-[var(--primary)]'
+                          : 'border-[var(--surface-muted)] dark:border-[var(--surface-muted)] hover:bg-[var(--surface-muted)] dark:hover:bg-[var(--surface-muted)]'
                       }`}
                     >
                       <div className="w-full h-14 rounded-[2px] overflow-hidden relative">
@@ -303,10 +303,10 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
                           referrerPolicy="no-referrer"
                         />
                       </div>
-                      <div className="font-semibold text-[11px] text-slate-900 dark:text-white truncate">
+                      <div className="font-semibold text-[11px] text-[var(--lavender)] dark:text-[var(--surface)] truncate">
                         {preset.name}
                       </div>
-                      <div className="text-[10px] text-slate-400 truncate">
+                      <div className="text-[10px] text-[var(--lavender)] truncate">
                         {preset.type}
                       </div>
                     </button>
@@ -314,7 +314,7 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
                 </div>
               </div>
 
-              <div className="text-[11px] text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3">
+              <div className="text-[11px] text-[var(--lavender)] border-t border-[var(--surface-muted)] dark:border-[var(--surface-muted)] pt-3">
                 原始文件仅用于作品验证与数字存证。
               </div>
             </div>
@@ -324,10 +324,10 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
           {currentStep === 2 && (
             <div className="space-y-4">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold text-[var(--lavender)] dark:text-[var(--surface)]">
                   介绍这个作品
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-[var(--lavender)] mt-0.5">
                   填写原创作品核心属性，并从店铺已有商品库中关联首个商业化商品。
                 </p>
               </div>
@@ -335,7 +335,7 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* 作品名称 */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
+                  <label className="block text-xs font-bold text-[var(--lavender)] dark:text-[var(--lavender)] mb-1.5">
                     作品名称
                   </label>
                   <input
@@ -343,19 +343,19 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
                     value={workName}
                     onChange={(e) => setWorkName(e.target.value)}
                     placeholder="例如：Rainforest Diffuser"
-                    className="w-full h-9 px-3 rounded-[4px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#024AD8] focus:ring-1 focus:ring-[#024AD8]/20 transition-all"
+                    className="w-full h-9 px-3  bg-[var(--surface-muted)] dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] text-xs text-[var(--lavender)] dark:text-[var(--surface)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/20 transition-all"
                   />
                 </div>
 
                 {/* 作品类型 */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
+                  <label className="block text-xs font-bold text-[var(--lavender)] dark:text-[var(--lavender)] mb-1.5">
                     作品类型
                   </label>
                   <select
                     value={workType}
                     onChange={(e) => setWorkType(e.target.value as WorkType)}
-                    className="w-full h-9 px-3 rounded-[4px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#024AD8] focus:ring-1 focus:ring-[#024AD8]/20 transition-all cursor-pointer"
+                    className="w-full h-9 px-3  bg-[var(--surface-muted)] dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] text-xs text-[var(--lavender)] dark:text-[var(--surface)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]/20 transition-all cursor-pointer"
                   >
                     {WORK_TYPES.map((type) => (
                       <option key={type} value={type}>
@@ -368,24 +368,24 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
 
               {/* 创作者 */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
+                <label className="block text-xs font-bold text-[var(--lavender)] dark:text-[var(--lavender)] mb-1.5">
                   创作者 / 版权所有者
                 </label>
                 <input
                   type="text"
                   value={ownerName}
                   disabled
-                  className="w-full h-9 px-3 rounded-[4px] bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400 cursor-not-allowed font-medium"
+                  className="w-full h-9 px-3  bg-[var(--surface-muted)] dark:bg-[var(--surface-muted)]/60 border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] text-xs text-[var(--lavender)] dark:text-[var(--lavender)] cursor-not-allowed font-medium"
                 />
               </div>
 
               {/* 关联商品 (必须从已有商品库中选择) */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <label className="block text-xs font-bold text-[var(--lavender)] dark:text-[var(--lavender)]">
                     关联商品
                   </label>
-                  <span className="text-[10px] text-slate-400">
+                  <span className="text-[10px] text-[var(--lavender)]">
                     从已有店铺商品库中选择，不在此新建商品
                   </span>
                 </div>
@@ -397,14 +397,14 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
                       <div
                         key={prod.id}
                         onClick={() => setSelectedProductId(prod.id)}
-                        className={`p-2.5 rounded-[4px] border flex items-center justify-between cursor-pointer transition-all ${
+                        className={`p-2.5  border flex items-center justify-between cursor-pointer transition-all ${
                           isSelected
-                            ? 'border-[#024AD8] bg-blue-50/40 dark:bg-blue-950/30 ring-1 ring-[#024AD8]'
-                            : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                            ? 'border-[var(--primary)] bg-[var(--primary)]/40 dark:bg-[var(--primary)]/30 ring-1 ring-[var(--primary)]'
+                            : 'border-[var(--surface-muted)] dark:border-[var(--surface-muted)] hover:bg-[var(--surface-muted)] dark:hover:bg-[var(--surface-muted)]'
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-[3px] overflow-hidden relative shrink-0 border border-slate-200 dark:border-slate-700">
+                          <div className="w-9 h-9 rounded-[3px] overflow-hidden relative shrink-0 border border-[var(--surface-muted)] dark:border-[var(--surface-muted)]">
                             <Image
                               src={prod.image}
                               alt={prod.name}
@@ -414,16 +414,16 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
                             />
                           </div>
                           <div>
-                            <div className="text-xs font-semibold text-slate-900 dark:text-white">
+                            <div className="text-xs font-semibold text-[var(--lavender)] dark:text-[var(--surface)]">
                               {prod.name}
                             </div>
-                            <div className="text-[10px] text-slate-400 font-mono">
+                            <div className="text-[10px] text-[var(--lavender)] font-mono">
                               SKU: {prod.sku} · {prod.category}
                             </div>
                           </div>
                         </div>
                         {isSelected && (
-                          <span className="text-[11px] font-bold text-[#024AD8]">
+                          <span className="text-[11px] font-bold text-[var(--primary)]">
                             已选定
                           </span>
                         )}
@@ -439,67 +439,67 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
           {currentStep === 3 && (
             <div className="space-y-6 py-2">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold text-[var(--lavender)] dark:text-[var(--surface)]">
                   验证作品来源
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-[var(--lavender)] mt-0.5">
                   系统正在为原创设计提取特征矩阵并建立全网唯一存证标识。
                 </p>
               </div>
 
               {/* Restrained Verification Checklist */}
-              <div className="p-4 rounded-[6px] bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/80 space-y-3.5">
+              <div className="p-4 rounded-[6px] bg-[var(--surface-muted)] dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)]/80 dark:border-[var(--surface-muted)]/80 space-y-3.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                    <span className="text-xs font-medium text-slate-800 dark:text-slate-200">
+                    <CheckCircle2 size={16} className="text-[var(--acid-sage)] shrink-0" />
+                    <span className="text-xs font-medium text-[var(--lavender)] dark:text-[var(--lavender)]">
                       验证文件完整性
                     </span>
                   </div>
-                  <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                  <span className="text-[11px] font-semibold text-[var(--acid-sage)] dark:text-[var(--acid-sage)]">
                     已完成
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                    <span className="text-xs font-medium text-slate-800 dark:text-slate-200">
+                    <CheckCircle2 size={16} className="text-[var(--acid-sage)] shrink-0" />
+                    <span className="text-xs font-medium text-[var(--lavender)] dark:text-[var(--lavender)]">
                       验证作品信息
                     </span>
                   </div>
-                  <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                  <span className="text-[11px] font-semibold text-[var(--acid-sage)] dark:text-[var(--acid-sage)]">
                     已完成
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <Clock size={16} className="text-amber-500 shrink-0 animate-pulse" />
-                    <span className="text-xs font-medium text-slate-800 dark:text-slate-200">
+                    <Clock size={16} className="text-[var(--acid-sage)] shrink-0 animate-pulse" />
+                    <span className="text-xs font-medium text-[var(--lavender)] dark:text-[var(--lavender)]">
                       来源审核
                     </span>
                   </div>
-                  <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                  <span className="text-[11px] font-semibold text-[var(--acid-sage)] dark:text-[var(--acid-sage)]">
                     审核中
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-                    <span className="text-xs font-medium text-slate-800 dark:text-slate-200">
+                    <CheckCircle2 size={16} className="text-[var(--acid-sage)] shrink-0" />
+                    <span className="text-xs font-medium text-[var(--lavender)] dark:text-[var(--lavender)]">
                       生成数字指纹
                     </span>
                   </div>
-                  <span className="text-[11px] font-mono text-slate-500">
+                  <span className="text-[11px] font-mono text-[var(--lavender)]">
                     SHA-256: 8f3a92...91cd (已完成)
                   </span>
                 </div>
               </div>
 
-              <div className="p-3 rounded-[4px] bg-slate-100/70 dark:bg-slate-800/50 text-[11px] text-slate-500 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+              <div className="p-3  bg-[var(--surface-muted)]/70 dark:bg-[var(--surface-muted)]/50 text-[11px] text-[var(--lavender)] flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--surface-muted)]" />
                 <span>审核期间，作品不会公开展示。</span>
               </div>
             </div>
@@ -509,41 +509,41 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
           {currentStep === 4 && (
             <div className="space-y-5">
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                <h3 className="text-base font-bold text-[var(--lavender)] dark:text-[var(--surface)]">
                   保护已准备完成
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-[var(--lavender)] mt-0.5">
                   原创作品与商业商品的可信关系已建立完毕。
                 </p>
               </div>
 
               {/* Three Relationship Matrix Card */}
               <div className="grid grid-cols-3 gap-3">
-                <div className="p-3 rounded-[4px] bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 flex flex-col gap-1">
-                  <span className="text-[10px] text-slate-400">作品来源</span>
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                <div className="p-3  bg-[var(--surface-muted)] dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] flex flex-col gap-1">
+                  <span className="text-[10px] text-[var(--lavender)]">作品来源</span>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--acid-sage)] dark:text-[var(--acid-sage)]">
                     <CheckCircle2 size={13} />
                     <span>已验证</span>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-[4px] bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 flex flex-col gap-1 min-w-0">
-                  <span className="text-[10px] text-slate-400">关联商品</span>
-                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                <div className="p-3  bg-[var(--surface-muted)] dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] flex flex-col gap-1 min-w-0">
+                  <span className="text-[10px] text-[var(--lavender)]">关联商品</span>
+                  <div className="text-xs font-bold text-[var(--lavender)] dark:text-[var(--lavender)] truncate">
                     {selectedProduct?.name || 'Rainforest Crystal Diffuser'}
                   </div>
                 </div>
 
-                <div className="p-3 rounded-[4px] bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 flex flex-col gap-1">
-                  <span className="text-[10px] text-slate-400">平台保护</span>
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-[#024AD8] dark:text-blue-400">
+                <div className="p-3  bg-[var(--surface-muted)] dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] flex flex-col gap-1">
+                  <span className="text-[10px] text-[var(--lavender)]">平台保护</span>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] dark:text-[var(--primary)]">
                     <ShieldCheck size={13} />
                     <span>准备开启</span>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 rounded-[6px] bg-blue-50/40 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+              <div className="p-4 rounded-[6px] bg-[var(--primary)]/40 dark:bg-[var(--primary)]/20 border border-[var(--primary)] dark:border-[var(--primary)]/40 text-xs text-[var(--lavender)] dark:text-[var(--lavender)] leading-relaxed">
                 审核通过后，该作品将作为受保护资产在 Omnilink 商业网络中受到识别。
               </div>
             </div>
@@ -551,13 +551,13 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
         </div>
 
         {/* Modal Footer Controls */}
-        <div className="px-6 py-3.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-850/50">
+        <div className="px-6 py-3.5 border-t border-[var(--surface-muted)] dark:border-[var(--surface-muted)] flex items-center justify-between bg-[var(--surface-muted)]/50 dark:bg-[var(--surface-muted)]/50">
           <div>
             {currentStep > 1 && (
               <button
                 type="button"
                 onClick={() => setCurrentStep((p) => p - 1)}
-                className="h-8 px-3 rounded-[4px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-1 cursor-pointer"
+                className="h-8 px-3  bg-[var(--surface)] dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] text-xs font-medium text-[var(--lavender)] dark:text-[var(--lavender)] hover:bg-[var(--surface-muted)] dark:hover:bg-[var(--surface-muted)] transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <ArrowLeft size={13} />
                 <span>上一步</span>
@@ -569,7 +569,7 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
             <button
               type="button"
               onClick={onClose}
-              className="h-8 px-3 rounded-[4px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+              className="h-8 px-3  bg-[var(--surface)] dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] text-xs font-medium text-[var(--lavender)] dark:text-[var(--lavender)] hover:bg-[var(--surface-muted)] dark:hover:bg-[var(--surface-muted)] transition-colors cursor-pointer"
             >
               取消
             </button>
@@ -578,7 +578,7 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
               <button
                 type="button"
                 onClick={() => setCurrentStep((p) => p + 1)}
-                className="h-8 px-4 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] active:bg-[#00226B] text-white text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer shadow-xs"
+                className="h-8 px-4  bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer shadow-xs"
               >
                 <span>下一步</span>
                 <ArrowRight size={13} />
@@ -587,7 +587,7 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
               <button
                 type="button"
                 onClick={handleComplete}
-                className="h-8 px-5 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] active:bg-[#00226B] text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                className="h-8 px-5  bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
               >
                 <ShieldCheck size={14} />
                 <span>提交审核</span>

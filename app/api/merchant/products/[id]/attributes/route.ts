@@ -3,8 +3,6 @@ import { requireUser, ownsProduct } from '@/lib/api/auth'
 import {
   getProductAttributes,
   createProductAttribute,
-  updateProductAttribute,
-  deleteProductAttribute,
   batchCreateProductAttributes,
 } from '@/lib/products/attribute-domains-service'
 

@@ -9,10 +9,10 @@
  *      must not be replaced by "rely on RLS only".
  *
  * Ownership resolves through:
- *   stores.owner_id = auth.uid()
- *   store_settings / store_pages / products / imports / ai_jobs / store_plugins
- *     / agent_api_keys  →  store_id  →  stores.owner_id
- *   product_assets  →  product_id  →  products.store_id  →  stores.owner_id
+ *   organization_members.user_id = auth.uid()
+ *   store_settings / store_pages / catalog_items / imports / ai_jobs / store_plugins
+ *     / agent_api_keys  →  store_id  →  stores.organization_id → organization_members
+ *   catalog_media  →  catalog_item_id  →  catalog_items.organization_id
  */
 
 import { NextResponse } from 'next/server'
@@ -83,7 +83,7 @@ export async function getOwnedStoreId(
   const { data, error } = await supabase
     .from('stores')
     .select('id')
-    .eq('owner_id', user.id)
+    .in('organization_id', (await supabase.from('organization_members').select('organization_id').eq('user_id', user.id).eq('status', 'active').in('role', ['owner', 'admin', 'editor'])).data?.map((row) => row.organization_id) ?? [])
     .limit(1)
     .maybeSingle()
   
@@ -100,10 +100,20 @@ export async function getOwnedStore(
   supabase: SbClient,
   user: User
 ): Promise<{ id: string; owner_id: string; base_currency: string } | null> {
+  const memberships = await supabase
+    .from('organization_members')
+    .select('organization_id')
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .in('role', ['owner', 'admin', 'editor'])
+    .limit(1)
+  const organizationId = memberships.data?.[0]?.organization_id
+  if (!organizationId) return null
+
   const { data, error } = await supabase
     .from('stores')
-    .select('id, owner_id, base_currency')
-    .eq('owner_id', user.id)
+    .select('id, currency')
+    .eq('organization_id', organizationId)
     .limit(1)
     .maybeSingle()
   
@@ -116,15 +126,15 @@ export async function getOwnedStore(
     return null
   }
   
-  if (!data.base_currency) {
+  if (!data.currency) {
     console.error('[getOwnedStore] Store found but base_currency is missing', { storeId: data.id })
     return null
   }
   
   return {
     id: data.id,
-    owner_id: data.owner_id,
-    base_currency: data.base_currency,
+    owner_id: user.id,
+    base_currency: data.currency,
   }
 }
 
@@ -138,9 +148,13 @@ export async function ownsStore(
     .from('stores')
     .select('id')
     .eq('id', storeId)
-    .eq('owner_id', user.id)
     .maybeSingle()
-  return !error && !!data
+  if (error || !data) return false
+  const { data: store } = await supabase.from('stores').select('organization_id').eq('id', storeId).single()
+  const { data: membership } = store
+    ? await supabase.from('organization_members').select('id').eq('organization_id', store.organization_id).eq('user_id', user.id).eq('status', 'active').in('role', ['owner', 'admin', 'editor']).maybeSingle()
+    : { data: null }
+  return Boolean(membership)
 }
 
 /**
@@ -157,8 +171,8 @@ export async function ownsProduct(
 ): Promise<{ owned: boolean; storeId: string | null }> {
   const targetId = isUuid(productId) ? productId : toValidUuid(productId)
   const { data, error } = await supabase
-    .from('products')
-    .select('store_id')
+    .from('catalog_items')
+    .select('organization_id')
     .eq('id', targetId)
     .maybeSingle()
   
@@ -166,9 +180,15 @@ export async function ownsProduct(
     return { owned: false, storeId: null }
   }
 
-  const storeId = data.store_id
-  const owned = await ownsStore(supabase, user, storeId)
-  return { owned, storeId: owned ? storeId : null }
+  const { data: membership } = await supabase
+    .from('organization_members')
+    .select('organization_id')
+    .eq('organization_id', data.organization_id)
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .in('role', ['owner', 'admin', 'editor'])
+    .maybeSingle()
+  return { owned: Boolean(membership), storeId: null }
 }
 
 /** Verify the caller owns the store that owns the store_page. */
@@ -186,21 +206,4 @@ export async function ownsStorePage(
   const storeId = data.store_id
   const owned = await ownsStore(supabase, user, storeId)
   return { owned, storeId: owned ? storeId : null }
-}
-
-/** Verify the caller owns the store that owns the product_asset (2-level). */
-export async function ownsProductAsset(
-  supabase: SbClient,
-  user: User,
-  assetId: string
-): Promise<{ owned: boolean; productId: string | null }> {
-  const { data, error } = await supabase
-    .from('product_assets')
-    .select('product_id')
-    .eq('id', assetId)
-    .maybeSingle()
-  if (error || !data) return { owned: false, productId: null }
-  const productId = data.product_id
-  const { owned } = await ownsProduct(supabase, user, productId)
-  return { owned, productId: owned ? productId : null }
 }

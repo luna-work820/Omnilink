@@ -50,7 +50,7 @@ export default function CartPageView({ store }: { store: StorefrontStore }) {
         <div className="mt-8">
           <Link
             href={`/store/${store.slug}`}
-            className="inline-flex items-center gap-2 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--th-color-accent)]"
+            className="inline-flex items-center gap-2 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] px-6 py-3 text-sm font-semibold text-[var(--surface)] transition-colors hover:bg-[var(--th-color-accent)]"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Explore Collection</span>
@@ -75,7 +75,7 @@ export default function CartPageView({ store }: { store: StorefrontStore }) {
         <button
           type="button"
           onClick={clearCart}
-          className="self-start sm:self-auto text-xs text-[var(--th-color-muted)] hover:text-red-500 transition-colors"
+          className="self-start sm:self-auto text-xs text-[var(--th-color-muted)] hover:text-[var(--plum)] transition-colors"
         >
           Clear entire bag
         </button>
@@ -119,7 +119,7 @@ export default function CartPageView({ store }: { store: StorefrontStore }) {
                     <button
                       type="button"
                       onClick={() => removeItem(item.id)}
-                      className="text-[var(--th-color-muted)] hover:text-red-500 transition-colors p-1"
+                      className="text-[var(--th-color-muted)] hover:text-[var(--plum)] transition-colors p-1"
                       aria-label={`Remove ${item.productName}`}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -224,7 +224,7 @@ export default function CartPageView({ store }: { store: StorefrontStore }) {
           <div className="mt-6 flex flex-col gap-3">
             <Link
               href={`/store/${store.slug}/checkout`}
-              className="flex w-full items-center justify-center gap-2 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[var(--th-color-accent)]"
+              className="flex w-full items-center justify-center gap-2 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] py-3 text-sm font-semibold text-[var(--surface)] shadow-sm transition-colors hover:bg-[var(--th-color-accent)]"
             >
               <span>Proceed to Checkout</span>
               <ArrowRight className="h-4 w-4" />

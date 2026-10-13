@@ -1,8 +1,7 @@
 'use server'
 
-import { initializeMerchantStore } from '@/lib/stores/service'
+import { initializeBrandProject } from '@/lib/brand/workspace'
 import { createClientServer } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 
 export async function createStoreAction(formData: FormData) {
   const store_name = formData.get('store_name') as string
@@ -10,10 +9,12 @@ export async function createStoreAction(formData: FormData) {
   const industry_category = formData.get('industry_category') as string | null
   const logo_url = formData.get('logo_url') as string | null
   const description = formData.get('description') as string | null
-  const currency = (formData.get('currency') as string | null) || 'CNY'
 
-  if (!store_name) {
-    return { success: false, error: '店铺名称不能为空' }
+  const name = store_name?.trim()
+  const concept = description?.trim() || null
+
+  if (!name) {
+    return { success: false, error: '品牌名称不能为空' }
   }
 
   // Get user from Supabase session
@@ -24,23 +25,19 @@ export async function createStoreAction(formData: FormData) {
     return { success: false, error: '未检测到有效登录状态，请先登录' }
   }
 
-  const owner_id = user.id
-
   try {
-    await initializeMerchantStore({
-      owner_id,
-      store_name,
-      industry_id: industry_id || null,
-      industry_category: industry_category || null,
-      logo_url: logo_url || null,
-      description: description || null,
-      currency: currency || 'CNY',
+    await initializeBrandProject({
+      userId: user.id,
+      name,
+      category: industry_category || industry_id || null,
+      logoUrl: logo_url || null,
+      concept,
     })
     return { success: true, redirectUrl: '/dashboard' }
   } catch (error) {
     return {
       success: false,
-      error: `创建店铺失败: ${error instanceof Error ? error.message : error}`,
+      error: `初始化品牌失败: ${error instanceof Error ? error.message : error}`,
     }
   }
 }

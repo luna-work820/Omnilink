@@ -76,7 +76,7 @@ export default function Hero({
                   href={primaryAction.href}
                   className={cn(
                     actionBase,
-                    'bg-[var(--th-color-primary)] text-white hover:bg-[var(--th-color-accent)]'
+                    'bg-[var(--th-color-primary)] text-[var(--surface)] hover:bg-[var(--th-color-accent)]'
                   )}
                 >
                   {primaryAction.label}

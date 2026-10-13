@@ -167,7 +167,7 @@ export const INITIAL_AGENTS: AgentItem[] = [
     usesCount: '14.5K',
     isAdded: false,
     agentAvatar: 'PA',
-    colorTheme: '#024AD8',
+    colorTheme: 'var(--primary)',
   },
   {
     id: 'agent-marketing',
@@ -195,7 +195,7 @@ export const INITIAL_AGENTS: AgentItem[] = [
     usesCount: '8.2K',
     isAdded: true,
     agentAvatar: 'MA',
-    colorTheme: '#6366F1',
+    colorTheme: 'var(--primary)',
   },
   {
     id: 'agent-sales',
@@ -223,7 +223,7 @@ export const INITIAL_AGENTS: AgentItem[] = [
     usesCount: '6.9K',
     isAdded: false,
     agentAvatar: 'SA',
-    colorTheme: '#059669',
+    colorTheme: 'var(--acid-sage)',
   },
   {
     id: 'agent-research',
@@ -251,7 +251,7 @@ export const INITIAL_AGENTS: AgentItem[] = [
     usesCount: '19.3K',
     isAdded: false,
     agentAvatar: 'RA',
-    colorTheme: '#D97706',
+    colorTheme: 'var(--acid-sage)',
   },
   {
     id: 'agent-support',

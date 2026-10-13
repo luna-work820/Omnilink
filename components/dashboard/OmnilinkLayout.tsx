@@ -12,7 +12,6 @@ import { logoutAction } from '@/app/actions/auth'
 import {
   LayoutGrid,
   Package,
-  Fingerprint,
   BookOpen,
   Sparkles,
   User,
@@ -31,7 +30,6 @@ export type Profile = {
 type NavItemKey =
   | 'dashboard'
   | 'products'
-  | 'provenance'
   | 'knowledge'
   | 'account'
   | 'settings'
@@ -44,7 +42,7 @@ type NavItem = {
   isSpecialSprite?: boolean
 }
 
-/* 主导航：工作台、商品、来源、知识库 */
+/* 主导航：工作台、商品、知识库 */
 const NAV_ITEMS: NavItem[] = [
   {
     key: 'dashboard',
@@ -57,12 +55,6 @@ const NAV_ITEMS: NavItem[] = [
     href: '/dashboard/products',
     icon: Package,
     match: (p) => p.startsWith('/dashboard/products'),
-  },
-  {
-    key: 'provenance',
-    href: '/dashboard/provenance',
-    icon: Fingerprint,
-    match: (p) => p.startsWith('/dashboard/provenance'),
   },
   {
     key: 'knowledge',

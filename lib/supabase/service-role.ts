@@ -4,10 +4,10 @@
  * SECURITY BOUNDARY — read before using:
  *   - This client uses SUPABASE_SERVICE_ROLE_KEY and BYPASSES Row Level Security.
  *   - It MUST only be used for internal, system-trusted reads of SERVICE_ROLE_ONLY
- *     reference data (e.g. `semantic_schemas`). It must NEVER be used to:
+ *     reference data. It must NEVER be used to:
  *       * resolve user identity (requireUser / auth)
  *       * authorize merchant requests (ownsStore / ownsProduct)
- *       * perform merchant-data CRUD (products / product_semantics writes)
+ *       * perform merchant-data CRUD (Catalog item writes)
  *   - It must not be imported by any client component or browser bundle.
  *   - Authorization (requireUser + ownership checks) must ALWAYS complete
  *     BEFORE any privileged read is invoked.

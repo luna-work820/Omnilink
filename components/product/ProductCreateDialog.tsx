@@ -1,14 +1,15 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, X, AlertCircle, LayoutTemplate } from 'lucide-react'
+import { Plus, X, AlertCircle } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
+import { UiverseButton } from '@/components/ui/UiverseButton'
 import { ProductBasicInfo } from './create/ProductBasicInfo'
-import { ProductAttributesPanel, type AttributeRow } from './create/ProductAttributesPanel'
-import { VariantMatrixTable, type VariantMatrixRow } from './create/VariantMatrixTable'
 import { ProductMediaUpload } from './create/ProductMediaUpload'
 import { ProductCreateFooter } from './create/ProductCreateFooter'
+import { ProductAttributesPanel, type AttributeRow } from './create/ProductAttributesPanel'
+import { VariantMatrixTable, type VariantMatrixRow } from './create/VariantMatrixTable'
 import type { BasicProductFormData, ImageFileItem } from './create/types'
 import { getCategoryTemplate } from '@/lib/product/category-templates'
 import { uploadProductMedia } from '@/lib/product-media/upload-client'
@@ -25,7 +26,30 @@ const INITIAL_FORM_DATA: BasicProductFormData = {
   description: '',
 }
 
-export function ProductCreateDialog() {
+function skuPrefix(category: string) {
+  const value = category.toLowerCase()
+  if (value.includes('服装') || value.includes('女装') || value.includes('男装')) return 'APP'
+  if (value.includes('鞋')) return 'SHO'
+  if (value.includes('眼镜') || value.includes('太阳镜')) return 'EYE'
+  return 'PRD'
+}
+
+function stableCode(value: string) {
+  return value.trim().toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, '_').replace(/^_|_$/g, '')
+}
+
+function optionCode(value: string, index: number) {
+  const code = stableCode(value)
+  return /^[a-z0-9_]+$/.test(code) ? code : `option_${index + 1}`
+}
+
+interface ProductCreateDialogProps {
+  open?: boolean
+  initialImages?: File[]
+  onOpenChange?: (open: boolean) => void
+}
+
+export function ProductCreateDialog({ open: controlledOpen, initialImages = [], onOpenChange }: ProductCreateDialogProps) {
   const router = useRouter()
   const { isZh } = useLanguage()
 
@@ -34,13 +58,9 @@ export function ProductCreateDialog() {
   // Product traits (spec table) and sale variants (SKU matrix) share ONE input
   // surface; each row carries a role and is split into the right payload field
   // at submit time.
+  const [images, setImages] = useState<ImageFileItem[]>(() => initialImages.map((file) => ({ file, previewUrl: URL.createObjectURL(file) })))
   const [attributeRows, setAttributeRows] = useState<AttributeRow[]>([])
   const [variantMatrixRows, setVariantMatrixRows] = useState<VariantMatrixRow[]>([])
-  const [images, setImages] = useState<ImageFileItem[]>([])
-
-  // Category template prefill state
-  const appliedTemplateRef = useRef<string | null>(null)
-  const [templateNotice, setTemplateNotice] = useState<string | null>(null)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitMode, setSubmitMode] = useState<'draft' | 'active' | null>(null)
@@ -50,82 +70,40 @@ export function ProductCreateDialog() {
   // dropping the user on a product that has no media.
   const [createdProductId, setCreatedProductId] = useState<string | null>(null)
 
-  const handleOpen = () => {
-    setFormData(INITIAL_FORM_DATA)
-    setAttributeRows([])
-    setVariantMatrixRows([])
-    setImages([])
-    setErrorMessage(null)
-    setCreatedProductId(null)
-    appliedTemplateRef.current = null
-    setTemplateNotice(null)
-    setIsOpen(true)
-  }
-
-  /** The same slug rule used when shipping option codes to the server. */
-  const slugifyKey = (key: string) => key.trim().toLowerCase().replace(/\s+/g, '_')
-
-  /**
-   * Category template prefill (Taobao/Shopify-style): once the merchant picks
-   * a category, the matching template pre-fills trait rows (spec-table facts)
-   * and variant rows (purchasable axes with sensible default values).
-   *
-   * Merge rules:
-   *  - Only keys not already present are appended — anything the merchant
-   *    typed is never overwritten.
-   *  - Re-selecting the same category is a no-op (appliedTemplateRef guard).
-   *  - Switching categories appends the new template's missing rows.
-   */
-  useEffect(() => {
-    const categoryKey = formData.categoryId || formData.category
-    if (!categoryKey) return
-    const template = getCategoryTemplate(categoryKey)
-    if (!template) return
-    if (appliedTemplateRef.current === template.id) return
-    appliedTemplateRef.current = template.id
-
-    setAttributeRows((prev) => {
-      const existingKeys = new Set(prev.map((r) => r.key))
-      const additions: AttributeRow[] = []
-
-      for (const field of template.fields) {
-        if (existingKeys.has(field.key)) continue
-        additions.push({
-          id: `tpl_${template.id}_${field.key}`,
-          role: 'trait',
-          key: field.key,
-          label: isZh ? field.nameZh : field.nameEn,
-          value: '',
-          values: [],
-          unit: field.unit,
-          placeholder: isZh ? field.placeholderZh : field.placeholderEn,
-        })
-      }
-
-      for (const preset of template.variantPresets ?? []) {
-        if (existingKeys.has(preset.code)) continue
-        additions.push({
-          id: `tpl_${template.id}_${preset.code}`,
-          role: 'variant',
+  function applyCategoryPreset(category: string) {
+    const template = getCategoryTemplate(category)
+    if (!template?.variantPresets?.length) return
+    setAttributeRows((current) => {
+      const additions = template.variantPresets
+        ?.filter((preset) => !current.some((row) => row.key === preset.code))
+        .map((preset, index) => ({
+          id: `category_${template.id}_${preset.code}_${index}`,
+          role: 'variant' as const,
           key: preset.code,
           label: isZh ? preset.nameZh : preset.nameEn,
           value: '',
           values: [...preset.defaultValues],
-        })
-      }
-
-      if (additions.length === 0) return prev
-
-      const traitCount = additions.filter((r) => r.role === 'trait').length
-      const variantCount = additions.length - traitCount
-      setTemplateNotice(
-        isZh
-          ? `已按「${template.titleZh}」品类模板预填 ${traitCount} 个商品特征${variantCount > 0 ? `、${variantCount} 个销售规格` : ''}，可直接修改或删除`
-          : `Prefilled ${traitCount} traits${variantCount > 0 ? ` and ${variantCount} variant axes` : ''} from the "${template.titleEn}" template — edit freely`,
-      )
-      return [...prev, ...additions]
+        })) ?? []
+      return additions.length ? [...current, ...additions] : current
     })
-  }, [formData.category, formData.categoryId, isZh])
+  }
+
+  const dialogOpen = controlledOpen ?? isOpen
+
+  const setDialogOpen = (open: boolean) => {
+    if (controlledOpen === undefined) setIsOpen(open)
+    onOpenChange?.(open)
+  }
+
+  const handleOpen = () => {
+    setFormData(INITIAL_FORM_DATA)
+    setImages([])
+    setAttributeRows([])
+    setVariantMatrixRows([])
+    setErrorMessage(null)
+    setCreatedProductId(null)
+    setDialogOpen(true)
+  }
 
   const handleClose = () => {
     if (isSubmitting) return
@@ -133,7 +111,7 @@ export function ProductCreateDialog() {
     images.forEach((img) => {
       if (img.previewUrl) URL.revokeObjectURL(img.previewUrl)
     })
-    setIsOpen(false)
+    setDialogOpen(false)
   }
 
   const validateForm = (): boolean => {
@@ -144,24 +122,9 @@ export function ProductCreateDialog() {
       return false
     }
 
-    if (!formData.sku.trim()) {
-      setErrorMessage(isZh ? '请填写商品 SKU' : 'Please enter a SKU')
-      return false
-    }
-
-    if (!formData.category.trim()) {
-      setErrorMessage(isZh ? '请选择商品分类' : 'Please select a category')
-      return false
-    }
-
     const priceNum = parseFloat(formData.price)
     if (isNaN(priceNum) || priceNum < 0) {
       setErrorMessage(isZh ? '请填写有效的商品售价' : 'Please enter a valid price')
-      return false
-    }
-
-    if (!formData.origin.trim()) {
-      setErrorMessage(isZh ? '请填写商品产地' : 'Please enter the country of origin')
       return false
     }
 
@@ -176,61 +139,44 @@ export function ProductCreateDialog() {
     setErrorMessage(null)
 
     try {
-      // 1. Split the unified attribute rows into the two payload fields:
-      //      trait   -> canonical attributes (storefront spec table)
-      //      variant -> product options (expanded into SKUs server-side)
-      const traitAttributes = attributeRows.filter(
-        (r) => r.role === 'trait' && r.value.trim().length > 0,
-      )
-      const variantOptions = attributeRows
-        .filter((r) => r.role === 'variant' && r.values.length > 0)
-        .map((r) => ({
-          name: r.label.trim(),
-          // Server-side `normalizeOptionCode(option.code)` calls `.trim()` on
-          // this field, so it MUST be present — a missing code crashes every
-          // variant creation with a TypeError. Derived from the stable slug.
-          code: slugifyKey(r.key),
-          values: r.values,
+      const variantAxes = attributeRows
+        .filter((row) => row.role === 'variant' && row.values.length > 0)
+        .map((row, position) => ({
+          code: optionCode(row.key || row.label, position),
+          label: row.label,
+          position,
+          values: row.values.map((label) => ({ code: stableCode(label), label })),
         }))
+      const specificationSchema = {
+        version: 1,
+        category: formData.category || null,
+        axes: variantAxes,
+        traits: attributeRows
+          .filter((row) => row.role === 'trait')
+          .map((row) => ({
+            code: stableCode(row.key || row.label),
+            label: row.label,
+            type: row.unit ? 'number' : 'text',
+            unit: row.unit || null,
+          })),
+      }
+      const optionCodeByKey = new Map(
+        attributeRows
+          .filter((row) => row.role === 'variant' && row.values.length > 0)
+          .map((row, position) => [row.key, optionCode(row.key || row.label, position)]),
+      )
+      const normalizeOptionValues = (values: Record<string, string>) =>
+        Object.fromEntries(
+          Object.entries(values).map(([key, value]) => [optionCodeByKey.get(key) || stableCode(key), value]),
+        )
+      const aiMetadata = {
+        source: 'merchant_input',
+        generated_by: 'rules',
+        confidence: 1,
+        schema_version: 'product-spec-v1',
+      }
 
-      // Per-SKU overrides from the variant matrix (price/stock/SKU per
-      // combination). The server matches each entry to its generated
-      // combination via normalized option_values, so no client key is needed.
-      const variantOverrides =
-        variantOptions.length > 0 && variantMatrixRows.length > 0
-          ? variantMatrixRows.map((row) => ({
-              option_values: row.optionValues,
-              sku: row.sku.trim() || undefined,
-              price: row.price.trim() ? parseFloat(row.price) : undefined,
-              inventory: row.inventory.trim() ? parseInt(row.inventory, 10) : undefined,
-            }))
-          : undefined
-
-      // 2. Build canonical attributes payload
-      const validCanonicalAttributes = [
-        {
-          fieldKey: 'country_of_origin',
-          label: isZh ? '产地' : 'Country of Origin',
-          value: formData.origin.trim(),
-          type: 'text' as const,
-          unit: null,
-          source: 'manual' as const,
-          confidence: 1.0,
-          isStandard: true,
-        },
-        ...traitAttributes.map((a) => ({
-          fieldKey: a.key.trim().toLowerCase().replace(/\s+/g, '_'),
-          label: a.label.trim(),
-          value: a.value.trim(),
-          unit: a.unit?.trim() || null,
-          type: 'text' as const,
-          source: 'manual' as const,
-          confidence: 1.0,
-          isStandard: true,
-        })),
-      ]
-
-      // 3. Call Product Creation API
+      // Create the smallest valid Catalog item first; details and variants can be added later.
       const res = await fetch('/api/merchant/products', {
         method: 'POST',
         // Same-origin requests send cookies by default, but being explicit
@@ -246,17 +192,11 @@ export function ProductCreateDialog() {
           inventory: formData.inventory ? parseInt(formData.inventory, 10) : 0,
           description: formData.description.trim() || undefined,
           status: targetStatus,
-          category: formData.category,
-          category_id: formData.categoryId || undefined,
-          origin: formData.origin.trim(),
-          attributes: validCanonicalAttributes,
-          options: variantOptions.length > 0 ? variantOptions : undefined,
-          variants: variantOverrides,
           raw_data: {
             category: formData.category,
             category_id: formData.categoryId || undefined,
-            origin: formData.origin.trim(),
-            attributes: validCanonicalAttributes,
+            specification_schema: specificationSchema,
+            ai_metadata: aiMetadata,
           },
         }),
       })
@@ -291,12 +231,90 @@ export function ProductCreateDialog() {
       if (!createdId) {
         throw new Error(isZh ? '无法获取新建商品 ID' : 'Could not retrieve created product ID')
       }
+      window.dispatchEvent(new Event('omnilink:products-changed'))
+
+      // Persist the same specification model used by the editor. The base
+      // variant created by the product endpoint becomes the first matrix row.
+      const createdVariantId = resData.variant?.id || createdProduct?.variant?.id
+      for (const axis of variantAxes) {
+        const optionRes = await fetch(`/api/products/${createdId}/options`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: axis.label,
+            code: axis.code,
+            position: axis.position,
+            values: axis.values.map((value) => value.label),
+          }),
+        })
+        if (!optionRes.ok) throw new Error(isZh ? `保存规格「${axis.label}」失败` : `Failed to save option ${axis.label}`)
+      }
+
+      if (variantMatrixRows.length > 0) {
+        const first = variantMatrixRows[0]
+        const variantPayload = {
+          sku: first.sku || null,
+          price: Number(first.price || formData.price || 0),
+          currency: 'CNY',
+          inventory: Number(first.inventory || 0),
+          status: targetStatus,
+          option_values: normalizeOptionValues(first.optionValues),
+          raw_data: { ai_metadata: aiMetadata },
+        }
+        if (createdVariantId) {
+          const updateRes = await fetch(`/api/products/${createdId}/variants/${createdVariantId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(variantPayload),
+          })
+          if (!updateRes.ok) throw new Error(isZh ? '保存首个销售变体失败' : 'Failed to save the first variant')
+        }
+        for (const row of variantMatrixRows.slice(createdVariantId ? 1 : 0)) {
+          const variantRes = await fetch(`/api/products/${createdId}/variants`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...variantPayload,
+              sku: row.sku || null,
+              price: Number(row.price || formData.price || 0),
+              inventory: Number(row.inventory || 0),
+              option_values: normalizeOptionValues(row.optionValues),
+            }),
+          })
+          if (!variantRes.ok) throw new Error(isZh ? '保存销售变体失败' : 'Failed to save a sale variant')
+        }
+      }
+
+      const traitAttributes = attributeRows
+        .filter((row) => row.role === 'trait' && row.value.trim())
+        .map((row) => ({
+          fieldKey: stableCode(row.key || row.label),
+          label: row.label,
+          value: row.value.trim(),
+          type: row.unit ? 'number' as const : 'text' as const,
+          unit: row.unit || null,
+          source: 'manual' as const,
+          confidence: 1,
+          isStandard: false,
+        }))
+      if (traitAttributes.length > 0) {
+        const attributesRes = await fetch(`/api/merchant/products/${createdId}/canonical-attributes`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            category: formData.category || undefined,
+            category_id: formData.categoryId || undefined,
+            attributes: traitAttributes,
+          }),
+        })
+        if (!attributesRes.ok) throw new Error(isZh ? '保存商品特征失败' : 'Failed to save product traits')
+      }
 
       // NOTE (P0, 2026-08-26): Origin is no longer faked as a `component_type = assembly`
-      // entry on the product composition table. Origin lives on `products.raw_data.origin`
+      // Origin is stored in the Catalog item details payload.
       // (canonical) and on the canonical attribute `country_of_origin` (line ~101 above).
       // A future Product Knowledge provenance task may introduce a real composition domain
-      // for multi-component products; for now, do NOT POST /composition here.
+      // for multi-component products; for now, do NOT POST composition here.
 
       // 4. Upload product images sequentially if provided.
       //    Goes through the shared upload client so this path matches the
@@ -352,39 +370,32 @@ export function ProductCreateDialog() {
 
   return (
     <>
-      {/* 页面触发按钮 - HP Primary Button 规范 */}
-      <button
-        type="button"
-        id="btn-open-create-product"
-        onClick={handleOpen}
-        className="px-4 py-2 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] active:bg-[#00226B] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2"
-      >
-        <Plus size={15} />
-        <span>{isZh ? '新建商品' : 'New Product'}</span>
-      </button>
+      {controlledOpen === undefined && (
+        <UiverseButton
+          type="button"
+          id="btn-open-create-product"
+          onClick={handleOpen}
+          className="min-h-11 text-sm"
+        >
+          <Plus size={15} />
+          <span>{isZh ? '新建商品' : 'New Product'}</span>
+        </UiverseButton>
+      )}
 
       {/* 极简商品创建模态框 (Minimal, Quiet, Professional) */}
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200">
+      {dialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[var(--ink)]/50 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200">
           <div
-            className="w-full max-w-2xl bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] my-auto"
+            className="relative w-full max-w-5xl bg-[var(--surface)] rounded-xl shadow-2xl border border-[var(--surface-muted)] overflow-hidden flex flex-col max-h-[92vh] my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-              <div>
-                <h2 className="text-base font-bold text-slate-900 font-heading">
-                  {isZh ? '新建商品' : 'Create New Product'}
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {isZh ? '先让商品成立，详情与复杂规格可在后续逐步完善。' : 'Make the product valid first; enrich specifications later.'}
-                </p>
-              </div>
+            <div className="flex items-center justify-end px-3 py-2 bg-[var(--surface)] shrink-0">
               <button
                 type="button"
                 onClick={handleClose}
                 disabled={isSubmitting}
-                className="w-8 h-8 rounded-[4px] text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
+                className="w-8 h-8  text-[var(--lavender)] hover:text-[var(--lavender)] hover:bg-[var(--surface-muted)] flex items-center justify-center transition-colors cursor-pointer"
                 title={isZh ? '关闭' : 'Close'}
               >
                 <X size={18} />
@@ -393,8 +404,8 @@ export function ProductCreateDialog() {
 
             {/* Error Banner */}
             {errorMessage && (
-              <div className="mx-5 mt-4 p-3 rounded-[4px] bg-[#FFF2F2] border border-[#FFCDD2] shrink-0">
-                <div className="flex items-start gap-2 text-xs text-[#D32F2F]">
+              <div className="mx-5 mt-4 p-3  bg-[var(--surface-muted)] border border-[var(--border)] shrink-0">
+                <div className="flex items-start gap-2 text-xs text-[var(--plum)]">
                   <AlertCircle size={15} className="shrink-0 mt-px" />
                   <span className="font-medium">{errorMessage}</span>
                 </div>
@@ -407,7 +418,7 @@ export function ProductCreateDialog() {
                       router.push(`/dashboard/products/${id}/edit`)
                       router.refresh()
                     }}
-                    className="mt-2 ml-[23px] px-3 py-1.5 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] text-white text-xs font-bold transition-colors cursor-pointer"
+                    className="mt-2 ml-[23px] cursor-pointer  bg-[var(--ink)] px-3 py-1.5 text-xs font-bold text-[var(--surface)] transition-colors hover:bg-[#443F3B]"
                   >
                     {isZh ? '前往商品编辑页重新上传' : 'Go to product page to re-upload'}
                   </button>
@@ -415,73 +426,29 @@ export function ProductCreateDialog() {
               </div>
             )}
 
-            {/* Modal Body - 01 商品信息 / 02 商品属性（特征+规格统一入口） / 03 商品图片 */}
-            <div className="p-5 overflow-y-auto space-y-6 flex-1">
-              {/* 01 商品信息 */}
-              <ProductBasicInfo
-                formData={formData}
-                onChange={(updates) => setFormData((prev) => ({ ...prev, ...updates }))}
-                disabled={isSubmitting}
-              />
-
-              {/* 品类模板预填提示 */}
-              {templateNotice && (
-                <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-[4px] bg-[#EFF4FF] border border-[#024AD8]/20 text-[11px] text-[#024AD8]">
-                  <div className="flex items-center gap-1.5">
-                    <LayoutTemplate size={13} className="shrink-0" />
-                    <span className="font-medium">{templateNotice}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setTemplateNotice(null)}
-                    className="text-[#024AD8]/60 hover:text-[#024AD8] cursor-pointer"
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-              )}
-
-              {/* 02 商品属性（商品特征 + 销售规格，统一入口） */}
-              <ProductAttributesPanel
-                rows={attributeRows}
-                onChange={setAttributeRows}
-                disabled={isSubmitting}
-              />
-
-              {/* 02b 变体矩阵（有销售规格时出现，逐 SKU 定价/库存） */}
-              {attributeRows.some((r) => r.role === 'variant' && r.values.length > 0) && (
+            <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-5 pb-24 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.82fr)]">
+              <div className="space-y-6">
+                <ProductBasicInfo formData={formData} onChange={(updates) => setFormData((prev) => ({ ...prev, ...updates }))} onCategoryChange={applyCategoryPreset} disabled={isSubmitting} />
+                <ProductAttributesPanel rows={attributeRows} onChange={setAttributeRows} disabled={isSubmitting} />
                 <VariantMatrixTable
-                  axes={attributeRows
-                    .filter((r) => r.role === 'variant' && r.values.length > 0)
-                    .map((r) => ({
-                      code: slugifyKey(r.key),
-                      name: r.label,
-                      values: r.values,
-                    }))}
+                  axes={attributeRows.filter((row) => row.role === 'variant' && row.values.length > 0).map((row) => ({ code: row.key, name: row.label, values: row.values }))}
                   rows={variantMatrixRows}
                   onChange={setVariantMatrixRows}
                   basePrice={formData.price}
-                  baseInventory={formData.inventory || '0'}
-                  baseSku={formData.sku}
-                  currency={formData.currency}
+                  baseInventory={formData.inventory}
+                  baseSku={formData.sku || `${skuPrefix(formData.category)}-ITEM`}
+                  currency="CNY"
                   disabled={isSubmitting}
                 />
-              )}
-
-              {/* 03 商品图片 */}
-              <ProductMediaUpload
-                images={images}
-                onChange={setImages}
-                disabled={isSubmitting}
-              />
+              </div>
+              <ProductMediaUpload images={images} onChange={setImages} disabled={isSubmitting} />
             </div>
 
-            {/* 04 底部操作栏 */}
-            <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 shrink-0">
+            {/* Floating actions */}
+            <div className="pointer-events-none absolute inset-x-5 bottom-4 z-10">
               <ProductCreateFooter
                 onSaveDraft={() => handleSubmit('draft')}
                 onSaveAndPublish={() => handleSubmit('active')}
-                onCancel={handleClose}
                 isSubmitting={isSubmitting}
                 submitMode={submitMode}
                 disabled={isSubmitting}

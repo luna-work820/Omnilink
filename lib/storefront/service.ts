@@ -14,12 +14,12 @@ import { createClientServer } from '@/lib/supabase/server'
 import {
   normalizeProduct,
   normalizeProducts,
+  type CatalogItemRow,
   type StorefrontProductRow,
 } from './normalize'
 import type {
   StorefrontProduct,
   StorefrontStore,
-  OrderConfirmationDTO,
 } from './types'
 import {
   normalizeStorefrontSchema,
@@ -28,16 +28,67 @@ import {
   type StoreSocialConfig,
 } from './schema'
 
-/** 商品白名单列：只取 UI 需要的字段，绝不暴露 raw_data/sku/inventory 等内部字段。
- *  product_semantics(semantic_data, updated_at) 为 canonical 语义事实源（经 RLS 作用域限定）。 */
-const PRODUCT_SELECT =
-  'id, name, description, price, currency, semantic_data, product_assets(url, asset_type), product_semantics(semantic_data, updated_at)'
+/** 商品白名单列：只取 UI 需要的字段，绝不暴露内部原始字段。 */
+const CATALOG_SELECT =
+  'id, title, description, details, catalog_variants(id, title, sku_code, price, currency_code, availability_type, availability_value), catalog_media(storage_path, media_type, media_role)'
 
-const PRODUCT_DETAIL_SELECT =
-  'id, name, description, price, currency, semantic_data, product_assets(url, asset_type), product_semantics(semantic_data, updated_at), product_options(id, name, code, position, values), product_variants(id, sku, price, currency, inventory, status, option_values)'
+function catalogRow(item: CatalogItemRow): StorefrontProductRow {
+  const variant = item.catalog_variants?.[0]
+  return {
+    id: item.id,
+    name: item.title,
+    description: item.description,
+    price: variant?.price ?? 0,
+    currency: variant?.currency_code ?? 'CNY',
+    details: item.details,
+    media: (item.catalog_media ?? []).map((media) => ({
+      url: media.storage_path ?? null,
+      role: media.media_role === 'cover' ? 'public' : media.media_type ?? null,
+    })),
+    variants: (item.catalog_variants ?? []).map((v) => ({
+      id: v.id,
+      sku: v.sku_code ?? null,
+      price: v.price ?? null,
+      currency: v.currency_code ?? null,
+      inventory: v.availability_type === 'stock' && v.availability_value != null ? Number(v.availability_value) : null,
+      status: 'active',
+      option_values: v.details ?? {},
+    })),
+  }
+}
+
+async function catalogOrganizationId(
+  supabase: Awaited<ReturnType<typeof createClientServer>>,
+  storeId: string,
+) {
+  const { data, error } = await supabase.from('stores').select('organization_id').eq('id', storeId).maybeSingle()
+  if (error) throw new Error(error.message)
+  return data?.organization_id ?? null
+}
+
+async function getVisibleStorefrontProductIds(
+  supabase: Awaited<ReturnType<typeof createClientServer>>,
+  storeId: string,
+  organizationId: string,
+) {
+  const { data: channel, error: channelError } = await supabase.from('sales_channels').select('id')
+    .eq('organization_id', organizationId).eq('code', 'storefront').eq('channel_type', 'storefront').eq('status', 'active').limit(1).maybeSingle()
+  if (channelError) throw new Error(channelError.message)
+  if (!channel) return []
+
+  const { data: assignments, error } = await supabase.from('catalog_item_channels').select('catalog_item_id')
+    .eq('organization_id', organizationId).eq('store_id', storeId).eq('channel_id', channel.id).eq('is_visible', true)
+  if (error) throw new Error(error.message)
+  return (assignments ?? []).map((assignment) => assignment.catalog_item_id)
+}
 
 type StoreRef = Pick<StorefrontStore, 'id' | 'slug'> & {
   currency?: string | null
+}
+
+export type StorefrontDiscoveryItem = {
+  store: Pick<StorefrontStore, 'name' | 'slug'>
+  product: StorefrontProduct
 }
 
 /**
@@ -82,8 +133,8 @@ function readGlobalInfo(themeConfig: unknown): {
 }
 
 /**
- * 获取公开 storefront 的店铺数据。
- * 公开口径（与现有公开路由一致）：status = 'active' 且存在已发布的 store_pages。
+ * 获取公开 storefront 的店铺数据。优先使用当前已发布版本；旧店铺
+ * 在创建第一个版本之前，继续使用 store_pages 的发布位。
  */
 export async function getPublishedStore(
   storeSlug: string
@@ -92,13 +143,13 @@ export async function getPublishedStore(
 
   const { data: store, error: storeError } = await supabase
     .from('stores')
-    .select('id, store_name, store_slug, description, logo_url, currency')
-    .eq('store_slug', storeSlug)
+    .select('id, name, slug, currency')
+    .eq('slug', storeSlug)
     .eq('status', 'active')
     .maybeSingle()
 
-  if (storeError) throw new Error(storeError.message)
-  if (!store) {
+  if (storeError && storeSlug !== 'omnilink-flagship') throw new Error(storeError.message)
+  if (!store || storeError) {
     if (storeSlug === 'omnilink-flagship') {
       return {
         id: 'demo-store',
@@ -121,6 +172,30 @@ export async function getPublishedStore(
       }
     }
     return null
+  }
+
+  const { data: publishedVersion, error: versionError } = await supabase
+    .from('published_storefronts')
+    .select('schema_document')
+    .eq('store_id', store.id)
+    .maybeSingle()
+  if (versionError) throw new Error(versionError.message)
+
+  if (publishedVersion?.schema_document) {
+    const schema = normalizeStorefrontSchema(publishedVersion.schema_document)
+    if (!schema) return null
+    const { contact, social } = readGlobalInfo(publishedVersion.schema_document)
+    return {
+      id: store.id,
+      name: store.name,
+      slug: store.slug,
+      description: null,
+      logoUrl: null,
+      currency: store.currency,
+      themeId: schema.theme.themeId,
+      contact: contact || schema.globalInfo?.contact,
+      social: social || schema.globalInfo?.social,
+    }
   }
 
   const { data: publishedPage, error: pageError } = await supabase
@@ -146,10 +221,10 @@ export async function getPublishedStore(
 
   return {
     id: store.id,
-    name: store.store_name,
-    slug: store.store_slug,
-    description: store.description,
-    logoUrl: store.logo_url,
+    name: store.name,
+    slug: store.slug,
+    description: null,
+    logoUrl: null,
     currency: store.currency,
     themeId: readThemeId(settings?.theme_config),
     contact,
@@ -158,7 +233,7 @@ export async function getPublishedStore(
 }
 
 /**
- * 公开店面入口 —— 唯一事实源 = store_settings.theme_config（canonical StorefrontSchema）。
+ * 公开店面入口：优先读取版本指针指向的页面，兼容尚未迁移的旧店铺。
  */
 export async function getPublicStorefront(
   storeSlug: string
@@ -168,8 +243,8 @@ export async function getPublicStorefront(
 
     const { data: store, error: storeError } = await supabase
       .from('stores')
-      .select('id, store_name, store_slug, description, logo_url, currency')
-      .eq('store_slug', storeSlug)
+      .select('id, name, slug, currency')
+      .eq('slug', storeSlug)
       .eq('status', 'active')
       .maybeSingle()
 
@@ -201,6 +276,33 @@ export async function getPublicStorefront(
       return null
     }
 
+    const { data: publishedVersion, error: versionError } = await supabase
+      .from('published_storefronts')
+      .select('schema_document')
+      .eq('store_id', store.id)
+      .maybeSingle()
+    if (versionError) throw new Error(versionError.message)
+
+    if (publishedVersion?.schema_document) {
+      const publishedSchema = normalizeStorefrontSchema(publishedVersion.schema_document)
+      if (!publishedSchema) return null
+      const { contact, social } = readGlobalInfo(publishedVersion.schema_document)
+      return {
+        store: {
+          id: store.id,
+          name: store.name,
+          slug: store.slug,
+          description: null,
+          logoUrl: null,
+          currency: store.currency,
+          themeId: publishedSchema.theme.themeId,
+          contact: contact || publishedSchema.globalInfo?.contact,
+          social: social || publishedSchema.globalInfo?.social,
+        },
+        schema: publishedSchema,
+      }
+    }
+
     const { data: settings, error: settingsError } = await supabase
       .from('store_settings')
       .select('theme_config')
@@ -228,8 +330,8 @@ export async function getPublicStorefront(
                 ...s,
                 content: {
                   ...s.content,
-                  title: store.store_name,
-                  description: store.description ?? s.content.description,
+                  title: store.name,
+                  description: s.content.description,
                 },
               }
             : s
@@ -237,39 +339,37 @@ export async function getPublicStorefront(
       }
     }
 
-    if (!schema || !schema.meta.published) {
-      const { data: publishedPage, error: pageError } = await supabase
-        .from('store_pages')
-        .select('id')
-        .eq('store_id', store.id)
-        .eq('published', true)
-        .limit(1)
-        .maybeSingle()
+    const { data: publishedPage, error: pageError } = await supabase
+      .from('store_pages')
+      .select('id')
+      .eq('store_id', store.id)
+      .eq('published', true)
+      .limit(1)
+      .maybeSingle()
 
-      if (pageError) throw new Error(pageError.message)
-      if (!publishedPage) return null
+    if (pageError) throw new Error(pageError.message)
+    if (!publishedPage) return null
 
-      if (schema) {
-        schema = { ...schema, meta: { ...schema.meta, published: true } }
-      } else {
-        const base = normalizeStorefrontSchema({ theme_id: 'minimal' })
-        if (!base) return null
-        schema = {
-          ...base,
-          sections: base.sections.map((s) =>
-            s.type === 'hero'
-              ? {
-                  ...s,
-                  content: {
-                    ...s.content,
-                    title: store.store_name,
-                    description: store.description ?? s.content.description,
-                  },
-                }
-              : s
-          ),
-          meta: { ...base.meta, published: true },
-        }
+    if (schema) {
+      schema = { ...schema, meta: { ...schema.meta, published: true } }
+    } else {
+      const base = normalizeStorefrontSchema({ theme_id: 'minimal' })
+      if (!base) return null
+      schema = {
+        ...base,
+        sections: base.sections.map((s) =>
+          s.type === 'hero'
+            ? {
+                ...s,
+                content: {
+                  ...s.content,
+                  title: store.name,
+                  description: s.content.description,
+                },
+              }
+            : s
+        ),
+        meta: { ...base.meta, published: true },
       }
     }
 
@@ -278,10 +378,10 @@ export async function getPublicStorefront(
     return {
       store: {
         id: store.id,
-        name: store.store_name,
-        slug: store.store_slug,
-        description: store.description,
-        logoUrl: store.logo_url,
+        name: store.name,
+        slug: store.slug,
+        description: null,
+        logoUrl: null,
         currency: store.currency,
         themeId: schema.theme.themeId,
         contact: contact || schema.globalInfo?.contact,
@@ -331,11 +431,16 @@ export async function getStorefrontProducts(
   try {
     const supabase = await createClientServer()
 
+    const organizationId = await catalogOrganizationId(supabase, storeId)
+    if (!organizationId) return []
+    const visibleProductIds = await getVisibleStorefrontProductIds(supabase, storeId, organizationId)
+    if (!visibleProductIds.length) return []
     const { data, error } = await supabase
-      .from('products')
-      .select(PRODUCT_SELECT)
-      .eq('store_id', storeId)
+      .from('catalog_items')
+      .select(CATALOG_SELECT)
+      .eq('organization_id', organizationId)
       .eq('status', 'active')
+      .in('id', visibleProductIds)
       .order('created_at', { ascending: false })
       .limit(limit)
 
@@ -349,7 +454,7 @@ export async function getStorefrontProducts(
     }
 
     return normalizeProducts(
-      (data ?? []) as unknown as StorefrontProductRow[],
+      (data ?? []).map(catalogRow),
       { storeSlug, storeCurrency }
     )
   } catch (err) {
@@ -362,58 +467,58 @@ export async function getStorefrontProducts(
 }
 
 /**
- * 单个公开商品。store_id + 商品 id 双重过滤。
- * 优雅降级：若 product_options/product_variants 表查询报错，退回到普通查询。
+ * C 端发现页：只聚合已发布店铺及其显式开放到 storefront 渠道的商品。
+ * 店铺和商品仍来自同一套 stores / catalog 数据，不维护发现页副本。
+ */
+export async function getStorefrontDiscoveryItems(limit = 36): Promise<StorefrontDiscoveryItem[]> {
+  const supabase = await createClientServer()
+  const { data: stores, error } = await supabase
+    .from('stores')
+    .select('id, name, slug, currency')
+    .order('created_at', { ascending: false })
+    .limit(12)
+
+  if (error) throw new Error(`Failed to load storefront discovery: ${error.message}`)
+  if (!stores?.length) return []
+
+  const publishedStores = (await Promise.all(stores.map(async (store) => {
+    const published = await getPublishedStore(store.slug)
+    return published ? { ...store, published } : null
+  }))).filter((store) => store !== null)
+  const items = await Promise.all(publishedStores.map(async (store) => {
+    const products = await getStorefrontProducts(store, Math.min(limit, 12))
+    return products.map((product) => ({
+      store: { name: store.published.name, slug: store.published.slug },
+      product,
+    }))
+  }))
+
+  return items.flat().slice(0, limit)
+}
+
+/**
+ * 单个公开商品。组织 + 商品 id 双重过滤。
  */
 export async function getStorefrontProduct(
   store: StoreRef,
   productId: string
 ): Promise<StorefrontProduct | null> {
   const supabase = await createClientServer()
-
-  try {
-    const { data, error } = await supabase
-      .from('products')
-      .select(PRODUCT_DETAIL_SELECT)
-      .eq('id', productId)
-      .eq('store_id', store.id)
-      .eq('status', 'active')
-      .maybeSingle()
-
-    if (!error && data) {
-      return normalizeProduct(data as unknown as StorefrontProductRow, {
-        storeSlug: store.slug,
-        storeCurrency: store.currency,
-      })
-    }
-  } catch {
-    // fallback below
-  }
-
-  // Fallback to basic product select
-  const { data: basicData, error: basicError } = await supabase
-    .from('products')
-    .select(PRODUCT_SELECT)
+  const organizationId = await catalogOrganizationId(supabase, store.id)
+  if (!organizationId) return null
+  const visibleProductIds = await getVisibleStorefrontProductIds(supabase, store.id, organizationId)
+  if (!visibleProductIds.includes(productId)) return null
+  const { data, error } = await supabase
+    .from('catalog_items')
+    .select(CATALOG_SELECT)
     .eq('id', productId)
-    .eq('store_id', store.id)
+    .eq('organization_id', organizationId)
     .eq('status', 'active')
     .maybeSingle()
-
-  if (basicError) {
-    console.error('[Storefront][getStorefrontProduct] query failed', {
-      storeId: store.id,
-      productId,
-      errorCode: basicError.code ?? null,
-      errorMessage: basicError.message,
-    })
-    throw new Error(basicError.message)
-  }
-  if (!basicData) return null
-
-  return normalizeProduct(basicData as unknown as StorefrontProductRow, {
-    storeSlug: store.slug,
-    storeCurrency: store.currency,
-  })
+  if (error) throw new Error(error.message)
+  return data
+    ? normalizeProduct(catalogRow(data), { storeSlug: store.slug, storeCurrency: store.currency })
+    : null
 }
 
 /**
@@ -426,130 +531,24 @@ export async function getRelatedProducts(
 ): Promise<StorefrontProduct[]> {
   const supabase = await createClientServer()
 
+  const organizationId = await catalogOrganizationId(supabase, store.id)
+  if (!organizationId) return []
+  const visibleProductIds = await getVisibleStorefrontProductIds(supabase, store.id, organizationId)
+  if (!visibleProductIds.length) return []
   const { data, error } = await supabase
-    .from('products')
-    .select(PRODUCT_SELECT)
-    .eq('store_id', store.id)
+    .from('catalog_items')
+    .select(CATALOG_SELECT)
+    .eq('organization_id', organizationId)
     .eq('status', 'active')
     .neq('id', productId)
+    .in('id', visibleProductIds)
     .order('created_at', { ascending: false })
     .limit(limit)
 
   if (error) throw new Error(error.message)
 
   return normalizeProducts(
-    (data ?? []) as unknown as StorefrontProductRow[],
+    (data ?? []).map(catalogRow),
     { storeSlug: store.slug, storeCurrency: store.currency }
   )
-}
-
-/**
- * 根据 orderId 和 storeSlug 查询订单确认回执。
- */
-export async function getOrderById(
-  storeSlug: string,
-  orderId: string
-): Promise<OrderConfirmationDTO | null> {
-  try {
-    const supabase = await createClientServer()
-
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .select(`
-        id,
-        order_number,
-        store_id,
-        customer_name,
-        customer_email,
-        customer_phone,
-        customer_whatsapp,
-        company,
-        country,
-        state,
-        city,
-        address,
-        notes,
-        contact_preference,
-        currency,
-        subtotal,
-        status,
-        created_at,
-        order_items (
-          id,
-          product_id,
-          variant_id,
-          product_name_snapshot,
-          sku_snapshot,
-          quantity,
-          unit_price_snapshot,
-          currency,
-          selected_options
-        ),
-        stores (
-          store_name,
-          store_slug,
-          store_settings (
-            theme_config
-          )
-        )
-      `)
-      .eq('id', orderId)
-      .maybeSingle()
-
-    if (orderError || !order) {
-      return null
-    }
-
-    const storeData = Array.isArray(order.stores) ? order.stores[0] : order.stores
-    const settings = Array.isArray(storeData?.store_settings)
-      ? storeData.store_settings[0]
-      : storeData?.store_settings
-
-    const { contact } = readGlobalInfo(settings?.theme_config)
-
-    const rawItems = Array.isArray(order.order_items) ? order.order_items : []
-    const items = rawItems.map((item: any) => ({
-      id: item.id,
-      productId: item.product_id,
-      variantId: item.variant_id,
-      productName: item.product_name_snapshot,
-      sku: item.sku_snapshot,
-      quantity: Number(item.quantity) || 1,
-      unitPrice: Number(item.unit_price_snapshot) || 0,
-      currency: item.currency || order.currency || 'USD',
-      selectedOptions: item.selected_options || {},
-      subtotal:
-        (Number(item.unit_price_snapshot) || 0) * (Number(item.quantity) || 1),
-    }))
-
-    return {
-      id: order.id,
-      orderNumber: order.order_number,
-      storeId: order.store_id,
-      storeSlug: storeData?.store_slug || storeSlug,
-      storeName: storeData?.store_name || 'Store',
-      customer: {
-        name: order.customer_name,
-        email: order.customer_email,
-        phone: order.customer_phone,
-        whatsapp: order.customer_whatsapp,
-        company: order.company,
-        country: order.country,
-        state: order.state,
-        city: order.city,
-        address: order.address,
-        notes: order.notes,
-        contactPreference: order.contact_preference,
-      },
-      items,
-      currency: order.currency || 'USD',
-      subtotal: Number(order.subtotal) || 0,
-      status: order.status || 'inquiry_pending',
-      createdAt: order.created_at,
-      storeContact: contact,
-    }
-  } catch (err) {
-    console.error('getOrderById error:', err)
-    return null
-  }
 }

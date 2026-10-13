@@ -25,11 +25,11 @@ export function PageHeader({
     <div className="flex flex-col gap-4 mb-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-[#111827]">
+          <h1 className="font-heading text-2xl sm:text-3xl font-bold tracking-tight text-[var(--ink)]">
             {title}
           </h1>
           {desc && (
-            <p className="text-xs sm:text-sm text-[#6B7280] mt-1 leading-relaxed">
+            <p className="text-xs sm:text-sm text-[var(--lavender)] mt-1 leading-relaxed">
               {desc}
             </p>
           )}
@@ -56,7 +56,7 @@ export function GlassCard({
     <div className={cn('crextio-card p-5 sm:p-6', className)}>
       {title && (
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-heading text-base font-bold tracking-tight text-[#111827]">
+          <h3 className="font-heading text-base font-bold tracking-tight text-[var(--ink)]">
             {title}
           </h3>
           {actionHref ? (
@@ -87,13 +87,13 @@ export function DarkCard({
     <div className={cn('crextio-dark-card p-5 sm:p-6', className)}>
       {title && (
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-heading text-base font-bold tracking-tight text-white">
+          <h3 className="font-heading text-base font-bold tracking-tight text-[var(--surface)]">
             {title}
           </h3>
           {actionHref && (
             <Link
               href={actionHref}
-              className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center hover:bg-white/20 transition-all"
+              className="w-8 h-8 rounded-full bg-[var(--surface)]/10 text-[var(--surface)] flex items-center justify-center hover:bg-[var(--surface)]/20 transition-all"
               aria-label="View details"
             >
               <ArrowUpRight size={14} />
@@ -127,8 +127,8 @@ export function SectionTitle({
 }) {
   return (
     <div className="mb-4">
-      <h2 className="font-heading text-base font-bold text-[#111827]">{title}</h2>
-      {description && <p className="text-xs text-[#6B7280] mt-0.5">{description}</p>}
+      <h2 className="font-heading text-base font-bold text-[var(--ink)]">{title}</h2>
+      {description && <p className="text-xs text-[var(--lavender)] mt-0.5">{description}</p>}
     </div>
   )
 }
@@ -147,7 +147,7 @@ export function PrimaryLink({
     <Link
       href={href}
       className={cn(
-        'inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-[4px] text-xs font-medium text-white bg-[#024AD8] hover:bg-[#003198] active:bg-[#00226B] transition-all focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2',
+        'inline-flex items-center justify-center gap-2 px-4 py-2.5  text-xs font-medium text-[var(--surface)] bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] transition-all focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2',
         className
       )}
     >
@@ -170,7 +170,7 @@ export function GhostLink({
     <Link
       href={href}
       className={cn(
-        'inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-[4px] text-xs font-medium bg-white border border-[#D1D1D1] text-[#1C1C1C] hover:bg-[#F7F7F7] hover:border-[#B0B0B0] transition-all focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2',
+        'inline-flex items-center justify-center gap-2 px-4 py-2.5  text-xs font-medium bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-muted)] hover:border-[var(--border)] transition-all focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2',
         className
       )}
     >
@@ -183,9 +183,9 @@ export function GhostLink({
 export function ReadinessBar({ percent }: { percent: number }) {
   const clamped = Math.max(0, Math.min(100, percent))
   return (
-    <div className="w-full h-2 rounded-full bg-[#F4F5F7] overflow-hidden">
+    <div className="w-full h-2 rounded-full bg-[var(--surface-muted)] overflow-hidden">
       <div
-        className="h-full rounded-full bg-[#111827] transition-all duration-500 ease-out"
+        className="h-full rounded-full bg-[var(--ink)] transition-all duration-500 ease-out"
         style={{
           width: `${clamped}%`,
         }}
@@ -212,14 +212,14 @@ export function MetricCard({
     <div
       className={cn(
         'crextio-card p-5 transition-all flex flex-col justify-between h-[150px]',
-        accent ? 'bg-[#111827] text-white border-transparent' : 'bg-white'
+        accent ? 'bg-[var(--ink)] text-[var(--surface)] border-transparent' : 'bg-[var(--surface)]'
       )}
     >
       <div className="flex items-center justify-between">
         <span
           className={cn(
             'text-xs font-medium',
-            accent ? 'text-white/80' : 'text-[#6B7280]'
+            accent ? 'text-[var(--surface)]/80' : 'text-[var(--lavender)]'
           )}
         >
           {label}
@@ -227,7 +227,7 @@ export function MetricCard({
         <span
           className={cn(
             'w-8 h-8 rounded-full flex items-center justify-center',
-            accent ? 'bg-white/15 text-white' : 'bg-[#F4F5F7] text-[#111827]'
+            accent ? 'bg-[var(--surface)]/15 text-[var(--surface)]' : 'bg-[var(--surface-muted)] text-[var(--ink)]'
           )}
         >
           <Icon size={15} />
@@ -236,7 +236,7 @@ export function MetricCard({
       <div
         className={cn(
           'text-2xl sm:text-[28px] font-bold tracking-tight tnum',
-          accent ? 'text-white' : 'text-[#111827]'
+          accent ? 'text-[var(--surface)]' : 'text-[var(--ink)]'
         )}
       >
         {value}
@@ -245,7 +245,7 @@ export function MetricCard({
         <div
           className={cn(
             'text-xs mt-1 pt-1 border-t',
-            accent ? 'text-white/70 border-white/10' : 'text-[#6B7280] border-[#F3F4F6]'
+            accent ? 'text-[var(--surface)]/70 border-[var(--surface)]/10' : 'text-[var(--lavender)] border-[var(--surface-muted)]'
           )}
         >
           {hint}
@@ -264,9 +264,9 @@ export function StatusDot({
   label: string
 }) {
   const color =
-    tone === 'ok' ? 'bg-[#edbc40]' : tone === 'warn' ? 'bg-[#e0652b]' : 'bg-[#9CA3AF]'
+    tone === 'ok' ? 'bg-[var(--acid-sage)]' : tone === 'warn' ? 'bg-[#e0652b]' : 'bg-[var(--lavender)]'
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#111827]">
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--ink)]">
       <span className={cn('w-2 h-2 rounded-full', color)} />
       {label}
     </span>
@@ -276,12 +276,12 @@ export function StatusDot({
 /* AI 状态徽章（亮绿药丸状） */
 export function AiBadge({ ready }: { ready: boolean }) {
   return ready ? (
-    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#edbc40] text-[#111827] shadow-sm">
-      <Sparkles size={11} className="text-[#111827]" />
+    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[var(--acid-sage)] text-[var(--ink)] shadow-sm">
+      <Sparkles size={11} className="text-[var(--ink)]" />
       AI Ready
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-[#F4F5F7] text-[#6B7280] border border-[#E5E7EB]">
+    <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-[var(--surface-muted)] text-[var(--lavender)] border border-[var(--border)]">
       Pending
     </span>
   )
@@ -301,11 +301,11 @@ export function EmptyState({
 }) {
   return (
     <div className="crextio-card px-8 py-12 flex flex-col items-center text-center">
-      <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4 bg-[#F4F5F7] text-[#111827]">
+      <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4 bg-[var(--surface-muted)] text-[var(--ink)]">
         <Icon size={20} strokeWidth={1.75} />
       </div>
-      <h3 className="text-sm font-bold text-[#111827]">{title}</h3>
-      <p className="text-xs text-[#6B7280] mt-1.5 max-w-sm leading-relaxed">{description}</p>
+      <h3 className="text-sm font-bold text-[var(--ink)]">{title}</h3>
+      <p className="text-xs text-[var(--lavender)] mt-1.5 max-w-sm leading-relaxed">{description}</p>
       {action && <div className="mt-5 flex items-center gap-2.5">{action}</div>}
     </div>
   )
@@ -323,14 +323,14 @@ export function ComingSoon({
 }) {
   return (
     <div className="crextio-card px-8 py-12 flex flex-col items-center text-center">
-      <div className="relative w-12 h-12 rounded-full flex items-center justify-center mb-4 bg-[#F4F5F7] text-[#6B7280]">
+      <div className="relative w-12 h-12 rounded-full flex items-center justify-center mb-4 bg-[var(--surface-muted)] text-[var(--lavender)]">
         <Icon size={20} strokeWidth={1.75} />
-        <span className="absolute -top-1 -right-2 text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#edbc40] text-[#111827]">
+        <span className="absolute -top-1 -right-2 text-[9px] font-bold px-2 py-0.5 rounded-full bg-[var(--acid-sage)] text-[var(--ink)]">
           Coming Soon
         </span>
       </div>
-      <h3 className="text-sm font-bold text-[#111827]">{title}</h3>
-      <p className="text-xs text-[#6B7280] mt-1.5 max-w-sm leading-relaxed">{description}</p>
+      <h3 className="text-sm font-bold text-[var(--ink)]">{title}</h3>
+      <p className="text-xs text-[var(--lavender)] mt-1.5 max-w-sm leading-relaxed">{description}</p>
     </div>
   )
 }
@@ -340,7 +340,7 @@ export function RowLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-1 text-xs font-semibold text-[#111827] hover:text-[#e0652b] transition-colors"
+      className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--ink)] hover:text-[#e0652b] transition-colors"
     >
       {label}
       <ArrowRight size={12} />

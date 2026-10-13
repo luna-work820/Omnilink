@@ -3,8 +3,8 @@
  *
  *   database row ──→ normalize ──→ StorefrontProduct
  *
- * 无副作用、无 IO、无 DB 访问。任何单条脏数据（缺图/缺价/缺语义/
- * 畸形 semantic_data）都只影响该条本身，绝不让页面崩溃。
+ * 无副作用、无 IO、无 DB 访问。任何单条脏数据（缺图/缺价/缺属性/
+ * 畸形 details）都只影响该条本身，绝不让页面崩溃。
  */
 
 import type {
@@ -13,35 +13,56 @@ import type {
   StorefrontProductVariant,
 } from './types'
 
-/** service 层查询返回的单条商品行（白名单 select + 关联 assets + 关联 options/variants）。 */
+export interface CatalogVariantRow {
+  id: string
+  title?: string | null
+  sku_code?: string | null
+  price?: number | string | null
+  currency_code?: string | null
+  availability_type?: string | null
+  availability_value?: number | string | null
+  details?: unknown
+}
+
+export interface CatalogMediaRow {
+  id?: string
+  storage_path?: string | null
+  media_type?: string | null
+  media_role?: string | null
+  alt_text?: string | null
+  metadata?: unknown
+  created_at?: string | null
+}
+
+export interface CatalogItemRow {
+  id: string
+  title: string | null
+  description: string | null
+  details: unknown
+  catalog_variants?: CatalogVariantRow[] | null
+  catalog_media?: CatalogMediaRow[] | null
+}
+
+/** Catalog 查询返回的单条商品行（白名单 select + 关联 media/variants）。 */
 export interface StorefrontProductRow {
   id: string
   name: string | null
   description: string | null
   price: number | string | null
   currency: string | null
-  semantic_data: unknown
-  /**
-   * Canonical semantic records (产品管理 → product_semantics 写入)。
-   * 一个 product 可能残留多条（按 product_id,schema_id upsert，但历史行可能留存），
-   * 读取时必须取 updated_at 最新的一条。JOIN 由 service 层 SELECT 注入。
-   */
-  product_semantics?: Array<{
-    semantic_data: unknown
-    updated_at: string | null
-  }> | null
-  product_assets?: Array<{
+  details: unknown
+  media?: Array<{
     url: string | null
-    asset_type: string | null
+    role: string | null
   }> | null
-  product_options?: Array<{
+  options?: Array<{
     id: string
     name: string
     code: string
     position?: number
     values: unknown
   }> | null
-  product_variants?: Array<{
+  variants?: Array<{
     id: string
     sku: string | null
     price: number | string | null
@@ -66,14 +87,14 @@ function toFiniteNumber(value: number | string | null): number {
 
 /** 提取画廊图片：优先 original 居首，其余有效 URL 随后，去重。 */
 function extractImageGallery(
-  assets: StorefrontProductRow['product_assets']
+  assets: StorefrontProductRow['media']
 ): { primary: string | null; all: string[] } {
   if (!Array.isArray(assets) || assets.length === 0) {
     return { primary: null, all: [] }
   }
 
   const valid = assets.filter(
-    (a): a is { url: string; asset_type: string | null } =>
+    (a): a is { url: string; role: string | null } =>
       typeof a?.url === 'string' && a.url.trim().length > 0
   )
 
@@ -85,7 +106,7 @@ function extractImageGallery(
 
   const publicAssets = valid.filter((asset) =>
     ['public', 'processed', 'watermark', 'transparent'].includes(
-      asset.asset_type ?? ''
+      asset.role ?? ''
     )
   )
 
@@ -95,10 +116,10 @@ function extractImageGallery(
     }
   }
 
-  // Legacy compatibility for old demo records.
+  // Keep original media as a fallback for imported records.
   if (urls.length === 0) {
     const legacyOriginal = valid.find(
-      (asset) => asset.asset_type === 'original'
+      (asset) => asset.role === 'original'
     )
 
     if (legacyOriginal) {
@@ -113,7 +134,7 @@ function extractImageGallery(
 }
 
 /**
- * semantic_data 安全拍平：
+ * Catalog details 安全拍平：
  * 只保留顶层的 string/number/boolean 叶子；跳过 null、嵌套对象与数组。
  * 不发明新 ontology，不向 UI 暴露内部结构。
  */
@@ -135,7 +156,7 @@ function flattenSemanticData(input: unknown): Record<string, string> {
 }
 
 /**
- * 从一条 semantic record 安全提取扁平属性 Map。
+ * 从 Catalog details 安全提取扁平属性 Map。
  * 兼容两种存储形态：
  *   - 嵌套：{ attributes: { color: "Black", material: "Acetate" } }
  *   - 扁平：{ color: "Black", material: "Acetate" }
@@ -177,58 +198,20 @@ function extractAttributesFromSemantic(
   return Object.keys(flat).length > 0 ? flat : null
 }
 
-/**
- * 在多条 product_semantics 记录中取 updated_at 最新的一条 semantic_data。
- * product_semantics 按 (product_id, schema_id) upsert，但历史可能残留多行；
- * 必须取最新，避免读到过期 canonical。
- */
-function pickLatestSemanticData(
-  list: StorefrontProductRow['product_semantics']
-): unknown | null {
-  if (!Array.isArray(list) || list.length === 0) return null
-  const sorted = [...list].sort((a, b) => {
-    const ta = a.updated_at ? new Date(a.updated_at).getTime() : 0
-    const tb = b.updated_at ? new Date(b.updated_at).getTime() : 0
-    return tb - ta
-  })
-  const latest = sorted[0]
-  if (latest && latest.semantic_data !== null && latest.semantic_data !== undefined) {
-    return latest.semantic_data
-  }
-  return null
-}
-
-/**
- * 解析商品公开属性（canonical 优先级链）：
- *   1. latest product_semantics.semantic_data  ← canonical 事实源
- *   2. products.semantic_data                  ← legacy 兜底（已是死列，但保留兼容）
- *   3. {}                                       ← 兜底空对象
- *
- * 不允许读 products.raw_data 作为公网 canonical source（anon 列级 REVOKE 已屏蔽）。
- * 输出 Record<string,string>（如 { color, material, origin }）。
- */
+/** 解析商品公开属性，唯一来源为 Catalog details.attributes。 */
 export function resolveCanonicalAttributes(
   row: StorefrontProductRow
 ): Record<string, string> {
-  // 1. canonical（最新 product_semantics 记录）
-  const canonical = pickLatestSemanticData(row.product_semantics)
-  if (canonical !== null) {
-    const extracted = extractAttributesFromSemantic(canonical)
-    if (extracted) return extracted
-  }
-
-  // 2. legacy fallback：products.semantic_data
-  if (row.semantic_data !== null && row.semantic_data !== undefined) {
-    const legacy = extractAttributesFromSemantic(row.semantic_data)
-    if (legacy) return legacy
-  }
-
-  // 3. 兜底空对象
-  return {}
+  const details =
+    row.details !== null && row.details !== undefined
+      ? row.details
+      : {}
+  const extracted = extractAttributesFromSemantic(details)
+  return extracted ?? {}
 }
 
 function normalizeOptions(
-  rawOptions?: StorefrontProductRow['product_options']
+  rawOptions?: StorefrontProductRow['options']
 ): StorefrontProductOption[] | undefined {
   if (!Array.isArray(rawOptions) || rawOptions.length === 0) return undefined
   return rawOptions
@@ -245,7 +228,7 @@ function normalizeOptions(
 }
 
 function normalizeVariants(
-  rawVariants?: StorefrontProductRow['product_variants']
+  rawVariants?: StorefrontProductRow['variants']
 ): StorefrontProductVariant[] | undefined {
   if (!Array.isArray(rawVariants) || rawVariants.length === 0) return undefined
   return rawVariants.map((v) => ({
@@ -267,9 +250,9 @@ export function normalizeProduct(
   opts: NormalizeOptions
 ): StorefrontProduct {
   const id = String(row.id)
-  const gallery = extractImageGallery(row.product_assets)
-  const options = normalizeOptions(row.product_options)
-  const variants = normalizeVariants(row.product_variants)
+  const gallery = extractImageGallery(row.media)
+  const options = normalizeOptions(row.options)
+  const variants = normalizeVariants(row.variants)
 
   return {
     id,

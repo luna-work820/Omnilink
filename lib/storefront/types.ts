@@ -7,9 +7,9 @@
  *   - 本层与 lib/themes 完全独立（互不 import）。
  *
  * 字段口径（以当前实际 schema 为准）：
- *   - products 表无 slug 列 → slug 取商品 id（公开路由本就是 /products/[id]）。
- *   - 图片取 product_assets.url（优先 asset_type = 'original'）。
- *   - attributes 来自 products.semantic_data 的安全拍平。
+ *   - Catalog 商品使用 id 作为公开路由段（公开路由本就是 /products/[id]）。
+ *   - 图片取 catalog_media.storage_path。
+ *   - attributes 来自 catalog_items.details.attributes 的安全拍平。
  */
 
 import type { StoreContactConfig, StoreSocialConfig } from './schema'
@@ -56,7 +56,7 @@ export interface StorefrontProduct {
   href: string
   /** 允许为空。 */
   description: string | null
-  /** semantic_data 的安全拍平（仅原始类型叶子）。 */
+  /** catalog_items.details.attributes 的安全拍平（仅原始类型叶子）。 */
   attributes: Record<string, string>
   /** 扩展点：当前无稳定 badge 规则，保持空数组。 */
   badges?: string[]
@@ -98,67 +98,6 @@ export interface CartItem {
   currency: string
   selectedOptions?: Record<string, string>
   sku?: string | null
-}
-
-/**
- * 订单提交 DTO（从客户端传给服务端，服务端强制重算价格）。
- */
-export interface OrderCustomerInfo {
-  name: string
-  email: string
-  phone?: string
-  whatsapp?: string
-  company?: string
-  country?: string
-  state?: string
-  city?: string
-  address?: string
-  notes?: string
-  contactPreference?: 'email' | 'whatsapp' | 'phone'
-}
-
-export interface OrderItemSubmission {
-  productId: string
-  variantId?: string | null
-  quantity: number
-  selectedOptions?: Record<string, string>
-}
-
-export interface OrderSubmissionPayload {
-  storeSlug: string
-  customer: OrderCustomerInfo
-  items: OrderItemSubmission[]
-}
-
-/**
- * 订单回执快照（展示在 Order Confirmation 页面）。
- */
-export interface OrderConfirmationItem {
-  id: string
-  productId?: string | null
-  variantId?: string | null
-  productName: string
-  sku?: string | null
-  quantity: number
-  unitPrice: number
-  currency: string
-  selectedOptions?: Record<string, string>
-  subtotal: number
-}
-
-export interface OrderConfirmationDTO {
-  id: string
-  orderNumber: string
-  storeId: string
-  storeSlug: string
-  storeName: string
-  customer: OrderCustomerInfo
-  items: OrderConfirmationItem[]
-  currency: string
-  subtotal: number
-  status: string
-  createdAt: string
-  storeContact?: StoreContactConfig
 }
 
 /**

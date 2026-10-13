@@ -5,6 +5,7 @@ import { createClientServer } from '@/lib/supabase/server'
 import type { StorefrontSchema } from '@/lib/storefront/schema'
 import { createDefaultSchema, normalizeStorefrontSchema } from '@/lib/storefront/schema'
 import { validateCanonicalTemplateSchema } from '@/lib/storefront/validator'
+import type { Json } from '@/lib/database.types'
 
 export interface GenerateTemplateInput {
   brandName: string
@@ -152,7 +153,7 @@ CRITICAL CANONICAL RULES:
       layout_config: generatedSchema,
       status: 'active',
       created_at: new Date().toISOString(),
-    } as any)
+    } as unknown as Record<string, Json>)
 
     if (insertError) {
       console.error('Failed to insert AI template:', insertError)

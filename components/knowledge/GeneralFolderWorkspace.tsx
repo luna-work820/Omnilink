@@ -9,7 +9,6 @@ import {
   Plus,
   Search,
   Check,
-  UploadCloud,
   Download,
 } from 'lucide-react'
 import type { KnowledgeSource, KnowledgeBaseItem } from './types'
@@ -29,7 +28,6 @@ export function GeneralFolderWorkspace({
   onDeleteFolder,
   onUpdateFolderSources,
   onRenameFolder,
-  isZh: _isZh,
 }: GeneralFolderWorkspaceProps) {
   const [editingFileId, setEditingFileId] = useState<string | null>(null)
   const [editingFileName, setEditingFileName] = useState('')
@@ -143,15 +141,13 @@ export function GeneralFolderWorkspace({
     s.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const selectedCount = folder.sources.filter((s) => s.selected !== false).length
-
   return (
-    <div className="flex-1 flex flex-col h-full bg-white text-[#111827] justify-between overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-[var(--surface)] text-[var(--ink)] justify-between overflow-hidden">
       {/* 
         TOP HEADER: NotebookLM-style Breadcrumb / Title Bar
         Pure white background, clean border divider
       */}
-      <div className="p-3 border-b border-[#E5E7EB] bg-white space-y-2 shrink-0">
+      <div className="p-3 border-b border-[var(--border)] bg-[var(--surface)] space-y-2 shrink-0">
         {/* Row 1: Back Button + Title + Actions */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -159,7 +155,7 @@ export function GeneralFolderWorkspace({
               type="button"
               id="back-to-sources-btn"
               onClick={onBack}
-              className="p-1 rounded-[4px] bg-[#F3F4F6] hover:bg-[#E5E7EB] text-[#374151] hover:text-[#111827] transition-colors cursor-pointer shrink-0"
+              className="p-1  bg-[var(--surface-muted)] hover:bg-[var(--border)] text-[var(--ink)] hover:text-[var(--ink)] transition-colors cursor-pointer shrink-0"
               title="返回知识库列表"
             >
               <ArrowLeft size={14} />
@@ -172,20 +168,20 @@ export function GeneralFolderWorkspace({
                   value={folderTitle}
                   onChange={(e) => setFolderTitle(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
-                  className="h-6 px-2 text-xs font-bold rounded-[4px] bg-white border border-[#024AD8] text-[#111827] focus:outline-none flex-1 min-w-0"
+                  className="h-6 px-2 text-xs font-bold  bg-[var(--surface)] border border-[var(--primary)] text-[var(--ink)] focus:outline-none flex-1 min-w-0"
                   autoFocus
                 />
                 <button
                   type="button"
                   onClick={handleSaveTitle}
-                  className="px-2 py-0.5 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] text-white text-[10px] font-bold cursor-pointer transition-colors shrink-0"
+                  className="px-2 py-0.5  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-[10px] font-bold cursor-pointer transition-colors shrink-0"
                 >
                   保存
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsEditingTitle(false)}
-                  className="p-1 text-[#9CA3AF] hover:text-[#111827] shrink-0"
+                  className="p-1 text-[var(--lavender)] hover:text-[var(--ink)] shrink-0"
                 >
                   <X size={12} />
                 </button>
@@ -194,7 +190,7 @@ export function GeneralFolderWorkspace({
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 <h3
                   onClick={() => onRenameFolder && !folder.isSystem && setIsEditingTitle(true)}
-                  className="text-xs font-extrabold text-[#111827] truncate tracking-tight hover:text-[#024AD8] cursor-pointer transition-colors"
+                  className="text-xs font-extrabold text-[var(--ink)] truncate tracking-tight hover:text-[var(--primary)] cursor-pointer transition-colors"
                   title={folder.title}
                 >
                   {folder.title}
@@ -204,14 +200,14 @@ export function GeneralFolderWorkspace({
                   <button
                     type="button"
                     onClick={() => setIsEditingTitle(true)}
-                    className="p-0.5 text-[#9CA3AF] hover:text-[#024AD8] transition-colors cursor-pointer shrink-0"
+                    className="p-0.5 text-[var(--lavender)] hover:text-[var(--primary)] transition-colors cursor-pointer shrink-0"
                     title="重命名"
                   >
                     <Edit2 size={11} />
                   </button>
                 )}
 
-                <span className="px-1.5 py-0.2 rounded-full bg-blue-50 text-[#024AD8] border border-blue-100 text-[10px] font-bold shrink-0">
+                <span className="px-1.5 py-0.2 rounded-full bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)] text-[10px] font-bold shrink-0">
                   {folder.sources.length} 篇
                 </span>
               </div>
@@ -226,7 +222,7 @@ export function GeneralFolderWorkspace({
                   onDeleteFolder(folder.id)
                 }
               }}
-              className="p-1 rounded-[4px] text-[#9CA3AF] hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+              className="p-1  text-[var(--lavender)] hover:text-[var(--plum)] hover:bg-[var(--plum)] transition-colors cursor-pointer shrink-0"
               title="删除此知识库"
             >
               <Trash2 size={13} />
@@ -236,13 +232,13 @@ export function GeneralFolderWorkspace({
 
         {/* Row 2: Search input */}
         <div className="relative w-full">
-          <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+          <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--lavender)]" />
           <input
             type="text"
             placeholder="搜索库中文档..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-6.5 pl-6 pr-2 rounded-[4px] bg-[#F9FAFB] border border-[#E5E7EB] text-[11px] text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:bg-white focus:border-[#024AD8] transition-all"
+            className="w-full h-6.5 pl-6 pr-2  bg-[var(--surface-muted)] border border-[var(--border)] text-[11px] text-[var(--ink)] placeholder:text-[var(--lavender)] focus:outline-none focus:bg-[var(--surface)] focus:border-[var(--primary)] transition-all"
           />
         </div>
       </div>
@@ -251,11 +247,11 @@ export function GeneralFolderWorkspace({
         MAIN FILE LIST: NotebookLM-style Minimalist Card Rows (NO ICONS)
         Clean pure white rows, checkbox toggle, title, clean meta, hover actions
       */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scroll bg-white">
+      <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scroll bg-[var(--surface)]">
         {filteredSources.length === 0 ? (
-          <div className="py-12 text-center text-xs text-[#9CA3AF] flex flex-col items-center gap-1.5">
+          <div className="py-12 text-center text-xs text-[var(--lavender)] flex flex-col items-center gap-1.5">
             <span className="font-medium">暂无匹配文档</span>
-            <span className="text-[10px] text-[#9CA3AF]">
+            <span className="text-[10px] text-[var(--lavender)]">
               请在下方拖拽或点击上传文件
             </span>
           </div>
@@ -271,8 +267,8 @@ export function GeneralFolderWorkspace({
                 onClick={() => handleToggleFileSelect(file.id)}
                 className={`group relative p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
                   isSelected
-                    ? 'bg-blue-50/15 border-blue-200 hover:border-[#024AD8] shadow-2xs'
-                    : 'bg-white hover:bg-[#F9FAFB] border-[#E5E7EB] opacity-75'
+                    ? 'bg-[var(--primary)]/15 border-[var(--primary)] hover:border-[var(--primary)] shadow-2xs'
+                    : 'bg-[var(--surface)] hover:bg-[var(--surface-muted)] border-[var(--border)] opacity-75'
                 }`}
               >
                 <div className="flex items-start gap-2 min-w-0">
@@ -284,8 +280,8 @@ export function GeneralFolderWorkspace({
                     <div
                       className={`w-3.5 h-3.5 rounded-[3px] flex items-center justify-center transition-colors cursor-pointer border ${
                         isSelected
-                          ? 'bg-[#024AD8] border-[#024AD8] text-white'
-                          : 'bg-white border-[#D1D5DB] hover:border-[#9CA3AF]'
+                          ? 'bg-[var(--primary)] border-[var(--primary)] text-[var(--surface)]'
+                          : 'bg-[var(--surface)] border-[var(--border)] hover:border-[var(--lavender)]'
                       }`}
                     >
                       {isSelected && <Check size={10} strokeWidth={3} />}
@@ -304,20 +300,20 @@ export function GeneralFolderWorkspace({
                           value={editingFileName}
                           onChange={(e) => setEditingFileName(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleSaveRename(file.id)}
-                          className="w-full h-6 px-1.5 text-xs font-bold rounded-[4px] bg-white border border-[#024AD8] focus:outline-none"
+                          className="w-full h-6 px-1.5 text-xs font-bold  bg-[var(--surface)] border border-[var(--primary)] focus:outline-none"
                           autoFocus
                         />
                         <button
                           type="button"
                           onClick={() => handleSaveRename(file.id)}
-                          className="px-2 py-0.5 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] text-white text-[10px] font-bold cursor-pointer shrink-0"
+                          className="px-2 py-0.5  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-[10px] font-bold cursor-pointer shrink-0"
                         >
                           确定
                         </button>
                         <button
                           type="button"
                           onClick={() => setEditingFileId(null)}
-                          className="p-1 text-[#9CA3AF] hover:text-[#111827] shrink-0"
+                          className="p-1 text-[var(--lavender)] hover:text-[var(--ink)] shrink-0"
                         >
                           <X size={11} />
                         </button>
@@ -325,15 +321,15 @@ export function GeneralFolderWorkspace({
                     ) : (
                       <>
                         <h4
-                          className="text-xs font-bold text-[#111827] group-hover:text-[#024AD8] transition-colors leading-snug line-clamp-2"
+                          className="text-xs font-bold text-[var(--ink)] group-hover:text-[var(--primary)] transition-colors leading-snug line-clamp-2"
                           title={file.name}
                         >
                           {file.name}
                         </h4>
 
                         {/* File Meta Tags */}
-                        <div className="flex items-center gap-1.5 mt-1 text-[10px] text-[#6B7280] flex-wrap">
-                          <span className="px-1.5 py-0.2 rounded bg-[#F3F4F6] text-[#4B5563] font-bold text-[9px] uppercase tracking-wide">
+                        <div className="flex items-center gap-1.5 mt-1 text-[10px] text-[var(--lavender)] flex-wrap">
+                          <span className="px-1.5 py-0.2 rounded bg-[var(--surface-muted)] text-[var(--ink)] font-bold text-[9px] uppercase tracking-wide">
                             {fileExt}
                           </span>
                           <span>{file.size}</span>
@@ -353,7 +349,7 @@ export function GeneralFolderWorkspace({
                       <button
                         type="button"
                         onClick={(e) => handleDownloadFile(file, e)}
-                        className="p-1 rounded-[3px] text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] transition-colors cursor-pointer"
+                        className="p-1 rounded-[3px] text-[var(--lavender)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer"
                         title="下载/预览文档"
                       >
                         <Download size={11} />
@@ -365,7 +361,7 @@ export function GeneralFolderWorkspace({
                           setEditingFileId(file.id)
                           setEditingFileName(file.name)
                         }}
-                        className="p-1 rounded-[3px] text-[#6B7280] hover:text-[#024AD8] hover:bg-[#F3F4F6] transition-colors cursor-pointer"
+                        className="p-1 rounded-[3px] text-[var(--lavender)] hover:text-[var(--primary)] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer"
                         title="重命名"
                       >
                         <Edit2 size={11} />
@@ -374,7 +370,7 @@ export function GeneralFolderWorkspace({
                       <button
                         type="button"
                         onClick={(e) => handleDeleteFile(file.id, e)}
-                        className="p-1 rounded-[3px] text-[#6B7280] hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        className="p-1 rounded-[3px] text-[var(--lavender)] hover:text-[var(--plum)] hover:bg-[var(--plum)] transition-colors cursor-pointer"
                         title="删除文档"
                       >
                         <Trash2 size={11} />
@@ -392,7 +388,7 @@ export function GeneralFolderWorkspace({
         BOTTOM UPLOAD AREA: NotebookLM-style Pure White Upload Card
         Clean dashed border, theme blue highlight on hover, concise prompt text
       */}
-      <div className="p-2.5 border-t border-[#E5E7EB] bg-white shrink-0">
+      <div className="p-2.5 border-t border-[var(--border)] bg-[var(--surface)] shrink-0">
         <input
           ref={fileInputRef}
           type="file"
@@ -407,15 +403,15 @@ export function GeneralFolderWorkspace({
           onDrop={handleDrop}
           className={`w-full py-2.5 px-2 rounded-xl border border-dashed transition-all flex items-center justify-center gap-1.5 cursor-pointer select-none text-center ${
             isDragging
-              ? 'border-[#024AD8] bg-blue-50/50 scale-[1.01]'
-              : 'border-[#D1D5DB] hover:border-[#024AD8] bg-white hover:bg-blue-50/20'
+              ? 'border-[var(--primary)] bg-[var(--primary)]/50 scale-[1.01]'
+              : 'border-[var(--border)] hover:border-[var(--primary)] bg-[var(--surface)] hover:bg-[var(--primary)]/20'
           }`}
           title="点击或拖拽上传文档"
         >
-          <div className="w-5 h-5 rounded-[4px] bg-blue-50 text-[#024AD8] flex items-center justify-center shrink-0">
+          <div className="w-5 h-5  bg-[var(--primary)] text-[var(--primary)] flex items-center justify-center shrink-0">
             <Plus size={13} strokeWidth={2.5} />
           </div>
-          <span className="text-[11px] font-bold text-[#374151] group-hover:text-[#024AD8]">
+          <span className="text-[11px] font-bold text-[var(--ink)] group-hover:text-[var(--primary)]">
             点击或拖拽上传文档
           </span>
         </div>

@@ -52,7 +52,7 @@ export default function MobileMenu({ navItems, cta }: MobileMenuProps) {
             <Link
               href={cta.href}
               onClick={() => setOpen(false)}
-              className="mt-1 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] px-3 py-2 text-center text-sm font-semibold text-white transition-colors [transition-duration:var(--th-motion-duration)] [transition-timing-function:var(--th-motion-easing)] hover:bg-[var(--th-color-accent)]"
+              className="mt-1 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] px-3 py-2 text-center text-sm font-semibold text-[var(--surface)] transition-colors [transition-duration:var(--th-motion-duration)] [transition-timing-function:var(--th-motion-easing)] hover:bg-[var(--th-color-accent)]"
             >
               {cta.label}
             </Link>

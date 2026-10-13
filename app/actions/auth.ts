@@ -47,6 +47,17 @@ async function getRequestOrigin(): Promise<string | undefined> {
 
 export type AuthState = { error?: string; message?: string; redirectUrl?: string } | null
 
+function isNetworkError(error: { message?: string } | null | undefined): boolean {
+  const message = error?.message?.toLowerCase() ?? ''
+  return (
+    message.includes('failed to fetch') ||
+    message.includes('fetch failed') ||
+    message.includes('network') ||
+    message.includes('econnreset') ||
+    message.includes('enotfound')
+  )
+}
+
 export async function loginAction(
   _prev: AuthState,
   formData: FormData
@@ -62,6 +73,9 @@ export async function loginAction(
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
+    if (isNetworkError(error)) {
+      return { error: '当前环境无法连接 Supabase，请检查网络或代理后重试。' }
+    }
     if (error.message.includes('Invalid login credentials')) {
       return {
         error:
@@ -78,7 +92,7 @@ export async function loginAction(
   }
 
   // signInWithPassword sets the sb-*-auth-token cookie via the SSR adapter.
-  return { redirectUrl: '/dashboard' }
+  return { redirectUrl: '/onboarding' }
 }
 
 export async function signupAction(
@@ -105,6 +119,9 @@ export async function signupAction(
   })
 
   if (error) {
+    if (isNetworkError(error)) {
+      return { error: '当前环境无法连接 Supabase，注册请求未提交，请检查网络或代理后重试。' }
+    }
     if (error.message.includes('already registered')) {
       return { error: '该邮箱已被注册，请直接切换至「登录」模式。' }
     }
@@ -116,7 +133,7 @@ export async function signupAction(
   if (!data.session) {
     return {
       message:
-        '🎉 账号创建成功！激活邮件已发送至您的电子邮箱，请前往邮箱查收并点击激活链接。验证完成后系统将自动登录并引导您进入店铺初始化页面。',
+        '账号创建成功。激活邮件已发送至您的电子邮箱，请前往邮箱查收并点击激活链接。验证完成后系统将自动登录并引导您进入店铺初始化页面。',
     }
   }
 
@@ -124,7 +141,8 @@ export async function signupAction(
   return { redirectUrl: '/onboarding' }
 }
 
-export async function logoutAction(_formData: FormData): Promise<void> {
+export async function logoutAction(formData: FormData): Promise<void> {
+  void formData
   const supabase = await createClientServer()
   await supabase.auth.signOut()
   redirect('/login')

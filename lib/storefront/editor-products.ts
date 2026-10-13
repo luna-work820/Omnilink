@@ -14,14 +14,31 @@
 import { createClientServer } from '@/lib/supabase/server'
 import {
   normalizeProducts,
+  type CatalogItemRow,
   type StorefrontProductRow,
 } from './normalize'
 import type { StorefrontProduct } from './types'
 
-/** 商品白名单列：只取 UI 需要的字段，绝不暴露 raw_data/sku/inventory 等内部字段。
- *  与公开 Storefront 共用 product_semantics(semantic_data, updated_at) 读源（normalize 共享）。 */
-const PRODUCT_SELECT =
-  'id, name, description, price, currency, semantic_data, product_assets(url, asset_type), product_semantics(semantic_data, updated_at)'
+const CATALOG_SELECT =
+  'id, title, description, details, catalog_variants(id, title, sku_code, price, currency_code, availability_type, availability_value), catalog_media(storage_path, media_type, media_role)'
+
+function catalogRow(item: CatalogItemRow): StorefrontProductRow {
+  const variant = item.catalog_variants?.[0]
+  return {
+    id: item.id,
+    name: item.title,
+    description: item.description,
+    price: variant?.price ?? 0,
+    currency: variant?.currency_code ?? 'CNY',
+    details: item.details,
+    media: (item.catalog_media ?? []).map((media) => ({ url: media.storage_path ?? null, role: media.media_role === 'cover' ? 'public' : media.media_type ?? null })),
+    variants: (item.catalog_variants ?? []).map((v) => ({
+      id: v.id, sku: v.sku_code ?? null, price: v.price ?? null, currency: v.currency_code ?? null,
+      inventory: v.availability_type === 'stock' && v.availability_value != null ? Number(v.availability_value) : null,
+      status: 'active', option_values: v.details ?? {},
+    })),
+  }
+}
 
 type EditorStoreRef =
   | string
@@ -50,10 +67,17 @@ export async function getEditorStorefrontProducts(
   try {
     const supabase = await createClientServer()
 
+    const { data: store, error: storeError } = await supabase
+      .from('stores')
+      .select('organization_id')
+      .eq('id', storeId)
+      .maybeSingle()
+
+    if (storeError || !store?.organization_id) return []
     const { data, error } = await supabase
-      .from('products')
-      .select(PRODUCT_SELECT)
-      .eq('store_id', storeId)
+      .from('catalog_items')
+      .select(CATALOG_SELECT)
+      .eq('organization_id', store.organization_id)
       .in('status', ['active', 'draft'])
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -64,7 +88,7 @@ export async function getEditorStorefrontProducts(
     }
 
     const normalized = normalizeProducts(
-      (data ?? []) as unknown as StorefrontProductRow[],
+      (data ?? []).map(catalogRow),
       { storeSlug, storeCurrency }
     )
 

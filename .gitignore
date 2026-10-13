@@ -49,5 +49,8 @@ bun.lock
 src/
 deliverables/
 
+# Local-only open-source schema reference pack; never sync to GitHub
+docs/open-source-schema/
+
 # Supabase CLI local state (project ref / org ids, machine-specific)
 supabase/.temp/

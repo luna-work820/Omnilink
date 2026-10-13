@@ -36,7 +36,6 @@ export function ProductKnowledgeWorkspace({
   onRemoveBinding,
   onAddBinding,
   onUploadFile,
-  isZh: _isZh,
 }: ProductKnowledgeWorkspaceProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState<'bound' | 'general'>('bound')
@@ -283,19 +282,19 @@ export function ProductKnowledgeWorkspace({
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-white text-[#111827] justify-between overflow-hidden relative">
+    <div className="flex-1 flex flex-col h-full bg-[var(--surface)] text-[var(--ink)] justify-between overflow-hidden relative">
       {/* 
         TOP HEADER: NotebookLM-style Breadcrumb / Title Bar
         Pure white background, clean border divider
       */}
-      <div className="p-3 border-b border-[#E5E7EB] bg-white space-y-2 shrink-0">
+      <div className="p-3 border-b border-[var(--border)] bg-[var(--surface)] space-y-2 shrink-0">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <button
               type="button"
               id="back-to-sources-btn"
               onClick={onBack}
-              className="p-1 rounded-[4px] bg-[#F3F4F6] hover:bg-[#E5E7EB] text-[#374151] hover:text-[#111827] transition-colors cursor-pointer shrink-0"
+              className="p-1  bg-[var(--surface-muted)] hover:bg-[var(--border)] text-[var(--ink)] hover:text-[var(--ink)] transition-colors cursor-pointer shrink-0"
               title="返回知识库列表"
             >
               <ArrowLeft size={14} />
@@ -310,12 +309,12 @@ export function ProductKnowledgeWorkspace({
                   onBlur={handleSaveTitle}
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
                   autoFocus
-                  className="h-6 px-2 text-xs font-bold rounded-[4px] bg-white border border-[#024AD8] text-[#111827] focus:outline-none flex-1 min-w-0"
+                  className="h-6 px-2 text-xs font-bold  bg-[var(--surface)] border border-[var(--primary)] text-[var(--ink)] focus:outline-none flex-1 min-w-0"
                 />
                 <button
                   type="button"
                   onClick={handleSaveTitle}
-                  className="px-2 py-0.5 rounded-[4px] bg-[#024AD8] hover:bg-[#003198] text-white text-[10px] font-bold cursor-pointer transition-colors shrink-0"
+                  className="px-2 py-0.5  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-[10px] font-bold cursor-pointer transition-colors shrink-0"
                 >
                   保存
                 </button>
@@ -324,7 +323,7 @@ export function ProductKnowledgeWorkspace({
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 <h3
                   onClick={() => setIsEditingTitle(true)}
-                  className="text-xs font-extrabold text-[#111827] truncate tracking-tight hover:text-[#024AD8] cursor-pointer transition-colors"
+                  className="text-xs font-extrabold text-[var(--ink)] truncate tracking-tight hover:text-[var(--primary)] cursor-pointer transition-colors"
                   title={localTitle}
                 >
                   {localTitle}
@@ -332,12 +331,12 @@ export function ProductKnowledgeWorkspace({
                 <button
                   type="button"
                   onClick={() => setIsEditingTitle(true)}
-                  className="p-0.5 text-[#9CA3AF] hover:text-[#024AD8] transition-colors cursor-pointer shrink-0"
+                  className="p-0.5 text-[var(--lavender)] hover:text-[var(--primary)] transition-colors cursor-pointer shrink-0"
                   title="重命名"
                 >
                   <Edit2 size={11} />
                 </button>
-                <span className="px-1.5 py-0.2 rounded-full bg-blue-50 text-[#024AD8] border border-blue-100 text-[10px] font-bold shrink-0">
+                <span className="px-1.5 py-0.2 rounded-full bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)] text-[10px] font-bold shrink-0">
                   {mergedSources.length} 篇
                 </span>
               </div>
@@ -347,13 +346,13 @@ export function ProductKnowledgeWorkspace({
 
         {/* Search input */}
         <div className="relative w-full">
-          <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+          <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--lavender)]" />
           <input
             type="text"
             placeholder="搜索文件或绑定商品..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-6.5 pl-6 pr-2 rounded-[4px] bg-[#F9FAFB] border border-[#E5E7EB] text-[11px] text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:bg-white focus:border-[#024AD8] transition-all"
+            className="w-full h-6.5 pl-6 pr-2  bg-[var(--surface-muted)] border border-[var(--border)] text-[11px] text-[var(--ink)] placeholder:text-[var(--lavender)] focus:outline-none focus:bg-[var(--surface)] focus:border-[var(--primary)] transition-all"
           />
         </div>
 
@@ -362,10 +361,10 @@ export function ProductKnowledgeWorkspace({
           <button
             type="button"
             onClick={() => setActiveTab('bound')}
-            className={`px-2 py-1 rounded-[4px] text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+            className={`px-2 py-1  text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
               activeTab === 'bound'
-                ? 'bg-[#024AD8] text-white shadow-2xs'
-                : 'bg-[#F3F4F6] text-[#4B5563] hover:bg-[#E5E7EB] hover:text-[#111827]'
+                ? 'bg-[var(--primary)] text-[var(--surface)] shadow-2xs'
+                : 'bg-[var(--surface-muted)] text-[var(--ink)] hover:bg-[var(--border)] hover:text-[var(--ink)]'
             }`}
           >
             <span>商品关联 ({boundFileSources.length})</span>
@@ -374,10 +373,10 @@ export function ProductKnowledgeWorkspace({
           <button
             type="button"
             onClick={() => setActiveTab('general')}
-            className={`px-2 py-1 rounded-[4px] text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+            className={`px-2 py-1  text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
               activeTab === 'general'
-                ? 'bg-[#024AD8] text-white shadow-2xs'
-                : 'bg-[#F3F4F6] text-[#4B5563] hover:bg-[#E5E7EB] hover:text-[#111827]'
+                ? 'bg-[var(--primary)] text-[var(--surface)] shadow-2xs'
+                : 'bg-[var(--surface-muted)] text-[var(--ink)] hover:bg-[var(--border)] hover:text-[var(--ink)]'
             }`}
           >
             <span>全局通用 ({generalFileSources.length})</span>
@@ -388,10 +387,10 @@ export function ProductKnowledgeWorkspace({
       {/* 
         MAIN CONTENT: NotebookLM-style Minimalist Card Rows (NO ICONS)
       */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scroll bg-white">
+      <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scroll bg-[var(--surface)]">
         {activeTab === 'bound' ? (
           boundFileSources.length === 0 ? (
-            <div className="py-10 text-center text-xs text-[#9CA3AF]">
+            <div className="py-10 text-center text-xs text-[var(--lavender)]">
               暂无关联商品的文件，可通过下方按钮上传并绑定
             </div>
           ) : (
@@ -403,20 +402,20 @@ export function ProductKnowledgeWorkspace({
               return (
                 <div
                   key={file.id}
-                  className="group relative p-2.5 rounded-xl bg-white hover:bg-[#F9FAFB] border border-[#E5E7EB] hover:border-[#024AD8] transition-all select-none shadow-2xs space-y-2"
+                  className="group relative p-2.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-muted)] border border-[var(--border)] hover:border-[var(--primary)] transition-all select-none shadow-2xs space-y-2"
                 >
                   {/* Top Row: File Name + Meta + Bound Products trigger */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <h4
-                        className="text-xs font-bold text-[#111827] group-hover:text-[#024AD8] transition-colors leading-snug line-clamp-2"
+                        className="text-xs font-bold text-[var(--ink)] group-hover:text-[var(--primary)] transition-colors leading-snug line-clamp-2"
                         title={file.name}
                       >
                         {file.name}
                       </h4>
 
-                      <div className="flex items-center gap-1.5 mt-1 text-[10px] text-[#6B7280] flex-wrap">
-                        <span className="px-1.5 py-0.2 rounded bg-[#F3F4F6] text-[#4B5563] font-bold text-[9px] uppercase tracking-wide">
+                      <div className="flex items-center gap-1.5 mt-1 text-[10px] text-[var(--lavender)] flex-wrap">
+                        <span className="px-1.5 py-0.2 rounded bg-[var(--surface-muted)] text-[var(--ink)] font-bold text-[9px] uppercase tracking-wide">
                           {fileExt}
                         </span>
                         <span>{file.size}</span>
@@ -428,7 +427,7 @@ export function ProductKnowledgeWorkspace({
                     {/* Bound Products Accordion Trigger Button */}
                     <div
                       onClick={() => toggleFileDropdown(file.id)}
-                      className="flex items-center gap-1 px-2 py-1 rounded-[4px] bg-blue-50 hover:bg-blue-100/80 border border-blue-200 text-[#024AD8] text-[10px] font-bold cursor-pointer transition-colors shrink-0"
+                      className="flex items-center gap-1 px-2 py-1  bg-[var(--primary)] hover:bg-[var(--primary)]/80 border border-[var(--primary)] text-[var(--primary)] text-[10px] font-bold cursor-pointer transition-colors shrink-0"
                       title="点击展开绑定商品详情"
                     >
                       <Link2 size={11} />
@@ -450,30 +449,30 @@ export function ProductKnowledgeWorkspace({
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.15 }}
-                        className="overflow-hidden pt-2 border-t border-[#E5E7EB] space-y-2"
+                        className="overflow-hidden pt-2 border-t border-[var(--border)] space-y-2"
                       >
                         {/* 1. Bound Products */}
                         <div className="space-y-1">
-                          <span className="text-[10px] font-bold text-[#4B5563] block">
+                          <span className="text-[10px] font-bold text-[var(--ink)] block">
                             已绑定商品:
                           </span>
                           <div className="space-y-1 max-h-36 overflow-y-auto custom-scroll pr-0.5">
                             {boundProducts.map((p) => (
                               <div
                                 key={p.id}
-                                className="p-1.5 rounded-[6px] bg-[#F9FAFB] border border-[#E5E7EB] flex items-center justify-between gap-1.5"
+                                className="p-1.5 rounded-[6px] bg-[var(--surface-muted)] border border-[var(--border)] flex items-center justify-between gap-1.5"
                               >
                                 <div className="flex items-center gap-1.5 min-w-0">
                                   <img
                                     src={p.image_url}
                                     alt={p.name}
-                                    className="w-6 h-6 rounded-[4px] object-cover border border-[#E5E7EB] shrink-0"
+                                    className="w-6 h-6  object-cover border border-[var(--border)] shrink-0"
                                   />
                                   <div className="min-w-0">
-                                    <div className="text-[11px] font-semibold text-[#111827] truncate">
+                                    <div className="text-[11px] font-semibold text-[var(--ink)] truncate">
                                       {p.name}
                                     </div>
-                                    <div className="text-[9px] font-mono text-[#6B7280]">
+                                    <div className="text-[9px] font-mono text-[var(--lavender)]">
                                       {p.sku}
                                     </div>
                                   </div>
@@ -481,7 +480,7 @@ export function ProductKnowledgeWorkspace({
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveBinding(file.id, p.id)}
-                                  className="p-1 rounded-[3px] text-[#9CA3AF] hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                                  className="p-1 rounded-[3px] text-[var(--lavender)] hover:text-[var(--plum)] hover:bg-[var(--plum)] transition-colors cursor-pointer shrink-0"
                                   title="解除绑定"
                                 >
                                   <X size={11} strokeWidth={2.5} />
@@ -492,8 +491,8 @@ export function ProductKnowledgeWorkspace({
                         </div>
 
                         {/* 2. Add other products */}
-                        <div className="space-y-1 pt-1 border-t border-[#E5E7EB]">
-                          <span className="text-[10px] font-bold text-[#4B5563] block">
+                        <div className="space-y-1 pt-1 border-t border-[var(--border)]">
+                          <span className="text-[10px] font-bold text-[var(--ink)] block">
                             追加关联商品:
                           </span>
                           <div className="space-y-1 max-h-32 overflow-y-auto custom-scroll pr-0.5">
@@ -502,19 +501,19 @@ export function ProductKnowledgeWorkspace({
                             ).map((p) => (
                               <div
                                 key={p.id}
-                                className="p-1.5 rounded-[6px] bg-white hover:bg-blue-50/40 border border-[#E5E7EB] flex items-center justify-between gap-1.5 transition-colors"
+                                className="p-1.5 rounded-[6px] bg-[var(--surface)] hover:bg-[var(--primary)]/40 border border-[var(--border)] flex items-center justify-between gap-1.5 transition-colors"
                               >
                                 <div className="flex items-center gap-1.5 min-w-0">
                                   <img
                                     src={p.image_url}
                                     alt={p.name}
-                                    className="w-6 h-6 rounded-[4px] object-cover border border-[#E5E7EB] shrink-0"
+                                    className="w-6 h-6  object-cover border border-[var(--border)] shrink-0"
                                   />
                                   <div className="min-w-0">
-                                    <div className="text-[11px] text-[#111827] truncate font-medium">
+                                    <div className="text-[11px] text-[var(--ink)] truncate font-medium">
                                       {p.name}
                                     </div>
-                                    <div className="text-[9px] font-mono text-[#9CA3AF]">
+                                    <div className="text-[9px] font-mono text-[var(--lavender)]">
                                       {p.sku}
                                     </div>
                                   </div>
@@ -522,7 +521,7 @@ export function ProductKnowledgeWorkspace({
                                 <button
                                   type="button"
                                   onClick={() => handleAddBinding(file.id, p.id)}
-                                  className="px-1.5 py-0.5 rounded-[3px] bg-blue-50 hover:bg-[#024AD8] text-[#024AD8] hover:text-white text-[10px] font-bold cursor-pointer transition-colors shrink-0"
+                                  className="px-1.5 py-0.5 rounded-[3px] bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--primary)] hover:text-[var(--surface)] text-[10px] font-bold cursor-pointer transition-colors shrink-0"
                                 >
                                   + 关联
                                 </button>
@@ -539,7 +538,7 @@ export function ProductKnowledgeWorkspace({
           )
         ) : (
           generalFileSources.length === 0 ? (
-            <div className="py-10 text-center text-xs text-[#9CA3AF]">
+            <div className="py-10 text-center text-xs text-[var(--lavender)]">
               暂无全局通用文件，通用文件将自动共享给所有产品的 AI 研报推理。
             </div>
           ) : (
@@ -548,21 +547,21 @@ export function ProductKnowledgeWorkspace({
               return (
                 <div
                   key={file.id}
-                  className="group relative p-2.5 rounded-xl bg-white hover:bg-[#F9FAFB] border border-[#E5E7EB] hover:border-[#024AD8] transition-all select-none shadow-2xs flex items-center justify-between gap-2"
+                  className="group relative p-2.5 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-muted)] border border-[var(--border)] hover:border-[var(--primary)] transition-all select-none shadow-2xs flex items-center justify-between gap-2"
                 >
                   <div className="min-w-0 flex-1">
                     <h4
-                      className="text-xs font-bold text-[#111827] group-hover:text-[#024AD8] transition-colors leading-snug line-clamp-2"
+                      className="text-xs font-bold text-[var(--ink)] group-hover:text-[var(--primary)] transition-colors leading-snug line-clamp-2"
                       title={file.name}
                     >
                       {file.name}
                     </h4>
 
-                    <div className="flex items-center gap-1.5 mt-1 text-[10px] text-[#6B7280] flex-wrap">
-                      <span className="px-1.5 py-0.2 rounded bg-blue-50 text-[#024AD8] font-bold text-[9px] uppercase tracking-wide border border-blue-100">
+                    <div className="flex items-center gap-1.5 mt-1 text-[10px] text-[var(--lavender)] flex-wrap">
+                      <span className="px-1.5 py-0.2 rounded bg-[var(--primary)] text-[var(--primary)] font-bold text-[9px] uppercase tracking-wide border border-[var(--primary)]">
                         全系通用
                       </span>
-                      <span className="px-1.5 py-0.2 rounded bg-[#F3F4F6] text-[#4B5563] font-bold text-[9px] uppercase tracking-wide">
+                      <span className="px-1.5 py-0.2 rounded bg-[var(--surface-muted)] text-[var(--ink)] font-bold text-[9px] uppercase tracking-wide">
                         {fileExt}
                       </span>
                       <span>{file.size}</span>
@@ -574,7 +573,7 @@ export function ProductKnowledgeWorkspace({
                   <button
                     type="button"
                     onClick={(e) => handleDownloadFile(file, e)}
-                    className="p-1 rounded-[3px] text-[#6B7280] hover:text-[#111827] hover:bg-[#F3F4F6] transition-colors cursor-pointer shrink-0"
+                    className="p-1 rounded-[3px] text-[var(--lavender)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)] transition-colors cursor-pointer shrink-0"
                     title="下载/预览文档"
                   >
                     <Download size={12} />
@@ -589,7 +588,7 @@ export function ProductKnowledgeWorkspace({
       {/* 
         BOTTOM UPLOAD AREA: NotebookLM-style Pure White Upload Card
       */}
-      <div className="p-2.5 border-t border-[#E5E7EB] bg-white shrink-0">
+      <div className="p-2.5 border-t border-[var(--border)] bg-[var(--surface)] shrink-0">
         <input
           ref={fileInputRef}
           type="file"
@@ -614,15 +613,15 @@ export function ProductKnowledgeWorkspace({
           onDrop={handleDrop}
           className={`w-full py-2.5 px-2 rounded-xl border border-dashed transition-all flex items-center justify-center gap-1.5 cursor-pointer select-none text-center ${
             isDragging
-              ? 'border-[#024AD8] bg-blue-50/50 scale-[1.01]'
-              : 'border-[#D1D5DB] hover:border-[#024AD8] bg-white hover:bg-blue-50/20'
+              ? 'border-[var(--primary)] bg-[var(--primary)]/50 scale-[1.01]'
+              : 'border-[var(--border)] hover:border-[var(--primary)] bg-[var(--surface)] hover:bg-[var(--primary)]/20'
           }`}
           title="点击或拖拽上传产品资料"
         >
-          <div className="w-5 h-5 rounded-[4px] bg-blue-50 text-[#024AD8] flex items-center justify-center shrink-0">
+          <div className="w-5 h-5  bg-[var(--primary)] text-[var(--primary)] flex items-center justify-center shrink-0">
             <Plus size={13} strokeWidth={2.5} />
           </div>
-          <span className="text-[11px] font-bold text-[#374151] group-hover:text-[#024AD8]">
+          <span className="text-[11px] font-bold text-[var(--ink)] group-hover:text-[var(--primary)]">
             {activeTab === 'bound' ? '上传并绑定商品资料' : '上传全系通用产品文档'}
           </span>
         </div>
@@ -631,17 +630,17 @@ export function ProductKnowledgeWorkspace({
       {/* PRODUCT SELECTION MODAL */}
       <AnimatePresence>
         {isProductModalOpen && (
-          <div className="absolute inset-0 z-50 flex flex-col bg-black/30 backdrop-blur-xs p-3 justify-between">
-            <div className="flex-1 flex flex-col min-h-0 bg-white rounded-xl p-3.5 border border-[#E5E7EB] shadow-2xl">
+          <div className="absolute inset-0 z-50 flex flex-col bg-[var(--ink)]/30 backdrop-blur-xs p-3 justify-between">
+            <div className="flex-1 flex flex-col min-h-0 bg-[var(--surface)] rounded-xl p-3.5 border border-[var(--border)] shadow-2xl">
               {/* Header */}
-              <div className="flex items-center justify-between pb-2 border-b border-[#E5E7EB]">
-                <span className="text-xs font-extrabold text-[#111827]">
+              <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
+                <span className="text-xs font-extrabold text-[var(--ink)]">
                   选择要绑定的商品
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsProductModalOpen(false)}
-                  className="p-1 rounded-[4px] hover:bg-[#F3F4F6] text-[#9CA3AF] hover:text-[#111827] transition-colors cursor-pointer"
+                  className="p-1  hover:bg-[var(--surface-muted)] text-[var(--lavender)] hover:text-[var(--ink)] transition-colors cursor-pointer"
                 >
                   <X size={14} />
                 </button>
@@ -649,13 +648,13 @@ export function ProductKnowledgeWorkspace({
 
               {/* Search Bar */}
               <div className="relative mt-2 mb-2">
-                <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+                <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--lavender)]" />
                 <input
                   type="text"
                   value={productSearchQuery}
                   onChange={(e) => setProductSearchQuery(e.target.value)}
                   placeholder="搜索商品名或 SKU 编号..."
-                  className="w-full h-7 pl-7 pr-2 rounded-[4px] bg-[#F9FAFB] border border-[#E5E7EB] text-xs text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:bg-white focus:border-[#024AD8]"
+                  className="w-full h-7 pl-7 pr-2  bg-[var(--surface-muted)] border border-[var(--border)] text-xs text-[var(--ink)] placeholder:text-[var(--lavender)] focus:outline-none focus:bg-[var(--surface)] focus:border-[var(--primary)]"
                   autoFocus
                 />
               </div>
@@ -669,7 +668,7 @@ export function ProductKnowledgeWorkspace({
                     p.sku.toLowerCase().includes(query)
                   )
                 }).length === 0 ? (
-                  <div className="py-8 text-center text-xs text-[#9CA3AF]">
+                  <div className="py-8 text-center text-xs text-[var(--lavender)]">
                     未找到相匹配的商品
                   </div>
                 ) : (
@@ -689,24 +688,24 @@ export function ProductKnowledgeWorkspace({
                           fileInputRef.current?.click()
                         }, 120)
                       }}
-                      className="p-2 rounded-[8px] hover:bg-blue-50/50 border border-transparent hover:border-blue-100 flex items-center justify-between gap-2 cursor-pointer transition-all"
+                      className="p-2 rounded-[8px] hover:bg-[var(--primary)]/50 border border-transparent hover:border-[var(--primary)] flex items-center justify-between gap-2 cursor-pointer transition-all"
                     >
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         <img
                           src={p.image_url}
                           alt={p.name}
-                          className="w-8 h-8 rounded-[4px] object-cover border border-[#E5E7EB] shrink-0"
+                          className="w-8 h-8  object-cover border border-[var(--border)] shrink-0"
                         />
                         <div className="min-w-0 flex-1">
-                          <div className="text-xs font-bold text-[#111827] truncate">
+                          <div className="text-xs font-bold text-[var(--ink)] truncate">
                             {p.name}
                           </div>
-                          <div className="text-[10px] font-mono text-[#6B7280]">
+                          <div className="text-[10px] font-mono text-[var(--lavender)]">
                             {p.sku}
                           </div>
                         </div>
                       </div>
-                      <span className="text-[10px] text-[#024AD8] font-bold bg-blue-50 px-2 py-0.5 rounded-[4px] shrink-0 border border-blue-100">
+                      <span className="text-[10px] text-[var(--primary)] font-bold bg-[var(--primary)] px-2 py-0.5  shrink-0 border border-[var(--primary)]">
                         选择并上传
                       </span>
                     </div>

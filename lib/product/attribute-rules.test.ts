@@ -3,8 +3,10 @@ import {
   resolveCategoryAttributeRules,
 } from './attribute-rules'
 import { PRODUCT_CATEGORY_TEMPLATES, type AttributeTemplateField } from './category-templates'
-import { resolveCategorySemanticMappings } from './category-semantic-mapping'
-import type { SemanticField } from '../semantic/types'
+import {
+  resolveCategorySemanticMappings,
+  type SemanticFieldLike,
+} from './category-semantic-mapping'
 
 function makeSemanticField(
   id: string,
@@ -16,7 +18,7 @@ function makeSemanticField(
     validation_rules?: Record<string, any>
     normalization_rules?: Record<string, any>
   } = {},
-): SemanticField {
+): SemanticFieldLike {
   return {
     id,
     schema_id: 'test-schema-id',
@@ -205,7 +207,7 @@ export function runPhase3BTests() {
   const t10Fields: AttributeTemplateField[] = [
     { key: 'unknown_custom_field', nameZh: '未知字段', nameEn: 'Unknown', type: 'text' },
   ]
-  const t10SemanticFields: SemanticField[] = []
+    const t10SemanticFields: SemanticFieldLike[] = []
   const t10Mappings: Array<{ templateKey: string; semanticFieldId: string }> = []
   const t10 = resolveCategoryAttributeRules(t10Fields, t10SemanticFields, t10Mappings)
   results.push({
@@ -215,7 +217,7 @@ export function runPhase3BTests() {
   })
 
   // Test 11: 5 categories all resolved without crashing
-  const mockAllFields: SemanticField[] = [
+  const mockAllFields: SemanticFieldLike[] = [
     // 太阳镜 & 光学眼镜
     makeSemanticField('sf-1', 'frame_material', 'text', { required: true }),
     makeSemanticField('sf-2', 'lens_material', 'text'),

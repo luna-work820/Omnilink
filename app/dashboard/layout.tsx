@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation'
 import { createClientServer } from '@/lib/supabase/server'
-import OmnilinkLiquidLayout from '@/components/dashboard/OmnilinkLayout'
+import { V3DashboardShell } from '@/components/dashboard/v3-UI/V3DashboardShell'
+import { DashboardWorkspaceProvider } from '@/components/dashboard/DashboardWorkspaceProvider'
+import { getBrandProjectByUserId } from '@/lib/brand/workspace'
+import { DEMO_BRAND_PROJECT, DEMO_PROFILE } from '@/lib/preview/demo-workspace'
 
 /**
  * /dashboard/* — first line of defense.
@@ -28,31 +31,36 @@ export default async function DashboardLayout({
     user = null
   }
 
-  // Profile info for the layout chrome (with preview fallback if not logged in)
-  const profile = user
-    ? {
-        id: user.id,
-        email: user.email ?? '',
-        name:
-          (user.user_metadata?.full_name as string | undefined) ||
-          (user.user_metadata?.name as string | undefined) ||
-          user.email ||
-          '商家',
-        avatarUrl:
-          (user.user_metadata?.avatar_url as string | undefined) ||
-          (user.user_metadata?.picture as string | undefined) ||
-          null,
-      }
-    : {
-        id: 'preview-user',
-        email: 'demo@omnilink.ai',
-        name: '演示商家',
-        avatarUrl: null,
-      }
+  const localPreview = process.env.NODE_ENV !== 'production' && !user
+
+  if (!user && !localPreview) {
+    redirect('/login')
+  }
+
+  const project = user ? await getBrandProjectByUserId(user.id) : DEMO_BRAND_PROJECT
+  if (!project && !localPreview) {
+    redirect('/onboarding')
+  }
+
+  const profile = {
+    id: user?.id ?? DEMO_PROFILE.id,
+    email: user?.email ?? DEMO_PROFILE.email,
+    name: user
+      ? (user.user_metadata?.full_name as string | undefined) ||
+        (user.user_metadata?.name as string | undefined) ||
+        user.email ||
+        '商家'
+      : DEMO_PROFILE.name,
+    avatarUrl: user
+      ? (user.user_metadata?.avatar_url as string | undefined) ||
+        (user.user_metadata?.picture as string | undefined) ||
+        null
+      : DEMO_PROFILE.avatarUrl,
+  }
 
   return (
-    <OmnilinkLiquidLayout profile={profile}>
-      {children}
-    </OmnilinkLiquidLayout>
+    <V3DashboardShell profile={profile}>
+      <DashboardWorkspaceProvider>{children}</DashboardWorkspaceProvider>
+    </V3DashboardShell>
   )
 }

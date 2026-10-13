@@ -2,8 +2,8 @@
  * Diffuse (弥散氛围) — 柔和弥散渐变 + 弥散光影 + 温暖空间包裹感。
  *
  * 视觉特征：
- * - 暖夜紫黑背景 (#100C1B)
- * - 弥散紫罗兰 Surface (#1B152B)
+ * - 暖夜紫黑背景 (var(--plum))
+ * - 弥散紫罗兰 Surface (var(--surface-muted))
  * - 柔和瑰粉 (Rose-Pink) 品牌氛围
  * - 20px 大圆角
  */
@@ -12,13 +12,13 @@ import type { ThemeDefinition, ThemeTokens } from './types'
 
 export const diffuseTokens: ThemeTokens = {
   colors: {
-    primary: '#EC4899',
-    background: '#100C1B',
-    surface: '#1B152B',
-    text: '#FDF2F8',
-    muted: '#A78BFA',
-    border: 'rgba(236, 72, 153, 0.18)',
-    accent: '#F472B6',
+    primary: 'var(--lavender)',
+    background: 'var(--plum)',
+    surface: 'var(--surface-muted)',
+    text: 'var(--surface-muted)',
+    muted: 'var(--lavender)',
+    border: 'var(--border)',
+    accent: 'var(--lavender)',
   },
   typography: {
     headingFont: 'var(--font-heading)',
@@ -27,8 +27,8 @@ export const diffuseTokens: ThemeTokens = {
     bodyWeight: 400,
   },
   radius: {
-    card: '1.25rem',   // 20px
-    button: '1rem',      // 16px
+    card: '0.5rem',    // 8px
+    button: '9999px',
     input: '1rem',
   },
   spacing: {
@@ -37,8 +37,8 @@ export const diffuseTokens: ThemeTokens = {
     grid: '1.5rem',
   },
   shadows: {
-    card: '0 10px 40px -10px rgba(236, 72, 153, 0.22)',
-    floating: '0 20px 50px -12px rgba(168, 85, 247, 0.35)',
+    card: '0 10px 40px -10px var(--border)',
+    floating: '0 20px 50px -12px var(--border)',
   },
   motion: {
     duration: '250ms',

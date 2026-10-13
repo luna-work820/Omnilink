@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Sparkles,
   X,
-  RotateCcw,
   Layers,
   Shirt,
   Smartphone,
@@ -19,18 +18,14 @@ import {
   Dog,
   Car,
   Tag,
-  HelpCircle,
 } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 import {
   Category,
-  CategoryTreeItem,
   getCategoryTree,
-  getPopularCategories,
   searchCategories,
   getCategoryBreadcrumb,
   getCategoryById,
-  findCategoryByName,
 } from '@/lib/product/categories'
 
 export interface SelectedCategoryResult {
@@ -48,7 +43,6 @@ export interface CategorySelectorProps {
   disabled?: boolean
   className?: string
   placeholder?: string
-  variant?: 'inline' | 'modal' | 'dropdown'
   id?: string
 }
 
@@ -74,7 +68,6 @@ export function CategorySelector({
   disabled = false,
   className = '',
   placeholder,
-  variant = 'dropdown',
   id = 'category-selector',
 }: CategorySelectorProps) {
   const { isZh } = useLanguage()
@@ -88,7 +81,6 @@ export function CategorySelector({
 
   // 1. Category Tree
   const categoryTree = useMemo(() => getCategoryTree(), [])
-  const popularCategories = useMemo(() => getPopularCategories(), [])
 
   // 2. Load recent categories from localStorage
   useEffect(() => {
@@ -214,37 +206,37 @@ export function CategorySelector({
         onClick={() => {
           if (!disabled) setIsOpen(!isOpen)
         }}
-        className={`w-full min-h-[40px] px-3.5 py-2 rounded-xl bg-slate-50 border transition-all flex items-center justify-between gap-2 cursor-pointer select-none ${
+        className={`w-full min-h-[40px] px-3 py-2 rounded-[6px] bg-[var(--surface-muted)] border transition-all flex items-center justify-between gap-2 cursor-pointer select-none ${
           disabled
-            ? 'opacity-60 cursor-not-allowed bg-slate-100 border-slate-200'
+            ? 'opacity-60 cursor-not-allowed bg-[var(--surface-muted)] border-[var(--surface-muted)]'
             : isOpen
-            ? 'bg-white border-[#024AD8] ring-2 ring-[#024AD8]/15 shadow-xs'
-            : 'border-slate-200 hover:border-slate-300 hover:bg-white'
+            ? 'bg-[var(--surface)] border-[var(--primary)] ring-2 ring-[var(--primary)]/15 shadow-xs'
+            : 'border-[var(--surface-muted)] hover:border-[var(--surface-muted)] hover:bg-[var(--surface)]'
         }`}
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Tag size={15} className={displayValue ? 'text-[#024AD8] shrink-0' : 'text-slate-400 shrink-0'} />
+          <Tag size={15} className={displayValue ? 'text-[var(--primary)] shrink-0' : 'text-[var(--lavender)] shrink-0'} />
           {displayValue ? (
             <div className="flex items-center gap-1.5 min-w-0">
               {currentBreadcrumb?.primary && currentBreadcrumb.secondary ? (
                 <>
-                  <span className="text-xs text-slate-500 truncate">{currentBreadcrumb.primary.name}</span>
-                  <span className="text-xs text-slate-300">/</span>
-                  <span className="text-xs font-bold text-slate-900 truncate">
+                  <span className="text-xs text-[var(--lavender)] truncate">{currentBreadcrumb.primary.name}</span>
+                  <span className="text-xs text-[var(--lavender)]">/</span>
+              <span className="text-xs font-semibold text-[var(--lavender)] truncate">
                     {currentBreadcrumb.secondary.name}
                   </span>
                   {currentBreadcrumb.secondary.templateKey && (
-                    <span className="shrink-0 text-[10px] font-medium bg-blue-50 text-[#024AD8] px-1.5 py-0.5 rounded-[4px] border border-blue-200/60 ml-1">
+                    <span className="shrink-0 text-[10px] font-medium bg-[var(--primary)]/10 text-[var(--primary)] px-1.5 py-0.5 rounded-[3px] border border-[var(--primary)]/20 ml-1">
                       {isZh ? '规格模版' : 'Template'}
                     </span>
                   )}
                 </>
               ) : (
-                <span className="text-xs font-bold text-slate-900 truncate">{displayValue}</span>
+                <span className="text-xs font-semibold text-[var(--lavender)] truncate">{displayValue}</span>
               )}
             </div>
           ) : (
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-[var(--lavender)]">
               {placeholder || (isZh ? '点击选择商品分类（两级体系 + 快速检索）' : 'Select product category...')}
             </span>
           )}
@@ -255,7 +247,7 @@ export function CategorySelector({
             <button
               type="button"
               onClick={handleClear}
-              className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+              className="p-1 text-[var(--lavender)] hover:text-[var(--lavender)] hover:bg-[var(--surface-muted)] rounded-md transition-colors"
               title={isZh ? '清除分类' : 'Clear'}
             >
               <X size={13} />
@@ -263,31 +255,31 @@ export function CategorySelector({
           )}
           <ChevronRight
             size={15}
-            className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-90 text-[#024AD8]' : ''}`}
+            className={`text-[var(--lavender)] transition-transform duration-200 ${isOpen ? 'rotate-90 text-[var(--primary)]' : ''}`}
           />
         </div>
       </div>
 
-      {/* Popover / Panel: Red-Style (小红书风格) Classification Picker - 宽幅沉浸式大气布局 */}
+      {/* Compact admin taxonomy picker: search + two-level taxonomy, inspired by Medusa/Spree. */}
       {isOpen && (
-        <div className="absolute z-50 left-0 w-[min(700px,calc(100vw-32px))] mt-2 bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute z-50 left-0 w-[min(580px,calc(100vw-32px))] mt-2 bg-[var(--surface)] rounded-[12px] border border-[var(--surface-muted)] shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           {/* Header & Search Bar */}
-          <div className="p-3.5 border-b border-slate-100 bg-slate-50/80 space-y-3">
+          <div className="p-3 border-b border-[var(--surface-muted)] bg-[var(--surface-muted)]/70 space-y-2.5">
             <div className="relative">
-              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--lavender)]" />
               <input
                 ref={searchInputRef}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={isZh ? '搜索分类关键词（如：连衣裙、耳机、太阳镜、猫粮、面部护肤）...' : 'Search category keywords...'}
-                className="w-full h-9.5 pl-9.5 pr-8 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-[#024AD8] focus:ring-2 focus:ring-[#024AD8]/15 transition-all shadow-2xs"
+                className="w-full h-9 pl-9 pr-8 rounded-[6px] bg-[var(--surface)] border border-[var(--surface-muted)] text-xs text-[var(--lavender)] focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/15 transition-all shadow-2xs"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--lavender)] hover:text-[var(--lavender)] p-1"
                 >
                   <X size={14} />
                 </button>
@@ -299,7 +291,7 @@ export function CategorySelector({
               <div className="space-y-2">
                 {recentCategories.length > 0 && (
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[11px] font-semibold text-slate-400 shrink-0">
+                    <span className="text-[11px] font-semibold text-[var(--lavender)] shrink-0">
                       {isZh ? '最近常用:' : 'Recent:'}
                     </span>
                     {recentCategories.map((rc) => {
@@ -309,10 +301,10 @@ export function CategorySelector({
                           key={`recent-${rc.id}`}
                           type="button"
                           onClick={() => handleSelectCategory(rc)}
-                          className={`text-xs px-2.5 py-1 rounded-full border transition-all flex items-center gap-1 cursor-pointer ${
+                            className={`text-[11px] px-2 py-1  border transition-all flex items-center gap-1 cursor-pointer ${
                             isSelected
-                              ? 'bg-[#EFF4FF] text-[#024AD8] border-[#024AD8]/50 font-bold shadow-2xs'
-                              : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                              ? 'bg-[var(--surface-muted)] text-[var(--primary)] border-[var(--primary)]/50 font-bold shadow-2xs'
+                              : 'bg-[var(--surface)] text-[var(--lavender)] border-[var(--surface-muted)] hover:border-[var(--surface-muted)] hover:bg-[var(--surface-muted)]'
                           }`}
                         >
                           <span>{rc.name}</span>
@@ -322,36 +314,13 @@ export function CategorySelector({
                   </div>
                 )}
 
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[11px] font-semibold text-slate-400 shrink-0">
-                    {isZh ? '热门推荐:' : 'Popular:'}
-                  </span>
-                  {popularCategories.slice(0, 6).map((pop) => {
-                    const isSelected = currentBreadcrumb?.secondary?.id === pop.id || value === pop.name
-                    return (
-                      <button
-                        key={`pop-${pop.id}`}
-                        type="button"
-                        onClick={() => handleSelectCategory(pop)}
-                        className={`text-xs px-2.5 py-1 rounded-full border transition-all flex items-center gap-1 cursor-pointer ${
-                          isSelected
-                            ? 'bg-[#EFF4FF] text-[#024AD8] border-[#024AD8]/50 font-bold shadow-2xs'
-                            : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                        }`}
-                      >
-                        <Sparkles size={11} className="text-amber-500" />
-                        <span>{pop.name}</span>
-                      </button>
-                    )
-                  })}
-                </div>
               </div>
             )}
           </div>
 
           {/* Search Result View vs 2-Level Cascade View */}
           {searchQuery ? (
-            <div className="max-h-[340px] overflow-y-auto p-2.5 divide-y divide-slate-100">
+            <div className="max-h-[320px] overflow-y-auto p-2 divide-y divide-[var(--surface-muted)]">
               {searchResults.length > 0 ? (
                 searchResults.map((res) => {
                   const isSelected = currentBreadcrumb?.secondary?.id === res.category.id || value === res.category.name
@@ -359,45 +328,45 @@ export function CategorySelector({
                     <div
                       key={`search-${res.category.id}`}
                       onClick={() => handleSelectCategory(res.category, res.parent || undefined)}
-                      className={`p-3 rounded-xl flex items-center justify-between cursor-pointer transition-colors ${
-                        isSelected ? 'bg-blue-50/80 text-[#024AD8]' : 'hover:bg-slate-50 text-slate-800'
+                      className={`p-2.5 rounded-[6px] flex items-center justify-between cursor-pointer transition-colors ${
+                        isSelected ? 'bg-[var(--primary)]/10 text-[var(--primary)]' : 'hover:bg-[var(--surface-muted)] text-[var(--lavender)]'
                       }`}
                     >
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold">{res.displayPath}</span>
                           {res.category.templateKey && (
-                            <span className="text-[10px] font-medium bg-blue-100/80 text-[#024AD8] px-1.5 py-0.5 rounded-[4px]">
+                            <span className="text-[10px] font-medium bg-[var(--primary)]/10 text-[var(--primary)] px-1.5 py-0.5 ">
                               {isZh ? '属性模板' : 'Template'}
                             </span>
                           )}
                         </div>
                         {res.matchedKeyword && (
-                          <div className="text-[11px] text-slate-400">
+                          <div className="text-[11px] text-[var(--lavender)]">
                             {isZh ? '匹配标签: ' : 'Matched: '}
-                            <span className="text-[#024AD8] font-medium">{res.matchedKeyword}</span>
+                            <span className="text-[var(--primary)] font-medium">{res.matchedKeyword}</span>
                           </div>
                         )}
                       </div>
 
-                      {isSelected && <Check size={16} className="text-[#024AD8] shrink-0" />}
+                      {isSelected && <Check size={16} className="text-[var(--primary)] shrink-0" />}
                     </div>
                   )
                 })
               ) : (
-                <div className="py-12 text-center text-slate-400 text-xs space-y-1.5">
-                  <p className="font-semibold text-slate-600">{isZh ? '未找到相关分类' : 'No matching categories'}</p>
-                  <p className="text-[11px] text-slate-400">
+                <div className="py-12 text-center text-[var(--lavender)] text-xs space-y-1.5">
+                  <p className="font-semibold text-[var(--lavender)]">{isZh ? '未找到相关分类' : 'No matching categories'}</p>
+                  <p className="text-[11px] text-[var(--lavender)]">
                     {isZh ? '可尝试搜索其他词汇或浏览下方两级类目' : 'Try other keywords or browse 2-level taxonomy'}
                   </p>
                 </div>
               )}
             </div>
           ) : (
-            /* 2-Level Column Cascade (小红书/电商标准双列联动 - 宽幅沉浸排布) */
-            <div className="grid grid-cols-12 h-[340px] divide-x divide-slate-100">
+            /* Two-level cascade: the same dense taxonomy pattern used by commerce admin panels. */
+            <div className="grid grid-cols-12 h-[286px] divide-x divide-[var(--surface-muted)]">
               {/* Left Column: Level 1 Categories (一级分类) */}
-              <div className="col-span-5 sm:col-span-4 bg-slate-50/90 overflow-y-auto p-2 space-y-1">
+              <div className="col-span-5 sm:col-span-4 bg-[var(--surface-muted)]/80 overflow-y-auto p-2 space-y-0.5">
                 {categoryTree.map((l1) => {
                   const isCurrent = l1.id === selectedL1Id
                   const IconComp = (l1.icon && ICON_MAP[l1.icon]) || Layers
@@ -407,19 +376,19 @@ export function CategorySelector({
                       key={l1.id}
                       type="button"
                       onClick={() => setSelectedL1Id(l1.id)}
-                      className={`w-full px-3 py-2.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                      className={`w-full px-2.5 py-2 rounded-[5px] text-left text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
                         isCurrent
-                          ? 'bg-white text-[#024AD8] shadow-xs font-bold border-l-3 border-l-[#024AD8]'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                          ? 'bg-[var(--surface)] text-[var(--primary)] shadow-xs font-bold border-l-3 border-l-[var(--primary)]'
+                          : 'text-[var(--lavender)] hover:bg-[var(--surface-muted)] hover:text-[var(--lavender)]'
                       }`}
                     >
                       <div className="flex items-center gap-2.5 truncate">
-                        <IconComp size={15} className={isCurrent ? 'text-[#024AD8]' : 'text-slate-400'} />
+                        <IconComp size={15} className={isCurrent ? 'text-[var(--primary)]' : 'text-[var(--lavender)]'} />
                         <span className="truncate">{l1.name}</span>
                       </div>
                       <ChevronRight
                         size={13}
-                        className={`transition-colors shrink-0 ${isCurrent ? 'text-[#024AD8]' : 'text-slate-300'}`}
+                        className={`transition-colors shrink-0 ${isCurrent ? 'text-[var(--primary)]' : 'text-[var(--lavender)]'}`}
                       />
                     </button>
                   )
@@ -427,17 +396,12 @@ export function CategorySelector({
               </div>
 
               {/* Right Column: Level 2 Categories (二级分类) */}
-              <div className="col-span-7 sm:col-span-8 bg-white overflow-y-auto p-3.5 space-y-2">
-                <div className="pb-2 px-1 border-b border-slate-100 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-700">
-                    {activeL1?.name} <span className="text-slate-400 font-normal">&gt;</span> {isZh ? '选择二级细分' : 'Select subcategory'}
-                  </span>
-                  <span className="text-[11px] text-slate-400">
-                    {activeL1?.children.length} {isZh ? '个子品类' : 'categories'}
-                  </span>
+              <div className="col-span-7 sm:col-span-8 bg-[var(--surface)] overflow-y-auto p-2.5">
+                <div className="pb-1.5 px-1 text-[11px] font-semibold text-[var(--lavender)]">
+                  {activeL1?.name}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 pt-1">
                   {activeL1?.children.map((child) => {
                     const isSelected = currentBreadcrumb?.secondary?.id === child.id || value === child.name
                     return (
@@ -445,26 +409,15 @@ export function CategorySelector({
                         key={child.id}
                         type="button"
                         onClick={() => handleSelectCategory(child, activeL1)}
-                        className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between gap-2 cursor-pointer ${
+                        className={`p-2 rounded-[5px] border text-left transition-all flex items-center justify-between gap-2 cursor-pointer ${
                           isSelected
-                            ? 'bg-[#EFF4FF] border-[#024AD8] text-[#024AD8] shadow-xs font-bold'
-                            : 'bg-white border-slate-100 hover:border-slate-200 hover:bg-slate-50/80 text-slate-800'
+                            ? 'bg-[var(--surface-muted)] border-[var(--primary)] text-[var(--primary)] shadow-xs font-bold'
+                            : 'bg-[var(--surface)] border-[var(--surface-muted)] hover:border-[var(--surface-muted)] hover:bg-[var(--surface-muted)]/80 text-[var(--lavender)]'
                         }`}
                       >
-                        <div className="space-y-1 min-w-0">
-                          <div className="text-xs font-semibold truncate">{child.name}</div>
-                          {child.templateKey ? (
-                            <span className="inline-block text-[9px] font-medium bg-blue-50 text-[#024AD8] px-1.5 py-0.5 rounded-[3px] border border-blue-200/60">
-                              {isZh ? '专属规格' : 'Specs'}
-                            </span>
-                          ) : (
-                            <span className="text-[9px] text-slate-400 font-normal">
-                              {isZh ? '通用规格' : 'General'}
-                            </span>
-                          )}
-                        </div>
+                        <div className="min-w-0 text-[11px] font-semibold truncate">{child.name}</div>
 
-                        {isSelected && <Check size={15} className="text-[#024AD8] shrink-0" />}
+                        {isSelected && <Check size={15} className="text-[var(--primary)] shrink-0" />}
                       </button>
                     )
                   })}
@@ -473,30 +426,6 @@ export function CategorySelector({
             </div>
           )}
 
-          {/* Footer Bar */}
-          <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>
-              {currentBreadcrumb ? (
-                <>
-                  {isZh ? '已选择：' : 'Selected: '}
-                  <strong className="text-slate-900 font-bold">
-                    {currentBreadcrumb.primary.name}
-                    {currentBreadcrumb.secondary ? ` > ${currentBreadcrumb.secondary.name}` : ''}
-                  </strong>
-                </>
-              ) : (
-                isZh ? '请点击选择二级分类' : 'Please select subcategory'
-              )}
-            </span>
-
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="px-3.5 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold border border-slate-200 rounded-[4px] cursor-pointer text-xs transition-colors shadow-2xs"
-            >
-              {isZh ? '完成' : 'Done'}
-            </button>
-          </div>
         </div>
       )}
     </div>
