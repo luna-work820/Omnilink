@@ -265,7 +265,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
             onClick={() => setActiveTab('profile')}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'profile'
-                ? 'bg-[var(--ink)] text-[var(--surface)] shadow-sm'
+                ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)] shadow-sm'
                 : 'text-[var(--lavender)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)]/60'
             }`}
           >
@@ -278,7 +278,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
             onClick={() => setActiveTab('api-keys')}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'api-keys'
-                ? 'bg-[var(--ink)] text-[var(--surface)] shadow-sm'
+                ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)] shadow-sm'
                 : 'text-[var(--lavender)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)]/60'
             }`}
           >
@@ -300,7 +300,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
             onClick={() => setActiveTab('api-stats')}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'api-stats'
-                ? 'bg-[var(--ink)] text-[var(--surface)] shadow-sm'
+                ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)] shadow-sm'
                 : 'text-[var(--lavender)] hover:text-[var(--ink)] hover:bg-[var(--surface-muted)]/60'
             }`}
           >
@@ -464,7 +464,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                           onClick={() => setBaseCurrency('CNY')}
                           className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                             baseCurrency === 'CNY'
-                              ? 'bg-[var(--ink)] text-[var(--surface)] shadow-xs'
+                              ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)] shadow-xs'
                               : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-muted)]'
                           }`}
                         >
@@ -475,7 +475,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                           onClick={() => setBaseCurrency('USD')}
                           className={`py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                             baseCurrency === 'USD'
-                              ? 'bg-[var(--ink)] text-[var(--surface)] shadow-xs'
+                              ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)] shadow-xs'
                               : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-muted)]'
                           }`}
                         >
@@ -519,7 +519,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                         setIsSavingPreferences(false)
                       }
                     }}
-                    className="w-full py-2.5 px-4 rounded-full bg-[var(--ink)] hover:bg-[var(--ink)] text-[var(--surface)] text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                    className="w-full py-2.5 px-4 rounded-full bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-[var(--surface)] text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
                   >
                     {isSavingPreferences ? (isZh ? '保存中...' : 'Saving...') : t.settings.savePreferences}
                   </button>
@@ -973,7 +973,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] ${
                             log.method === 'GET'
-                              ? 'bg-[var(--primary)] text-[var(--primary)]'
+                              ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
                               : 'bg-[var(--acid-sage)] text-[var(--acid-sage)]'
                           }`}
                         >
@@ -1070,7 +1070,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                         onClick={() => setNewKeyEnv('production')}
                         className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                           newKeyEnv === 'production'
-                            ? 'bg-[var(--ink)] text-[var(--surface)] border-[var(--ink)]'
+                            ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)] border-[var(--accent-secondary)]'
                             : 'bg-[var(--surface)] text-[var(--lavender)] border-[var(--surface-muted)] hover:bg-[var(--surface-muted)]'
                         }`}
                       >
@@ -1081,7 +1081,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                         onClick={() => setNewKeyEnv('test')}
                         className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                           newKeyEnv === 'test'
-                            ? 'bg-[var(--ink)] text-[var(--surface)] border-[var(--ink)]'
+                            ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)] border-[var(--accent-secondary)]'
                             : 'bg-[var(--surface)] text-[var(--lavender)] border-[var(--surface-muted)] hover:bg-[var(--surface-muted)]'
                         }`}
                       >
@@ -1190,7 +1190,7 @@ export function SettingsView({ currentStore }: SettingsViewProps) {
                     <button
                       type="button"
                       onClick={() => handleCopyText(generatedKeyResult, 'modal-key')}
-                      className="flex-1 py-2.5 rounded-full bg-[var(--ink)] hover:bg-[var(--ink)] text-xs font-bold text-[var(--surface)] shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                      className="flex-1 py-2.5 rounded-full bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-xs font-bold text-[var(--surface)] shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       {copiedKeyId === 'modal-key' ? (
                         <>
@@ -1266,7 +1266,7 @@ function EndpointCard({
           <span
             className={`px-2 py-0.5 rounded text-[10px] font-bold ${
               method === 'GET'
-                ? 'bg-[var(--primary)] text-[var(--primary)]'
+                ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
                 : 'bg-[var(--acid-sage)] text-[var(--acid-sage)]'
             }`}
           >

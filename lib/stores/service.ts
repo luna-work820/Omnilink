@@ -18,9 +18,13 @@ export async function initializeMerchantStore(params: {
     throw new Error('Cannot create a store for a different user')
   }
 
+  const existingStore = await getStoreByOwnerId(params.owner_id)
+  if (existingStore) return existingStore.id
+
   const name = params.store_name.trim()
-  const slug = name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-  if (!name || !slug) throw new Error('A valid store name is required')
+  const nameSlug = name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  if (!name) throw new Error('A valid store name is required')
+  const slug = `${nameSlug || 'store'}-${params.owner_id.replace(/-/g, '')}`
 
   const { data, error } = await supabase.rpc('create_organization_and_store', {
     p_organization_name: name,

@@ -39,6 +39,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      industries: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       ai_jobs: {
         Row: {
           created_at: string
@@ -1890,6 +1914,50 @@ export type Database = {
           },
         ]
       }
+      semantic_query_events: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          id: string
+          matched_concepts: Json
+          matched_product_ids: Json
+          organization_id: string
+          parsed_intent: string | null
+          query_text: string
+          source: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          matched_concepts?: Json
+          matched_product_ids?: Json
+          organization_id: string
+          parsed_intent?: string | null
+          query_text: string
+          source?: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          matched_concepts?: Json
+          matched_product_ids?: Json
+          organization_id?: string
+          parsed_intent?: string | null
+          query_text?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "semantic_query_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       semantic_documents: {
         Row: {
           content: string
@@ -2383,6 +2451,27 @@ export type Database = {
       }
     }
     Views: {
+      discovery_products: {
+        Row: {
+          capability_kind: string | null
+          category: string | null
+          created_at: string
+          cover_image: string | null
+          currency_code: string | null
+          delivery_type: string | null
+          description: string | null
+          douyin_url: string | null
+          id: string
+          item_type: string
+          price: number | null
+          price_mode: string
+          publisher_name: string
+          publisher_slug: string
+          title: string
+          xiaohongshu_url: string | null
+        }
+        Relationships: []
+      }
       published_storefronts: {
         Row: {
           custom_domain: string | null

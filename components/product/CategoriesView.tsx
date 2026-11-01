@@ -168,7 +168,7 @@ export function CategoriesView({
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 rounded-full bg-[var(--ink)] hover:bg-[var(--ink)] text-[var(--surface)] text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+            className="px-4 py-2 rounded-full bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-[var(--surface)] text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
           >
             <Plus size={14} />
             <span>{isZh ? '新建分类' : 'New Category'}</span>
@@ -386,7 +386,7 @@ export function CategoriesView({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-full bg-[var(--ink)] text-[var(--surface)] text-xs font-semibold hover:bg-[var(--ink)] shadow-sm"
+                  className="px-5 py-2 rounded-[var(--radius-control)] bg-[var(--accent-primary)] text-[var(--surface)] text-xs font-semibold shadow-sm transition-colors hover:bg-[var(--accent-primary-hover)] active:scale-[0.98]"
                 >
                   {isZh ? '确认创建' : 'Create'}
                 </button>

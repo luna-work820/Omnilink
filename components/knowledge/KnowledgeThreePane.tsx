@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import {
@@ -19,6 +19,20 @@ import {
   X,
 } from 'lucide-react'
 import { DEMO_PRODUCTS } from '@/lib/products/demo-data'
+import themeTokens from '@/theme.json'
+import Folder from './Folder'
+import {
+  OrganicCard,
+  OrganicCardBand,
+  OrganicCardBody,
+  OrganicCardDescription,
+  OrganicCardEyebrow,
+  OrganicCardFooter,
+  OrganicCardFooterIcon,
+  OrganicCardFooterLabel,
+  OrganicCardImage,
+  OrganicCardTitle,
+} from '@/components/ui/organic-card'
 import {
   KNOWLEDGE_FILES_STORAGE_KEY,
   KNOWLEDGE_FILES_UPDATED_EVENT,
@@ -65,7 +79,7 @@ type FolderColor = keyof typeof APPLE_FOLDER_COLORS
 type KnowledgeFolder = {
   id: string
   title: string
-  color: FolderColor
+  color: string
   noteIds: string[]
 }
 
@@ -74,7 +88,7 @@ const APPLE_FOLDER_COLORS = {
   orange: { label: '橙色', value: '#FF9F0A' },
   yellow: { label: '黄色', value: '#FFD60A' },
   green: { label: '绿色', value: '#30D158' },
-  blue: { label: '蓝色', value: '#0A84FF' },
+  blue: { label: '蓝色', value: themeTokens.colors.secondary },
   purple: { label: '紫色', value: '#BF5AF2' },
   pink: { label: '粉色', value: '#FF375F' },
 } as const
@@ -209,7 +223,7 @@ const KNOWLEDGE_FOLDERS_STORAGE_KEY = 'omnilink_knowledge_folders_v1'
 const INITIAL_FOLDERS: KnowledgeFolder[] = [{
   id: 'product-folder',
   title: '商品资料',
-  color: 'orange',
+  color: 'blue',
   noteIds: EXAMPLE_NOTES.map((note) => note.id),
 }]
 
@@ -225,7 +239,7 @@ function readStoredKnowledgeFolders(): KnowledgeFolder[] | null {
       return typeof candidate.id === 'string'
         && typeof candidate.title === 'string'
         && typeof candidate.color === 'string'
-        && candidate.color in APPLE_FOLDER_COLORS
+        && typeof candidate.color === 'string'
         && Array.isArray(candidate.noteIds)
         && candidate.noteIds.every((noteId) => typeof noteId === 'string')
     })
@@ -299,7 +313,7 @@ function SystemInformationPanel({ note, onNotice }: { note: Note; onNotice: (mes
         <section aria-labelledby="brand-theme-colors" className={`mt-8 ${sectionClass}`}><h3 id="brand-theme-colors" className={sectionTitleClass}>主题色</h3><p className={sectionDescriptionClass}>用于生成内容中的重点色与视觉建议。点击色块即可修改，色值会随表单保存。</p><div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-5">{themeColors.map((color, index) => { const textColor = themeTextColor(color); return <label key={`${index}-${color}`} className="group relative flex h-24 min-w-0 cursor-pointer items-end overflow-hidden rounded-[4px] border border-black/10 p-2.5 shadow-[0_2px_6px_rgba(0,0,0,0.05)] focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[var(--primary)]" style={{ backgroundColor: color }}><span className="absolute left-0 top-0 px-2.5 py-2 text-[11px] font-medium" style={{ color: textColor }}>主题色 {index + 1}</span><input type="color" value={color} onChange={(event) => updateThemeColor(index, event.target.value)} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" aria-label={`主题色 ${index + 1}，当前为 ${color}`} /><span className="relative font-mono text-xs font-semibold tracking-[0.04em]" style={{ color: textColor }}>{color.slice(1)}</span></label> })}</div></section>
         <section aria-labelledby="brand-guardrails" className={`mt-8 ${sectionClass}`}><h3 id="brand-guardrails" className={sectionTitleClass}>内容约束</h3><p className={sectionDescriptionClass}>记录必须遵守的表达限制，不把未经证实的信息写入生成内容。</p><label className={`mt-5 block ${labelClass}`}>必须遵守<textarea value={profile.guardrails} onChange={(event) => updateField('guardrails', event.target.value)} className={textareaClass} /></label></section>
       </>}
-      <div className="mt-8 flex items-center justify-between border-t border-[#E2E2E2] pt-5"><p className="text-xs text-[#787774]">带 <span className="text-[#B42318]">*</span> 的字段为必填项。</p><button type="submit" className="flex h-10 items-center gap-2 bg-[#1C1C1C] px-4 text-sm font-medium text-white hover:bg-[#37352F] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]"><Save size={15} aria-hidden="true" />保存系统信息</button></div>
+      <div className="mt-8 flex items-center justify-between border-t border-[#E2E2E2] pt-5"><p className="text-xs text-[#787774]">带 <span className="text-[#B42318]">*</span> 的字段为必填项。</p><button type="submit" className="ui-interactive flex h-10 items-center gap-2 rounded-[var(--radius-control)] bg-[var(--accent-primary)] px-4 text-sm font-medium text-white hover:bg-[var(--accent-primary-hover)] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-secondary)]"><Save size={15} aria-hidden="true" />保存系统信息</button></div>
     </form>
   </article>
 }
@@ -383,7 +397,7 @@ export function KnowledgeThreePane() {
   const [showProductPicker, setShowProductPicker] = useState(false)
   const [productQuery, setProductQuery] = useState('')
   const [notice, setNotice] = useState<string | null>(null)
-  const [folderContextMenu, setFolderContextMenu] = useState<{ x: number; y: number; mode: 'menu' | 'create' } | null>(null)
+  const [folderContextMenu, setFolderContextMenu] = useState<{ x: number; y: number; mode: 'menu' | 'create' | 'colors'; folderId?: string } | null>(null)
   const [newFolderName, setNewFolderName] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderContextMenuRef = useRef<HTMLDivElement>(null)
@@ -482,15 +496,9 @@ export function KnowledgeThreePane() {
     updateActiveNote((note) => ({ ...note, tags: note.tags.filter((item) => item !== tag) }), '标签保存失败，请刷新后重试')
   }
 
-  const handleFolderClick = (folder: KnowledgeFolder) => {
-    setActiveView('all')
-    const nextFolderId = activeFolderId === folder.id ? null : folder.id
-    setActiveFolderId(nextFolderId)
-    const firstNoteId = folder.noteIds.find((noteId) => notes.some((note) => note.id === noteId))
-    if (nextFolderId && firstNoteId) setActiveId(firstNoteId)
-  }
 
-  const handleNoteDragStart = (event: DragEvent<HTMLButtonElement>, noteId: string) => {
+
+  const handleNoteDragStart = (event: DragEvent<HTMLDivElement>, noteId: string) => {
     if (notes.find((note) => note.id === noteId)?.system) {
       event.preventDefault()
       return
@@ -532,6 +540,19 @@ export function KnowledgeThreePane() {
   const handleFileAreaContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
     event.preventDefault()
     openFolderContextMenu(event.clientX, event.clientY)
+  }
+
+  const handleFolderContextMenu = (event: React.MouseEvent<HTMLDivElement>, folderId: string) => {
+    event.preventDefault()
+    event.stopPropagation()
+    const folder = folders.find((item) => item.id === folderId)
+    if (!folder) return
+    setFolderContextMenu({
+      x: Math.max(8, Math.min(event.clientX, window.innerWidth - 232)),
+      y: Math.max(8, Math.min(event.clientY, window.innerHeight - 152)),
+      mode: 'colors',
+      folderId,
+    })
   }
 
   const handleFileAreaKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -626,25 +647,92 @@ export function KnowledgeThreePane() {
                 return <button key={view} id={`knowledge-view-${view}`} type="button" role="tab" aria-selected={isActive} aria-controls="knowledge-file-grid" tabIndex={isActive ? 0 : -1} onClick={() => selectView(view)} onKeyDown={(event) => handleViewTabKeyDown(event, view)} className={`relative z-10 flex h-14 items-center justify-center px-2 text-[15px] font-semibold tracking-[-0.02em] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--primary)] active:scale-[0.98] ${isActive ? 'rounded-t-[26px] bg-[var(--theme-warm-white)] text-[#000000] shadow-[0_-1px_0_rgba(0,0,0,0.05)]' : 'text-[#7A7572] hover:bg-[var(--theme-warm-white)] hover:text-[#000000]'}`}><span className="truncate">{label}</span>{isActive ? <span className="absolute bottom-1.5 h-[3px] w-10 rounded-full bg-[#000000]" aria-hidden="true" /> : null}</button>
               })}
             </div>
-            <div className="p-4 pt-3"><div className="flex items-center gap-2"><input ref={fileInputRef} type="file" className="hidden" onChange={handleUpload} /><label className="relative min-w-0 flex-1"><Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#636363]" /><span className="sr-only">搜索文件</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={activeView === 'system' ? '搜索系统信息' : '搜索文件'} className="h-11 w-full border border-[#D6D6D3] bg-transparent pl-9 pr-3 text-sm outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]" /></label><button type="button" onClick={() => fileInputRef.current?.click()} className="flex h-11 w-11 shrink-0 items-center justify-center bg-[#1C1C1C] text-white hover:bg-[#37352F] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]" aria-label="上传文件"><FilePlus2 size={18} /></button></div>{activeFolder && <div className="mt-3 flex items-center gap-2 text-xs"><button type="button" onClick={() => setActiveFolderId(null)} className="text-[var(--text-secondary)] underline-offset-2 hover:text-[var(--text-primary)] hover:underline focus-visible:outline-2 focus-visible:outline-[var(--primary)]">全部文件</button><ChevronRight size={12} className="text-[var(--text-secondary)]" /><span className="font-semibold text-[var(--text-primary)]">{activeFolder.title}</span></div>}</div>
+            <div className="p-4 pt-3"><div className="flex items-center gap-2"><input ref={fileInputRef} type="file" className="hidden" onChange={handleUpload} /><label className="relative min-w-0 flex-1"><Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#636363]" /><span className="sr-only">搜索文件</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={activeView === 'system' ? '搜索系统信息' : '搜索文件'} className="h-11 w-full border border-[#D6D6D3] bg-transparent pl-9 pr-3 text-sm outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]" /></label><button type="button" onClick={() => fileInputRef.current?.click()} className="ui-interactive flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)] hover:bg-[var(--accent-secondary)] hover:text-white active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-secondary)]" aria-label="上传文件"><FilePlus2 size={18} /></button></div>{activeFolder && <div className="mt-3 flex items-center gap-2 text-xs"><button type="button" onClick={() => setActiveFolderId(null)} className="text-[var(--text-secondary)] underline-offset-2 hover:text-[var(--text-primary)] hover:underline focus-visible:outline-2 focus-visible:outline-[var(--primary)]">全部文件</button><ChevronRight size={12} className="text-[var(--text-secondary)]" /><span className="font-semibold text-[var(--text-primary)]">{activeFolder.title}</span></div>}</div>
           </div>
-          <div id="knowledge-file-grid" data-testid="knowledge-file-grid" tabIndex={0} onContextMenu={handleFileAreaContextMenu} onKeyDown={handleFileAreaKeyDown} className="grid min-h-[300px] grid-cols-1 content-start items-start gap-3 p-3 focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[var(--primary)] sm:grid-cols-2">{visibleNotes.length || (activeView === 'all' && !activeFolderId && folders.length) ? <>
-            {activeView === 'all' && !activeFolderId && folders.map((folder) => { const folderMeta = APPLE_FOLDER_COLORS[folder.color]; return <div key={folder.id} role="button" tabIndex={0} onClick={() => handleFolderClick(folder)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); handleFolderClick(folder) } }} onDragOver={(event) => { event.preventDefault(); setDragOverFolderId(folder.id) }} onDragLeave={() => setDragOverFolderId(null)} onDrop={(event) => handleFolderDrop(event, folder.id)} style={{ '--folder-color': folderMeta.value } as CSSProperties} className={`knowledge-folder group relative h-[190px] w-full cursor-pointer p-0 text-left transition-shadow focus-visible:outline-2 focus-visible:outline-[var(--primary)] ${dragOverFolderId === folder.id ? 'ring-2 ring-[var(--primary)] ring-offset-2' : ''}`} aria-label={`打开${folder.title}文件夹，${folder.noteIds.length}个文件`}>
-              <span className="knowledge-folder__body absolute inset-0 rounded-[18px]">
-                <span className="absolute left-[16%] top-[12%] h-[45%] w-[44%] -rotate-[9deg] rounded-[5px] border border-black/5 bg-[var(--surface)] shadow-[0_4px_8px_rgba(0,0,0,0.10)] transition-transform duration-300 ease-out group-hover:-translate-y-3 group-hover:-rotate-[4deg]"><span className="absolute left-3 right-3 top-3 h-1.5 rounded-full bg-black/10" /><span className="absolute left-3 right-8 top-7 h-1.5 rounded-full bg-black/10" /><span className="absolute left-3 top-11 h-1.5 w-1/2 rounded-full bg-black/10" /></span>
-                <span className="absolute right-[13%] top-[17%] h-[40%] w-[39%] rotate-[8deg] rounded-[5px] border border-black/5 bg-[var(--surface-muted)] shadow-[0_4px_8px_rgba(0,0,0,0.08)] transition-transform duration-300 ease-out group-hover:-translate-y-5 group-hover:rotate-[4deg]" />
-                <span className="knowledge-folder__front pointer-events-none absolute inset-x-0 bottom-0 z-10 flex h-[45%] flex-col justify-end px-4 pb-4"><span className="text-sm font-semibold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.16)]">{folder.title}</span><span className="mt-0.5 text-[10px] text-white/80">{folder.noteIds.length} 个文件</span></span>
-              </span>
-              <div className="absolute right-3 top-3 z-20 flex gap-1 rounded-full bg-black/10 p-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100" onClick={(event) => event.stopPropagation()}>{Object.entries(APPLE_FOLDER_COLORS).map(([colorKey, colorMeta]) => <button key={colorKey} type="button" onClick={() => handleFolderColorChange(folder.id, colorKey as FolderColor)} className="h-4 w-4 rounded-full border border-white/80 focus-visible:outline-2 focus-visible:outline-white" style={{ backgroundColor: colorMeta.value }} aria-label={`切换为${colorMeta.label}`} />)}</div>
-            </div> })}
-            {visibleNotes.map((note) => { const firstProduct = note.linkedProducts?.[0]; return <button key={note.id} type="button" draggable={!note.system} onDragStart={(event) => handleNoteDragStart(event, note.id)} onDragEnd={() => { setDraggedNoteId(null); setDragOverFolderId(null) }} onClick={() => setActiveId(note.id)} className={`group relative !rounded-[12px] w-full h-[190px] overflow-hidden bg-[var(--surface-muted)] p-3 pb-10 text-left shadow-[0_8px_16px_rgba(0,0,0,0.03)] transition-colors focus-visible:outline-2 focus-visible:outline-[var(--primary)] ${note.system ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} ${draggedNoteId === note.id ? 'opacity-50' : ''} ${activeId === note.id ? 'ring-2 ring-[var(--primary)] ring-offset-2 ring-offset-[var(--surface-muted)]' : 'hover:bg-[var(--surface)]'}`}>
-              {firstProduct?.imageUrl && <div className="-mx-3 -mt-3 mb-3 h-16 overflow-hidden"><img src={firstProduct.imageUrl} alt={firstProduct.name} loading="lazy" className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" /></div>}
-              {note.system && <span className="absolute right-3 top-3 inline-flex items-center gap-1 bg-[#E8E8E6] px-1.5 py-1 text-[10px] font-medium text-[#636363]"><Lock size={11} aria-hidden="true" />系统</span>}
-              <span className="card__title block break-words text-[1rem] font-bold text-[#000000] transition-colors group-hover:text-[var(--primary)] group-hover:underline">{note.title}</span>
-              {!firstProduct && <span className="card__content mt-2 block text-[0.82rem] leading-5 text-[var(--text-secondary)] line-clamp-3">{note.excerpt}</span>}
-              {note.linkedProducts?.length ? <span className="pointer-events-none absolute bottom-2 left-3 flex items-center gap-1.5 text-[0.7rem] text-[var(--text-secondary)]" title={`${note.linkedProducts.length} 个关联商品`}><Link2 className="h-4 w-4 shrink-0 text-[var(--primary)]" aria-hidden="true" /><span className="sr-only">{note.linkedProducts.length} 个关联商品</span><span aria-hidden="true">{note.linkedProducts.length}</span></span> : null}
-              <span className="pointer-events-none absolute bottom-0 right-0 flex h-7 w-10 items-center justify-center !rounded-tl-[12px] !rounded-br-[12px] bg-[var(--primary)] text-[var(--surface)] transition-colors group-hover:bg-[var(--text-primary)]"><ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-[3px]" aria-hidden="true" /></span>
-            </button> })}</> : <div className="px-3 py-10 text-center text-sm text-[var(--text-secondary)]"><p className="font-semibold text-[var(--text-primary)]">{activeView === 'uploaded' ? '还没有上传文件' : activeView === 'system' ? '没有匹配系统信息' : '没有匹配文件'}</p><p className="mt-1 leading-5">{activeView === 'uploaded' ? '使用右上角按钮上传第一个文件。' : '换一个关键词或清空搜索条件。'}</p></div>}</div>
+          <div id="knowledge-file-grid" data-testid="knowledge-file-grid" tabIndex={0} onContextMenu={handleFileAreaContextMenu} onKeyDown={handleFileAreaKeyDown} className="grid min-h-[300px] grid-cols-1 content-start items-stretch gap-4 p-3 focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[var(--primary)]">{visibleNotes.length || (activeView === 'all' && !activeFolderId && folders.length) ? <>
+            {activeView === 'all' && !activeFolderId && folders.map((folder) => {
+              const folderMeta = APPLE_FOLDER_COLORS[folder.color as FolderColor]
+                ?? Object.values(APPLE_FOLDER_COLORS).find(({ value }) => value.toLowerCase() === folder.color.toLowerCase())
+                ?? APPLE_FOLDER_COLORS.blue
+              const folderItems = folder.noteIds.flatMap((noteId) => {
+                const note = notes.find((candidate) => candidate.id === noteId)
+                return note ? [{
+                  title: note.title,
+                  description: note.excerpt,
+                  image: note.linkedProducts?.[0]?.imageUrl,
+                  noteId: note.id,
+                }] : []
+              })
+              const displayItems = folderItems.length ? folderItems : [{ title: '暂无文件', description: '添加资料后会显示在这里' }]
+              return <Folder
+                key={folder.id}
+                label={folder.title}
+                items={displayItems}
+                count={folderItems.length}
+                mode="book"
+                variant="solid"
+                color={folderMeta.value}
+                onContextMenu={(event) => handleFolderContextMenu(event, folder.id)}
+                layout="row"
+                tilt={0.55}
+                theme="light"
+                onItemClick={(item) => {
+                  if (!item.noteId) return
+                  setActiveView('all')
+                  setActiveFolderId(folder.id)
+                  if (item.noteId) setActiveId(item.noteId)
+                }}
+                onDragOver={(event) => { event.preventDefault(); setDragOverFolderId(folder.id) }}
+                onDragLeave={() => setDragOverFolderId(null)}
+                onDrop={(event) => handleFolderDrop(event, folder.id)}
+                className={dragOverFolderId === folder.id ? 'ring-2 ring-[var(--accent-secondary)] ring-offset-2' : ''}
+              />
+            })}
+            {visibleNotes.map((note) => {
+              const imageProduct = note.linkedProducts?.find((product) => product.imageUrl)
+              const isSelected = activeId === note.id
+              const cardColor = isSelected ? 'var(--accent-secondary-soft)' : 'var(--surface-muted)'
+              return <OrganicCard
+                key={note.id}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isSelected}
+                backgroundColor={cardColor}
+                draggable={!note.system}
+                onDragStart={(event) => handleNoteDragStart(event, note.id)}
+                onDragEnd={() => { setDraggedNoteId(null); setDragOverFolderId(null) }}
+                onClick={() => setActiveId(note.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    setActiveId(note.id)
+                  }
+                }}
+                className={`group ui-card ui-card--interactive relative flex h-full min-h-72 w-full flex-col overflow-hidden p-0 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-secondary)] ${note.system ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} ${draggedNoteId === note.id ? 'opacity-50' : ''} ${isSelected ? 'ui-card--selected' : 'hover:bg-[var(--surface-muted)]'}`}
+              >
+                <OrganicCardBody className="min-h-0 p-4 pb-8">
+                  <div>
+                    {imageProduct?.imageUrl ? <OrganicCardImage src={imageProduct.imageUrl} alt={imageProduct.name} width={670} height={350} className="mb-5 aspect-[1.92/1] !h-auto w-full object-cover transition-transform duration-300 group-hover/organic-card:scale-[1.02]" /> : null}
+                    <OrganicCardEyebrow className="mb-3 flex items-center justify-between gap-2">
+                      <span className="truncate">{note.fileType}</span>
+                      {isSelected ? <span className="inline-flex shrink-0 items-center gap-1 text-[var(--accent-secondary)]"><Check size={13} aria-hidden="true" />已选</span> : note.system ? <span className="inline-flex shrink-0 items-center gap-1"><Lock size={12} aria-hidden="true" />系统</span> : null}
+                    </OrganicCardEyebrow>
+                    <OrganicCardTitle className="mb-2 line-clamp-2 break-words text-2xl font-medium">{note.title}</OrganicCardTitle>
+                    <OrganicCardDescription className="line-clamp-3 text-base leading-relaxed">{note.excerpt}</OrganicCardDescription>
+                  </div>
+                </OrganicCardBody>
+                <OrganicCardBand />
+                <OrganicCardFooter className="bottom-2 pl-4 pr-2">
+                  <OrganicCardFooterLabel className="flex min-w-0 items-center gap-3 font-medium">
+                    <span className="truncate">查看</span>
+                    {note.linkedProducts?.length ? <span className="inline-flex shrink-0 items-center gap-1" title={`${note.linkedProducts.length} 个关联商品`}><Link2 size={13} aria-hidden="true" /><span>{note.linkedProducts.length}</span></span> : null}
+                  </OrganicCardFooterLabel>
+                  <OrganicCardFooterIcon>
+                    <ArrowRight className="size-3" />
+                  </OrganicCardFooterIcon>
+                </OrganicCardFooter>
+              </OrganicCard>
+            })}</> : <div className="px-3 py-10 text-center text-sm text-[var(--text-secondary)]"><p className="font-semibold text-[var(--text-primary)]">{activeView === 'uploaded' ? '还没有上传文件' : activeView === 'system' ? '没有匹配系统信息' : '没有匹配文件'}</p><p className="mt-1 leading-5">{activeView === 'uploaded' ? '使用右上角按钮上传第一个文件。' : '换一个关键词或清空搜索条件。'}</p></div>}</div>
         </section>
 
         <article className="min-w-0 bg-transparent">
@@ -668,12 +756,32 @@ export function KnowledgeThreePane() {
           {notice && <div role="status" className="fixed bottom-5 right-5 z-20 flex items-center gap-2 rounded-[8px] bg-[#1C1C1C] px-4 py-3 text-sm text-white shadow-lg"><Check size={16} /><span>{notice}</span><button type="button" onClick={() => setNotice(null)} className="ml-2 text-white/70 hover:text-white focus-visible:outline-2 focus-visible:outline-white" aria-label="关闭提示">×</button></div>}
         </article>
       </div>
-      {folderContextMenu && <div ref={folderContextMenuRef} role={folderContextMenu.mode === 'menu' ? 'menu' : undefined} aria-label="文件区操作" style={{ left: folderContextMenu.x, top: folderContextMenu.y }} className="fixed z-50 w-60 border border-[#D6D6D3] bg-[var(--surface)] p-1 shadow-[0_10px_28px_rgba(0,0,0,0.14)]">
-        {folderContextMenu.mode === 'menu' ? <button type="button" role="menuitem" autoFocus onClick={() => setFolderContextMenu((current) => current ? { ...current, mode: 'create' } : current)} className="flex h-10 w-full items-center gap-2 px-3 text-left text-sm text-[#37352F] hover:bg-[#E8E8E6] focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[var(--primary)]"><FolderPlus size={16} aria-hidden="true" />新建文件夹</button> : <form onSubmit={handleCreateFolder} className="p-2">
+      {folderContextMenu && <div ref={folderContextMenuRef} role={folderContextMenu.mode === 'menu' || folderContextMenu.mode === 'colors' ? 'menu' : undefined} aria-label={folderContextMenu.mode === 'colors' ? '选择文件夹颜色' : '文件区操作'} style={{ left: folderContextMenu.x, top: folderContextMenu.y }} className={`ui-card--floating fixed z-50 p-1 ${folderContextMenu.mode === 'colors' ? 'w-56' : 'w-60 border border-[var(--border-subtle)]'}`}>
+        {folderContextMenu.mode === 'menu' ? <button type="button" role="menuitem" autoFocus onClick={() => setFolderContextMenu((current) => current ? { ...current, mode: 'create' } : current)} className="flex h-10 w-full items-center gap-2 px-3 text-left text-sm text-[#37352F] hover:bg-[#E8E8E6] focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[var(--primary)]"><FolderPlus size={16} aria-hidden="true" />新建文件夹</button> : null}
+        {folderContextMenu.mode === 'colors' ? (() => {
+          const folder = folders.find((item) => item.id === folderContextMenu.folderId)
+          const selectedColor = folder
+            ? (Object.entries(APPLE_FOLDER_COLORS).find(([key, option]) => key === folder.color || option.value.toLowerCase() === folder.color.toLowerCase())?.[0] ?? 'blue')
+            : 'blue'
+          return <div className="p-2">
+            <p className="mb-2 truncate text-xs font-medium text-[var(--text-secondary)]">{folder?.title ?? '文件夹颜色'}</p>
+            <div className="grid grid-cols-4 gap-2" role="group" aria-label="文件夹颜色">
+              {Object.entries(APPLE_FOLDER_COLORS).map(([key, option]) => {
+                const selected = key === selectedColor
+                return <button key={key} type="button" role="menuitemradio" aria-checked={selected} aria-label={`切换为${option.label}`} title={option.label} autoFocus={selected} onClick={() => {
+                  if (folder) handleFolderColorChange(folder.id, key as FolderColor)
+                  setFolderContextMenu(null)
+                }} className={`flex h-9 items-center justify-center rounded-[var(--radius-control)] border border-[var(--border-subtle)] transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-secondary)] ${selected ? 'bg-[var(--surface-muted)]' : 'bg-[var(--surface)]'}`}>
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full border border-black/10" style={{ backgroundColor: option.value }}>{selected && <Check size={11} className="text-white drop-shadow" aria-hidden="true" />}</span>
+                </button>
+              })}
+            </div>
+          </div>
+        })() : folderContextMenu.mode === 'create' ? <form onSubmit={handleCreateFolder} className="p-2">
           <label htmlFor="new-knowledge-folder" className="text-xs font-medium text-[#37352F]">文件夹名称</label>
           <input ref={folderNameInputRef} id="new-knowledge-folder" value={newFolderName} onChange={(event) => setNewFolderName(event.target.value)} maxLength={40} placeholder="未命名文件夹" className="mt-2 h-9 w-full border border-[#D6D6D3] bg-transparent px-2.5 text-sm outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)]" />
           <div className="mt-2 flex items-center justify-end gap-2"><button type="button" onClick={() => setFolderContextMenu(null)} className="h-9 border border-[#D6D6D3] px-3 text-xs text-[#636363] hover:bg-[#E8E8E6] focus-visible:outline-2 focus-visible:outline-[var(--primary)]">取消</button><button type="submit" disabled={!newFolderName.trim()} className="h-9 bg-[var(--primary)] px-3 text-xs font-medium text-white hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40">创建</button></div>
-        </form>}
+        </form> : null}
       </div>}
     </main>
   )

@@ -255,7 +255,7 @@ export function SkillMarketplaceModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 rounded-[8px] bg-[var(--ink)] hover:bg-[var(--ink)] text-[var(--surface)] font-bold text-xs shadow-xs cursor-pointer"
+            className="px-4 py-1.5 rounded-[8px] bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-[var(--surface)] font-bold text-xs shadow-xs cursor-pointer"
           >
             完成
           </button>
@@ -352,7 +352,7 @@ export function SkillMarketplaceModal({
                 <button
                   type="submit"
                   disabled={!newSkillName.trim()}
-                  className="px-4 py-1.5 rounded-[8px] bg-[var(--ink)] hover:bg-[var(--ink)] disabled:bg-[var(--surface-muted)] text-[var(--surface)] disabled:text-[var(--lavender)] text-xs font-bold shadow-xs cursor-pointer"
+                  className="px-4 py-1.5 rounded-[8px] bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] disabled:bg-[var(--surface-muted)] text-[var(--surface)] disabled:text-[var(--lavender)] text-xs font-bold shadow-xs cursor-pointer"
                 >
                   保存到本地
                 </button>
@@ -442,7 +442,7 @@ function SkillCard({
           className={`px-3 py-1 rounded-[6px] text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
             isActive
               ? 'bg-[var(--lavender)] text-[var(--surface)] shadow-2xs'
-              : 'bg-[var(--ink)] hover:bg-[var(--ink)] text-[var(--surface)]'
+              : 'bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-[var(--surface)]'
           }`}
         >
           {isActive ? (

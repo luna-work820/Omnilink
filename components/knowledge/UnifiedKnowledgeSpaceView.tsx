@@ -608,7 +608,7 @@ export function UnifiedKnowledgeSpaceView({
                     <h3 className="text-xs font-extrabold text-[var(--ink)] tracking-tight">
                       知识库来源
                     </h3>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--primary)] text-[var(--primary)] font-bold border border-[var(--primary)]">
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] font-bold border border-[var(--primary)]">
                       {folders.length}
                     </span>
                   </div>
@@ -808,7 +808,7 @@ export function UnifiedKnowledgeSpaceView({
                         }}
                         className={`w-full text-left px-2.5 py-1.5  transition-colors cursor-pointer flex items-center justify-between text-xs font-semibold ${
                           selectedModelId === model.id
-                            ? 'bg-[var(--primary)] text-[var(--primary)] font-bold'
+                            ? 'bg-[var(--primary)] text-[var(--primary-foreground)] font-bold'
                             : 'text-[var(--ink)] hover:bg-[var(--surface-muted)]'
                         }`}
                       >
@@ -842,7 +842,7 @@ export function UnifiedKnowledgeSpaceView({
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 custom-scroll bg-[var(--surface-muted)]/50">
             {researchMessages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-[var(--primary)] text-[var(--primary)] flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center">
                   <Sparkles size={24} />
                 </div>
                 <div className="space-y-1 max-w-sm">
@@ -962,7 +962,7 @@ export function UnifiedKnowledgeSpaceView({
                               {msg.citations.map((cit) => (
                                 <span
                                   key={cit.id}
-                                  className="px-2 py-0.5  bg-[var(--primary)] text-[var(--primary)] text-[10px] font-medium border border-[var(--primary)]"
+                                  className="px-2 py-0.5  bg-[var(--primary)] text-[var(--primary-foreground)] text-[10px] font-medium border border-[var(--primary)]"
                                 >
                                   {cit.sourceName}
                                 </span>

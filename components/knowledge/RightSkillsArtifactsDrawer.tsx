@@ -119,7 +119,7 @@ export function RightSkillsArtifactsDrawer({
               <button
                 type="button"
                 onClick={() => setIsCommandPaletteOpen(true)}
-                className="w-8 h-8  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--primary)] flex items-center justify-center cursor-pointer transition-colors"
+                className="w-8 h-8  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center cursor-pointer transition-colors"
                 title="快捷检索技能"
               >
                 <Search size={15} />
@@ -129,7 +129,7 @@ export function RightSkillsArtifactsDrawer({
               <button
                 type="button"
                 onClick={onOpenSkillMarketplace}
-                className="w-8 h-8  bg-[var(--surface-muted)] hover:bg-[var(--primary)] text-[var(--ink)] hover:text-[var(--primary)] flex items-center justify-center cursor-pointer transition-colors relative border border-[var(--border)]"
+                className="w-8 h-8  bg-[var(--surface-muted)] hover:bg-[var(--primary)] text-[var(--ink)] hover:text-[var(--primary-foreground)] flex items-center justify-center cursor-pointer transition-colors relative border border-[var(--border)]"
                 title="技能中心"
               >
                 <Sparkles size={15} />
@@ -169,7 +169,7 @@ export function RightSkillsArtifactsDrawer({
             <div className="p-3 border-b border-[var(--border)] bg-[var(--surface)] space-y-2 shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <div className="w-5 h-5  bg-[var(--primary)] text-[var(--primary)] flex items-center justify-center">
+                  <div className="w-5 h-5  bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center">
                     <Sparkles size={12} />
                   </div>
                   <h3 className="text-xs font-extrabold text-[var(--ink)] tracking-tight">
@@ -223,7 +223,7 @@ export function RightSkillsArtifactsDrawer({
                     key={pill.id}
                     type="button"
                     onClick={() => handlePillClick(pill.id)}
-                    className="bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)] rounded-full px-2 py-0.5 text-[11px] transition-all cursor-pointer font-medium active:scale-95 whitespace-nowrap"
+                    className="bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--primary-foreground)] border border-[var(--primary)] rounded-full px-2 py-0.5 text-[11px] transition-all cursor-pointer font-medium active:scale-95 whitespace-nowrap"
                   >
                     {pill.name}
                   </button>
@@ -268,7 +268,7 @@ export function RightSkillsArtifactsDrawer({
                       {/* Card Header: Tag badge, keywords & hover actions */}
                       <div className="flex items-center justify-between gap-1 mb-1">
                         <div className="flex items-center gap-1 min-w-0 flex-wrap">
-                          <span className="px-1.5 py-0.2  bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)] text-[10px] font-bold truncate">
+                          <span className="px-1.5 py-0.2  bg-[var(--primary)] text-[var(--primary-foreground)] border border-[var(--primary)] text-[10px] font-bold truncate">
                             {art.typeLabel}
                           </span>
                           {art.pinned && (

@@ -1,3 +1,6 @@
+import type { StorefrontProductOption, StorefrontProductVariant } from '@/lib/storefront/types';
+import type { OutboundLinks } from '@/lib/products/outbound-links';
+
 export interface Review {
   id: string;
   author: string;
@@ -11,10 +14,15 @@ export interface ProductItem {
   id: string;
   name: string;
   creator: string;
+  itemType?: 'product' | 'service' | 'skill';
   price: number;
   formattedPrice: string;
+  priceMode?: 'amount' | 'inquiry' | 'free';
+  outboundLinks?: OutboundLinks;
   mainImage: string;
+  videoUrl?: string;
   aspectRatio: number;
+  posterFormat?: 'landscape' | 'portrait';
   secondaryImages: string[];
   category: string;
   shortDescription: string;
@@ -29,6 +37,18 @@ export interface ProductItem {
   currency?: string;
   storeSlug?: string;
   defaultVariantId?: string | null;
+  options?: StorefrontProductOption[];
+  variants?: StorefrontProductVariant[];
+  deliveryType?: 'physical' | 'digital' | 'ai_capability';
+  capabilityKind?: 'question_set' | 'skill' | 'plugin';
+}
+
+export type DiscoveryType = '商品' | '数字' | '服务';
+
+export function getDiscoveryType(item: Pick<ProductItem, 'itemType' | 'deliveryType' | 'capabilityKind'>): DiscoveryType {
+  if (item.itemType === 'service') return '服务';
+  if (item.itemType === 'skill' || item.deliveryType === 'digital' || item.deliveryType === 'ai_capability' || item.capabilityKind) return '数字';
+  return '商品';
 }
 
 export interface ExhibitionChapter {
@@ -74,6 +94,7 @@ export interface Story {
 
 export interface ScenePost {
   id: string;
+  kind?: 'collection' | 'note';
   title: string;
   editorName: string;
   editorAvatar: string;
@@ -83,6 +104,7 @@ export interface ScenePost {
   linkedProducts: ProductItem[];
   aspectRatio: number;
   description: string;
+  blocks?: import('@/lib/creator-content').ContentBlock[];
   hasWhiteBg?: boolean;
 }
 
@@ -94,6 +116,8 @@ export interface CartItem {
   product: ProductItem;
   quantity: number;
   variant: string;
+  variantId?: string | null;
+  selectedOptions?: Record<string, string>;
 }
 
 export interface QnaMessage {
@@ -106,13 +130,20 @@ export interface QnaMessage {
 
 export interface AiChatMessage {
   id: string;
+  conversationId?: string;
   text: string;
   isUser: boolean;
   image?: string;
   styleTag?: string;
   matchedProducts?: ProductItem[];
+  matchReasons?: Record<string, string>;
+  fileName?: string;
   timestamp?: string;
+  model?: ConsumerAiModel;
 }
 
-export type MainTab = 'WORLD' | 'PERSONAL' | 'CART' | 'PROFILE';
+export type ConsumerAiModel = 'gemini' | 'qwen-plus' | 'deepseek-flash' | 'deepseek-v4-pro';
+
+export type MainTab = 'WORLD' | 'PERSONAL' | 'CART' | 'FAVORITES' | 'PROFILE';
 export type PersonalSubTab = 'AI' | 'ME';
+export type ProfileTab = 'CART' | 'SAVED' | 'PREFERENCES' | 'ORDERS';

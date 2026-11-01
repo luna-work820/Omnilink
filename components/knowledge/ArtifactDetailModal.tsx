@@ -69,7 +69,7 @@ export function ArtifactDetailModal({
         <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--surface-muted)] flex items-start justify-between gap-4 shrink-0">
           <div className="space-y-1.5 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-0.5 rounded-full bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)] text-xs font-bold">
+              <span className="px-2.5 py-0.5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] border border-[var(--primary)] text-xs font-bold">
                 {artifact.typeLabel}
               </span>
               <span className="text-xs text-[var(--lavender)] flex items-center gap-1">

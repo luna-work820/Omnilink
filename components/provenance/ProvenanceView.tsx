@@ -380,7 +380,7 @@ export function ProvenanceView() {
               onClick={() => setIsAddModalOpen(true)}
               className="rounded-[6px] border-2 border-dashed border-[var(--surface-muted)] dark:border-[var(--surface-muted)] hover:border-[var(--primary)] hover:bg-[var(--surface-muted)]/50 dark:hover:bg-[var(--surface-muted)]/50 transition-all p-6 flex flex-col items-center justify-center text-center cursor-pointer min-h-[260px] group"
             >
-              <div className="w-10 h-10  bg-[var(--surface-muted)] dark:bg-[var(--surface-muted)] group-hover:bg-[var(--primary)] dark:group-hover:bg-[var(--primary)]/40 text-[var(--lavender)] group-hover:text-[var(--primary)] flex items-center justify-center mb-2.5 transition-colors">
+              <div className="w-10 h-10  bg-[var(--surface-muted)] dark:bg-[var(--surface-muted)] group-hover:bg-[var(--primary)] dark:group-hover:bg-[var(--primary)]/40 text-[var(--lavender)] group-hover:text-[var(--primary-foreground)] flex items-center justify-center mb-2.5 transition-colors">
                 <Plus size={20} />
               </div>
               <div className="text-xs font-bold text-[var(--lavender)] dark:text-[var(--surface)]">
@@ -773,7 +773,7 @@ export function ProvenanceView() {
                               使用范围: {auth.scope} · 有效期: {auth.validity}
                             </div>
                           </div>
-                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[2px] bg-[var(--primary)] text-[var(--primary)] dark:bg-[var(--primary)]/40 dark:text-[var(--primary)]">
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[2px] bg-[var(--primary)] text-[var(--primary-foreground)] dark:bg-[var(--primary)]/40 dark:text-[var(--primary-foreground)]">
                             已授权
                           </span>
                         </div>

@@ -31,15 +31,15 @@ export function writeStoreCheckoutCart(storeSlug: string, items: CartItem[]) {
   const itemsForStore = items
     .filter((item) => (item.product.storeSlug || 'omnilink-flagship') === storeSlug)
     .map((item) => ({
-      id: `${item.product.id}_${item.product.defaultVariantId || 'base'}_`,
+      id: `${item.product.id}_${item.variantId ?? item.product.defaultVariantId ?? 'base'}_`,
       productId: item.product.id,
-      variantId: item.product.defaultVariantId || null,
+      variantId: item.variantId ?? item.product.defaultVariantId ?? null,
       quantity: item.quantity,
       productName: item.product.name,
       image: item.product.mainImage,
       price: item.product.price,
       currency: item.product.currency || 'CNY',
-      selectedOptions: {},
+      selectedOptions: item.selectedOptions ?? {},
     }))
 
   localStorage.setItem(`omnilink_cart_${storeSlug}`, JSON.stringify(itemsForStore))

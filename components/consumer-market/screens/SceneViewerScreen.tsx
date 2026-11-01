@@ -3,10 +3,7 @@ import {
   X,
   Play,
   Pause,
-  ShoppingBag,
-  Zap,
-  CheckCircle2,
-  Circle,
+  Heart,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
@@ -17,71 +14,27 @@ interface SceneViewerScreenProps {
   scenePosts: ScenePost[];
   initialIndex: number;
   onClose: () => void;
-  onOpenProductDetail: (product: ProductItem) => void;
+  onOpenProductCard: (product: ProductItem) => void;
 }
 
 export const SceneViewerScreen: React.FC<SceneViewerScreenProps> = ({
   scenePosts,
   initialIndex,
   onClose,
-  onOpenProductDetail,
+  onOpenProductCard,
 }) => {
-  const { addToCart, showToast } = useOmnilink();
+  const { savedProductIds, toggleSaveProduct } = useOmnilink();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
-  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
 
   const scene = scenePosts[currentIndex] || scenePosts[0];
 
   const handleNext = () => {
     setCurrentIndex((prev) => (prev + 1) % scenePosts.length);
-    setSelectedProductIds([]);
   };
 
   const handlePrev = () => {
     setCurrentIndex((prev) => (prev - 1 + scenePosts.length) % scenePosts.length);
-    setSelectedProductIds([]);
-  };
-
-  const toggleProductSelect = (id: string) => {
-    setSelectedProductIds((prev) => {
-      const exists = prev.includes(id);
-      const updated = exists ? prev.filter((i) => i !== id) : [...prev, id];
-      if (updated.length > 0) {
-        setIsMultiSelectMode(true);
-      }
-      return updated;
-    });
-  };
-
-  const selectAllProducts = () => {
-    if (selectedProductIds.length === scene.linkedProducts.length) {
-      setSelectedProductIds([]);
-    } else {
-      setSelectedProductIds(scene.linkedProducts.map((p) => p.id));
-      setIsMultiSelectMode(true);
-    }
-  };
-
-  const activeSelections = scene.linkedProducts.filter((p) =>
-    selectedProductIds.includes(p.id)
-  );
-
-  const totalPrice = activeSelections.reduce((sum, item) => sum + item.price, 0);
-
-  const handleBatchAddToCart = () => {
-    if (activeSelections.length === 0) return;
-    activeSelections.forEach((p) => addToCart(p));
-    showToast(`已将 ${activeSelections.length} 件艺术好物加入选品袋！`);
-    setSelectedProductIds([]);
-  };
-
-  const handleBatchBuyNow = () => {
-    if (activeSelections.length === 0) return;
-    activeSelections.forEach((p) => addToCart(p));
-    showToast(`⚡ 一键选购成功: ${activeSelections.length} 件实物单品已锁定 (¥${totalPrice.toFixed(0)})!`);
-    setSelectedProductIds([]);
   };
 
   return (
@@ -153,11 +106,9 @@ export const SceneViewerScreen: React.FC<SceneViewerScreenProps> = ({
             alt={scene.editorName}
             className="h-8 w-8 rounded-full border border-white/30 object-cover"
           />
-          <div>
-            <span className="text-xs font-semibold text-white/90">
-              {scene.editorName}
-            </span>
-            <div className="text-[10px] text-white/60">空间策展人</div>
+          <div className="flex min-w-0 items-baseline gap-2 whitespace-nowrap">
+            <span className="truncate text-xs font-semibold text-white/90">{scene.editorName}</span>
+            <span className="shrink-0 text-xs text-white/60">空间策展人</span>
           </div>
         </div>
 
@@ -171,129 +122,42 @@ export const SceneViewerScreen: React.FC<SceneViewerScreenProps> = ({
         {/* Linked Shoppable Objects Shelf */}
         {scene.linkedProducts.length > 0 && (
           <div className="mt-3.5 pt-3 border-t border-white/15">
-            <div className="flex items-center justify-between pb-2">
-              <span className="text-[10px] uppercase tracking-wider font-bold text-white/70">
-                空间搭配单品 ({scene.linkedProducts.length})
-              </span>
-              <button
-                onClick={selectAllProducts}
-                className="text-[11px] text-[#A73F32] bg-white/90 px-2 py-0.5 rounded-full font-bold hover:bg-white"
-              >
-                {selectedProductIds.length === scene.linkedProducts.length
-                  ? '取消全选'
-                  : '长按多选 / 全选'}
-              </button>
-            </div>
+            <div className="pb-2 text-xs font-medium text-white/70">搭配单品（{scene.linkedProducts.length}）</div>
 
             {/* Horizontal Linked Products Scroll */}
             <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
               {scene.linkedProducts.map((prod) => {
-                const isSelected = selectedProductIds.includes(prod.id);
+                const isSaved = savedProductIds.includes(prod.id);
                 return (
                   <div
                     key={prod.id}
-                    onClick={() => {
-                      if (isMultiSelectMode) {
-                        toggleProductSelect(prod.id);
-                      } else {
-                        onOpenProductDetail(prod);
-                      }
-                    }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      setIsMultiSelectMode(true);
-                      toggleProductSelect(prod.id);
-                    }}
-                    className={`relative flex items-center gap-2.5 rounded-xl p-2 min-w-[210px] max-w-[240px] shrink-0 border transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-white/20 border-[#A73F32] ring-1 ring-[#A73F32]'
-                        : 'bg-white/10 border-white/15 hover:bg-white/15'
-                    }`}
+                    className="relative flex min-w-[210px] max-w-[240px] shrink-0 items-center gap-1 rounded-xl border-[0.5px] border-white/15 bg-white/10 p-2"
                   >
-                    {/* Checkbox for selection */}
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsMultiSelectMode(true);
-                        toggleProductSelect(prod.id);
-                      }}
-                      className="text-white hover:text-[#A73F32] p-0.5"
-                      title="选择单品"
+                      type="button"
+                      onClick={() => onOpenProductCard(prod)}
+                      aria-label={`查看商品卡片：${prod.name}`}
+                      className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                     >
-                      {isSelected ? (
-                        <CheckCircle2 size={16} className="text-[#A73F32] fill-white" />
-                      ) : (
-                        <Circle size={16} className="text-white/40" />
-                      )}
+                      <img src={prod.mainImage} alt="" className="h-11 w-11 shrink-0 rounded-lg bg-neutral-800 object-cover" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-xs font-semibold text-white">{prod.name}</span>
+                        <span className="block text-xs text-white/80">{prod.formattedPrice}</span>
+                      </span>
                     </button>
-
-                    <img
-                      src={prod.mainImage}
-                      alt={prod.name}
-                      className="h-11 w-11 rounded-lg object-cover bg-neutral-800"
-                    />
-
-                    <div className="flex-1 min-w-0">
-                      <div className="truncate text-xs font-bold text-white">
-                        {prod.name}
-                      </div>
-                      <div className="text-[11px] font-bold text-white/90">
-                        {prod.formattedPrice}
-                      </div>
-                    </div>
-
-                    {/* Quick Add icon */}
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addToCart(prod);
-                      }}
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white active:scale-95 transition-all"
-                      title="加入选品袋"
+                      type="button"
+                      onClick={() => toggleSaveProduct(prod.id)}
+                      aria-label={isSaved ? `取消收藏：${prod.name}` : `收藏：${prod.name}`}
+                      aria-pressed={isSaved}
+                      title={isSaved ? '取消收藏' : '收藏'}
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${isSaved ? 'text-[var(--palette-orange)]' : 'text-white'}`}
                     >
-                      <ShoppingBag size={12} />
+                      <Heart size={18} fill={isSaved ? 'currentColor' : 'none'} aria-hidden="true" />
                     </button>
                   </div>
                 );
               })}
-            </div>
-          </div>
-        )}
-
-        {/* PROMINENT BOTTOM BAR FOR MULTI-SELECTION */}
-        {(selectedProductIds.length > 0 || isMultiSelectMode) && (
-          <div className="mt-3 rounded-2xl bg-[#FFFFFF] p-3.5 text-[#181817] shadow-2xl border border-[#DED9D0] animate-in slide-in-from-bottom duration-200">
-            <div className="flex items-center justify-between pb-2 text-xs">
-              <span className="font-medium text-[#78746E]">
-                已选{' '}
-                <strong className="text-[#181817]">
-                  {activeSelections.length}
-                </strong>{' '}
-                件艺术单品
-              </span>
-              <span className="text-sm font-bold text-[#181817]">
-                合计: ¥{totalPrice.toFixed(0)}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 pt-1">
-              <button
-                onClick={handleBatchAddToCart}
-                disabled={activeSelections.length === 0}
-                className="flex-1 flex h-11 items-center justify-center gap-1.5 rounded-xl bg-[#F6F3EE] border border-[#DED9D0] text-xs font-bold text-[#181817] hover:bg-[#FFFFFF] disabled:opacity-40 active:scale-98 transition-all"
-              >
-                <ShoppingBag size={14} />
-                <span>一键加入购物车</span>
-              </button>
-
-              <button
-                onClick={handleBatchBuyNow}
-                disabled={activeSelections.length === 0}
-                className="flex-[1.3] flex h-11 items-center justify-center gap-2 rounded-xl bg-[#A73F32] text-xs font-bold text-white shadow-lg hover:bg-[#8F352A] active:scale-98 disabled:opacity-40 transition-all"
-              >
-                <Zap size={16} className="fill-white animate-pulse" />
-                <span className="tracking-wide">一键选购 (¥{totalPrice.toFixed(0)})</span>
-              </button>
             </div>
           </div>
         )}

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireUser, getOwnedStore } from '@/lib/api/auth'
+import { readOutboundLinks } from '@/lib/products/outbound-links'
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireUser()
@@ -13,11 +14,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { data: store } = await auth.supabase.from('stores').select('id, organization_id').eq('id', storeRef.id).maybeSingle()
   if (!store) return NextResponse.json({ error: '未找到店铺' }, { status: 404 })
 
-  const { data: product } = await auth.supabase.from('catalog_items').select('id, organization_id, status')
+  const { data: product } = await auth.supabase.from('catalog_items').select('id, organization_id, status, details')
     .eq('id', id).eq('organization_id', store.organization_id).maybeSingle()
   if (!product) return NextResponse.json({ error: '商品不存在或无权访问' }, { status: 404 })
   if (body.visible && product.status !== 'active') {
-    return NextResponse.json({ error: '请先将商品状态设为已发布，再开放 C 端展示' }, { status: 409 })
+    return NextResponse.json({ error: '请先发布商品' }, { status: 409 })
+  }
+  if (body.visible) {
+    const details = product.details && typeof product.details === 'object' && !Array.isArray(product.details)
+      ? product.details as Record<string, unknown> : {}
+    if (!Object.keys(readOutboundLinks(details.outbound_links)).length) {
+      return NextResponse.json({ error: '请先配置有效的渠道跳转链接' }, { status: 422 })
+    }
   }
 
   const { data: channel, error: channelError } = await auth.supabase.from('sales_channels').select('id')
@@ -31,6 +39,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const values = {
     is_visible: body.visible,
+    is_purchasable: false,
     published_at: body.visible ? new Date().toISOString() : null,
   }
   const result = existing
@@ -40,7 +49,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       catalog_item_id: id,
       channel_id: channel.id,
       store_id: store.id,
-      is_purchasable: true,
       ...values,
     })
   if (result.error) return NextResponse.json({ error: result.error.message }, { status: 500 })

@@ -9,10 +9,13 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    // P0 scope: only the new product-with-variants tests.
-    // Existing legacy tests in lib/product/*.test.ts and lib/imports/__tests__/*.test.ts
-    // are not part of this P0 task and are excluded to keep the test surface minimal.
-    include: ['lib/products/**/__tests__/**/*.test.ts', 'lib/semantic/__tests__/**/*.test.ts'],
+    include: [
+      'lib/creator-content.test.ts',
+      'lib/products/**/__tests__/**/*.test.ts',
+      'lib/semantic/__tests__/**/*.test.ts',
+      'lib/storefront/**/*.test.ts',
+      'lib/consumer-advisor/**/*.test.ts',
+    ],
     globals: false,
   },
 })

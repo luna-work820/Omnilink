@@ -13,6 +13,7 @@
  */
 
 import type { StoreContactConfig, StoreSocialConfig } from './schema'
+import type { OutboundLinks } from '@/lib/products/outbound-links'
 
 export interface StorefrontProductOptionValue {
   name: string
@@ -42,10 +43,16 @@ export interface StorefrontProduct {
   id: string
   /** UI 展示名（normalize 统一 name 口径）。 */
   name: string
+  itemType?: 'product' | 'service' | 'skill'
+  category?: string | null
+  deliveryType?: 'physical' | 'digital' | 'ai_capability'
+  capabilityKind?: 'question_set' | 'skill' | 'plugin'
   /** 路径段。当前 DB 无 slug 列，= 商品 id。 */
   slug: string
   /** 数值型价格；非法/缺失归一为 0。 */
   price: number
+  priceMode?: 'amount' | 'inquiry' | 'free'
+  outboundLinks?: OutboundLinks
   /** 商品货币；缺省回退店铺货币，最后回退 schema 默认 'USD'。 */
   currency: string
   /** 主图；无图时为 null（UI 负责占位，不在这里猜）。 */

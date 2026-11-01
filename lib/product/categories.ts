@@ -661,6 +661,46 @@ export const SEED_CATEGORIES: Category[] = [
     keywords: ['氛围灯', '台灯', '壁灯', '落地灯', '灯串'],
   },
 
+  {
+    id: 'cat-virtual',
+    name: '虚拟产品',
+    nameEn: 'Virtual products',
+    slug: 'virtual-products',
+    parentId: null,
+    icon: 'Sparkles',
+    sortOrder: 8.5,
+    isActive: true,
+  },
+  {
+    id: 'cat-virtual-question-set',
+    name: '测试题',
+    nameEn: 'Question set',
+    slug: 'question-set',
+    parentId: 'cat-virtual',
+    sortOrder: 1,
+    isActive: true,
+    keywords: ['测试题', '测评'],
+  },
+  {
+    id: 'cat-virtual-skill',
+    name: '技能',
+    slug: 'skill',
+    parentId: 'cat-virtual',
+    sortOrder: 2,
+    isActive: true,
+    keywords: ['skill', '技能'],
+  },
+  {
+    id: 'cat-virtual-plugin',
+    name: '插件',
+    nameEn: 'Plugin',
+    slug: 'plugin',
+    parentId: 'cat-virtual',
+    sortOrder: 3,
+    isActive: true,
+    keywords: ['插件', 'plugin'],
+  },
+
   // ----------------------------------------------------
   // Level 1: 食品生鲜 (food-beverage)
   // ----------------------------------------------------
@@ -917,6 +957,10 @@ const MVP_CATEGORY_IDS = new Set([
   'cat-decor-fragrance',
   'cat-decor-plants',
   'cat-decor-lighting',
+  'cat-virtual',
+  'cat-virtual-question-set',
+  'cat-virtual-skill',
+  'cat-virtual-plugin',
 ])
 
 /**

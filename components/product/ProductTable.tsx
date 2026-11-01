@@ -17,8 +17,11 @@ import {
 import { EmptyState } from '@/components/dashboard/kit'
 import { useLanguage } from '@/context/LanguageContext'
 import Link from 'next/link'
+import type { ListingType } from '@/lib/products/listing-type'
 
 export type ProductRow = {
+  listingType?: ListingType
+  priceMode?: 'amount' | 'inquiry' | 'free'
   id: string
   name: string
   category?: string | null
@@ -384,7 +387,7 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
 
                     {/* 售价 */}
                     <td className="py-3.5 px-4 font-bold text-[var(--lavender)] text-sm">
-                      {p.price != null && p.price !== '' ? `¥${Number(p.price).toFixed(2)}` : '—'}
+                      {p.priceMode === 'inquiry' ? '询价' : p.priceMode === 'free' ? '免费' : p.price != null && p.price !== '' ? `¥${Number(p.price).toFixed(2)}` : '—'}
                     </td>
 
                     {/* 库存 */}
@@ -416,7 +419,7 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
                         <Link
                           href={`/dashboard/products/${p.id}/edit`}
                           prefetch={true}
-                          className="p-1.5 text-[var(--lavender)] hover:text-[var(--primary)] hover:bg-[var(--primary)]  transition-colors"
+                          className="p-1.5 text-[var(--lavender)] hover:text-[var(--primary-foreground)] hover:bg-[var(--primary)]  transition-colors"
                           title="编辑商品"
                         >
                           <Edit2 size={14} />
@@ -556,7 +559,7 @@ function ProductCard({
 
           <div className="flex items-center justify-between pt-1">
             <span className="text-xs font-extrabold text-[var(--primary)]">
-              {p.price != null && p.price !== '' ? `¥${Number(p.price).toFixed(2)}` : '未定价'}
+              {p.priceMode === 'inquiry' ? '询价' : p.priceMode === 'free' ? '免费' : p.price != null && p.price !== '' ? `¥${Number(p.price).toFixed(2)}` : '未定价'}
             </span>
             <span className="text-[10px] text-[var(--lavender)] font-medium">
               库存: {p.inventory ?? 0}

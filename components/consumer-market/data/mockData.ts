@@ -7,6 +7,41 @@ import {
   ScenePost,
   FeedItem,
 } from '../types';
+import collectedProductData from './collected-demo-products.json';
+
+const demoProducts = collectedProductData as unknown as ProductItem[];
+const cleanedProductImages: Record<string, string> = {
+  P0010: '/consumer-market/cleaned/collected-p0010-clean.webp',
+  P0011: '/consumer-market/cleaned/collected-p0011-clean.webp',
+  P0016: '/consumer-market/cleaned/collected-p0016-clean.webp',
+  P0006: '/consumer-market/cleaned/collected-p0006-clean.webp',
+  P0007: '/consumer-market/cleaned/collected-p0007-clean.webp',
+  P0008: '/consumer-market/cleaned/collected-p0008-clean.webp',
+  P0028: '/consumer-market/cleaned/collected-p0028-clean.webp',
+  P0031: '/consumer-market/cleaned/collected-p0031-clean.webp',
+  P0032: '/consumer-market/cleaned/collected-p0032-clean.webp',
+  P0034: '/consumer-market/cleaned/collected-p0034-clean.webp',
+  P0036: '/consumer-market/cleaned/collected-p0036-clean.webp',
+  P0038: '/consumer-market/cleaned/collected-p0038-clean.webp',
+  P0040: '/consumer-market/cleaned/collected-p0040-clean.webp',
+  P0041: '/consumer-market/cleaned/collected-p0041-clean.webp',
+  P0043: '/consumer-market/cleaned/collected-p0043-clean.webp',
+  P0044: '/consumer-market/cleaned/collected-p0044-clean.webp',
+  P0045: '/consumer-market/cleaned/collected-p0045-clean.webp',
+  P0046: '/consumer-market/cleaned/collected-p0046-clean.webp',
+  P0047: '/consumer-market/cleaned/collected-p0047-clean.webp',
+  P0051: '/consumer-market/cleaned/collected-p0051-clean.webp',
+  P0052: '/consumer-market/cleaned/collected-p0052-clean.webp',
+  P0053: '/consumer-market/cleaned/collected-p0053-clean.webp',
+  P0054: '/consumer-market/cleaned/collected-p0054-clean.webp',
+  P0056: '/consumer-market/cleaned/collected-p0056-clean.webp',
+  P0059: '/consumer-market/cleaned/collected-p0059-clean.webp',
+};
+export const collectedDemoProducts = demoProducts
+  .map((product) => ({
+    ...product,
+    mainImage: cleanedProductImages[product.id] ?? product.mainImage,
+  }));
 
 export const sampleReviews: Review[] = [
   {
@@ -224,9 +259,10 @@ export const headphonesProduct: ProductItem = {
   creator: 'Acoustic Atelier',
   price: 340.0,
   formattedPrice: '¥340',
-  mainImage: '/consumer-market/img_headphones.jpg',
-  aspectRatio: 0.75,
+  mainImage: '/consumer-market/ssd-import/retro-headphones.webp',
+  aspectRatio: 0.8,
   secondaryImages: [
+    '/consumer-market/ssd-import/retro-headphones.webp',
     '/consumer-market/img_headphones.jpg',
     '/consumer-market/img_scene_collector.jpg',
   ],
@@ -257,9 +293,10 @@ export const keyboardProduct: ProductItem = {
   creator: 'Studio K',
   price: 145.0,
   formattedPrice: '¥145',
-  mainImage: '/consumer-market/img_keyboard.jpg',
-  aspectRatio: 1.77,
+  mainImage: '/consumer-market/ssd-import/retro-keyboard.webp',
+  aspectRatio: 0.75,
   secondaryImages: [
+    '/consumer-market/ssd-import/retro-keyboard.webp',
     '/consumer-market/img_keyboard.jpg',
     '/consumer-market/img_scene_collector.jpg',
   ],
@@ -290,9 +327,10 @@ export const cratesProduct: ProductItem = {
   creator: 'Atelier NORD',
   price: 125.0,
   formattedPrice: '¥125',
-  mainImage: '/consumer-market/img_crates.jpg',
-  aspectRatio: 1.33,
+  mainImage: '/consumer-market/ssd-import/modular-desk-storage.webp',
+  aspectRatio: 0.75,
   secondaryImages: [
+    '/consumer-market/ssd-import/modular-desk-storage.webp',
     '/consumer-market/img_crates.jpg',
     '/consumer-market/img_scene_collector.jpg',
   ],
@@ -314,6 +352,25 @@ export const cratesProduct: ProductItem = {
   storeImage: '/consumer-market/img_crates.jpg',
   contextStory:
     '将精密工坊的秩序感直接引入创意工作室的书桌之上。',
+};
+
+export const slippersProduct: ProductItem = {
+  id: 'ssd-cat-paw-slippers',
+  name: '名创优品 Happy 撸猫棉拖',
+  creator: '名创优品',
+  price: 0,
+  formattedPrice: '询价',
+  priceMode: 'inquiry',
+  mainImage: '/consumer-market/ssd-import/cat-paw-slippers.webp',
+  videoUrl: '/consumer-market/ssd-import/cat-paw-slippers.mp4',
+  aspectRatio: 0.75,
+  secondaryImages: [],
+  category: '家居日用',
+  shortDescription: '猫爪造型棉拖，售价与规格待确认。',
+  aiSummary: '猫爪造型棉拖，售价与规格待确认。',
+  reviews: [],
+  specs: {},
+  storeName: '名创优品',
 };
 
 export const mobileTableProduct: ProductItem = {
@@ -411,10 +468,11 @@ export const knitSweaterProduct: ProductItem = {
     '在操作实体器物时，给予身体如拥抱般的安静温暖。',
 };
 
-export const productsList: ProductItem[] = [
+const curatedProductsList: ProductItem[] = [
   lampProduct,
   chairProduct,
   headphonesProduct,
+  slippersProduct,
   keyboardProduct,
   linenCoatProduct,
   knitSweaterProduct,
@@ -424,6 +482,8 @@ export const productsList: ProductItem[] = [
   shelfProduct,
   clockProduct,
 ];
+
+export const productsList: ProductItem[] = [...collectedDemoProducts, ...curatedProductsList];
 
 export const sampleScene1: ScenePost = {
   id: 'scene_01',
@@ -479,10 +539,10 @@ export const sampleScene4: ScenePost = {
   title: '植物环抱的工作台绿洲',
   editorName: 'Elena Vance',
   editorAvatar: '/consumer-market/img_creator_alex.jpg',
-  coverImage: '/consumer-market/img_scene_jungle.jpg',
-  isVideo: true,
-  mediaList: ['/consumer-market/img_scene_jungle.jpg', '/consumer-market/img_mobile_table.jpg'],
-  linkedProducts: [chairProduct, mobileTableProduct, headphonesProduct],
+  coverImage: '/consumer-market/ssd-import/plant-filled-workspace.webp',
+  isVideo: false,
+  mediaList: ['/consumer-market/ssd-import/plant-filled-workspace.webp', '/consumer-market/img_mobile_table.jpg'],
+  linkedProducts: [chairProduct, mobileTableProduct],
   aspectRatio: 1.33,
   description:
     '绿意盎然的室内森林书房，芭蕉叶与龟背竹过滤晨光，模块化家具支持随时流转。',
@@ -493,17 +553,18 @@ export const sampleScene5: ScenePost = {
   title: '收藏家书桌的静谧庇护所',
   editorName: 'Luna',
   editorAvatar: '/consumer-market/img_creator_alex.jpg',
-  coverImage: '/consumer-market/img_scene_collector.jpg',
+  coverImage: '/consumer-market/ssd-import/studio-collector.webp',
   isVideo: false,
   mediaList: [
-    '/consumer-market/img_scene_collector.jpg',
-    '/consumer-market/img_crates.jpg',
-    '/consumer-market/img_keyboard.jpg',
+    '/consumer-market/ssd-import/studio-collector.webp',
+    '/consumer-market/ssd-import/red-desk-lamp.webp',
+    '/consumer-market/ssd-import/retro-keyboard.webp',
+    '/consumer-market/ssd-import/modular-desk-storage.webp',
   ],
   linkedProducts: [cratesProduct, keyboardProduct, lampProduct],
   aspectRatio: 0.75,
   description:
-    '复古机械按键、蓝色工作灯、实木收纳盒与心爱器物构筑的亲密创意角。',
+    '机械键盘、桌面收纳与可调节台灯，搭配绿植和日常器物构成工作角落。',
 };
 
 export const scenePostsList: ScenePost[] = [
@@ -516,6 +577,7 @@ export const scenePostsList: ScenePost[] = [
 
 export const feedItemsList: FeedItem[] = [
   { type: 'product', product: headphonesProduct },
+  { type: 'product', product: slippersProduct },
   { type: 'scene', scenePost: sampleScene5 },
   { type: 'product', product: keyboardProduct },
   { type: 'scene', scenePost: sampleScene4 },

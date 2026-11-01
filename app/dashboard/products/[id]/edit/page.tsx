@@ -3,6 +3,7 @@ import { createClientServer } from '@/lib/supabase/server'
 import { ownsProduct } from '@/lib/api/auth'
 import { DEMO_PRODUCTS } from '@/lib/products/demo-data'
 import { notFound } from 'next/navigation'
+import { readOutboundLinks } from '@/lib/products/outbound-links'
 
 export default async function EditProductPage({
   params,
@@ -22,7 +23,7 @@ export default async function EditProductPage({
     try {
       const { data } = await supabase
         .from('catalog_items')
-        .select('id, title, description, status, details, catalog_variants(id, sku_code, price, currency_code, availability_type, availability_value), catalog_media(id, storage_path, media_type, alt_text)')
+        .select('id, item_type, title, description, status, details, catalog_variants(id, sku_code, price, currency_code, availability_type, availability_value), catalog_media(id, storage_path, media_type, alt_text)')
         .eq('id', id)
         .maybeSingle()
       dbProduct = data
@@ -45,6 +46,10 @@ export default async function EditProductPage({
       (typeof rawData.category === 'string' && rawData.category.trim() ? rawData.category : null) ||
       (typeof rawData.category_id === 'string' && rawData.category_id.trim() ? rawData.category_id : null) ||
       ''
+    const capabilityKind: 'question_set' | 'skill' | 'plugin' =
+      rawData.capability_kind === 'question_set' || rawData.capability_kind === 'plugin'
+        ? rawData.capability_kind
+        : 'skill'
 
     const imageUrl =
       (typeof rawData.image_url === 'string' && rawData.image_url.trim() ? rawData.image_url : null) ||
@@ -72,8 +77,14 @@ export default async function EditProductPage({
       sku: variant?.sku_code || '',
       category: category,
       categoryId: typeof rawData.category_id === 'string' ? rawData.category_id : null,
+      origin: typeof rawData.origin === 'string' ? rawData.origin : '',
       detailContent: typeof rawData.detail_content === 'string' ? rawData.detail_content : '',
+      priceMode: rawData.price_mode === 'inquiry' ? 'inquiry' as const : rawData.price_mode === 'free' ? 'free' as const : 'amount' as const,
+      outboundLinks: readOutboundLinks(rawData.outbound_links),
       status: (dbProduct.status || 'draft') as 'draft' | 'active' | 'archived',
+      itemType: dbProduct.item_type === 'service' ? 'service' as const : 'product' as const,
+      deliveryType: rawData.delivery_type === 'ai_capability' ? 'ai_capability' as const : rawData.delivery_type === 'digital' ? 'digital' as const : 'physical' as const,
+      capabilityKind,
       existingAssets,
     }
   } else {
@@ -94,7 +105,7 @@ export default async function EditProductPage({
 
   return (
     <div className="min-h-screen bg-[var(--surface-muted)]/50 py-8 px-4 sm:px-6 lg:px-8">
-      <ProductWorkspace productId={id} initialData={initialData} />
+      <ProductWorkspace key={id} productId={id} initialData={initialData} />
     </div>
   )
 }

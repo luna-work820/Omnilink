@@ -11,6 +11,7 @@
  */
 
 import { createClientServer } from '@/lib/supabase/server'
+import { readOutboundLinks } from '@/lib/products/outbound-links'
 import {
   normalizeProduct,
   normalizeProducts,
@@ -30,7 +31,7 @@ import {
 
 /** 商品白名单列：只取 UI 需要的字段，绝不暴露内部原始字段。 */
 const CATALOG_SELECT =
-  'id, title, description, details, catalog_variants(id, title, sku_code, price, currency_code, availability_type, availability_value), catalog_media(storage_path, media_type, media_role)'
+  'id, title, description, details, cover_image, catalog_variants(id, title, sku_code, price, currency_code, availability_type, availability_value), catalog_media(storage_path, media_type, media_role)'
 
 function catalogRow(item: CatalogItemRow): StorefrontProductRow {
   const variant = item.catalog_variants?.[0]
@@ -41,6 +42,7 @@ function catalogRow(item: CatalogItemRow): StorefrontProductRow {
     price: variant?.price ?? 0,
     currency: variant?.currency_code ?? 'CNY',
     details: item.details,
+    cover_image: item.cover_image,
     media: (item.catalog_media ?? []).map((media) => ({
       url: media.storage_path ?? null,
       role: media.media_role === 'cover' ? 'public' : media.media_type ?? null,
@@ -472,28 +474,35 @@ export async function getStorefrontProducts(
  */
 export async function getStorefrontDiscoveryItems(limit = 36): Promise<StorefrontDiscoveryItem[]> {
   const supabase = await createClientServer()
-  const { data: stores, error } = await supabase
-    .from('stores')
-    .select('id, name, slug, currency')
-    .order('created_at', { ascending: false })
-    .limit(12)
-
+  const { data, error } = await supabase.from('discovery_products').select('*')
+    .order('created_at', { ascending: false }).limit(limit)
   if (error) throw new Error(`Failed to load storefront discovery: ${error.message}`)
-  if (!stores?.length) return []
-
-  const publishedStores = (await Promise.all(stores.map(async (store) => {
-    const published = await getPublishedStore(store.slug)
-    return published ? { ...store, published } : null
-  }))).filter((store) => store !== null)
-  const items = await Promise.all(publishedStores.map(async (store) => {
-    const products = await getStorefrontProducts(store, Math.min(limit, 12))
-    return products.map((product) => ({
-      store: { name: store.published.name, slug: store.published.slug },
-      product,
-    }))
-  }))
-
-  return items.flat().slice(0, limit)
+  return (data ?? []).flatMap((row) => {
+    const outboundLinks = readOutboundLinks({ xiaohongshu: row.xiaohongshu_url, douyin: row.douyin_url })
+    if (!Object.keys(outboundLinks).length) return []
+    const price = Number(row.price ?? 0)
+    const product: StorefrontProduct = {
+      id: row.id,
+      slug: row.id,
+      name: row.title,
+      itemType: row.item_type === 'service' || row.item_type === 'skill' ? row.item_type : 'product',
+      category: row.category,
+      deliveryType: row.delivery_type === 'ai_capability' || row.item_type === 'skill' ? 'ai_capability' : row.delivery_type === 'digital' ? 'digital' : 'physical',
+      capabilityKind: row.capability_kind === 'question_set' || row.capability_kind === 'skill' || row.capability_kind === 'plugin'
+        ? row.capability_kind
+        : undefined,
+      description: row.description,
+      price: Number.isFinite(price) ? price : 0,
+      currency: row.currency_code ?? 'CNY',
+      priceMode: row.price_mode === 'inquiry' ? 'inquiry' : price === 0 ? 'free' : 'amount',
+      outboundLinks,
+      imageUrl: row.cover_image,
+      images: row.cover_image ? [row.cover_image] : [],
+      href: `/discover?product=${row.id}`,
+      attributes: {},
+    }
+    return [{ store: { name: row.publisher_name, slug: row.publisher_slug }, product }]
+  })
 }
 
 /**

@@ -150,7 +150,7 @@ export function AccountView({ currentStore, currentUser }: AccountViewProps) {
             <div className="mt-6 pt-4 border-t border-[var(--border)]">
               <button
                 type="button"
-                className="w-full py-2.5 px-4 rounded-full bg-[var(--ink)] hover:bg-[var(--ink)] text-[var(--surface)] text-xs font-semibold shadow-sm transition-all cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-full bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-[var(--surface)] text-xs font-semibold shadow-sm transition-all cursor-pointer"
               >
                 {t.account.changePassword}
               </button>

@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useRef } from 'react'
+import React, { useState } from 'react'
 import Image from 'next/image'
-import { UploadCloud, X } from 'lucide-react'
+import { Check, Plus, Star, UploadCloud, X } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 import type { ImageFileItem } from './types'
 
@@ -13,147 +13,138 @@ interface ProductMediaUploadProps {
   maxImages?: number
 }
 
-export function ProductMediaUpload({
-  images,
-  onChange,
-  disabled = false,
-  maxImages = 8,
-}: ProductMediaUploadProps) {
+export function ProductMediaUpload({ images, onChange, disabled = false, maxImages = 8 }: ProductMediaUploadProps) {
   const { isZh } = useLanguage()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [previewIndex, setPreviewIndex] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+  const activeIndex = Math.min(previewIndex, Math.max(0, images.length - 1))
+  const activeImage = images[activeIndex]
+  const accept = 'image/png,image/jpeg,image/webp,image/jpg'
 
   const handleSelectFiles = (files: FileList | null) => {
-    if (!files || files.length === 0) return
-
+    if (!files?.length) return
     const remainingSlots = maxImages - images.length
     if (remainingSlots <= 0) return
-
     const incoming = Array.from(files).slice(0, remainingSlots)
-    const valid = incoming.filter((file) => {
-      const isImage = file.type.startsWith('image/')
-      const isUnderLimit = file.size <= 10 * 1024 * 1024 // 10MB
-      return isImage && isUnderLimit
-    })
-
-    const newItems: ImageFileItem[] = valid.map((file) => ({
-      file,
-      previewUrl: URL.createObjectURL(file),
-    }))
-
+    const valid = incoming.filter((file) => file.type.startsWith('image/') && file.size <= 10 * 1024 * 1024)
+    const newItems: ImageFileItem[] = valid.map((file) => ({ file, previewUrl: URL.createObjectURL(file) }))
+    if (images.length === 0 && newItems.length > 0) setPreviewIndex(0)
     onChange([...images, ...newItems])
+  }
+
+  const onInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    handleSelectFiles(event.currentTarget.files)
+    event.currentTarget.value = ''
+  }
+
+  const onDrop = (event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    setIsDragging(false)
+    if (!disabled) handleSelectFiles(event.dataTransfer.files)
   }
 
   const handleRemoveImage = (index: number) => {
     const target = images[index]
-    if (target?.previewUrl) {
-      URL.revokeObjectURL(target.previewUrl)
-    }
+    if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl)
+    setPreviewIndex((current) => current === index ? Math.max(0, index - 1) : current > index ? current - 1 : current)
     onChange(images.filter((_, idx) => idx !== index))
   }
 
+  const coverLabel = isZh ? '主图' : 'Cover image'
+  const addLabel = isZh ? '添加图片' : 'Add image'
+
   return (
-    <div className="space-y-3.5">
-      {/* 商品媒体库 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2.5 border-b border-[var(--surface-muted)] gap-1">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-[var(--surface-muted)] text-[var(--primary)] flex items-center justify-center font-bold text-xs">
-            <UploadCloud size={13} />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-[var(--lavender)]">
-              {isZh ? '商品媒体库' : 'Product media library'}
-            </h3>
-          </div>
+    <div className="min-w-0 space-y-3">
+      {activeImage ? (
+        <div
+          onDragEnter={(event) => { event.preventDefault(); if (!disabled) setIsDragging(true) }}
+          onDragOver={(event) => event.preventDefault()}
+          onDragLeave={(event) => { const target = event.relatedTarget; if (!(target instanceof Node) || !event.currentTarget.contains(target)) setIsDragging(false) }}
+          onDrop={onDrop}
+          className={`group relative h-[clamp(18rem,54vh,32.5rem)] min-h-[280px] overflow-hidden rounded-[var(--radius-card)] border bg-[var(--surface-muted)] transition-colors ${isDragging ? 'border-[var(--accent-secondary)]' : 'border-[var(--border-subtle)]'}`}
+        >
+          <Image
+            src={activeImage.previewUrl}
+            alt={activeImage.file.name || (isZh ? `商品图片 ${activeIndex + 1}` : `Product image ${activeIndex + 1}`)}
+            fill
+            className="object-contain"
+            referrerPolicy="no-referrer"
+            unoptimized
+            priority
+          />
+          {!disabled && (
+            <button
+              type="button"
+              onClick={() => handleRemoveImage(activeIndex)}
+              className="ui-interactive absolute right-3 top-3 grid size-10 place-items-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface)]/90 text-[var(--text-secondary)] opacity-100 shadow-sm transition-opacity hover:text-[var(--text-primary)] focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+              title={isZh ? '移除图片' : 'Remove image'}
+              aria-label={isZh ? `移除图片 ${activeIndex + 1}` : `Remove image ${activeIndex + 1}`}
+            >
+              <X size={17} aria-hidden="true" />
+            </button>
+          )}
         </div>
-        <span className="text-[11px] text-[var(--lavender)]">
-          {isZh ? `${images.length}/${maxImages} 个媒体` : `${images.length}/${maxImages} media`}
-        </span>
-      </div>
+      ) : (
+        <label
+          onDragEnter={(event) => { event.preventDefault(); if (!disabled) setIsDragging(true) }}
+          onDragOver={(event) => event.preventDefault()}
+          onDragLeave={(event) => { const target = event.relatedTarget; if (!(target instanceof Node) || !event.currentTarget.contains(target)) setIsDragging(false) }}
+          onDrop={onDrop}
+          className={`relative flex h-[clamp(18rem,54vh,32.5rem)] min-h-[280px] cursor-pointer items-center justify-center overflow-hidden rounded-[var(--radius-card)] border border-dashed bg-[var(--surface-muted)] transition-colors focus-within:ring-2 focus-within:ring-[var(--accent-secondary)]/25 ${isDragging ? 'border-[var(--accent-secondary)] bg-[var(--accent-secondary-soft)]' : 'border-[var(--border-subtle)] hover:border-[var(--accent-secondary)]' } ${disabled ? 'pointer-events-none opacity-50' : ''}`}
+        >
+          <input type="file" accept={accept} multiple className="sr-only" aria-label={addLabel} disabled={disabled} onChange={onInputChange} />
+          <UploadCloud size={32} strokeWidth={1.6} className="text-[var(--accent-secondary)]" aria-hidden="true" />
+        </label>
+      )}
 
-      {/* 隐藏的文件上传 input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept="image/png,image/jpeg,image/webp,image/jpg"
-        onChange={(e) => {
-          handleSelectFiles(e.target.files)
-          e.target.value = ''
-        }}
-        className="hidden"
-        disabled={disabled || images.length >= maxImages}
-      />
-
-      {/* 图片预览列表与上传区域 */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {images.map((item, idx) => (
-          <div
-            key={item.previewUrl}
-            className="group relative aspect-square  border border-[var(--surface-muted)] overflow-hidden bg-[var(--surface-muted)] transition-all"
-          >
-            <Image
-              src={item.previewUrl}
-              alt={`Product preview ${idx + 1}`}
-              fill
-              className="object-cover"
-              referrerPolicy="no-referrer"
-              unoptimized
-            />
-
-            {/* 主图角标 */}
-            {idx === 0 && (
-              <span className="absolute top-1.5 left-1.5 bg-[var(--primary)] text-[var(--surface)] text-[10px] font-bold px-1.5 py-0.5 rounded-[2px] shadow-xs">
-                {isZh ? '主图' : 'Cover'}
-              </span>
-            )}
-
-            {/* 删除按钮 */}
-            {!disabled && (
+      {images.length > 0 && (
+        <div className="flex min-w-0 items-center gap-2 overflow-x-auto pb-1" role="group" aria-label={isZh ? '商品图片' : 'Product images'}>
+          {images.map((item, index) => (
+            <div key={item.previewUrl} className="group/thumb relative size-[76px] shrink-0">
               <button
                 type="button"
-                onClick={() => handleRemoveImage(idx)}
-                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-[2px] bg-[var(--ink)]/60 hover:bg-[var(--plum)] text-[var(--surface)] flex items-center justify-center transition-colors cursor-pointer"
-                title={isZh ? '移除图片' : 'Remove image'}
+                onClick={() => setPreviewIndex(index)}
+                aria-label={isZh ? `预览图片 ${index + 1}` : `Preview image ${index + 1}`}
+                aria-pressed={activeIndex === index}
+                className={`ui-interactive relative size-full overflow-hidden rounded-[var(--radius-card-nested)] border bg-[var(--surface-muted)] ${activeIndex === index ? 'border-[var(--accent-secondary)] ring-2 ring-[var(--accent-secondary)]/20' : 'border-[var(--border-subtle)]'}`}
               >
-                <X size={12} />
+                <Image src={item.previewUrl} alt="" fill className="object-cover" referrerPolicy="no-referrer" unoptimized />
+                {index === 0 && (
+                  <span title={coverLabel} className="absolute left-1 top-1 grid size-5 place-items-center rounded-full bg-[var(--surface)]/95 text-[var(--accent-secondary)] shadow-sm">
+                    <Star size={11} fill="currentColor" aria-hidden="true" />
+                  </span>
+                )}
+                {activeIndex === index && (
+                  <span className="absolute bottom-1 right-1 grid size-5 place-items-center rounded-full bg-[var(--accent-secondary)] text-[var(--accent-secondary-foreground)]">
+                    <Check size={12} aria-hidden="true" />
+                  </span>
+                )}
               </button>
-            )}
-
-            <div className="absolute bottom-0 inset-x-0 bg-[var(--ink)]/40 text-[var(--surface)] text-[10px] px-1.5 py-0.5 truncate">
-              {item.file.name}
+              {!disabled && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(index)}
+                  aria-label={isZh ? `移除图片 ${index + 1}` : `Remove image ${index + 1}`}
+                  className="ui-interactive absolute -right-1 -top-1 grid size-6 place-items-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-secondary)] shadow-sm opacity-100 transition-opacity focus-visible:opacity-100 sm:opacity-0 sm:group-hover/thumb:opacity-100"
+                >
+                  <X size={12} aria-hidden="true" />
+                </button>
+              )}
             </div>
-          </div>
-        ))}
+          ))}
 
-        {/* 待上传卡片/Dropzone */}
-        {images.length < maxImages && (
-          <div
-            onClick={() => {
-              if (!disabled) fileInputRef.current?.click()
-            }}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault()
-              if (!disabled) handleSelectFiles(e.dataTransfer.files)
-            }}
-            className={`aspect-square  border-2 border-dashed flex flex-col items-center justify-center p-3 text-center transition-all cursor-pointer select-none ${
-              disabled
-                ? 'opacity-50 border-[var(--surface-muted)] bg-[var(--surface-muted)] cursor-not-allowed'
-                : 'border-[var(--surface-muted)] hover:border-[var(--primary)] bg-[var(--surface-muted)]/50 hover:bg-[var(--surface-muted)]/30'
-            }`}
-          >
-            <div className="w-8 h-8  bg-[var(--surface)] border border-[var(--surface-muted)] text-[var(--lavender)] flex items-center justify-center mb-1.5 shadow-2xs">
-              <UploadCloud size={16} className="text-[var(--primary)]" />
-            </div>
-            <span className="text-xs font-bold text-[var(--lavender)]">
-              {isZh ? '上传图片' : 'Upload Images'}
-            </span>
-            <span className="text-[10px] text-[var(--lavender)] mt-0.5">
-              {isZh ? 'JPG, PNG, WebP ≤10M' : 'JPG, PNG, WebP ≤10M'}
-            </span>
-          </div>
-        )}
-      </div>
+          {images.length < maxImages && (
+            <label
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={onDrop}
+              className={`relative grid size-[76px] shrink-0 cursor-pointer place-items-center overflow-hidden rounded-[var(--radius-card-nested)] border border-dashed border-[var(--border-subtle)] bg-[var(--surface-muted)] text-[var(--accent-secondary)] transition-colors hover:border-[var(--accent-secondary)] hover:bg-[var(--accent-secondary-soft)] focus-within:ring-2 focus-within:ring-[var(--accent-secondary)]/25 ${disabled ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              <input type="file" accept={accept} multiple className="sr-only" aria-label={addLabel} disabled={disabled} onChange={onInputChange} />
+              <Plus size={22} aria-hidden="true" />
+            </label>
+          )}
+        </div>
+      )}
     </div>
   )
 }

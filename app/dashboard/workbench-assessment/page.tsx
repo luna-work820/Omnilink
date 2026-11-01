@@ -66,7 +66,7 @@ export default function WorkbenchAssessmentPage() {
         </Link>
 
         <header className="mt-7 max-w-3xl border-b border-[var(--border-subtle)] pb-7">
-          <p className="text-xs font-semibold text-[var(--action-blue)]">工作台 / 模块评测</p>
+          <p className="text-xs font-semibold text-[var(--accent-primary)]">工作台 / 模块评测</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">发布前还需要哪些能力</h1>
           <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">
             对照开源项目的品牌治理、来源追溯和商品运营模型，并检查 Omnilink 当前页面、API 与数据表。这里列的是待建设能力，不代表已接入的实时状态。
@@ -96,14 +96,14 @@ export default function WorkbenchAssessmentPage() {
                 </div>
               </dl>
 
-              <Link href={module.href} className="inline-flex min-h-10 items-center text-sm font-semibold text-[var(--action-blue)] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--action-blue)] focus-visible:outline-offset-2 sm:justify-self-end">
+              <Link href={module.href} className="inline-flex min-h-10 items-center text-sm font-semibold text-[var(--accent-primary)] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent-primary)] focus-visible:outline-offset-2 sm:justify-self-end">
                 {module.action}
               </Link>
             </article>
           ))}
         </section>
 
-        <footer className="mt-6 grid gap-3 border-l-2 border-[var(--action-blue)] pl-4 text-sm leading-6 text-[var(--text-secondary)] sm:grid-cols-2 sm:gap-8">
+        <footer className="mt-6 grid gap-3 border-l-2 border-[var(--accent-primary)] pl-4 text-sm leading-6 text-[var(--text-secondary)] sm:grid-cols-2 sm:gap-8">
           <p><strong className="font-semibold text-[var(--text-primary)]">评测依据：</strong>BrandSpec、Brandcode System MCP、brand-book、Medusa 及 Omnilink 本地数据模型。</p>
           <p><strong className="font-semibold text-[var(--text-primary)]">实施建议：</strong>先补齐四项 P0 的汇总数据与可执行处理入口，再建设可售校验和团队级历史。</p>
         </footer>

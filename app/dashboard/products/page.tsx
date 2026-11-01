@@ -5,8 +5,9 @@ import { type ProductRow } from '@/components/product/ProductTable'
 import { ProductsView } from '@/components/product/ProductsView'
 import { ProductsSkeleton } from '@/components/product/ProductsSkeleton'
 import { DEMO_PRODUCTS } from '@/lib/products/demo-data'
+import { listingTypeFromCatalog } from '@/lib/products/listing-type'
 
-const PRODUCT_SELECT = 'id, title, description, cover_image, details, status, created_at, catalog_variants(id, sku_code, price, currency_code, availability_type, availability_value), catalog_media(storage_path, media_role)'
+const PRODUCT_SELECT = 'id, item_type, title, description, cover_image, details, status, created_at, catalog_variants(id, sku_code, price, currency_code, availability_type, availability_value), catalog_media(storage_path, media_role)'
 
 function mapDbProductToRow(db: Record<string, any>): ProductRow {
   const raw = db.details && typeof db.details === 'object' ? db.details : {}
@@ -22,6 +23,7 @@ function mapDbProductToRow(db: Record<string, any>): ProductRow {
 
   return {
     id: db.id,
+    listingType: listingTypeFromCatalog(db.item_type, raw.delivery_type),
     name: db.title ?? '',
     category,
     price: db.catalog_variants?.[0]?.price ?? null,
@@ -30,6 +32,7 @@ function mapDbProductToRow(db: Record<string, any>): ProductRow {
     semantic_data: null,
     sku: db.catalog_variants?.[0]?.sku_code ?? null,
     status: db.status,
+    priceMode: raw.price_mode === 'inquiry' ? 'inquiry' : raw.price_mode === 'free' ? 'free' : 'amount',
     sales_count: 0,
   }
 }
@@ -78,18 +81,18 @@ async function ProductsListContent() {
 
   const dbProducts = storeId ? await getRealProducts(storeId) : []
 
-  // Demo fallback rows only if database has no products at all
-  const demoRows: ProductRow[] = DEMO_PRODUCTS.map((p) => ({
-    id: p.id,
-    name: p.name,
-    category: p.category,
-    price: p.price,
-    inventory: p.inventory,
-    image_url: p.image_url,
-    semantic_data: p.semantic_data,
-    sku: p.sku,
-    status: p.status,
-    sales_count: p.sales_count,
+  const demoRows: ProductRow[] = DEMO_PRODUCTS.map((product) => ({
+    id: product.id,
+    listingType: 'product',
+    name: product.name,
+    category: product.category,
+    price: product.price,
+    inventory: product.inventory,
+    image_url: product.image_url,
+    semantic_data: product.semantic_data,
+    sku: product.sku,
+    status: product.status,
+    sales_count: product.sales_count,
   }))
 
   return <ProductsView products={dbProducts.length > 0 ? dbProducts : demoRows} />

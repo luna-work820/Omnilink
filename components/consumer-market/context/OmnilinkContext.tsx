@@ -17,18 +17,25 @@ import {
   FeedItem,
   MainTab,
   PersonalSubTab,
+  ProfileTab,
   QnaMessage,
   AiChatMessage,
+  ConsumerAiModel,
 } from '../types';
 import { DataService } from '../services/dataService';
 import { feedItemsList } from '../data/mockData';
+import { catalogFallback } from '@/lib/consumer-advisor/catalog-fallback';
 
 interface OmnilinkContextType {
   // Navigation & Tabs
   mainTab: MainTab;
   selectTab: (tab: MainTab) => void;
+  homeChatOpen: boolean;
+  setHomeChatOpen: (open: boolean) => void;
   personalSubTab: PersonalSubTab;
   setPersonalSubTab: (subTab: PersonalSubTab) => void;
+  profileTab: ProfileTab;
+  setProfileTab: (tab: ProfileTab) => void;
 
   // Repositories
   products: ProductItem[];
@@ -68,13 +75,6 @@ interface OmnilinkContextType {
   openCreator: (creator: Creator) => void;
   closeCreator: () => void;
 
-  // Search
-  isSearchOpen: boolean;
-  setSearchOpen: (open: boolean) => void;
-  searchQuery: string;
-  searchResults: ProductItem[];
-  updateSearchQuery: (query: string) => void;
-
   // Reviews
   isReviewsOpen: boolean;
   openReviews: () => void;
@@ -83,10 +83,10 @@ interface OmnilinkContextType {
   // Cart & Comparison
   cartItems: CartItem[];
   cartCount: number;
-  addToCart: (product: ProductItem, variant?: string) => void;
+  addToCart: (product: ProductItem, variant?: string, selectedOptions?: Record<string, string>) => void;
   addMultipleToCart: (products: ProductItem[]) => void;
-  updateCartQuantity: (productId: string, delta: number) => void;
-  removeFromCart: (productId: string) => void;
+  updateCartQuantity: (productId: string, delta: number, variantId?: string | null) => void;
+  removeFromCart: (productId: string, variantId?: string | null) => void;
   clearCart: () => void;
   cartComparisonPair: [ProductItem, ProductItem] | null;
   startCartComparison: (p1: ProductItem, p2: ProductItem) => void;
@@ -94,15 +94,21 @@ interface OmnilinkContextType {
 
   // AI Conversational Image & Intent Reasoning
   aiMessages: AiChatMessage[];
+  activeAiConversationId: string;
+  archivedAiConversationIds: string[];
+  selectAiConversation: (id: string) => void;
+  startAiConversation: () => void;
+  archiveAiConversation: (id: string) => void;
+  deleteAiConversation: (id: string) => void;
   isAiThinking: boolean;
-  sendAiMessage: (prompt: string) => void;
-  sendAiImageMessage: (imageSrc: string, promptText?: string) => void;
+  aiModel: ConsumerAiModel;
+  setAiModel: (model: ConsumerAiModel) => void;
+  sendAiMessage: (prompt: string, selectedProductIds?: string[]) => void;
+  sendAiImageMessage: (imageSrc: string, promptText?: string, selectedProductIds?: string[]) => void;
+  sendAiFileMessage: (fileName: string, fileData: string, promptText?: string, selectedProductIds?: string[]) => void;
   deleteMatchedItem: (messageId: string, productId: string) => void;
   replaceMatchedItem: (messageId: string, oldProductId: string, newProduct: ProductItem) => void;
-  isAiDrawerOpen: boolean;
-  openAiDrawer: (initialPrompt?: string, initialImage?: string) => void;
-  closeAiDrawer: () => void;
-  toggleAiDrawer: () => void;
+  openAiPage: (initialPrompt?: string, initialImage?: string) => void;
 
   // Q&A
   qnaHistory: Record<string, QnaMessage[]>;
@@ -115,23 +121,45 @@ interface OmnilinkContextType {
   // Saved / Liked items
   savedProductIds: string[];
   toggleSaveProduct: (productId: string) => void;
+  rejectedProductIds: string[];
+  toggleRejectProduct: (productId: string) => void;
 }
 
 const OmnilinkContext = createContext<OmnilinkContextType | undefined>(undefined);
+const INITIAL_CONVERSATION_ID = '00000000-0000-4000-8000-000000000000';
 
-export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProducts?: ProductItem[]; hasLiveProducts?: boolean }> = ({
+function createConversationId() {
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProducts?: ProductItem[]; initialPosts?: ScenePost[]; hasLiveProducts?: boolean; initialWelcome?: boolean; initialAiMessages?: AiChatMessage[]; authenticated?: boolean }> = ({
   children,
   initialProducts = [],
+  initialPosts = [],
   hasLiveProducts = false,
+  initialWelcome = false,
+  initialAiMessages,
+  authenticated = false,
 }) => {
   const router = useRouter();
   // Main Tab State
   const [mainTab, setMainTab] = useState<MainTab>('WORLD');
+  const [homeChatOpen, setHomeChatOpen] = useState(false);
   const [personalSubTab, setPersonalSubTab] = useState<PersonalSubTab>('AI');
+  const [profileTab, setProfileTab] = useState<ProfileTab>('CART');
 
   // Repositories
-  const [products] = useState<ProductItem[]>(() => initialProducts.length ? initialProducts : DataService.getProducts());
+  const [products] = useState<ProductItem[]>(() => hasLiveProducts ? initialProducts : (initialProducts.length ? initialProducts : DataService.getProducts()));
   const [feedItems] = useState<FeedItem[]>(() => {
+    if (hasLiveProducts) {
+      const mixed: FeedItem[] = initialProducts.map((product) => ({ type: 'product', product }));
+      initialPosts.forEach((scenePost, index) => mixed.splice(Math.min(index * 3, mixed.length), 0, { type: 'scene', scenePost }));
+      return mixed;
+    }
     if (!initialProducts.length) return feedItemsList;
     const curatedScenes = feedItemsList.filter((item) => item.type === 'scene');
     return initialProducts.flatMap((product, index) => [
@@ -140,10 +168,12 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
     ]);
   });
   const [scenePosts] = useState<ScenePost[]>(() => {
+    if (hasLiveProducts) return initialPosts;
     const posts = DataService.getScenePosts();
     return hasLiveProducts ? posts.map((post) => ({ ...post, linkedProducts: [] })) : posts;
   });
   const [exhibitions] = useState<Exhibition[]>(() => {
+    if (hasLiveProducts) return [];
     const items = DataService.getExhibitions();
     return hasLiveProducts
       ? items.map((exhibition) => ({
@@ -164,30 +194,75 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
   const [currentStory, setCurrentStory] = useState<Story | null>(null);
   const [currentCreator, setCurrentCreator] = useState<Creator | null>(null);
 
-  // Search & Reviews
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<ProductItem[]>([]);
+  // Reviews
   const [isReviewsOpen, setIsReviewsOpen] = useState(false);
 
   // Cart
-  const [cartItems, setCartItems] = useState<CartItem[]>(() => DataService.getCart(products, initialProducts.length > 0));
+  const [localStateLoaded, setLocalStateLoaded] = useState(false);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartComparisonPair, setCartComparisonPair] = useState<[ProductItem, ProductItem] | null>(null);
 
   // Saved Products
-  const [savedProductIds, setSavedProductIds] = useState<string[]>(() =>
-    DataService.getSavedProductIds()
-  );
+  const [savedProductIds, setSavedProductIds] = useState<string[]>([]);
+  const [rejectedProductIds, setRejectedProductIds] = useState<string[]>([]);
 
   // Q&A & AI Chat
-  const [qnaHistory, setQnaHistory] = useState<Record<string, QnaMessage[]>>(() =>
-    DataService.getQnaHistory()
-  );
-  const [aiMessages, setAiMessages] = useState<AiChatMessage[]>(() =>
-    DataService.getAiChatHistory()
-  );
+  const [qnaHistory, setQnaHistory] = useState<Record<string, QnaMessage[]>>({});
+  const [aiMessages, setAiMessages] = useState<AiChatMessage[]>(initialAiMessages ?? []);
+  const [activeAiConversationId, setActiveAiConversationId] = useState(() => initialAiMessages?.at(-1)?.conversationId || INITIAL_CONVERSATION_ID);
+  const [initialConversationId] = useState(activeAiConversationId);
+  const [archivedAiConversationIds, setArchivedAiConversationIds] = useState<string[]>([]);
   const [isAiThinking, setIsAiThinking] = useState(false);
-  const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
+  const [aiModel, setAiModel] = useState<ConsumerAiModel>('deepseek-v4-pro');
+
+  useEffect(() => {
+    setCartItems(DataService.getCart(products, initialProducts.length > 0));
+    setSavedProductIds(DataService.getSavedProductIds());
+    setRejectedProductIds(DataService.getRejectedProductIds());
+    setQnaHistory(DataService.getQnaHistory());
+    setArchivedAiConversationIds(DataService.getArchivedConversationIds());
+
+    if (!authenticated && !initialAiMessages && !initialWelcome) {
+      const messages = DataService.getAiChatHistory();
+      setAiMessages(messages);
+      const conversationId = messages.at(-1)?.conversationId;
+      setActiveAiConversationId(conversationId || createConversationId());
+    } else if (!authenticated && !initialAiMessages) {
+      setActiveAiConversationId(createConversationId());
+    } else if (!authenticated && !initialAiMessages?.at(-1)?.conversationId) {
+      setActiveAiConversationId(createConversationId());
+    }
+
+    setLocalStateLoaded(true);
+  }, [authenticated, initialAiMessages, initialProducts.length, initialWelcome, products]);
+
+  useEffect(() => {
+    if (!authenticated) return;
+    let cancelled = false;
+    void fetch('/api/consumer/eva-history').then(async (response) => {
+      if (!response.ok) throw new Error('对话历史暂时无法读取');
+      return response.json() as Promise<{ messages: { id: string; conversation_id: string; role: string; content: string; style_tag: string | null; matched_product_ids: string[]; model: string | null }[] }>;
+    }).then(({ messages }) => {
+      if (cancelled) return;
+      const storedMessages = messages.map((message) => ({
+        id: message.id, conversationId: message.conversation_id, isUser: message.role === 'user',
+        text: message.content, styleTag: message.style_tag ?? undefined,
+        matchedProducts: products.filter((product) => message.matched_product_ids?.includes(product.id)),
+        model: message.model as ConsumerAiModel | undefined,
+        timestamp: message.role === 'user' ? '你' : '个人助手',
+      }));
+      setAiMessages((current) => {
+        const storedIds = new Set(storedMessages.map((message) => message.id));
+        return [...storedMessages, ...current.filter((message) => !storedIds.has(message.id))];
+      });
+      setActiveAiConversationId((current) => current === initialConversationId
+        ? messages.at(-1)?.conversation_id || createConversationId()
+        : current);
+    }).catch(() => {
+      if (!cancelled) setActiveAiConversationId((current) => current === initialConversationId ? createConversationId() : current);
+    });
+    return () => { cancelled = true; };
+  }, [authenticated, products, initialConversationId]);
 
   // Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -205,20 +280,49 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
   }, []);
 
   useEffect(() => {
+    if (!localStateLoaded) return;
     DataService.saveCart(cartItems);
-  }, [cartItems]);
+  }, [cartItems, localStateLoaded]);
 
   useEffect(() => {
+    if (!localStateLoaded) return;
     DataService.saveProductIds(savedProductIds);
-  }, [savedProductIds]);
+  }, [localStateLoaded, savedProductIds]);
 
   useEffect(() => {
+    if (!localStateLoaded) return;
+    DataService.saveRejectedProductIds(rejectedProductIds);
+  }, [localStateLoaded, rejectedProductIds]);
+
+  useEffect(() => {
+    if (!localStateLoaded) return;
     DataService.saveQnaHistory(qnaHistory);
-  }, [qnaHistory]);
+  }, [localStateLoaded, qnaHistory]);
 
   useEffect(() => {
-    DataService.saveAiChatHistory(aiMessages);
-  }, [aiMessages]);
+    if (localStateLoaded && !authenticated && !initialAiMessages && !initialWelcome) DataService.saveAiChatHistory(aiMessages);
+  }, [aiMessages, authenticated, initialAiMessages, initialWelcome, localStateLoaded]);
+
+  useEffect(() => {
+    if (!localStateLoaded) return;
+    DataService.saveArchivedConversationIds(archivedAiConversationIds);
+  }, [archivedAiConversationIds, localStateLoaded]);
+
+  const startAiConversation = useCallback(() => setActiveAiConversationId(createConversationId()), []);
+  const selectAiConversation = useCallback((id: string) => {
+    setArchivedAiConversationIds((current) => current.filter((item) => item !== id));
+    setActiveAiConversationId(id);
+  }, []);
+  const archiveAiConversation = useCallback((id: string) => {
+    setArchivedAiConversationIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+    setActiveAiConversationId((current) => current === id ? createConversationId() : current);
+  }, []);
+  const deleteAiConversation = useCallback((id: string) => {
+    setAiMessages((current) => current.filter((message) => message.conversationId !== id));
+    setArchivedAiConversationIds((current) => current.filter((item) => item !== id));
+    setActiveAiConversationId((current) => current === id ? createConversationId() : current);
+    if (authenticated) void fetch('/api/consumer/eva-history', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conversationId: id }) });
+  }, [authenticated]);
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -230,9 +334,10 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
 
   // Cart Actions
   const addToCart = useCallback(
-    (product: ProductItem, variant: string = '标准') => {
+    (product: ProductItem, variant: string = '标准', selectedOptions?: Record<string, string>) => {
       setCartItems((prev) => {
-        const existingIdx = prev.findIndex((i) => i.product.id === product.id);
+        const variantId = product.defaultVariantId ?? null;
+        const existingIdx = prev.findIndex((i) => i.product.id === product.id && (i.variantId ?? i.product.defaultVariantId ?? null) === variantId);
         if (existingIdx >= 0) {
           const updated = [...prev];
           updated[existingIdx] = {
@@ -241,7 +346,7 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
           };
           return updated;
         }
-        return [...prev, { product, quantity: 1, variant }];
+        return [...prev, { product, quantity: 1, variant, variantId, selectedOptions }];
       });
       showToast(`已将 ${product.name} 加入购物车`);
     },
@@ -254,14 +359,14 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
       setCartItems((prev) => {
         const updated = [...prev];
         productsToAdd.forEach((product) => {
-          const idx = updated.findIndex((i) => i.product.id === product.id);
+          const idx = updated.findIndex((i) => i.product.id === product.id && (i.variantId ?? i.product.defaultVariantId ?? null) === (product.defaultVariantId ?? null));
           if (idx >= 0) {
             updated[idx] = {
               ...updated[idx],
               quantity: updated[idx].quantity + 1,
             };
           } else {
-            updated.push({ product, quantity: 1, variant: '标准' });
+            updated.push({ product, quantity: 1, variant: '标准', variantId: product.defaultVariantId ?? null });
           }
         });
         return updated;
@@ -272,11 +377,11 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
   );
 
   const updateCartQuantity = useCallback(
-    (productId: string, delta: number) => {
+    (productId: string, delta: number, variantId?: string | null) => {
       setCartItems((prev) =>
         prev
           .map((item) => {
-            if (item.product.id === productId) {
+            if (item.product.id === productId && (variantId === undefined || (item.variantId ?? item.product.defaultVariantId ?? null) === variantId)) {
               const newQty = item.quantity + delta;
               return newQty <= 0 ? null : { ...item, quantity: newQty };
             }
@@ -288,8 +393,8 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
     []
   );
 
-  const removeFromCart = useCallback((productId: string) => {
-    setCartItems((prev) => prev.filter((i) => i.product.id !== productId));
+  const removeFromCart = useCallback((productId: string, variantId?: string | null) => {
+    setCartItems((prev) => prev.filter((i) => i.product.id !== productId || (variantId !== undefined && (i.variantId ?? i.product.defaultVariantId ?? null) !== variantId)));
   }, []);
 
   const clearCart = useCallback(() => {
@@ -376,13 +481,6 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
     setCurrentCreator(null);
   }, []);
 
-  // Search
-  const updateSearchQuery = useCallback((query: string) => {
-    setSearchQuery(query);
-    const results = DataService.searchProducts(query, products);
-    setSearchResults(results);
-  }, [products]);
-
   // Reviews
   const openReviews = useCallback(() => {
     setIsReviewsOpen(true);
@@ -418,6 +516,12 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
     },
     [showToast]
   );
+
+  const toggleRejectProduct = useCallback((productId: string) => {
+    setRejectedProductIds((current) => current.includes(productId)
+      ? current.filter((id) => id !== productId)
+      : [...current, productId].slice(-100));
+  }, []);
 
   // Q&A
   const askProductQna = useCallback(
@@ -458,68 +562,150 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
     [products]
   );
 
-  // AI Conversational Text Message
-  const sendAiMessage = useCallback((promptText: string) => {
-    if (!promptText.trim()) return;
+  const requestAiResponse = useCallback(async (promptText: string, image?: string, selectedProductIds: string[] = [], messageId?: string, document?: { name: string; data: string }) => {
+    setIsAiThinking(true);
+    const preview = !image && !document ? catalogFallback(promptText, products, savedProductIds, rejectedProductIds) : null;
+    const previewIds = new Set(preview?.matchedProductIds ?? []);
+    const previewMessageId = previewIds.size ? `preview_${messageId ?? Date.now()}` : null;
+    if (previewMessageId) setAiMessages((current) => [...current, {
+      id: previewMessageId,
+      text: '先找到这些相关商品，正在进一步分析。',
+      isUser: false,
+      conversationId: activeAiConversationId,
+      matchedProducts: products.filter((product) => previewIds.has(product.id)).slice(0, 3),
+      matchReasons: preview?.matchReasons,
+      timestamp: '目录初筛',
+    }]);
+    try {
+      const response = await fetch('/api/consumer/assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: promptText,
+          image,
+          document,
+          model: aiModel,
+          conversationId: activeAiConversationId,
+          messageId,
+          selectedProductIds,
+          savedProductIds,
+          rejectedProductIds,
+          history: aiMessages.filter((message) => message.conversationId === activeAiConversationId && message.timestamp !== '连接失败')
+            .slice(-6).map((message) => ({ role: message.isUser ? 'user' : 'assistant', content: message.text })),
+        }),
+      });
+      const result = await response.json() as { text?: string; styleTag?: string; matchedProductIds?: string[]; matchReasons?: Record<string, string>; error?: string };
+      if (!response.ok || !result.text) throw new Error(result.error || '模型没有返回可用内容。');
+      const matchedIds = new Set(result.matchedProductIds || []);
+      const finalMessage: AiChatMessage = {
+        id: `m_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        text: result.text!,
+        isUser: false,
+        conversationId: activeAiConversationId,
+        styleTag: result.styleTag,
+        matchedProducts: products.filter((product) => matchedIds.has(product.id)).slice(0, 3),
+        matchReasons: result.matchReasons,
+        timestamp: 'AI 助手',
+        model: aiModel,
+      };
+      setAiMessages((prev) => previewMessageId
+        ? prev.map((message) => message.id === previewMessageId ? finalMessage : message)
+        : [...prev, finalMessage]);
+    } catch (error) {
+      const failedMessage: AiChatMessage = {
+        id: `m_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        text: error instanceof Error ? `模型暂时无法回答：${error.message}` : '模型暂时无法回答，请稍后重试。',
+        isUser: false,
+        conversationId: activeAiConversationId,
+        timestamp: '连接失败',
+        model: aiModel,
+      };
+      setAiMessages((prev) => previewMessageId
+        ? prev.map((message) => message.id === previewMessageId ? failedMessage : message)
+        : [...prev, failedMessage]);
+    } finally {
+      setIsAiThinking(false);
+    }
+  }, [activeAiConversationId, aiMessages, aiModel, products, savedProductIds, rejectedProductIds]);
+
+  const sendAiMessage = useCallback((promptText: string, selectedProductIds: string[] = []) => {
+    if (!promptText.trim() || isAiThinking) return;
     const userMsg: AiChatMessage = {
       id: `m_${Date.now()}`,
       text: promptText.trim(),
       isUser: true,
+      conversationId: activeAiConversationId,
       timestamp: '刚刚',
     };
 
     setAiMessages((prev) => [...prev, userMsg]);
-    setIsAiThinking(true);
+    const ingredientIntent = /(成分|配料|inci|cosing|cas\s*(号|number)?|护肤|化妆品|ingredient|skincare|cosmetic|[a-z][a-z /-]{3,}\s*(是什么|安全吗|适合|用途|作用))/i.test(promptText);
+    if (ingredientIntent && selectedProductIds.length === 0) {
+      setIsAiThinking(true);
+      void fetch('/api/consumer/ingredients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: promptText }),
+      }).then(async (response) => {
+        if (!response.ok) throw new Error('成分资料暂时无法读取。');
+        return response.json() as Promise<{ text: string; styleTag: string }>;
+      }).then(({ text, styleTag }) => {
+        setAiMessages((prev) => [...prev, {
+          id: `m_${Date.now() + 1}`,
+          text,
+          isUser: false,
+          conversationId: activeAiConversationId,
+          styleTag,
+          timestamp: '资料检索',
+        }]);
+      }).catch(() => {
+        setAiMessages((prev) => [...prev, {
+          id: `m_${Date.now() + 1}`,
+          text: '成分资料暂时无法读取，请稍后重试。',
+          isUser: false,
+          conversationId: activeAiConversationId,
+          styleTag: '成分资料检索',
+          timestamp: '资料检索',
+        }]);
+      }).finally(() => setIsAiThinking(false));
+      return;
+    }
 
-    setTimeout(() => {
-      const { styleTag, analysisText, matchedProducts } =
-        DataService.analyzeImageAndIntent(undefined, promptText, products);
-
-      const aiResponse: AiChatMessage = {
-        id: `m_${Date.now() + 1}`,
-        text: analysisText,
-        isUser: false,
-        styleTag,
-        matchedProducts,
-        timestamp: 'AI 推理助手',
-      };
-      setAiMessages((prev) => [...prev, aiResponse]);
-      setIsAiThinking(false);
-    }, 600);
-  }, [products]);
+    void requestAiResponse(promptText.trim(), undefined, selectedProductIds, userMsg.id);
+  }, [activeAiConversationId, isAiThinking, requestAiResponse]);
 
   // AI Conversational Image Upload & Reasoning
   const sendAiImageMessage = useCallback(
-    (imageSrc: string, promptText?: string) => {
+    (imageSrc: string, promptText?: string, selectedProductIds: string[] = []) => {
+      if (isAiThinking) return;
       const userMsg: AiChatMessage = {
         id: `m_${Date.now()}`,
-        text: promptText || '上传了参考照片，请识别风格并匹配全套实物商品',
+        text: promptText?.trim() || '看看这张图',
         isUser: true,
+        conversationId: activeAiConversationId,
         image: imageSrc,
         timestamp: '刚刚',
       };
 
       setAiMessages((prev) => [...prev, userMsg]);
-      setIsAiThinking(true);
-
-      setTimeout(() => {
-        const { styleTag, analysisText, matchedProducts } =
-          DataService.analyzeImageAndIntent(imageSrc, promptText, products);
-
-        const aiResponse: AiChatMessage = {
-          id: `m_${Date.now() + 1}`,
-          text: analysisText,
-          isUser: false,
-          styleTag,
-          matchedProducts,
-          timestamp: 'AI 推理助手',
-        };
-        setAiMessages((prev) => [...prev, aiResponse]);
-        setIsAiThinking(false);
-      }, 800);
+      void requestAiResponse(promptText?.trim() || '', imageSrc, selectedProductIds, userMsg.id);
     },
-    [products]
+    [activeAiConversationId, isAiThinking, requestAiResponse]
   );
+
+  const sendAiFileMessage = useCallback((fileName: string, fileData: string, promptText = '', selectedProductIds: string[] = []) => {
+    if (isAiThinking) return;
+    const userMsg: AiChatMessage = {
+      id: `m_${Date.now()}`,
+      text: promptText.trim(),
+      fileName,
+      isUser: true,
+      conversationId: activeAiConversationId,
+      timestamp: '刚刚',
+    };
+    setAiMessages((prev) => [...prev, userMsg]);
+    void requestAiResponse(promptText.trim(), undefined, selectedProductIds, userMsg.id, { name: fileName, data: fileData });
+  }, [activeAiConversationId, isAiThinking, requestAiResponse]);
 
   // Delete Matched Item from AI Result List
   const deleteMatchedItem = useCallback((messageId: string, productId: string) => {
@@ -559,10 +745,11 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
     [showToast]
   );
 
-  // Global AI Drawer Actions
-  const openAiDrawer = useCallback(
+  const openAiPage = useCallback(
     (initialPrompt?: string, initialImage?: string) => {
-      setIsAiDrawerOpen(true);
+      setPersonalSubTab('AI');
+      setMainTab('WORLD');
+      setHomeChatOpen(true);
       if (initialImage) {
         sendAiImageMessage(initialImage, initialPrompt);
       } else if (initialPrompt) {
@@ -572,21 +759,17 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
     [sendAiImageMessage, sendAiMessage]
   );
 
-  const closeAiDrawer = useCallback(() => {
-    setIsAiDrawerOpen(false);
-  }, []);
-
-  const toggleAiDrawer = useCallback(() => {
-    setIsAiDrawerOpen((prev) => !prev);
-  }, []);
-
   return (
     <OmnilinkContext.Provider
       value={{
         mainTab,
         selectTab: setMainTab,
+        homeChatOpen,
+        setHomeChatOpen,
         personalSubTab,
         setPersonalSubTab,
+        profileTab,
+        setProfileTab,
         products,
         feedItems,
         scenePosts,
@@ -615,11 +798,6 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
         currentCreator,
         openCreator,
         closeCreator,
-        isSearchOpen,
-        setSearchOpen: setIsSearchOpen,
-        searchQuery,
-        searchResults,
-        updateSearchQuery,
         isReviewsOpen,
         openReviews,
         closeReviews,
@@ -634,21 +812,29 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
         startCartComparison,
         closeCartComparison,
         aiMessages,
+        activeAiConversationId,
+        archivedAiConversationIds,
+        selectAiConversation,
+        startAiConversation,
+        archiveAiConversation,
+        deleteAiConversation,
         isAiThinking,
+        aiModel,
+        setAiModel,
         sendAiMessage,
         sendAiImageMessage,
+        sendAiFileMessage,
         deleteMatchedItem,
         replaceMatchedItem,
-        isAiDrawerOpen,
-        openAiDrawer,
-        closeAiDrawer,
-        toggleAiDrawer,
+        openAiPage,
         qnaHistory,
         askProductQna,
         toastMessage,
         showToast,
         savedProductIds,
         toggleSaveProduct,
+        rejectedProductIds,
+        toggleRejectProduct,
       }}
     >
       {children}

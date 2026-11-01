@@ -661,7 +661,7 @@ export function BrandStudioWizard() {
                       e.stopPropagation()
                       setEditingColorIndex(idx)
                     }}
-                    className="px-2 py-0.5  bg-[var(--surface-muted)] hover:bg-[var(--primary)] hover:text-[var(--surface)] text-[var(--primary)] text-xs font-semibold transition-colors cursor-pointer"
+                    className="px-2 py-0.5  bg-[var(--surface-muted)] hover:bg-[var(--primary)] hover:text-[var(--surface)] text-[var(--primary-foreground)] text-xs font-semibold transition-colors cursor-pointer"
                   >
                     调整
                   </button>

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUser } from '@/lib/api/auth'
+import { getCategoryById } from '@/lib/product/categories'
+import { productTypeFromCategory } from '@/lib/products/virtual-product-category'
 
 type ServerSupabaseClient = Awaited<ReturnType<typeof import('@/lib/supabase/server').createClientServer>>
 type CatalogVariantRow = {
@@ -81,15 +83,53 @@ export async function POST(request: NextRequest) {
   if (!title) return NextResponse.json({ error: 'name is required' }, { status: 400 })
   const price = Number(body.price ?? 0), inventory = Number(body.inventory ?? 0)
   if (!Number.isFinite(price) || price < 0 || !Number.isFinite(inventory) || inventory < 0) return NextResponse.json({ error: 'price and inventory must be non-negative numbers' }, { status: 400 })
+  const rawData = isRecord(body.raw_data) ? body.raw_data : {}
+  if (body.delivery_type !== undefined && rawData.delivery_type !== undefined && body.delivery_type !== rawData.delivery_type) {
+    return NextResponse.json({ error: 'delivery_type must match raw_data.delivery_type' }, { status: 400 })
+  }
+  if (body.capability_kind !== undefined && rawData.capability_kind !== undefined && body.capability_kind !== rawData.capability_kind) {
+    return NextResponse.json({ error: 'capability_kind must match raw_data.capability_kind' }, { status: 400 })
+  }
+  const deliveryType = body.delivery_type ?? rawData.delivery_type ?? 'physical'
+  if (deliveryType !== 'physical' && deliveryType !== 'digital' && deliveryType !== 'ai_capability') {
+    return NextResponse.json({ error: 'Invalid delivery_type' }, { status: 400 })
+  }
+  const capabilityKind = body.capability_kind ?? rawData.capability_kind
+  if (body.item_type !== undefined && body.item_type !== 'product' && body.item_type !== 'service') {
+    return NextResponse.json({ error: 'Invalid item_type' }, { status: 400 })
+  }
+  if (body.item_type === 'service' && deliveryType !== 'physical') {
+    return NextResponse.json({ error: '服务类型不能使用数字交付' }, { status: 400 })
+  }
+  const categoryId = typeof rawData.category_id === 'string' ? rawData.category_id : null
+  if (categoryId && getCategoryById(categoryId)) {
+    const categoryType = productTypeFromCategory(categoryId)
+    if (categoryType.deliveryType !== deliveryType || (categoryType.capabilityKind && categoryType.capabilityKind !== capabilityKind)) {
+      return NextResponse.json({ error: '分类与商品 details 中的交付类型不一致' }, { status: 400 })
+    }
+  }
+  if (deliveryType === 'ai_capability' && !['question_set', 'skill', 'plugin'].includes(String(capabilityKind))) {
+    return NextResponse.json({ error: 'capability_kind is required for AI capabilities' }, { status: 400 })
+  }
+  if (deliveryType === 'ai_capability' && body.status === 'active') {
+    return NextResponse.json({ error: 'AI capabilities can only be saved as drafts until delivery is available' }, { status: 422 })
+  }
+  if (body.status === 'active') {
+    return NextResponse.json({ error: '请先保存商品草稿，再使用上架流程发布' }, { status: 409 })
+  }
+  const productId = crypto.randomUUID()
   const productInsert = {
+    id: productId,
     organization_id: context.organizationId,
-    item_type: typeof body.item_type === 'string' && ['product', 'service', 'skill'].includes(body.item_type) ? body.item_type : 'product',
+    item_type: body.item_type === 'service' ? 'service' : 'product',
     title,
-    slug: slugify(typeof body.slug === 'string' ? body.slug : title),
+    slug: typeof body.slug === 'string' && body.slug.trim() ? slugify(body.slug) : `${slugify(title)}-${productId}`,
     description: typeof body.description === 'string' ? body.description : null,
-    status: typeof body.status === 'string' && ['draft', 'active', 'archived'].includes(body.status) ? body.status : 'draft',
+    status: 'draft',
     details: {
-      ...(isRecord(body.raw_data) ? body.raw_data : {}),
+      ...rawData,
+      delivery_type: deliveryType,
+      capability_kind: deliveryType === 'ai_capability' ? capabilityKind : null,
       category_path: Array.isArray(body.category_path) ? body.category_path.filter((v): v is string => typeof v === 'string') : [],
       tags: Array.isArray(body.tags) ? body.tags.filter((v): v is string => typeof v === 'string') : [],
     },
@@ -99,12 +139,12 @@ export async function POST(request: NextRequest) {
   const variantInsert = {
     organization_id: context.organizationId,
     catalog_item_id: product.id,
-    sku_code: typeof body.sku === 'string' && body.sku.trim() ? body.sku.trim() : `${product.slug.toUpperCase().replace(/[^A-Z0-9]+/g, '-')}-001`,
+    sku_code: typeof body.sku === 'string' && body.sku.trim() ? body.sku.trim() : `SKU-${product.id}`,
     title,
     price,
     currency_code: typeof body.currency === 'string' ? body.currency : (context.store.currency ?? 'CNY'),
-    availability_type: product.item_type === 'product' ? 'stock' : 'capacity',
-    availability_value: Math.floor(inventory),
+    availability_type: deliveryType === 'ai_capability' || deliveryType === 'digital' ? 'unlimited' : product.item_type === 'product' ? 'stock' : 'capacity',
+    availability_value: deliveryType === 'ai_capability' || deliveryType === 'digital' ? null : Math.floor(inventory),
   }
   const { data: variant, error: variantError } = await supabase.from('catalog_variants').insert(variantInsert).select('*').single()
   if (variantError || !variant) {

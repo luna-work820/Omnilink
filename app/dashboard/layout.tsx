@@ -3,6 +3,7 @@ import { createClientServer } from '@/lib/supabase/server'
 import { V3DashboardShell } from '@/components/dashboard/v3-UI/V3DashboardShell'
 import { DashboardWorkspaceProvider } from '@/components/dashboard/DashboardWorkspaceProvider'
 import { getBrandProjectByUserId } from '@/lib/brand/workspace'
+import { getStoreByOwnerId } from '@/lib/stores/service'
 import { DEMO_BRAND_PROJECT, DEMO_PROFILE } from '@/lib/preview/demo-workspace'
 
 /**
@@ -32,13 +33,17 @@ export default async function DashboardLayout({
   }
 
   const localPreview = process.env.NODE_ENV !== 'production' && !user
+  const creatorEnabled = user?.app_metadata?.creator_enabled === true
 
   if (!user && !localPreview) {
     redirect('/login')
   }
 
-  const project = user ? await getBrandProjectByUserId(user.id) : DEMO_BRAND_PROJECT
-  if (!project && !localPreview) {
+  const [project, store] = user
+    ? await Promise.all([getBrandProjectByUserId(user.id), getStoreByOwnerId(user.id)])
+    : [DEMO_BRAND_PROJECT, null]
+  const workspaceMode = creatorEnabled && (user?.app_metadata?.workspace_mode === 'creator' || !store) ? 'creator' : 'merchant'
+  if ((!project || !store) && !localPreview && !creatorEnabled) {
     redirect('/onboarding')
   }
 
@@ -49,7 +54,7 @@ export default async function DashboardLayout({
       ? (user.user_metadata?.full_name as string | undefined) ||
         (user.user_metadata?.name as string | undefined) ||
         user.email ||
-        '商家'
+        '创作者'
       : DEMO_PROFILE.name,
     avatarUrl: user
       ? (user.user_metadata?.avatar_url as string | undefined) ||
@@ -59,7 +64,12 @@ export default async function DashboardLayout({
   }
 
   return (
-    <V3DashboardShell profile={profile}>
+    <V3DashboardShell
+      profile={profile}
+      workspaceMode={workspaceMode}
+      canSwitchWorkspace={creatorEnabled && Boolean(project && store)}
+      previewMode={localPreview}
+    >
       <DashboardWorkspaceProvider>{children}</DashboardWorkspaceProvider>
     </V3DashboardShell>
   )

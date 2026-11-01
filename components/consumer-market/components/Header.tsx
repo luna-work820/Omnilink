@@ -1,45 +1,56 @@
-import React from 'react';
-import { Search, Sparkles } from 'lucide-react';
-import Link from 'next/link';
-import { useOmnilink } from '../context/OmnilinkContext';
+import React, { useState } from 'react';
+import type { DiscoveryType } from '../types';
+import { List } from '@phosphor-icons/react';
+import { LiquidGlass } from '@/components/ui/liquid-glass';
+import { HomeNavigationDrawer } from './HomeNavigationDrawer';
 
-export const Header: React.FC = () => {
-  const { setSearchOpen, openAiDrawer } = useOmnilink();
+const discoveryTypes: DiscoveryType[] = ['商品', '数字', '服务'];
+
+export const Header: React.FC<{
+  selectedType: DiscoveryType;
+  onTypeSelect: (type: DiscoveryType) => void;
+  onMenuOpenChange?: (open: boolean) => void;
+  profileName: string | null;
+  deepSeekKeyConfigured: boolean;
+}> = ({ selectedType, onTypeSelect, onMenuOpenChange, profileName, deepSeekKeyConfigured }) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const closeMenu = () => {
+    setMenuOpen(false);
+    onMenuOpenChange?.(false);
+  };
+  const toggleMenu = () => {
+    const nextOpen = !menuOpen;
+    setMenuOpen(nextOpen);
+    onMenuOpenChange?.(nextOpen);
+  };
 
   return (
-    <header className="sticky top-0 z-30 w-full bg-[#FFFFFF]/95 backdrop-blur-md border-b border-[#DED9D0]/60 shadow-2xs transition-colors">
-      <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5">
-        {/* Top Integrated Search Bar (顶部搜索框，点击唤起全局搜索空间) */}
-        <div
-          onClick={() => setSearchOpen(true)}
-          className="flex-1 max-w-md flex items-center gap-2 rounded-full bg-[#F6F3EE] hover:bg-[#EAE5DC]/70 px-3.5 py-1.5 border border-[#DED9D0]/70 cursor-pointer shadow-2xs transition-all text-[#78746E]"
-          role="search"
-          aria-label="搜索空间美学、单品或品牌"
-        >
-          <Search size={14} className="text-[#78746E] shrink-0" />
-          <span className="text-xs text-[#78746E]/70 truncate flex-1 select-none">
-            搜索空间美学、单品、风格或品牌...
-          </span>
+    <header className={`fixed inset-x-0 top-0 w-full ${menuOpen ? 'z-[90]' : 'z-30'}`}>
+      <LiquidGlass radius={0} bevelDepth={6} scale={10} aberration={0.25} frost={0.3} tint={0.84} interactive className={`consumer-market-header w-full ${menuOpen ? 'consumer-market-header--navigation-open' : ''}`}>
+        <div className="flex w-full items-center gap-3 px-3 sm:px-5">
+          <LiquidGlass radius={20} bevelDepth={5} scale={6} aberration={0.2} frost={0.2} tint={0.68} interactive className="home-navigation-toggle h-10 w-10 shrink-0 rounded-full">
+            <button type="button" onClick={toggleMenu} aria-label={menuOpen ? '收起侧边栏' : '打开侧边栏'} aria-expanded={menuOpen} className="flex h-full w-full items-center justify-center rounded-full text-[var(--market-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)]"><List size={21} aria-hidden="true" /></button>
+          </LiquidGlass>
+          <nav className="consumer-market-header__categories flex min-w-0 flex-1 gap-7 overflow-x-auto px-1 sm:px-2" aria-label="购物类型">
+          {discoveryTypes.map((type) => {
+            const selected = type === selectedType;
+            return (
+              <button
+                key={type}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => onTypeSelect(type)}
+                className={`relative shrink-0 py-4 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)] ${selected ? 'font-semibold text-[var(--market-ink)]' : 'text-[var(--market-text-muted)] hover:text-[var(--market-ink)]'}`}
+              >
+                {type}
+                {selected && <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-0.5 bg-[var(--market-ink)]" />}
+              </button>
+            );
+          })}
+          </nav>
         </div>
-
-        {/* Quick AI Trigger Button */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            onClick={() => openAiDrawer()}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-[#A73F32]/10 text-[#A73F32] hover:bg-[#A73F32]/15 active:scale-95 transition-all text-xs font-semibold shadow-2xs"
-            title="打开 luar 助手"
-          >
-            <Sparkles size={13} />
-            <span className="text-xs font-semibold">luar</span>
-          </button>
-        </div>
-        <Link
-          href="/dashboard"
-          className="inline-flex h-8 min-h-8 shrink-0 items-center justify-center rounded-full border border-[#DED9D0] px-2.5 text-[10px] font-semibold text-[#181817] transition-colors hover:bg-[#EAE5DC]/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#A73F32] focus-visible:outline-offset-2 sm:px-3 sm:text-[11px]"
-        >
-          商家工作台
-        </Link>
-      </div>
+      </LiquidGlass>
+      {menuOpen && <HomeNavigationDrawer onClose={closeMenu} profileName={profileName} deepSeekKeyConfigured={deepSeekKeyConfigured} />}
     </header>
   );
 };

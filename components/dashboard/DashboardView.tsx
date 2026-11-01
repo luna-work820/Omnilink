@@ -32,6 +32,18 @@ type BrandProject = Database['public']['Tables']['brand_projects']['Row']
 
 // ===== 全球节点网络架构数据（精确对齐 1010x666 MapSVG 投影坐标） =====
 const WORLD_VIEWBOX = { w: 1010, h: 666 }
+const TIMEZONE_MAP: Record<string, { timeZone: string; label: string }> = {
+  us: { timeZone: 'America/New_York', label: '纽约 (UTC-4)' },
+  br: { timeZone: 'America/Sao_Paulo', label: '圣保罗 (UTC-3)' },
+  fi: { timeZone: 'Europe/Helsinki', label: '赫尔辛基 (UTC+3)' },
+  bd: { timeZone: 'Asia/Dhaka', label: '达卡 (UTC+6)' },
+  de: { timeZone: 'Europe/Berlin', label: '柏林 (UTC+2)' },
+  jp: { timeZone: 'Asia/Tokyo', label: '东京 (UTC+9)' },
+  sg: { timeZone: 'Asia/Singapore', label: '新加坡 (UTC+8)' },
+  ae: { timeZone: 'Asia/Dubai', label: '迪拜 (UTC+4)' },
+  au: { timeZone: 'Australia/Sydney', label: '悉尼 (UTC+10)' },
+  za: { timeZone: 'Africa/Johannesburg', label: '约翰内斯堡 (UTC+2)' },
+}
 
 export interface GlobalNode {
   code: string
@@ -401,19 +413,6 @@ export function DashboardView({
   }, [])
 
   // ===== 点击国家显示当地时间计算时钟 =====
-  const TIMEZONE_MAP: Record<string, { timeZone: string; label: string }> = {
-    us: { timeZone: 'America/New_York', label: '纽约 (UTC-4)' },
-    br: { timeZone: 'America/Sao_Paulo', label: '圣保罗 (UTC-3)' },
-    fi: { timeZone: 'Europe/Helsinki', label: '赫尔辛基 (UTC+3)' },
-    bd: { timeZone: 'Asia/Dhaka', label: '达卡 (UTC+6)' },
-    de: { timeZone: 'Europe/Berlin', label: '柏林 (UTC+2)' },
-    jp: { timeZone: 'Asia/Tokyo', label: '东京 (UTC+9)' },
-    sg: { timeZone: 'Asia/Singapore', label: '新加坡 (UTC+8)' },
-    ae: { timeZone: 'Asia/Dubai', label: '迪拜 (UTC+4)' },
-    au: { timeZone: 'Australia/Sydney', label: '悉尼 (UTC+10)' },
-    za: { timeZone: 'Africa/Johannesburg', label: '约翰内斯堡 (UTC+2)' },
-  }
-
   const [selectedCountryTime, setSelectedCountryTime] = useState<string>('')
 
   useEffect(() => {
@@ -728,7 +727,7 @@ export function DashboardView({
                     <div className="flex items-center gap-2 font-bold text-[var(--lavender)]">
                       <span className="text-lg">{target.flag}</span>
                       <span className="text-base font-extrabold">{target.zhName}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--primary)] text-[var(--primary)] font-bold border border-[var(--primary)]/15">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] font-bold border border-[var(--primary)]/15">
                         {target.zhRegion}
                       </span>
                     </div>
@@ -1042,7 +1041,7 @@ export function DashboardView({
                   <TrendingUp size={14} className="text-[var(--primary)]" />
                   <span>利润统计</span>
                 </h4>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)]/80 text-[11px] font-black animate-pulse shadow-2xs">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] border border-[var(--primary)]/80 text-[11px] font-black animate-pulse shadow-2xs">
                   ↑ +24% <span className="text-[10px] font-bold text-[var(--primary)]">较昨日</span>
                 </span>
               </div>

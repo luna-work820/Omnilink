@@ -525,7 +525,7 @@ export function CustomerServiceCenterView({ isZh: _isZh }: CustomerServiceCenter
             <button
               type="submit"
               disabled={!inputText.trim() || isTyping}
-              className="h-9 px-4 rounded-[12px] bg-[var(--ink)] hover:bg-[var(--ink)] disabled:bg-[var(--surface-muted)] text-[var(--surface)] disabled:text-[var(--lavender)] text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
+              className="h-9 px-4 rounded-[12px] bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] disabled:bg-[var(--surface-muted)] text-[var(--surface)] disabled:text-[var(--lavender)] text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
             >
               <span>发送</span>
               <Send size={12} />

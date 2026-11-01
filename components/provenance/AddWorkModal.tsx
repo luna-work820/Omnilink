@@ -177,7 +177,7 @@ export function AddWorkModal({ isOpen, onClose, onAddWork }: AddWorkModalProps) 
                       isActive
                         ? 'bg-[var(--surface-muted)] text-[var(--surface)] dark:bg-[var(--surface)] dark:text-[var(--lavender)]'
                         : isPassed
-                        ? 'bg-[var(--primary)] text-[var(--primary)] dark:bg-[var(--primary)]/40 dark:text-[var(--primary)]'
+                        ? 'bg-[var(--primary)] text-[var(--primary-foreground)] dark:bg-[var(--primary)]/40 dark:text-[var(--primary-foreground)]'
                         : 'bg-[var(--surface-muted)] text-[var(--lavender)] dark:bg-[var(--surface-muted)] dark:text-[var(--lavender)]'
                     }`}
                   >

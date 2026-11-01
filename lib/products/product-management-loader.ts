@@ -32,6 +32,7 @@ type CatalogManagementMedia = {
 
 type CatalogManagementRow = {
   id: string
+  item_type?: string | null
   title: string | null
   name?: string
   description: string | null
@@ -67,6 +68,7 @@ function readStatus(
 }
 
 import { isUuid, toValidUuid } from '@/lib/utils/uuid'
+import { readOutboundLinks } from '@/lib/products/outbound-links'
 
 export async function loadProductManagementModel(
   productId: string,
@@ -78,7 +80,7 @@ export async function loadProductManagementModel(
 
   const { data: catalogRow } = await supabase
     .from('catalog_items')
-    .select('id, title, description, status, details, updated_at, catalog_variants(id, sku_code, price, currency_code, availability_type, availability_value), catalog_media(id, storage_path, media_type, alt_text, metadata, created_at)')
+    .select('id, item_type, title, description, status, details, updated_at, catalog_variants(id, sku_code, price, currency_code, availability_type, availability_value), catalog_media(id, storage_path, media_type, alt_text, metadata, created_at)')
     .eq('id', targetId)
     .maybeSingle()
 
@@ -88,6 +90,7 @@ export async function loadProductManagementModel(
     : null
   const data = catalogData || {
     id: productId,
+    item_type: 'product',
     title: 'Untitled Product',
     name: 'Untitled Product',
     sku: null,
@@ -169,6 +172,12 @@ export async function loadProductManagementModel(
     seo,
 
     metadata: {
+      itemType: data.item_type === 'service' ? 'service' : 'product',
+      priceMode: rawData.price_mode === 'inquiry' ? 'inquiry' : rawData.price_mode === 'free' ? 'free' : 'amount',
+      outboundLinks: readOutboundLinks(rawData.outbound_links),
+      deliveryType: rawData.delivery_type === 'ai_capability' ? 'ai_capability' : rawData.delivery_type === 'digital' ? 'digital' : 'physical',
+      capabilityKind: rawData.capability_kind,
+      origin: typeof rawData.origin === 'string' ? rawData.origin : null,
       schemaId:
         canonical.schema_id,
       schemaVersion:

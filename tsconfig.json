@@ -38,6 +38,7 @@
   ],
   "exclude": [
     "node_modules",
+    "archive/**",
     "scripts/**/*.mts",
     "**/__tests__/**",
     "**/*.test.ts"

@@ -1,6 +1,10 @@
 import { redirect } from 'next/navigation'
 import { createClientServer } from '@/lib/supabase/server'
-import { KeynoteMotionLanding } from '@/components/landing'
+import PackageLoginPage from '@/components/login-package/App'
+
+export const metadata = {
+  title: 'OMNILINK — 独立美学购物',
+}
 
 export default async function LoginPage() {
   const supabase = await createClientServer()
@@ -14,12 +18,8 @@ export default async function LoginPage() {
   }
 
   if (user) {
-    redirect('/onboarding')
+    redirect('/discover')
   }
 
-  if (process.env.NODE_ENV !== 'production') {
-    redirect('/dashboard')
-  }
-
-  return <KeynoteMotionLanding initialShowLogin={true} />
+  return <PackageLoginPage />
 }

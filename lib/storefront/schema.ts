@@ -737,10 +737,19 @@ export function normalizeStorefrontSchema(raw: unknown): StorefrontSchema | null
           typeof theme.themeId === 'string' && theme.themeId.length > 0
             ? theme.themeId
             : 'electric-violet',
+        language: theme.language === 'zh' || theme.language === 'en' ? theme.language : undefined,
+        fontFamily: typeof theme.fontFamily === 'string' ? theme.fontFamily : undefined,
         accent: typeof theme.accent === 'string' ? theme.accent : undefined,
         radius:
           typeof theme.radius === 'number' && Number.isFinite(theme.radius)
             ? theme.radius
+            : undefined,
+        customTokens:
+          theme.customTokens && typeof theme.customTokens === 'object' && !Array.isArray(theme.customTokens)
+            ? Object.fromEntries(
+                Object.entries(theme.customTokens as Record<string, unknown>)
+                  .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+              )
             : undefined,
       },
       sections,

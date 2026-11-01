@@ -34,7 +34,7 @@ export function FuturePreviewModal({ isOpen, title, onClose }: FuturePreviewModa
             <h3 className="text-sm font-bold text-[var(--lavender)]">
               {title || (isZh ? '功能预览 (Feature Preview)' : 'Feature Preview')}
             </h3>
-            <span className="inline-block px-2 py-0.5  bg-[var(--primary)] text-[var(--primary)] text-[10px] font-bold border border-[var(--primary)] mt-0.5">
+            <span className="inline-block px-2 py-0.5  bg-[var(--primary)] text-[var(--primary-foreground)] text-[10px] font-bold border border-[var(--primary)] mt-0.5">
               {isZh ? '即将支持' : 'Coming Soon'}
             </span>
           </div>

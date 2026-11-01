@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
+  Heart,
   X,
-  ShoppingBag,
 } from 'lucide-react';
 import { ProductItem } from '../types';
 import { useOmnilink } from '../context/OmnilinkContext';
@@ -10,23 +10,18 @@ interface FloatingProductCardProps {
   product: ProductItem | null;
   onDismiss: () => void;
   onExpandDetail: (product: ProductItem) => void;
-  onAddToCart: (product: ProductItem) => void;
-  onOpenStore?: (product: ProductItem) => void;
 }
 
 export const FloatingCard: React.FC<FloatingProductCardProps> = ({
   product,
   onDismiss,
   onExpandDetail,
-  onAddToCart,
-  onOpenStore,
 }) => {
-  const { products, showToast } = useOmnilink();
+  const { products, savedProductIds, toggleSaveProduct } = useOmnilink();
   const [activeProductId, setActiveProductId] = useState<string>(
     product?.id || ''
   );
   const [slideDirection, setSlideDirection] = useState<'down' | 'up' | 'none'>('none');
-  const [isSwipingHorizontal, setIsSwipingHorizontal] = useState(false);
 
   // The parent keys this overlay by product id so the active selection resets on open.
   useEffect(() => {
@@ -78,7 +73,7 @@ export const FloatingCard: React.FC<FloatingProductCardProps> = ({
   };
 
   // Touch gesture handling
-  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const hasMovedRef = useRef<boolean>(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -86,10 +81,8 @@ export const FloatingCard: React.FC<FloatingProductCardProps> = ({
     touchStartRef.current = {
       x: touch.clientX,
       y: touch.clientY,
-      time: Date.now(),
     };
     hasMovedRef.current = false;
-    setIsSwipingHorizontal(false);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -101,10 +94,6 @@ export const FloatingCard: React.FC<FloatingProductCardProps> = ({
     if (Math.abs(diffX) > 10 || Math.abs(diffY) > 10) {
       hasMovedRef.current = true;
     }
-
-    if (Math.abs(diffX) > Math.abs(diffY) && diffX < -20) {
-      setIsSwipingHorizontal(true);
-    }
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -112,37 +101,21 @@ export const FloatingCard: React.FC<FloatingProductCardProps> = ({
     const touch = e.changedTouches[0];
     const diffX = touch.clientX - touchStartRef.current.x;
     const diffY = touch.clientY - touchStartRef.current.y;
-    const duration = Date.now() - touchStartRef.current.time;
-
     touchStartRef.current = null;
-    setIsSwipingHorizontal(false);
+    if ((e.target as HTMLElement).closest('button')) return;
 
-    // 1. Horizontal swipe left: Open store website
-    if (diffX < -50 && Math.abs(diffX) > Math.abs(diffY)) {
-      if (onOpenStore) {
-        onOpenStore(activeProduct);
-        onDismiss();
-      }
-      return;
-    }
-
-    // 2. Vertical swipe down: Browse next same-category product
+    // Vertical swipe down: Browse next same-category product
     if (diffY > 40 && Math.abs(diffY) > Math.abs(diffX)) {
       goToNextProduct();
       return;
     }
 
-    // 3. Vertical swipe up: Browse previous same-category product
+    // Vertical swipe up: Browse previous same-category product
     if (diffY < -40 && Math.abs(diffY) > Math.abs(diffX)) {
       goToPrevProduct();
       return;
     }
 
-    // 4. Tap / Click without dragging: Zoom card into full detail screen
-    if (!hasMovedRef.current && duration < 350) {
-      onExpandDetail(activeProduct);
-      onDismiss();
-    }
   };
 
   // Mouse wheel vertical navigation
@@ -157,10 +130,11 @@ export const FloatingCard: React.FC<FloatingProductCardProps> = ({
   };
 
   if (!activeProduct) return null;
+  const isSaved = savedProductIds.includes(activeProduct.id);
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 select-none animate-in fade-in duration-200"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 select-none animate-in fade-in duration-200"
       onClick={onDismiss}
     >
       {/* Container to prevent backdrop click closing when touching card */}
@@ -203,10 +177,6 @@ export const FloatingCard: React.FC<FloatingProductCardProps> = ({
             } else if (e.key === 'ArrowUp') {
               e.preventDefault();
               goToPrevProduct();
-            } else if (e.key === 'ArrowLeft' && onOpenStore) {
-              e.preventDefault();
-              onOpenStore(activeProduct);
-              onDismiss();
             } else if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
               onExpandDetail(activeProduct);
@@ -215,30 +185,17 @@ export const FloatingCard: React.FC<FloatingProductCardProps> = ({
           }}
           role="group"
           tabIndex={0}
-          aria-label={`${activeProduct.name}，上下方向键切换商品，左方向键进入店铺，回车查看详情`}
-          className={`relative w-[84vw] max-w-[310px] h-[70vh] max-h-[540px] min-h-[460px] rounded-2xl bg-[#FFFFFF] shadow-2xl flex flex-col overflow-hidden cursor-pointer transition-all duration-300 active:scale-[0.99] border border-[#DED9D0]/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
-            isSwipingHorizontal ? '-translate-x-4 opacity-90' : ''
-          }`}
+          aria-label={`${activeProduct.name}，上下方向键切换商品，回车查看详情`}
+          className="relative w-[84vw] max-w-[310px] h-[70vh] max-h-[540px] min-h-[460px] rounded-2xl bg-[var(--market-surface)] shadow-2xl flex flex-col overflow-hidden cursor-pointer transition-all duration-300 active:scale-[0.99] border border-[var(--market-border)]/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onOpenStore) {
-                onOpenStore(activeProduct);
-                onDismiss();
-              }
-            }}
-            className="floating-storefront-sign flex h-12 shrink-0 items-center justify-center border-b border-[#D8D1C5] bg-[#F4F0E8] px-4 text-center text-[13px] font-semibold tracking-[0.08em] text-[#24211E] transition-colors hover:bg-[#ECE5D9]"
-            aria-label={`进入 ${activeProduct.storeName} 店铺`}
-          >
-            <span className="h-px min-w-4 flex-1 bg-[#C7BDAE]" aria-hidden="true" />
-            <span className="mx-3 truncate border-x border-[#C7BDAE] px-3">{activeProduct.storeName}</span>
-            <span className="h-px min-w-4 flex-1 bg-[#C7BDAE]" aria-hidden="true" />
-          </button>
+          <div className="floating-storefront-sign flex h-12 shrink-0 items-center justify-center border-b border-[var(--market-border)] bg-[var(--market-surface-muted)] px-4 text-center text-[13px] font-semibold tracking-[0.08em] text-[var(--market-ink)]">
+            <span className="h-px min-w-4 flex-1 bg-[var(--market-border)]" aria-hidden="true" />
+            <span className="mx-3 truncate border-x border-[var(--market-border)] px-3">{activeProduct.storeName}</span>
+            <span className="h-px min-w-4 flex-1 bg-[var(--market-border)]" aria-hidden="true" />
+          </div>
 
           {/* Upper Image Section */}
-          <div className="relative flex-1 w-full overflow-hidden bg-[#F6F3EE]">
+          <div className="relative flex-1 w-full overflow-hidden bg-[var(--market-surface-muted)]">
             <img
               key={activeProduct.id}
               src={activeProduct.mainImage}
@@ -254,49 +211,50 @@ export const FloatingCard: React.FC<FloatingProductCardProps> = ({
             />
 
             <div className="absolute left-3 top-3">
-              <span className="rounded-full bg-white/90 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-[#181817] shadow-xs">
+              <span className="rounded-full bg-white/90 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-[var(--market-ink)] shadow-xs">
                 {activeProduct.category}
               </span>
             </div>
           </div>
 
           {/* Lower Information Section */}
-          <div className="p-3.5 bg-[#FFFFFF] flex flex-col justify-between shrink-0 border-t border-[#DED9D0]/50">
+          <div className="p-3.5 bg-[var(--market-surface)] flex flex-col justify-between shrink-0 border-t border-[var(--market-border)]/50">
             <div>
               <div className="flex items-baseline justify-between gap-2">
-                <h3 className="text-sm font-bold text-[#181817] truncate flex-1">
+                <h3 className="text-sm font-bold text-[var(--market-ink)] truncate flex-1">
                   {activeProduct.name}
                 </h3>
-                <span className="text-sm font-bold text-[#181817] shrink-0">
+                <span className="text-sm font-bold text-[var(--market-ink)] shrink-0">
                   {activeProduct.formattedPrice}
                 </span>
               </div>
 
               {activeProduct.creator && activeProduct.creator !== activeProduct.storeName ? (
-                <p className="mt-0.5 truncate text-[11px] font-normal text-[#78746E]">
+                <p className="mt-0.5 truncate text-[11px] font-normal text-[var(--market-text-muted)]">
                   {activeProduct.creator}
                 </p>
               ) : null}
             </div>
 
-            <p className="mt-2 line-clamp-2 text-[11px] font-normal leading-relaxed text-[#625E58]">
+            <p className="mt-2 line-clamp-2 text-[11px] font-normal leading-relaxed text-[var(--market-text-secondary)]">
               {activeProduct.aiSummary}
             </p>
 
-            <div className="mt-3 flex h-8 items-center justify-end border-t border-[#DED9D0]/50 pt-1">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddToCart(activeProduct);
-                  showToast(`已将 ${activeProduct.name} 加入选品袋！`);
-                }}
-                className="flex items-center gap-1 rounded-full text-[#78746E] hover:text-[#181817] hover:bg-[#F6F3EE] p-1.5 text-[10px] font-medium active:scale-95 transition-all"
-                aria-label="加入选品袋"
-              >
-                <ShoppingBag size={14} />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                if (!isSaved) toggleSaveProduct(activeProduct.id);
+                onExpandDetail(activeProduct);
+                onDismiss();
+              }}
+              aria-label={isSaved ? '已收藏，查看详情' : '收藏并查看详情'}
+              aria-pressed={isSaved}
+              className={`mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-full text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)] ${isSaved ? 'bg-[var(--market-surface-muted)] text-[var(--palette-orange)]' : 'bg-[var(--market-ink)] text-white'}`}
+            >
+              <Heart aria-hidden="true" size={17} fill="currentColor" strokeWidth={1.5} />
+              {isSaved ? '已收藏' : '收藏'}
+            </button>
           </div>
         </div>
       </div>

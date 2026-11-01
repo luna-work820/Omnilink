@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useCallback, useImperativeHandle, forwardRef } from 'react'
-import { UploadCloud, X, CheckCircle, AlertCircle, Loader2, RefreshCw, Link2, Plus, Film, Play } from 'lucide-react'
+import { UploadCloud, X, CheckCircle, AlertCircle, Loader2, RefreshCw, Link2, Plus, Film, Play, Crop } from 'lucide-react'
 import { uploadProductMedia } from '@/lib/product-media/upload-client'
 
 export interface PendingImage {
@@ -53,11 +53,16 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
     const [generalError, setGeneralError] = useState<string | null>(null)
     const [removingAssetId, setRemovingAssetId] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const notifiedFileIdsRef = useRef('')
 
     // External URL support states
     const [urlInput, setUrlInput] = useState('')
     const [urlError, setUrlError] = useState<string | null>(null)
     const [isAddingUrl, setIsAddingUrl] = useState(false)
+    const [cropSource, setCropSource] = useState<string | null>(null)
+    const [cropAspect, setCropAspect] = useState<'3/4' | '4/3'>('4/3')
+    const [cropZoom, setCropZoom] = useState(1)
+    const [imageViewer, setImageViewer] = useState<string | null>(null)
 
     const isVideoUrl = useCallback((url: string): boolean => {
       if (!url) return false
@@ -145,6 +150,13 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
       setExistingList(existingAssets)
     }, [existingAssets])
 
+    React.useEffect(() => {
+      const fileIds = pendingFiles.map((item) => item.id).join('|')
+      if (fileIds === notifiedFileIdsRef.current) return
+      notifiedFileIdsRef.current = fileIds
+      onFilesChange?.(pendingFiles.map((item) => item.file))
+    }, [pendingFiles, onFilesChange])
+
     const validateAndAddFiles = useCallback(
       (files: FileList | File[]) => {
         setGeneralError(null)
@@ -191,15 +203,9 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
           return
         }
 
-        setPendingFiles((prev) => {
-          const updated = [...prev, ...validItems]
-          if (onFilesChange) {
-            onFilesChange(updated.map((item) => item.file))
-          }
-          return updated
-        })
+        if (validItems.length > 0) setPendingFiles((prev) => [...prev, ...validItems])
       },
-      [isZh, onFilesChange]
+      [isZh]
     )
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -233,17 +239,9 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
     }
 
     const removePendingFile = (id: string) => {
-      setPendingFiles((prev) => {
-        const target = prev.find((item) => item.id === id)
-        if (target?.previewUrl) {
-          URL.revokeObjectURL(target.previewUrl)
-        }
-        const updated = prev.filter((item) => item.id !== id)
-        if (onFilesChange) {
-          onFilesChange(updated.map((item) => item.file))
-        }
-        return updated
-      })
+      const target = pendingFiles.find((item) => item.id === id)
+      if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl)
+      setPendingFiles((prev) => prev.filter((item) => item.id !== id))
     }
 
     const removeExistingAsset = async (asset: ExistingAsset) => {
@@ -273,7 +271,41 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
       setExistingList((prev) => prev.filter((item) => item.id !== asset.id))
     }
 
-    const uploadSingleFile = async (item: PendingImage, targetProductId: string) => {
+    const saveCrop = async () => {
+      if (!cropSource) return
+      try {
+        const image = new Image()
+        image.crossOrigin = 'anonymous'
+        image.src = cropSource
+        await new Promise<void>((resolve, reject) => {
+          image.onload = () => resolve()
+          image.onerror = () => reject(new Error(isZh ? '图片无法读取，可能受外链跨域限制' : 'Image could not be read, possibly due to cross-origin restrictions'))
+        })
+        const [ratioW, ratioH] = cropAspect.split('/').map(Number)
+        const cropRatio = ratioW / ratioH
+        const sourceRatio = image.width / image.height
+        let width = image.width
+        let height = image.height
+        if (sourceRatio > cropRatio) width = image.height * cropRatio
+        else height = image.width / cropRatio
+        width /= cropZoom
+        height /= cropZoom
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(width)
+        canvas.height = Math.round(height)
+        canvas.getContext('2d')?.drawImage(image, (image.width - width) / 2, (image.height - height) / 2, width, height, 0, 0, canvas.width, canvas.height)
+        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92))
+        if (!blob) throw new Error(isZh ? '裁剪失败' : 'Crop failed')
+        const file = new File([blob], `cropped-${Date.now()}.jpg`, { type: 'image/jpeg' })
+        validateAndAddFiles([file])
+        setCropSource(null)
+        setCropZoom(1)
+      } catch (error) {
+        setGeneralError(error instanceof Error ? error.message : (isZh ? '裁剪失败' : 'Crop failed'))
+      }
+    }
+
+    const uploadSingleFile = useCallback(async (item: PendingImage, targetProductId: string) => {
       const res = await uploadProductMedia(
         {
           productId: targetProductId,
@@ -302,7 +334,7 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
       }
 
       return { asset: res.asset }
-    }
+    }, [isZh])
 
     const uploadPendingFiles = useCallback(
       async (targetProductId: string) => {
@@ -362,7 +394,7 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
 
         return { successCount, failedCount, errors }
       },
-      [pendingFiles, isZh, onUploadSuccess]
+      [pendingFiles, isZh, onUploadSuccess, uploadSingleFile]
     )
 
     useImperativeHandle(
@@ -397,7 +429,7 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
             onChange={handleFileSelect}
           />
           <div className="flex flex-col items-center justify-center space-y-2">
-            <div className="w-12 h-12 rounded-full bg-[var(--primary)] dark:bg-[var(--primary)]/30 text-[var(--primary)] dark:text-[var(--primary)] flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-[var(--primary)] dark:bg-[var(--primary)]/30 text-[var(--primary-foreground)] dark:text-[var(--primary-foreground)] flex items-center justify-center">
               <UploadCloud className="w-6 h-6" />
             </div>
             <div className="text-sm font-medium text-[var(--lavender)] dark:text-[var(--lavender)]">
@@ -461,7 +493,7 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
                 <span className="text-[11px] font-semibold text-[var(--lavender)] dark:text-[var(--lavender)]">
                   {isZh ? '实时媒体预览' : 'Live Media Preview'}
                 </span>
-                <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-[var(--primary)] dark:bg-[var(--primary)]/40 text-[var(--primary)] dark:text-[var(--primary)] flex items-center gap-1">
+                <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-[var(--primary)] dark:bg-[var(--primary)]/40 text-[var(--primary-foreground)] dark:text-[var(--primary-foreground)] flex items-center gap-1">
                   {isVideoUrl(urlInput.trim()) ? (
                     <>
                       <Film size={10} />
@@ -507,20 +539,20 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
 
         {/* Gallery */}
         <div className="space-y-3">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 gap-4">
               {/* Existing Uploaded Assets */}
               {existingList.map((asset) => {
                 const isVideo = asset.asset_type === 'video' || isVideoUrl(asset.url)
                 return (
                   <div
                     key={asset.id}
-                    className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-[var(--surface-muted)] bg-[var(--surface)] shadow-sm"
+                    className="group relative flex min-h-[320px] max-h-[72vh] items-center justify-center overflow-hidden border border-[var(--border-subtle)] bg-transparent p-3"
                   >
                     {isVideo ? (
                       <video
                         src={asset.url}
-                        className="h-full w-full object-contain bg-[var(--surface-muted)]"
-                        controls={false}
+                        className="max-h-[68vh] w-full object-contain"
+                        controls
                         autoPlay={false}
                         muted
                         playsInline
@@ -530,12 +562,12 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
                       <img
                         src={asset.url}
                         alt={isZh ? '商品素材' : 'Product Asset'}
-                        className="h-full w-full object-contain bg-[var(--surface-muted)]"
+                        className="max-h-48 max-w-full cursor-zoom-in object-contain"
+                        onClick={() => setImageViewer(asset.url)}
                       />
                     )}
-                    <div className="absolute top-1.5 left-1.5 bg-[var(--acid-sage)]/90 text-[var(--surface)] text-[10px] font-medium px-1.5 py-0.5 rounded shadow-sm flex items-center space-x-1">
+                    <div className="absolute top-3 left-3 grid size-7 place-items-center rounded-full bg-white/90 text-[var(--text-secondary)]" title={isVideo ? (isZh ? '公开视频' : 'Video') : (isZh ? '公开图像' : 'Image')}>
                       {isVideo ? <Film className="w-3 h-3" /> : <CheckCircle className="w-3 h-3" />}
-                      <span>{isVideo ? (isZh ? '公开视频' : 'Video') : (isZh ? '公开图像' : 'Image')}</span>
                     </div>
 
                     {/* Delete button */}
@@ -560,15 +592,16 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
               {pendingFiles.map((item) => (
                 <div
                   key={item.id}
-                  className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-[var(--surface-muted)] bg-[var(--surface)] shadow-sm"
+                  className="group relative flex min-h-[320px] max-h-[72vh] items-center justify-center overflow-hidden border border-[var(--border-subtle)] bg-transparent p-3"
                 >
                   {item.mediaType === 'video' ? (
-                    <video src={item.uploadedUrl || item.previewUrl} muted playsInline className="h-full w-full object-contain bg-[var(--surface-muted)]" />
+                    <video src={item.uploadedUrl || item.previewUrl} muted playsInline controls className="max-h-[68vh] w-full object-contain" />
                   ) : (
                     <img
                       src={item.uploadedUrl || item.previewUrl}
                       alt={item.file.name}
-                      className="h-full w-full object-contain bg-[var(--surface-muted)]"
+                      className="max-h-48 max-w-full cursor-zoom-in object-contain"
+                      onClick={() => setImageViewer(item.uploadedUrl || item.previewUrl)}
                     />
                   )}
 
@@ -642,13 +675,29 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
                     event.preventDefault()
                     validateAndAddFiles(event.dataTransfer.files)
                   }}
-                  className="group flex aspect-[4/3] items-center justify-center border border-dashed border-[var(--border)] bg-transparent text-[var(--text-muted)] transition-colors hover:border-[var(--primary)] hover:bg-[var(--surface-muted)] hover:text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="group flex min-h-[320px] max-h-[72vh] w-full items-center justify-center border border-dashed border-[var(--border)] bg-transparent text-[var(--text-muted)] transition-colors hover:border-[var(--primary)] hover:bg-[var(--surface-muted)] hover:text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-50"
                   aria-label={isZh ? '上传商品图片或视频' : 'Upload product media'}
                 >
                   <Plus className="h-8 w-8 stroke-[1.5]" aria-hidden="true" />
                 </button>
               )}
             </div>
+            {imageViewer && <div className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4" role="dialog" aria-modal="true" aria-label={isZh ? '查看商品图片' : 'View product image'} onClick={() => setImageViewer(null)}>
+              <div className="relative flex max-h-[90vh] max-w-[90vw] flex-col items-center gap-4" onClick={(event) => event.stopPropagation()}>
+                <button type="button" onClick={() => setImageViewer(null)} aria-label={isZh ? '关闭图片' : 'Close image'} className="absolute -right-3 -top-3 z-10 grid size-9 place-items-center rounded-full bg-white text-[var(--text-primary)]"><X size={16} /></button>
+                <img src={imageViewer} alt={isZh ? '商品图片' : 'Product image'} className="max-h-[78vh] max-w-[88vw] object-contain" />
+                <button type="button" onClick={() => { setCropSource(imageViewer); setImageViewer(null); setCropAspect('4/3') }} className="inline-flex min-h-9 items-center gap-2 rounded-md bg-white px-4 text-xs font-medium text-[var(--text-primary)]"><Crop size={14} />{isZh ? '裁剪' : 'Crop'}</button>
+              </div>
+            </div>}
+            {cropSource && <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4" role="dialog" aria-modal="true" aria-label={isZh ? '裁剪商品图片' : 'Crop product image'}>
+              <div className="w-full max-w-lg space-y-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
+                <div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-[var(--text-primary)]">{isZh ? '裁剪图片' : 'Crop image'}</h3><button type="button" onClick={() => setCropSource(null)} aria-label={isZh ? '关闭裁剪' : 'Close crop'} className="grid h-8 w-8 place-items-center rounded-md hover:bg-[var(--surface-muted)]"><X size={16} /></button></div>
+                <div className={`mx-auto max-h-[55vh] overflow-hidden bg-[var(--surface-muted)] ${cropAspect === '3/4' ? 'aspect-[3/4] w-56' : 'aspect-[4/3] w-full max-w-md'}`}><img src={cropSource} alt={isZh ? '裁剪预览' : 'Crop preview'} className="h-full w-full object-cover" style={{ transform: `scale(${cropZoom})` }} /></div>
+                <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex gap-2"><button type="button" onClick={() => setCropAspect('3/4')} aria-pressed={cropAspect === '3/4'} className={`rounded-md border px-3 py-1.5 text-xs ${cropAspect === '3/4' ? 'border-[var(--primary)] text-[var(--primary)]' : 'border-[var(--border)]'}`}>{isZh ? '竖图 3:4' : 'Portrait 3:4'}</button><button type="button" onClick={() => setCropAspect('4/3')} aria-pressed={cropAspect === '4/3'} className={`rounded-md border px-3 py-1.5 text-xs ${cropAspect === '4/3' ? 'border-[var(--primary)] text-[var(--primary)]' : 'border-[var(--border)]'}`}>{isZh ? '横图 4:3' : 'Landscape 4:3'}</button></div><label className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">{isZh ? '缩放' : 'Zoom'}<input type="range" min="1" max="2.5" step="0.05" value={cropZoom} onChange={(event) => setCropZoom(Number(event.target.value))} /></label></div>
+                <div className="flex justify-end gap-2"><button type="button" onClick={() => setCropSource(null)} className="rounded-md border border-[var(--border)] px-3 py-2 text-xs">{isZh ? '取消' : 'Cancel'}</button><button type="button" onClick={() => void saveCrop()} className="rounded-md bg-black px-3 py-2 text-xs text-white">{isZh ? '保存裁剪图' : 'Save crop'}</button></div>
+                <p className="text-[11px] text-[var(--text-muted)]">{isZh ? '裁剪后会新增一张图片，原图可手动移除。' : 'A cropped copy is added; remove the original manually if needed.'}</p>
+              </div>
+            </div>}
           </div>
       </div>
     )

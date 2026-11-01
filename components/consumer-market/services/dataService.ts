@@ -15,24 +15,37 @@ import {
   sampleCreator,
   sampleStory,
   lampProduct,
-  chairProduct,
-  clockProduct,
-  vesselProduct,
-  headphonesProduct,
   keyboardProduct,
-  cratesProduct,
-  mobileTableProduct,
-  linenCoatProduct,
-  knitSweaterProduct,
-  shelfProduct,
 } from '../data/mockData';
 
 const STORAGE_KEYS = {
   CART: 'omnilink_cart_items_v1',
   SAVED: 'omnilink_saved_items_v1',
   QNA: 'omnilink_qna_history_v1',
-  AI_CHAT: 'omnilink_ai_chat_v3',
+  AI_CHAT: 'omnilink_ai_chat_v4',
+  REJECTED: 'omnilink-rejected-products-v1',
+  ARCHIVED_CONVERSATIONS: 'omnilink-eva-archived-conversations',
 };
+
+function getBrowserStorage(): Storage | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const storage = window.localStorage;
+    return typeof storage?.getItem === 'function' && typeof storage?.setItem === 'function' ? storage : null;
+  } catch {
+    return null;
+  }
+}
+
+function readStringList(key: string): string[] {
+  try {
+    const value = getBrowserStorage()?.getItem(key);
+    const parsed: unknown = value ? JSON.parse(value) : [];
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
 
 let syncChannel: BroadcastChannel | null = null;
 try {
@@ -83,7 +96,7 @@ export class DataService {
 
   static getCart(products: ProductItem[] = productsList, useOnlyProvidedProducts = false): CartItem[] {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.CART);
+      const stored = getBrowserStorage()?.getItem(STORAGE_KEYS.CART);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
@@ -103,7 +116,9 @@ export class DataService {
 
   static saveCart(items: CartItem[]): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(items));
+      const storage = getBrowserStorage();
+      if (!storage) return;
+      storage.setItem(STORAGE_KEYS.CART, JSON.stringify(items));
       if (syncChannel) {
         syncChannel.postMessage({ type: 'CART_UPDATED', payload: items });
       }
@@ -114,7 +129,7 @@ export class DataService {
 
   static getSavedProductIds(): string[] {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.SAVED);
+      const stored = getBrowserStorage()?.getItem(STORAGE_KEYS.SAVED);
       if (stored) return JSON.parse(stored);
     } catch {
       // ignore
@@ -124,7 +139,9 @@ export class DataService {
 
   static saveProductIds(ids: string[]): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.SAVED, JSON.stringify(ids));
+      const storage = getBrowserStorage();
+      if (!storage) return;
+      storage.setItem(STORAGE_KEYS.SAVED, JSON.stringify(ids));
       if (syncChannel) {
         syncChannel.postMessage({ type: 'SAVED_UPDATED', payload: ids });
       }
@@ -135,7 +152,7 @@ export class DataService {
 
   static getQnaHistory(): Record<string, QnaMessage[]> {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.QNA);
+      const stored = getBrowserStorage()?.getItem(STORAGE_KEYS.QNA);
       if (stored) return JSON.parse(stored);
     } catch {
       // ignore
@@ -155,7 +172,7 @@ export class DataService {
 
   static saveQnaHistory(history: Record<string, QnaMessage[]>): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.QNA, JSON.stringify(history));
+      getBrowserStorage()?.setItem(STORAGE_KEYS.QNA, JSON.stringify(history));
     } catch {
       // ignore
     }
@@ -163,18 +180,24 @@ export class DataService {
 
   static getAiChatHistory(): AiChatMessage[] {
     try {
-      const stored = localStorage.getItem(STORAGE_KEYS.AI_CHAT);
-      if (stored) return JSON.parse(stored);
+      const stored = getBrowserStorage()?.getItem(STORAGE_KEYS.AI_CHAT);
+      if (stored) {
+        let conversationId = '';
+        return (JSON.parse(stored) as AiChatMessage[]).map((message) => {
+          if (message.id === 'msg_welcome') return message;
+          if (message.conversationId) conversationId = message.conversationId;
+          else if (message.isUser) conversationId = message.id;
+          return { ...message, conversationId: conversationId || message.id };
+        });
+      }
     } catch {
       // ignore
     }
     return [
       {
         id: 'msg_welcome',
-        text: '在下方发送消息或上传照片，我将自动推理画面中的空间或穿搭风格，并为您一次性精准匹配全套真实同款商品。',
+        text: '发送消息或上传照片，我会结合当前可用的商品目录给出建议；没有依据的部分会明确说明。',
         isUser: false,
-        styleTag: '智能美学识别',
-        matchedProducts: [lampProduct, cratesProduct, keyboardProduct],
         timestamp: '刚刚',
       },
     ];
@@ -182,121 +205,34 @@ export class DataService {
 
   static saveAiChatHistory(messages: AiChatMessage[]): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.AI_CHAT, JSON.stringify(messages));
+      getBrowserStorage()?.setItem(STORAGE_KEYS.AI_CHAT, JSON.stringify(messages));
     } catch {
       // ignore
     }
   }
 
-  // AI Conversational Image & Intent Reasoning Engine
-  static analyzeImageAndIntent(userImage?: string, userText?: string, availableProducts: ProductItem[] = productsList): {
-    styleTag: string;
-    analysisText: string;
-    matchedProducts: ProductItem[];
-  } {
-    const text = (userText || '').toLowerCase();
-    const img = (userImage || '').toLowerCase();
+  static getRejectedProductIds(): string[] {
+    return readStringList(STORAGE_KEYS.REJECTED).slice(0, 100);
+  }
 
-    if (availableProducts !== productsList) {
-      const terms = text.split(/\s+/).filter((term) => term.length > 1);
-      const relevant = availableProducts.filter((product) =>
-        [product.name, product.category, product.shortDescription, ...Object.keys(product.specs)]
-          .some((value) => terms.some((term) => value.toLowerCase().includes(term)))
-      );
-      const matchedProducts = (relevant.length ? relevant : availableProducts).slice(0, 4);
-      return {
-        styleTag: text.trim() ? '按当前店铺商品匹配' : '当前店铺商品推荐',
-        analysisText: matchedProducts.length
-          ? '根据你的描述，从已发布的店铺商品中整理了这些候选。'
-          : '当前没有可用于推荐的已发布商品。',
-        matchedProducts,
-      };
+  static saveRejectedProductIds(ids: string[]): void {
+    try {
+      getBrowserStorage()?.setItem(STORAGE_KEYS.REJECTED, JSON.stringify(ids));
+    } catch {
+      // ignore
     }
+  }
 
-    // 1. Wabi-Sabi tea / reading corner
-    if (
-      text.includes('侘寂') ||
-      text.includes('陶艺') ||
-      text.includes('wabi') ||
-      text.includes('阅读角') ||
-      img.includes('wabisabi')
-    ) {
-      return {
-        styleTag: '侘寂静谧陶艺阅读角',
-        analysisText: '已识别到自然肌理白墙、低矮亚麻家具与粗陶器物。为您匹配手作粗陶花器、低姿态亚麻躺椅与极简实木挂架：',
-        matchedProducts: [vesselProduct, chairProduct, shelfProduct, lampProduct],
-      };
+  static getArchivedConversationIds(): string[] {
+    return readStringList(STORAGE_KEYS.ARCHIVED_CONVERSATIONS);
+  }
+
+  static saveArchivedConversationIds(ids: string[]): void {
+    try {
+      getBrowserStorage()?.setItem(STORAGE_KEYS.ARCHIVED_CONVERSATIONS, JSON.stringify(ids));
+    } catch {
+      // ignore
     }
-
-    // 2. Botanical living room / studio
-    if (
-      text.includes('绿植') ||
-      text.includes('雨林') ||
-      text.includes('客厅') ||
-      text.includes('jungle') ||
-      text.includes('plant') ||
-      img.includes('living') ||
-      img.includes('jungle')
-    ) {
-      return {
-        styleTag: '日光绿植有机客厅空间',
-        analysisText: '已识别到漫射晨光、天然阔叶绿植与流动家具。为您匹配移动红面推车边几、中世纪亚麻躺椅与空间监听耳机：',
-        matchedProducts: [mobileTableProduct, chairProduct, headphonesProduct, lampProduct],
-      };
-    }
-
-    // 3. Outfit: Linen Chore Coat & Minimalist Lookbook
-    if (
-      text.includes('亚麻') ||
-      text.includes('工装') ||
-      text.includes('画廊') ||
-      img.includes('outfit') ||
-      img.includes('styled_1')
-    ) {
-      return {
-        styleTag: '画廊极简亚麻工装穿搭',
-        analysisText: '已识别到中性比利时亚麻质感与建筑感廓形。为您匹配重磅亚麻工装夹克、鼠尾草绿监听耳机与极简时钟：',
-        matchedProducts: [linenCoatProduct, headphonesProduct, clockProduct],
-      };
-    }
-
-    // 4. Outfit: Chunky Knit & Creator
-    if (
-      text.includes('针织') ||
-      text.includes('毛衣') ||
-      text.includes('开衫') ||
-      text.includes('knit') ||
-      img.includes('styled_2')
-    ) {
-      return {
-        styleTag: '复古创作者粗针针织穿搭',
-        analysisText: '已识别到美利奴羊毛粗针纹理与数码创作美学。为您匹配粗针羊毛开衫、8Bit 双旋钮机械键盘与方壳监听耳机：',
-        matchedProducts: [knitSweaterProduct, keyboardProduct, headphonesProduct],
-      };
-    }
-
-    // 5. Bauhaus Workspace & Light
-    if (
-      text.includes('包豪斯') ||
-      text.includes('光影') ||
-      text.includes('书房') ||
-      text.includes('desk') ||
-      img.includes('bauhaus') ||
-      img.includes('collector')
-    ) {
-      return {
-        styleTag: '包豪斯日光极简工作室',
-        analysisText: '已识别到几何建筑光影、原木桌面与黄铜点缀。为您匹配包豪斯弧形台灯、复古机械键盘与铝型材收纳箱：',
-        matchedProducts: [lampProduct, keyboardProduct, cratesProduct, shelfProduct],
-      };
-    }
-
-    // Default
-    return {
-      styleTag: '复古工业桌面藏家空间',
-      analysisText: '已完成视觉风格推理。为您检索出以下真实实物同款组合：',
-      matchedProducts: [cratesProduct, keyboardProduct, lampProduct, mobileTableProduct],
-    };
   }
 
   static getReplacementOptions(currentProductId: string): ProductItem[] {

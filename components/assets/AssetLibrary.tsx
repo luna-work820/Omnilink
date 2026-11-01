@@ -155,7 +155,7 @@ export function AssetLibrary() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex min-h-11 items-center gap-2 rounded-[4px] bg-[#1C1C1C] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#000000] focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2"
+              className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-control)] bg-[var(--accent-primary)] px-5 text-sm font-semibold text-white transition-colors hover:bg-[var(--accent-primary-hover)] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-[var(--accent-secondary)] focus-visible:outline-offset-2"
             >
               {isUploading ? <Loader2 size={16} className="animate-spin" /> : <UploadCloud size={16} />}
               {isUploading ? '正在添加' : '上传资产'}
@@ -174,7 +174,7 @@ export function AssetLibrary() {
         <div className="flex flex-col gap-4 rounded-[20px] bg-white p-4 shadow-[0_2px_8px_rgba(28,28,28,0.04)] lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="资产类型">
             {(['all', 'document', 'image', 'video'] as const).map((value) => (
-              <button key={value} type="button" onClick={() => setKind(value)} aria-pressed={kind === value} className={`min-h-10 rounded-full px-4 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-[#024AD8] focus-visible:outline-offset-2 ${kind === value ? 'bg-[#1C1C1C] text-white' : 'text-[#636363] hover:bg-[#F4F4F1]'}`}>
+              <button key={value} type="button" onClick={() => setKind(value)} aria-pressed={kind === value} className={`min-h-10 rounded-[var(--radius-control)] px-4 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-[var(--accent-secondary)] focus-visible:outline-offset-2 ${kind === value ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]'}`}>
                 {value === 'all' ? '全部资产' : kindLabels[value]}
               </button>
             ))}

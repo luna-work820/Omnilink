@@ -7,7 +7,7 @@ import { normalizeStorefrontSchema } from "@/lib/storefront/schema";
  * PATCH /api/stores/[id]/template —— 商家主题选择写入口。
  *
  * 契约（Phase 14 #52 接通）：
- *   TemplateSelector → PATCH { template_id }
+ *   主题选择请求 → PATCH { template_id }
  *     → 校验：登录态 + 店铺归属 + template 合法（active 白名单）
  *     → 持久化：store_settings.theme_config.theme_id（merge，不覆盖其他键）
  *     → 公开链路消费：getPublishedStore 读取 theme_config.theme_id

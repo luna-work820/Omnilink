@@ -14,6 +14,7 @@ export interface VariantMatrixRow {
   optionValues: Record<string, string>
   sku: string
   price: string
+  priceCustomized?: boolean
   inventory: string
 }
 
@@ -28,6 +29,7 @@ interface VariantMatrixTableProps {
   axes: VariantMatrixAxis[]
   rows: VariantMatrixRow[]
   onChange: (rows: VariantMatrixRow[]) => void
+  onUserEdit?: () => void
   /** Defaults applied to newly generated combinations. */
   basePrice: string
   baseInventory: string
@@ -80,6 +82,7 @@ export function VariantMatrixTable({
   axes,
   rows,
   onChange,
+  onUserEdit,
   basePrice,
   baseInventory,
   baseSku,
@@ -121,13 +124,14 @@ export function VariantMatrixTable({
       const key = variantCombinationKey(optionValues)
       const existing = previousByKey.get(key)
       if (existing) {
-        return { ...existing, optionValues: { ...optionValues } }
+        return { ...existing, optionValues: { ...optionValues }, price: existing.priceCustomized ? existing.price : defaults.basePrice }
       }
       return {
         key,
         optionValues: { ...optionValues },
         sku: generateSku(defaults.baseSku, optionValues),
         price: defaults.basePrice,
+        priceCustomized: false,
         inventory: defaults.baseInventory,
       }
     })
@@ -135,16 +139,17 @@ export function VariantMatrixTable({
     // Only notify the parent when the shape actually changed, so typing in a
     // cell (which changes rows but not axes) never triggers a rewrite.
     const prev = rowsRef.current
-    const sameShape =
+    const unchanged =
       prev.length === reconciled.length &&
-      prev.every((r, i) => r.key === reconciled[i].key)
-    if (!sameShape) {
+      prev.every((r, i) => r.key === reconciled[i].key && r.price === reconciled[i].price)
+    if (!unchanged) {
       onChangeRef.current(reconciled)
     }
-  }, [axesSig])
+  }, [axesSig, basePrice])
 
   const updateRow = (key: string, field: 'sku' | 'price' | 'inventory', value: string) => {
-    onChange(rows.map((r) => (r.key === key ? { ...r, [field]: value } : r)))
+    onUserEdit?.()
+    onChange(rows.map((r) => (r.key === key ? { ...r, [field]: value, ...(field === 'price' ? { priceCustomized: true } : {}) } : r)))
   }
 
   const currencySymbol = currency === 'USD' ? '$' : '¥'
@@ -153,8 +158,8 @@ export function VariantMatrixTable({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-1.5 text-[11px] text-[var(--lavender)]">
-        <Layers size={12} className="shrink-0 text-[var(--primary)]" />
+      <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+        <Layers size={14} className="shrink-0 text-[var(--accent-secondary)]" />
         <span>
           {isZh
             ? `按 ${filledAxes.map((a) => a.name).join(' × ')} 生成 ${rows.length} 个 SKU，可逐个调整价格 / 库存 / SKU`
@@ -162,20 +167,20 @@ export function VariantMatrixTable({
         </span>
       </div>
 
-      <div className="overflow-x-auto border border-[var(--surface-muted)] ">
+      <div className="overflow-x-auto rounded-[var(--radius-card-nested)] border border-[var(--border-subtle)]">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="bg-[var(--surface-muted)] border-b border-[var(--surface-muted)] text-[var(--lavender)] font-bold">
+            <tr className="border-b border-[var(--border-subtle)] bg-[var(--surface-muted)] font-semibold text-[var(--text-secondary)]">
               <th className="py-2 px-3">{isZh ? '规格组合' : 'Combination'}</th>
               <th className="py-2 px-3">{isZh ? 'SKU 编码' : 'SKU'}</th>
               <th className="py-2 px-3">{isZh ? `售价 (${currencySymbol})` : 'Price'}</th>
               <th className="py-2 px-3">{isZh ? '库存' : 'Stock'}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[var(--surface-muted)]">
+          <tbody className="divide-y divide-[var(--border-subtle)]">
             {rows.map((row) => (
-              <tr key={row.key} className="hover:bg-[var(--surface-muted)]/60">
-                <td className="py-2 px-3 font-semibold text-[var(--lavender)] whitespace-nowrap">
+              <tr key={row.key} className="transition-colors hover:bg-[var(--surface-muted)]">
+                <td className="whitespace-nowrap px-3 py-2 font-medium text-[var(--text-primary)]">
                   {filledAxes.map((a) => row.optionValues[a.code]).filter(Boolean).join(' / ')}
                 </td>
                 <td className="py-2 px-3">
@@ -184,7 +189,7 @@ export function VariantMatrixTable({
                     value={row.sku}
                     onChange={(e) => updateRow(row.key, 'sku', e.target.value)}
                     disabled={disabled}
-                    className="h-7 w-36 px-2  bg-[var(--surface)] border border-[var(--surface-muted)] text-[11px] font-mono text-[var(--lavender)] focus:outline-none focus:border-[var(--primary)]"
+                    className="h-10 w-36 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 font-mono text-xs text-[var(--text-primary)] focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15"
                   />
                 </td>
                 <td className="py-2 px-3">
@@ -196,7 +201,7 @@ export function VariantMatrixTable({
                     step="0.01"
                     placeholder={basePrice || '0.00'}
                     disabled={disabled}
-                    className="h-7 w-24 px-2  bg-[var(--surface)] border border-[var(--surface-muted)] text-[11px] font-bold text-[var(--lavender)] focus:outline-none focus:border-[var(--primary)]"
+                    className="h-10 w-24 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 text-xs font-semibold tabular-nums text-[var(--text-primary)] focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15"
                   />
                 </td>
                 <td className="py-2 px-3">
@@ -208,7 +213,7 @@ export function VariantMatrixTable({
                     step="1"
                     placeholder={baseInventory || '0'}
                     disabled={disabled}
-                    className="h-7 w-20 px-2  bg-[var(--surface)] border border-[var(--surface-muted)] text-[11px] text-[var(--lavender)] focus:outline-none focus:border-[var(--primary)]"
+                    className="h-10 w-20 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 text-xs tabular-nums text-[var(--text-primary)] focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15"
                   />
                 </td>
               </tr>

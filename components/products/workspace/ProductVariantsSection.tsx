@@ -382,7 +382,7 @@ export function ProductVariantsSection({
                     <button
                       type="button"
                       onClick={() => addOptionValue(optionIndex)}
-                      className="px-2.5 py-1  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--primary)] text-xs font-bold transition-all cursor-pointer border border-[var(--primary)] flex items-center gap-1"
+                      className="px-2.5 py-1  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold transition-all cursor-pointer border border-[var(--primary)] flex items-center gap-1"
                     >
                       <Plus size={11} />
                       <span>{isZh ? '添加选项值' : 'Add Value'}</span>

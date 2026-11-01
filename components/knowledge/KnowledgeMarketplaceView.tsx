@@ -76,7 +76,7 @@ export function KnowledgeMarketplaceView({
             type="button"
             id="share-knowledge-btn"
             onClick={() => setIsShareModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-[8px] bg-[var(--ink)] hover:bg-[var(--ink)] text-[var(--surface)] text-xs font-bold transition-all shadow-xs cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-[8px] bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-[var(--surface)] text-xs font-bold transition-all shadow-xs cursor-pointer"
           >
             <UploadCloud size={13} />
             <span>共享知识库</span>
@@ -169,7 +169,7 @@ export function KnowledgeMarketplaceView({
                   className={`px-3.5 py-1.5 rounded-[8px] text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
                     isAdded
                       ? 'bg-[var(--acid-sage)] text-[var(--acid-sage)] hover:bg-[var(--plum)] hover:text-[var(--plum)] border border-[var(--acid-sage)]/60 shadow-2xs'
-                      : 'bg-[var(--ink)] hover:bg-[var(--ink)] text-[var(--surface)] shadow-2xs'
+                      : 'bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-[var(--surface)] shadow-2xs'
                   }`}
                   title={isAdded ? '点击自私有云库移除' : '点击添加到私有云库'}
                 >
@@ -245,7 +245,7 @@ export function KnowledgeMarketplaceView({
                 <button
                   type="submit"
                   disabled={!shareBaseTitle.trim()}
-                  className="px-4 py-1.5 rounded-[8px] bg-[var(--ink)] hover:bg-[var(--ink)] disabled:bg-[var(--surface-muted)] text-[var(--surface)] disabled:text-[var(--lavender)] text-xs font-bold shadow-xs cursor-pointer"
+                  className="px-4 py-1.5 rounded-[8px] bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] disabled:bg-[var(--surface-muted)] text-[var(--surface)] disabled:text-[var(--lavender)] text-xs font-bold shadow-xs cursor-pointer"
                 >
                   提交
                 </button>

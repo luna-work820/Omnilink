@@ -3,14 +3,9 @@ import { AIProvider } from './provider'
 export class DeepSeekProvider implements AIProvider {
   private apiKey: string
 
-  constructor() {
-    const key = process.env.DEEPSEEK_API_KEY
-
-    if (!key) {
-      throw new Error('Missing DEEPSEEK_API_KEY')
-    }
-
-    this.apiKey = key
+  constructor(apiKey: string) {
+    if (!apiKey.trim()) throw new Error('Missing DeepSeek API key')
+    this.apiKey = apiKey
   }
 
   async generateText(

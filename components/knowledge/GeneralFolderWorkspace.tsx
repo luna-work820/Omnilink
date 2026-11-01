@@ -207,7 +207,7 @@ export function GeneralFolderWorkspace({
                   </button>
                 )}
 
-                <span className="px-1.5 py-0.2 rounded-full bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)] text-[10px] font-bold shrink-0">
+                <span className="px-1.5 py-0.2 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] border border-[var(--primary)] text-[10px] font-bold shrink-0">
                   {folder.sources.length} 篇
                 </span>
               </div>
@@ -408,7 +408,7 @@ export function GeneralFolderWorkspace({
           }`}
           title="点击或拖拽上传文档"
         >
-          <div className="w-5 h-5  bg-[var(--primary)] text-[var(--primary)] flex items-center justify-center shrink-0">
+          <div className="w-5 h-5  bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center shrink-0">
             <Plus size={13} strokeWidth={2.5} />
           </div>
           <span className="text-[11px] font-bold text-[var(--ink)] group-hover:text-[var(--primary)]">

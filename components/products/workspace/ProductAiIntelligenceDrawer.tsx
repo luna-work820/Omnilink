@@ -174,7 +174,7 @@ export function ProductAiIntelligenceDrawer({
                       <span className="font-bold text-[var(--lavender)] text-xs">
                         {item.label || item.fieldKey}
                       </span>
-                      <span className="text-[10px] text-[var(--primary)] bg-[var(--primary)] px-2 py-0.5  font-medium border border-[var(--primary)]">
+                      <span className="text-[10px] text-[var(--primary-foreground)] bg-[var(--primary)] px-2 py-0.5  font-medium border border-[var(--primary)]">
                         → {item.nextValue}
                       </span>
                     </div>
@@ -199,7 +199,7 @@ export function ProductAiIntelligenceDrawer({
                         className={`h-6 px-2.5  text-[11px] font-medium cursor-pointer transition-all focus-visible:outline-2 focus-visible:outline-[var(--primary)] ${
                           item.status === 'accepted'
                             ? 'bg-[var(--primary)] text-[var(--surface)]'
-                            : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--primary)] hover:text-[var(--primary)]'
+                            : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]'
                         }`}
                       >
                         {isZh ? '应用' : 'Apply'}
@@ -276,7 +276,7 @@ export function ProductAiIntelligenceDrawer({
                         className={`h-6 px-2.5  text-[11px] font-medium cursor-pointer transition-all focus-visible:outline-2 focus-visible:outline-[var(--primary)] ${
                           item.status === 'accepted'
                             ? 'bg-[var(--primary)] text-[var(--surface)]'
-                            : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--primary)] hover:text-[var(--primary)]'
+                            : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]'
                         }`}
                       >
                         {isZh ? '应用' : 'Apply'}

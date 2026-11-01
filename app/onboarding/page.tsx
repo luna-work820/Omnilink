@@ -3,6 +3,7 @@ import { createClientServer } from '@/lib/supabase/server'
 import { StoreCreateForm } from '@/components/onboarding/StoreCreateForm'
 import { logoutAction } from '@/app/actions/auth'
 import { getBrandProjectByUserId } from '@/lib/brand/workspace'
+import { getStoreByOwnerId } from '@/lib/stores/service'
 import { LogOut, User, Sparkles } from 'lucide-react'
 
 function AsteriskIcon({ className = 'w-6 h-6', color = 'currentColor' }: { className?: string; color?: string }) {
@@ -38,9 +39,12 @@ export default async function OnboardingPage() {
     redirect('/login')
   }
 
-  const existingProject = await getBrandProjectByUserId(user.id)
-  if (existingProject) {
-    redirect('/dashboard')
+  const [existingProject, existingStore] = await Promise.all([
+    getBrandProjectByUserId(user.id),
+    getStoreByOwnerId(user.id),
+  ])
+  if (existingProject && existingStore) {
+    redirect('/dashboard/products')
   }
 
   const currentUser = user

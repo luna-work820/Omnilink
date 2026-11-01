@@ -82,7 +82,7 @@ export function ProductIdentitySection({
     <div className="space-y-5 border-b border-[var(--border)] pb-8 pt-2">
       <div className="flex items-center justify-between pb-3 border-b border-[var(--surface-muted)]">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8  bg-[var(--primary)] text-[var(--primary)] flex items-center justify-center font-mono font-bold text-xs">
+          <div className="w-8 h-8  bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center font-mono font-bold text-xs">
             01
           </div>
           <div>

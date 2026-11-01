@@ -209,7 +209,7 @@ export function ProductRelationsSection({
                       {rel.targetProduct.name}
                     </div>
                     <div className="mt-0.5 flex items-center gap-2 text-[11px]">
-                      <span className="px-1.5 py-0.2  bg-[var(--primary)] text-[var(--primary)] font-bold border border-[var(--primary)] text-[10px]">
+                      <span className="px-1.5 py-0.2  bg-[var(--primary)] text-[var(--primary-foreground)] font-bold border border-[var(--primary)] text-[10px]">
                         {PRODUCT_RELATION_LABELS[rel.relationType] || rel.relationType}
                       </span>
                       {rel.targetProduct.sku && (

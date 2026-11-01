@@ -1,0 +1,700 @@
+{
+  "_bank": {
+    "version": "1.0.0",
+    "note": "题库。每个题目有 id、domain、type、prompt、options。value 为写入档案的字段标识。ladder 类型由引擎逐步推进，翻转即停。",
+    "domains": {
+      "anchor": "锚定：定品类与参照价格",
+      "price_band": "价格理解：四档边界倍数",
+      "value_order": "性价比认知：六组两两对决",
+      "tradeoff": "质量/设计/价格平衡：两个溢价阶梯",
+      "style": "颜色与风格：偏好与强度",
+      "category": "品类与用途：品类与场景"
+    }
+  },
+  "questions": [
+    {
+      "id": "A1",
+      "domain": "anchor",
+      "type": "single_choice",
+      "required": true,
+      "prompt": "你这次主要想搞清楚哪一类东西的购买偏好？",
+      "hint": "选一个最主要的方向就行，后面几个问题都围绕它问。",
+      "options": [
+        {
+          "label": "服饰鞋包",
+          "value": "apparel"
+        },
+        {
+          "label": "护肤美妆",
+          "value": "skincare"
+        },
+        {
+          "label": "数码家电",
+          "value": "digital"
+        },
+        {
+          "label": "家居日用",
+          "value": "home"
+        },
+        {
+          "label": "食品生鲜",
+          "value": "food"
+        },
+        {
+          "label": "通用，不限品类",
+          "value": "general"
+        }
+      ],
+      "field": "preferences.price_anchor.category"
+    },
+    {
+      "id": "A2",
+      "domain": "anchor",
+      "type": "numeric",
+      "required": true,
+      "field": "preferences.price_anchor.reference_price",
+      "prompt": "说一个你最近买过的同类东西，大概花了多少钱？",
+      "hint": "报个大概数就行，比如 400、1200。不用精确。",
+      "min": 1,
+      "max": 1000000,
+      "unit": "元"
+    },
+    {
+      "id": "A3",
+      "domain": "anchor",
+      "type": "single_choice",
+      "required": true,
+      "field": "preferences.price_anchor.reference_consistency",
+      "prompt": "这个价位对你来说，算不算你平时的常态？",
+      "options": [
+        {
+          "label": "一直就买这个价位",
+          "value": "consistent"
+        },
+        {
+          "label": "大概这个范围，偶尔高一点低一点",
+          "value": "roughly"
+        },
+        {
+          "label": "那次是例外，平时不会这么买",
+          "value": "exception"
+        },
+        {
+          "label": "记不太清了",
+          "value": "unsure"
+        }
+      ]
+    },
+    {
+      "id": "B1",
+      "domain": "price_band",
+      "type": "single_choice",
+      "required": true,
+      "field": "preferences.price_anchor.doubt_multiplier",
+      "prompt": "同一样东西，如果只卖到你刚才说的价的几成，你会觉得「这么便宜，质量肯定有问题」？",
+      "hint": "这里问的是便宜到让你起疑的那条线。",
+      "options": [
+        {
+          "label": "低到 2 成左右",
+          "value": 0.2
+        },
+        {
+          "label": "低到 3 成左右",
+          "value": 0.3
+        },
+        {
+          "label": "低到 5 成左右",
+          "value": 0.5
+        },
+        {
+          "label": "低到 7 成左右",
+          "value": 0.7
+        }
+      ]
+    },
+    {
+      "id": "B2",
+      "domain": "price_band",
+      "type": "single_choice",
+      "required": true,
+      "field": "preferences.price_anchor.bargain_multiplier",
+      "prompt": "低到你觉得划算、想赶紧买，大概是几成？",
+      "options": [
+        {
+          "label": "4 成左右",
+          "value": 0.4
+        },
+        {
+          "label": "6 成左右",
+          "value": 0.6
+        },
+        {
+          "label": "8 成左右",
+          "value": 0.8
+        },
+        {
+          "label": "就是原价，不更低",
+          "value": 1.0
+        },
+        {
+          "label": "1.2 倍左右",
+          "value": 1.2
+        },
+        {
+          "label": "1.5 倍左右",
+          "value": 1.5
+        }
+      ]
+    },
+    {
+      "id": "B3",
+      "domain": "price_band",
+      "type": "single_choice",
+      "required": true,
+      "field": "preferences.price_anchor.expensive_multiplier",
+      "prompt": "高到你觉得有点超预算，大概是几倍？",
+      "options": [
+        {
+          "label": "1.2 倍左右",
+          "value": 1.2
+        },
+        {
+          "label": "1.5 倍左右",
+          "value": 1.5
+        },
+        {
+          "label": "2 倍左右",
+          "value": 2.0
+        },
+        {
+          "label": "2.5 倍左右",
+          "value": 2.5
+        },
+        {
+          "label": "3 倍左右",
+          "value": 3.0
+        }
+      ]
+    },
+    {
+      "id": "B4",
+      "domain": "price_band",
+      "type": "single_choice",
+      "required": true,
+      "field": "preferences.price_anchor.reject_multiplier",
+      "prompt": "高到就算再喜欢也不考虑，大概是几倍？",
+      "options": [
+        {
+          "label": "1.8 倍左右",
+          "value": 1.8
+        },
+        {
+          "label": "2.2 倍左右",
+          "value": 2.2
+        },
+        {
+          "label": "3 倍左右",
+          "value": 3.0
+        },
+        {
+          "label": "4 倍左右",
+          "value": 4.0
+        },
+        {
+          "label": "5 倍左右",
+          "value": 5.0
+        }
+      ]
+    },
+    {
+      "id": "C1",
+      "domain": "value_order",
+      "type": "pairwise",
+      "required": true,
+      "prompt": "同样两个价钱的同类东西，你会选哪个？",
+      "hint": "耐用经用，和品牌有面子。",
+      "left": {
+        "label": "耐用经用",
+        "value": "durability"
+      },
+      "right": {
+        "label": "品牌有面子",
+        "value": "brand"
+      },
+      "tie_option": {
+        "label": "都还行，看情况",
+        "value": "tie"
+      }
+    },
+    {
+      "id": "C2",
+      "domain": "value_order",
+      "type": "pairwise",
+      "required": true,
+      "prompt": "同样两个价钱的同类东西，你会选哪个？",
+      "hint": "设计和外观，和质量和耐用。",
+      "left": {
+        "label": "设计和外观",
+        "value": "design"
+      },
+      "right": {
+        "label": "质量和耐用",
+        "value": "durability"
+      },
+      "tie_option": {
+        "label": "都还行，看情况",
+        "value": "tie"
+      }
+    },
+    {
+      "id": "C3",
+      "domain": "value_order",
+      "type": "pairwise",
+      "required": true,
+      "prompt": "同样两个价钱的同类东西，你会选哪个？",
+      "hint": "质量和耐用，和参数性能强。",
+      "left": {
+        "label": "质量和耐用",
+        "value": "durability"
+      },
+      "right": {
+        "label": "参数性能强",
+        "value": "performance"
+      },
+      "tie_option": {
+        "label": "都还行，看情况",
+        "value": "tie"
+      }
+    },
+    {
+      "id": "C4",
+      "domain": "value_order",
+      "type": "pairwise",
+      "required": true,
+      "prompt": "同样两个价钱的同类东西，你会选哪个？",
+      "hint": "设计和外观，和参数性能强。",
+      "left": {
+        "label": "设计和外观",
+        "value": "design"
+      },
+      "right": {
+        "label": "参数性能强",
+        "value": "performance"
+      },
+      "tie_option": {
+        "label": "都还行，看情况",
+        "value": "tie"
+      }
+    },
+    {
+      "id": "C5",
+      "domain": "value_order",
+      "type": "pairwise",
+      "required": true,
+      "prompt": "同样两个价钱的同类东西，你会选哪个？",
+      "hint": "设计和外观，和品牌有面子。",
+      "left": {
+        "label": "设计和外观",
+        "value": "design"
+      },
+      "right": {
+        "label": "品牌有面子",
+        "value": "brand"
+      },
+      "tie_option": {
+        "label": "都还行，看情况",
+        "value": "tie"
+      }
+    },
+    {
+      "id": "C6",
+      "domain": "value_order",
+      "type": "pairwise",
+      "required": true,
+      "repeat_of": "C2",
+      "order_check": true,
+      "prompt": "同样两个价钱的同类东西，你会选哪个？",
+      "hint": "质量和耐用，和设计和外观。",
+      "left": {
+        "label": "质量和耐用",
+        "value": "durability"
+      },
+      "right": {
+        "label": "设计和外观",
+        "value": "design"
+      },
+      "tie_option": {
+        "label": "都还行，看情况",
+        "value": "tie"
+      }
+    },
+    {
+      "id": "D1",
+      "domain": "tradeoff",
+      "type": "ladder",
+      "required": true,
+      "field": "preferences.tradeoff_weights.quality_premium_max_pct",
+      "prompt": "同款商品有两个版本，质量明显更好的那个要贵一些。你最多能接受贵多少，仍然选质量好的那个？",
+      "hint": "我逐档加价，你每档告诉我还选不选质量好的。",
+      "steps": [
+        {
+          "pct": 10,
+          "options": [
+            {
+              "label": "还是选质量好的",
+              "value": "premium"
+            },
+            {
+              "label": "选便宜那个",
+              "value": "base"
+            }
+          ]
+        },
+        {
+          "pct": 20,
+          "options": [
+            {
+              "label": "还是选质量好的",
+              "value": "premium"
+            },
+            {
+              "label": "选便宜那个",
+              "value": "base"
+            }
+          ]
+        },
+        {
+          "pct": 35,
+          "options": [
+            {
+              "label": "还是选质量好的",
+              "value": "premium"
+            },
+            {
+              "label": "选便宜那个",
+              "value": "base"
+            }
+          ]
+        },
+        {
+          "pct": 50,
+          "options": [
+            {
+              "label": "还是选质量好的",
+              "value": "premium"
+            },
+            {
+              "label": "选便宜那个",
+              "value": "base"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "D2",
+      "domain": "tradeoff",
+      "type": "ladder",
+      "required": true,
+      "field": "preferences.tradeoff_weights.design_premium_max_pct",
+      "prompt": "换一组：同款商品有两个版本，设计明显更好的那个要贵一些。你最多能接受贵多少，仍然选设计好的那个？",
+      "hint": "还是逐档加价，每档告诉我还选不选设计好的。",
+      "steps": [
+        {
+          "pct": 10,
+          "options": [
+            {
+              "label": "还是选设计好的",
+              "value": "premium"
+            },
+            {
+              "label": "选便宜那个",
+              "value": "base"
+            }
+          ]
+        },
+        {
+          "pct": 20,
+          "options": [
+            {
+              "label": "还是选设计好的",
+              "value": "premium"
+            },
+            {
+              "label": "选便宜那个",
+              "value": "base"
+            }
+          ]
+        },
+        {
+          "pct": 35,
+          "options": [
+            {
+              "label": "还是选设计好的",
+              "value": "premium"
+            },
+            {
+              "label": "选便宜那个",
+              "value": "base"
+            }
+          ]
+        },
+        {
+          "pct": 50,
+          "options": [
+            {
+              "label": "还是选设计好的",
+              "value": "premium"
+            },
+            {
+              "label": "选便宜那个",
+              "value": "base"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E1",
+      "domain": "style",
+      "type": "multi_choice",
+      "required": true,
+      "max_select": 3,
+      "field": "preferences.style_intensity.styles",
+      "prompt": "你偏好哪些风格？最多选三个。",
+      "options": [
+        {
+          "label": "极简",
+          "value": "极简"
+        },
+        {
+          "label": "通勤",
+          "value": "通勤"
+        },
+        {
+          "label": "复古",
+          "value": "复古"
+        },
+        {
+          "label": "街头",
+          "value": "街头"
+        },
+        {
+          "label": "甜酷",
+          "value": "甜酷"
+        },
+        {
+          "label": "法式",
+          "value": "法式"
+        },
+        {
+          "label": "运动",
+          "value": "运动"
+        },
+        {
+          "label": "古典",
+          "value": "古典"
+        },
+        {
+          "label": "新中式",
+          "value": "新中式"
+        }
+      ]
+    },
+    {
+      "id": "E2",
+      "domain": "style",
+      "type": "numeric",
+      "required": true,
+      "depends_on": {
+        "E1": "at_least_one"
+      },
+      "field": "preferences.style_intensity.top_strength",
+      "prompt": "你选的第一那个风格，你有多喜欢？0 是不喜欢，100 是非常喜欢。",
+      "min": 0,
+      "max": 100,
+      "unit": "分"
+    },
+    {
+      "id": "E3",
+      "domain": "style",
+      "type": "numeric",
+      "required": false,
+      "depends_on": {
+        "E1": "at_least_two"
+      },
+      "field": "preferences.style_intensity.second_strength",
+      "prompt": "第二个风格有多喜欢？0 到 100。",
+      "min": 0,
+      "max": 100,
+      "unit": "分"
+    },
+    {
+      "id": "E4",
+      "domain": "style",
+      "type": "multi_choice",
+      "required": true,
+      "field": "preferences.style_intensity.exceptions",
+      "prompt": "什么情况下你会接受不符合这个偏好的东西？",
+      "options": [
+        {
+          "label": "基本不会，没有例外",
+          "value": "none"
+        },
+        {
+          "label": "打折很狠的时候",
+          "value": "discount"
+        },
+        {
+          "label": "场合需要的时候",
+          "value": "occasion"
+        },
+        {
+          "label": "很想要某一件的时候",
+          "value": "desire"
+        },
+        {
+          "label": "别人推荐过的时候",
+          "value": "recommend"
+        }
+      ]
+    },
+    {
+      "id": "E5",
+      "domain": "style",
+      "type": "multi_choice",
+      "required": false,
+      "field": "preferences.style_intensity.color_preference",
+      "prompt": "颜色上你有没有明显偏好？",
+      "options": [
+        {
+          "label": "偏好冷色调",
+          "value": "冷调"
+        },
+        {
+          "label": "偏好暖色调",
+          "value": "暖调"
+        },
+        {
+          "label": "偏好低饱和",
+          "value": "低饱和"
+        },
+        {
+          "label": "偏好高饱和",
+          "value": "高饱和"
+        },
+        {
+          "label": "偏好深色",
+          "value": "深色"
+        },
+        {
+          "label": "偏好浅色",
+          "value": "浅色"
+        },
+        {
+          "label": "没有明显偏好",
+          "value": "none"
+        }
+      ]
+    },
+    {
+      "id": "F1",
+      "domain": "category",
+      "type": "multi_choice",
+      "required": true,
+      "max_select": 4,
+      "field": "preferences.category_context.categories",
+      "prompt": "除了刚才那类，你还常买哪几类？",
+      "options": [
+        {
+          "label": "服饰鞋包",
+          "value": "apparel"
+        },
+        {
+          "label": "护肤美妆",
+          "value": "skincare"
+        },
+        {
+          "label": "数码家电",
+          "value": "digital"
+        },
+        {
+          "label": "家居日用",
+          "value": "home"
+        },
+        {
+          "label": "食品生鲜",
+          "value": "food"
+        },
+        {
+          "label": "运动户外",
+          "value": "sports"
+        },
+        {
+          "label": "母婴",
+          "value": "baby"
+        },
+        {
+          "label": "宠物",
+          "value": "pet"
+        }
+      ]
+    },
+    {
+      "id": "F2",
+      "domain": "category",
+      "type": "multi_choice",
+      "required": true,
+      "field": "preferences.category_context.scenarios",
+      "prompt": "你买这类东西主要在什么场景下？",
+      "options": [
+        {
+          "label": "通勤日常",
+          "value": "通勤日常"
+        },
+        {
+          "label": "约会社交",
+          "value": "约会社交"
+        },
+        {
+          "label": "正式场合",
+          "value": "正式场合"
+        },
+        {
+          "label": "运动户外",
+          "value": "运动户外"
+        },
+        {
+          "label": "居家休闲",
+          "value": "居家休闲"
+        },
+        {
+          "label": "送礼",
+          "value": "送礼"
+        }
+      ]
+    },
+    {
+      "id": "F3",
+      "domain": "category",
+      "type": "single_choice",
+      "required": true,
+      "field": "preferences.category_context.mode",
+      "prompt": "不同类的东西，你的挑的标准一样吗？",
+      "options": [
+        {
+          "label": "一样，看重什么就是什么",
+          "value": "same"
+        },
+        {
+          "label": "差不多，但会按品类调整",
+          "value": "adjusted"
+        },
+        {
+          "label": "差很多，不同品类完全不同的标准",
+          "value": "different"
+        }
+      ]
+    }
+  ]
+}

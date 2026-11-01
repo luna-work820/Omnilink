@@ -267,7 +267,7 @@ export function BrandStoreWorkspace({
                 >
                   <Edit2 size={11} />
                 </button>
-                <span className="px-1.5 py-0.2 rounded-full bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)] text-[10px] font-bold shrink-0">
+                <span className="px-1.5 py-0.2 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] border border-[var(--primary)] text-[10px] font-bold shrink-0">
                   {sources.length + 1} 项
                 </span>
               </div>
@@ -301,7 +301,7 @@ export function BrandStoreWorkspace({
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1 space-y-1">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="px-1.5 py-0.2  bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)] text-[10px] font-bold">
+                <span className="px-1.5 py-0.2  bg-[var(--primary)] text-[var(--primary-foreground)] border border-[var(--primary)] text-[10px] font-bold">
                   核心基座
                 </span>
                 <h4 className="text-xs font-bold text-[var(--ink)] group-hover:text-[var(--primary)] transition-colors">
@@ -494,7 +494,7 @@ export function BrandStoreWorkspace({
           }`}
           title="点击或拖拽上传品牌文件"
         >
-          <div className="w-5 h-5  bg-[var(--primary)] text-[var(--primary)] flex items-center justify-center shrink-0">
+          <div className="w-5 h-5  bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center shrink-0">
             <Plus size={13} strokeWidth={2.5} />
           </div>
           <span className="text-[11px] font-bold text-[var(--ink)] group-hover:text-[var(--primary)]">

@@ -92,13 +92,14 @@ export async function loginAction(
   }
 
   // signInWithPassword sets the sb-*-auth-token cookie via the SSR adapter.
-  return { redirectUrl: '/onboarding' }
+  return { redirectUrl: '/discover' }
 }
 
 export async function signupAction(
   _prev: AuthState,
   formData: FormData
 ): Promise<AuthState> {
+  const name = String(formData.get('name') ?? '').trim()
   const email = String(formData.get('email') ?? '').trim()
   const password = String(formData.get('password') ?? '')
 
@@ -115,7 +116,10 @@ export async function signupAction(
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: origin ? { emailRedirectTo: `${origin}/auth/callback` } : undefined,
+    options: {
+      data: { eva_onboarding_started: true, enabled_skills: ['personal-advisor', 'shopping-preferences'], ...(name ? { full_name: name } : {}) },
+      ...(origin ? { emailRedirectTo: `${origin}/auth/callback` } : {}),
+    },
   })
 
   if (error) {
@@ -132,13 +136,12 @@ export async function signupAction(
   // User must click the confirmation link (handled by /auth/callback).
   if (!data.session) {
     return {
-      message:
-        '账号创建成功。激活邮件已发送至您的电子邮箱，请前往邮箱查收并点击激活链接。验证完成后系统将自动登录并引导您进入店铺初始化页面。',
+      message: '账号创建成功。请点击邮箱中的激活链接',
     }
   }
 
   // Email confirmation OFF: session is established immediately.
-  return { redirectUrl: '/onboarding' }
+  return { redirectUrl: '/discover?openEva=1&newUser=1' }
 }
 
 export async function logoutAction(formData: FormData): Promise<void> {

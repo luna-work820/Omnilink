@@ -13,6 +13,7 @@ export interface ProductManagementSaveInput {
     currency?: string
     inventory?: number
     status?: 'active' | 'draft' | 'archived'
+    item_type?: 'product' | 'service'
     category_id?: string | null
     raw_data?: Record<string, unknown> | null
   }

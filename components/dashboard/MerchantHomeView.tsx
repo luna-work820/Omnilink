@@ -49,8 +49,8 @@ const sections = [
 ] as const
 
 const toneClasses = {
-  blue: 'bg-[var(--surface-muted)] text-[var(--primary)] border-[#D9E5FF]',
-  lime: 'bg-[#D9FF4A] text-[var(--ink)] border-[#C9ED3A]',
+  blue: 'bg-[var(--surface-muted)] text-[var(--secondary-foreground)] border-[var(--border)]',
+  lime: 'bg-[var(--secondary)] text-[var(--secondary-foreground)] border-[var(--border)]',
   ink: 'bg-[var(--ink)] text-[var(--surface)] border-[var(--ink)]',
   gray: 'bg-[var(--surface-muted)] text-[var(--ink)] border-[var(--surface-muted)]',
 } as const
@@ -68,10 +68,10 @@ export function MerchantHomeView({
 
   return (
     <div className="mx-auto w-full max-w-[1440px] space-y-7 pb-10 text-[var(--ink)]">
-      <section className="relative overflow-hidden rounded-[24px] bg-[#087BC1] px-6 py-8 text-[var(--surface)] sm:px-10 sm:py-10 lg:px-14 lg:py-12">
+      <section className="relative overflow-hidden rounded-[var(--radius-card)] bg-[var(--ink)] px-6 py-8 text-[var(--surface)] sm:px-10 sm:py-10 lg:px-14 lg:py-12">
         <div className="relative z-10 max-w-3xl">
           <div className="mb-6 flex items-center gap-3 text-sm font-medium text-[var(--surface)]/80">
-            <span className="flex h-8 w-8 items-center justify-center  bg-[var(--surface)] text-[var(--primary)]">
+            <span className="flex h-8 w-8 items-center justify-center bg-[var(--surface)] text-[var(--ink)]">
               <Layers3 size={17} aria-hidden="true" />
             </span>
             Omnilink 商家工作台
@@ -84,7 +84,7 @@ export function MerchantHomeView({
           </p>
           <Link
             href="/dashboard/brand-studio"
-            className="mt-8 inline-flex min-h-11 items-center gap-2  bg-[#D9FF4A] px-5 text-sm font-semibold text-[var(--ink)] transition-colors hover:bg-[#C9ED3A] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#D9FF4A] focus-visible:outline-offset-2"
+            className="mt-8 inline-flex min-h-11 items-center gap-2 bg-[var(--surface)] px-5 text-sm font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--surface)] focus-visible:outline-offset-2"
           >
             完善商家资料
             <ArrowUpRight size={16} aria-hidden="true" />
@@ -92,15 +92,15 @@ export function MerchantHomeView({
         </div>
 
         <div className="pointer-events-none absolute -right-12 top-1/2 hidden -translate-y-1/2 items-center gap-3 lg:flex">
-          <div className="w-48 rotate-[-7deg] rounded-[16px] border border-[var(--surface)]/40 bg-[var(--surface)] p-4 text-[var(--ink)] shadow-xl">
+          <div className="w-48 rotate-[-7deg] rounded-[var(--radius-card)] border border-[var(--surface)]/40 bg-[var(--surface)] p-4 text-[var(--ink)] shadow-xl">
             <p className="text-sm font-semibold">商家定位</p>
             <p className="mt-8 text-3xl font-semibold">待确认</p>
           </div>
-          <div className="w-48 translate-y-12 rotate-[5deg] rounded-[16px] border border-[var(--surface)]/40 bg-[#D9FF4A] p-4 text-[var(--ink)] shadow-xl">
+          <div className="w-48 translate-y-12 rotate-[5deg] rounded-[var(--radius-card)] border border-[var(--surface)]/40 bg-[var(--accent-secondary-soft)] p-4 text-[var(--ink)] shadow-xl">
             <p className="text-sm font-semibold">内容生成</p>
             <p className="mt-8 text-3xl font-semibold">可开始</p>
           </div>
-          <div className="w-48 rotate-[11deg] rounded-[16px] border border-[var(--surface)]/40 bg-[var(--ink)] p-4 text-[var(--surface)] shadow-xl">
+          <div className="w-48 rotate-[11deg] rounded-[var(--radius-card)] border border-[var(--surface)]/40 bg-[var(--ink)] p-4 text-[var(--surface)] shadow-xl">
             <p className="text-sm font-semibold">资料关系</p>
             <p className="mt-8 text-3xl font-semibold">持续整理</p>
           </div>
@@ -108,7 +108,7 @@ export function MerchantHomeView({
       </section>
 
       <section className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
-        <div className="rounded-[16px] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
+        <div className="ui-card p-6 sm:p-8">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-[var(--primary)]">商家定位</p>
@@ -133,14 +133,14 @@ export function MerchantHomeView({
             </div>
           </div>
           <div className="mt-8 flex items-center gap-3 border-t border-[var(--surface-muted)] pt-5 text-sm">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#D9FF4A] text-[var(--ink)]">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--acid-sage)] text-[var(--ink)]">
               <Check size={15} aria-hidden="true" />
             </span>
             已建立商家资料入口
           </div>
         </div>
 
-        <div className="rounded-[16px] bg-[var(--surface-muted)] p-6 sm:p-8">
+        <div className="ui-card ui-card--nested p-6 sm:p-8">
           <p className="text-sm font-medium text-[var(--primary)]">现在可以处理</p>
           <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em]">从一件事开始</h2>
           <div className="mt-7 space-y-4">
@@ -171,7 +171,7 @@ export function MerchantHomeView({
               <Link
                 key={section.title}
                 href={section.href}
-                className={`group min-h-52 rounded-[16px] border p-5 transition-transform hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2 ${toneClasses[section.tone]}`}
+                className={`group min-h-52 rounded-[var(--radius-card)] border p-5 transition-transform hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2 ${toneClasses[section.tone]}`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <Icon size={24} aria-hidden="true" />
@@ -187,9 +187,9 @@ export function MerchantHomeView({
       </section>
 
       <section className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="rounded-[16px] bg-[var(--ink)] p-6 text-[var(--surface)] sm:p-8">
+        <div className="rounded-[var(--radius-card)] bg-[var(--ink)] p-6 text-[var(--surface)] sm:p-8">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-[#D9FF4A]">资料关系</p>
+            <p className="text-sm font-medium text-[var(--acid-sage)]">资料关系</p>
             <ScanSearch size={22} aria-hidden="true" />
           </div>
           <h2 className="mt-8 max-w-sm text-3xl font-semibold tracking-[-0.03em]">一份商家资料，连接多个经营场景</h2>
@@ -199,7 +199,7 @@ export function MerchantHomeView({
             ))}
           </div>
         </div>
-        <div className="rounded-[16px] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
+        <div className="ui-card p-6 sm:p-8">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-[var(--primary)]">内容生成</p>

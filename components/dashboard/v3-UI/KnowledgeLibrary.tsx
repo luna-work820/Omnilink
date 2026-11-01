@@ -127,7 +127,7 @@ export function KnowledgeLibrary() {
 
         {entries.length === 0 ? (
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
+            <section className="ui-card p-6 sm:p-8">
               <div className="flex max-w-2xl items-start gap-4">
                 <div className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-[var(--surface-muted)] text-[var(--primary)]">
                   <CircleDashed className="h-5 w-5" aria-hidden="true" />
@@ -139,7 +139,7 @@ export function KnowledgeLibrary() {
               </div>
               <div className="mt-8 grid gap-3 sm:grid-cols-2">
                 {TEMPLATE_SECTIONS.map((section) => (
-                  <div key={section.domain} className="rounded-[16px] border border-[var(--border)] bg-[var(--background)] p-4">
+                  <div key={section.domain} className="ui-card ui-card--nested border p-4">
                     <div className="flex items-center justify-between gap-3">
                       <h3 className="text-sm font-semibold">{section.title}</h3>
                       <span className=" bg-[var(--surface)] px-2 py-1 text-[11px] text-[var(--lavender)]">未开始</span>
@@ -150,7 +150,7 @@ export function KnowledgeLibrary() {
               </div>
             </section>
 
-            <aside className="rounded-[24px] border border-[var(--border)] bg-[var(--surface-muted)] p-6">
+            <aside className="ui-card ui-card--nested p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--lavender)]">最小模型</p>
               <h2 className="mt-3 text-lg font-semibold">每条知识都要能追溯</h2>
               <div className="mt-6 space-y-4">
@@ -162,7 +162,7 @@ export function KnowledgeLibrary() {
             </aside>
           </div>
         ) : (
-          <section className="rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
+          <section className="ui-card p-5 sm:p-6">
             <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
               <div>
                 <h2 className="text-lg font-semibold">知识条目</h2>
@@ -185,7 +185,7 @@ export function KnowledgeLibrary() {
 
       {isComposerOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overscroll-contain bg-[var(--ink)]/25 p-4" role="dialog" aria-modal="true" aria-labelledby="knowledge-entry-title" onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); closeComposer() } }}>
-          <form onSubmit={handleCreateEntry} className="w-full max-w-lg rounded-[24px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[0_24px_70px_rgba(36,32,26,0.18)]">
+          <form onSubmit={handleCreateEntry} className="ui-card ui-card--floating w-full max-w-lg p-6">
             <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold text-[var(--primary)]">第一条知识</p><h2 id="knowledge-entry-title" className="mt-1 text-xl font-semibold">添加可确认事实</h2></div><button ref={dialogCloseRef} type="button" onClick={closeComposer} aria-label="关闭添加知识窗口" className="grid h-9 w-9 place-items-center rounded-[10px] text-[var(--lavender)] hover:bg-[var(--surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2"><X className="h-4 w-4" aria-hidden="true" /></button></div>
             <div className="mt-6 space-y-4">
               <div className="grid gap-4 sm:grid-cols-2"><Field label="所属领域"><select value={domain} onChange={(event) => setDomain(event.target.value as KnowledgeDomain)} className={FIELD_CLASS}>{Object.entries(DOMAIN_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field><Field label="知识类型"><select value={kind} onChange={(event) => setKind(event.target.value as KnowledgeKind)} className={FIELD_CLASS}>{Object.entries(KIND_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field></div>
@@ -201,7 +201,7 @@ export function KnowledgeLibrary() {
 }
 
 function Metric({ label, value, suffix }: { label: string; value: number; suffix: string }) {
-  return <div className="rounded-[16px] border border-[var(--border)] bg-[var(--surface)] px-4 py-4"><p className="text-xs text-[var(--lavender)]">{label}</p><p className="mt-2 text-2xl font-semibold tracking-[-0.03em]">{value}<span className="ml-1 text-xs font-normal text-[var(--lavender)]">{suffix}</span></p></div>
+  return <div className="ui-card px-4 py-4"><p className="text-xs text-[var(--lavender)]">{label}</p><p className="mt-2 text-2xl font-semibold tracking-[-0.03em]">{value}<span className="ml-1 text-xs font-normal text-[var(--lavender)]">{suffix}</span></p></div>
 }
 
 function ModelStep({ number, title, description }: { number: string; title: string; description: string }) {

@@ -206,23 +206,23 @@ export function CategorySelector({
         onClick={() => {
           if (!disabled) setIsOpen(!isOpen)
         }}
-        className={`w-full min-h-[40px] px-3 py-2 rounded-[6px] bg-[var(--surface-muted)] border transition-all flex items-center justify-between gap-2 cursor-pointer select-none ${
+        className={`flex min-h-11 w-full cursor-pointer select-none items-center justify-between gap-2 rounded-[var(--radius-control)] border bg-[var(--surface)] px-3.5 py-2 transition-colors ${
           disabled
-            ? 'opacity-60 cursor-not-allowed bg-[var(--surface-muted)] border-[var(--surface-muted)]'
+            ? 'cursor-not-allowed border-[var(--border-subtle)] opacity-60'
             : isOpen
-            ? 'bg-[var(--surface)] border-[var(--primary)] ring-2 ring-[var(--primary)]/15 shadow-xs'
-            : 'border-[var(--surface-muted)] hover:border-[var(--surface-muted)] hover:bg-[var(--surface)]'
+            ? 'border-[var(--accent-secondary)] ring-2 ring-[var(--accent-secondary)]/15'
+            : 'cursor-pointer border-[var(--border-subtle)] hover:border-[var(--accent-secondary)]'
         }`}
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Tag size={15} className={displayValue ? 'text-[var(--primary)] shrink-0' : 'text-[var(--lavender)] shrink-0'} />
+          <Tag size={16} className={displayValue ? 'shrink-0 text-[var(--accent-secondary)]' : 'shrink-0 text-[var(--text-muted)]'} />
           {displayValue ? (
             <div className="flex items-center gap-1.5 min-w-0">
               {currentBreadcrumb?.primary && currentBreadcrumb.secondary ? (
                 <>
-                  <span className="text-xs text-[var(--lavender)] truncate">{currentBreadcrumb.primary.name}</span>
-                  <span className="text-xs text-[var(--lavender)]">/</span>
-              <span className="text-xs font-semibold text-[var(--lavender)] truncate">
+              <span className="truncate text-sm text-[var(--text-secondary)]">{currentBreadcrumb.primary.name}</span>
+                  <span className="text-sm text-[var(--text-muted)]">/</span>
+              <span className="truncate text-sm font-medium text-[var(--text-primary)]">
                     {currentBreadcrumb.secondary.name}
                   </span>
                   {currentBreadcrumb.secondary.templateKey && (
@@ -232,11 +232,11 @@ export function CategorySelector({
                   )}
                 </>
               ) : (
-                <span className="text-xs font-semibold text-[var(--lavender)] truncate">{displayValue}</span>
+              <span className="truncate text-sm font-medium text-[var(--text-primary)]">{displayValue}</span>
               )}
             </div>
           ) : (
-            <span className="text-xs text-[var(--lavender)]">
+            <span className="text-sm text-[var(--text-muted)]">
               {placeholder || (isZh ? '点击选择商品分类（两级体系 + 快速检索）' : 'Select product category...')}
             </span>
           )}
@@ -273,7 +273,7 @@ export function CategorySelector({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={isZh ? '搜索分类关键词（如：连衣裙、耳机、太阳镜、猫粮、面部护肤）...' : 'Search category keywords...'}
-                className="w-full h-9 pl-9 pr-8 rounded-[6px] bg-[var(--surface)] border border-[var(--surface-muted)] text-xs text-[var(--lavender)] focus:outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/15 transition-all shadow-2xs"
+                className="h-11 w-full rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] pl-9 pr-8 text-sm text-[var(--text-primary)] shadow-sm transition-colors focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15"
               />
               {searchQuery && (
                 <button
@@ -328,7 +328,7 @@ export function CategorySelector({
                     <div
                       key={`search-${res.category.id}`}
                       onClick={() => handleSelectCategory(res.category, res.parent || undefined)}
-                      className={`p-2.5 rounded-[6px] flex items-center justify-between cursor-pointer transition-colors ${
+                      className={`flex cursor-pointer items-center justify-between rounded-[var(--radius-card-nested)] p-2.5 transition-colors ${
                         isSelected ? 'bg-[var(--primary)]/10 text-[var(--primary)]' : 'hover:bg-[var(--surface-muted)] text-[var(--lavender)]'
                       }`}
                     >

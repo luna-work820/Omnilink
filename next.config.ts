@@ -1,11 +1,18 @@
 import type { NextConfig } from "next";
+import { networkInterfaces } from "node:os";
+
+const localDevOrigins = Object.values(networkInterfaces())
+  .flatMap((addresses) => addresses ?? [])
+  .filter((address) => address.family === "IPv4" && !address.internal)
+  .map((address) => address.address);
 
 const nextConfig: NextConfig = {
   output: process.env.VERCEL ? undefined : "standalone",
+  serverExternalPackages: ['pdfjs-dist'],
   allowedDevOrigins: [
-    "localhost:3000",
     "localhost",
     "127.0.0.1",
+    ...localDevOrigins,
     "*.run.app",
     "*.us-west2.run.app",
     "ais-dev-aypa2j3pwmytwqq5ix2o47-597406845102.us-west2.run.app",

@@ -17,7 +17,7 @@ export function StoreCreateForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!storeName.trim()) {
-      setError('请填写店铺名称')
+      setError('请填写发布者名称')
       return
     }
 
@@ -47,10 +47,10 @@ export function StoreCreateForm() {
         err?.message?.includes('NEXT_REDIRECT') ||
         err?.digest?.startsWith('NEXT_REDIRECT')
       ) {
-        window.location.href = '/dashboard'
+        window.location.href = '/dashboard/products'
         return
       }
-      setError(err instanceof Error ? err.message : '创建店铺失败，请重试')
+      setError(err instanceof Error ? err.message : '开通发布者失败，请重试')
       setIsSubmitting(false)
     }
   }
@@ -60,7 +60,7 @@ export function StoreCreateForm() {
       <div className="bg-[var(--surface)] rounded-3xl p-6 sm:p-10 border border-[var(--surface-muted)]/90 shadow-[0_12px_36px_var(--ink)]">
         <div className="mb-8 text-center">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--ink)] tracking-tight">
-            设置你的专属店铺
+            成为发布者
           </h2>
         </div>
 
@@ -73,7 +73,7 @@ export function StoreCreateForm() {
             <label htmlFor="store_name" className="text-xs font-bold text-[var(--ink)] flex items-center justify-between">
               <span className="flex items-center gap-1">
                 <Store size={13} className="text-[var(--plum)]" />
-                <span>店铺名称 (Store Name)</span>
+                <span>发布者名称</span>
                 <span className="text-[var(--plum)]">*</span>
               </span>
               <span className="text-[10px] font-normal text-[var(--lavender)]">
@@ -88,7 +88,7 @@ export function StoreCreateForm() {
               onChange={(e) => setStoreName(e.target.value)}
               required
               maxLength={40}
-              placeholder="例如：极光数码旗舰店"
+              placeholder="例如：你的品牌或创作者名称"
               className="w-full px-4 py-3 rounded-xl border border-[var(--surface-muted)] focus:border-[var(--plum)] focus:ring-4 focus:ring-[var(--plum)]/15 outline-none text-sm text-[var(--ink)] placeholder-gray-400 bg-[var(--surface-muted)] focus:bg-[var(--surface)] transition-all font-medium"
             />
           </div>
@@ -116,7 +116,7 @@ export function StoreCreateForm() {
 
           {/* 错误提示 */}
           {error && (
-            <div className="bg-[var(--plum)] border border-[var(--plum)] text-[var(--plum)] text-xs px-4 py-3 rounded-xl animate-in fade-in flex items-center gap-2">
+              <div role="alert" className="border border-red-200 bg-red-50 text-red-700 text-xs px-4 py-3 rounded-xl animate-in fade-in flex items-center gap-2">
               <span className="font-bold">⚠️</span>
               <span>{error}</span>
             </div>
@@ -132,11 +132,11 @@ export function StoreCreateForm() {
               {isSubmitting ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
-                  <span>正在初始化店铺节点与数据库…</span>
+                  <span>正在开通发布工作台…</span>
                 </>
               ) : (
                 <>
-                  <span>完成初始化设置 (Dashboard)</span>
+                  <span>进入发布工作台</span>
                   <ArrowRight size={16} />
                 </>
               )}

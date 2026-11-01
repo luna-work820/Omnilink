@@ -8,10 +8,7 @@ import {
   Trash2,
   Plus,
   Minus,
-  ArrowRight,
   ArrowLeft,
-  ShieldCheck,
-  Truck,
 } from 'lucide-react'
 import type { StorefrontStore } from '@/lib/storefront/types'
 import { useCart } from './CartContext'
@@ -22,7 +19,6 @@ export default function CartPageView({ store }: { store: StorefrontStore }) {
     removeItem,
     updateQuantity,
     clearCart,
-    subtotal,
     currency,
     isHydrated,
   } = useCart()
@@ -69,7 +65,7 @@ export default function CartPageView({ store }: { store: StorefrontStore }) {
             Shopping Bag
           </h1>
           <p className="text-xs text-[var(--th-color-muted)] mt-1">
-            Review your selected items before submitting your inquiry.
+            Review your selected items.
           </p>
         </div>
         <button
@@ -81,9 +77,9 @@ export default function CartPageView({ store }: { store: StorefrontStore }) {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12 items-start">
+      <div className="max-w-4xl">
         {/* Items List */}
-        <div className="lg:col-span-8 divide-y divide-[var(--th-color-border)] border-b border-[var(--th-color-border)]">
+        <div className="divide-y divide-[var(--th-color-border)] border-b border-[var(--th-color-border)]">
           {items.map((item) => (
             <div
               key={item.id}
@@ -185,71 +181,7 @@ export default function CartPageView({ store }: { store: StorefrontStore }) {
           ))}
         </div>
 
-        {/* Order Summary Sidebar */}
-        <div className="lg:col-span-4 rounded-[var(--th-radius-card)] border border-[var(--th-color-border)] bg-[var(--th-color-surface)] p-6 shadow-[var(--th-shadow-card)]">
-          <h2 className="[font-family:var(--th-font-heading)] text-lg [font-weight:var(--th-font-heading-weight)] text-[var(--th-color-text)] pb-4 border-b border-[var(--th-color-border)]">
-            Order Summary
-          </h2>
-
-          <div className="mt-4 flex flex-col gap-3 text-xs">
-            <div className="flex justify-between text-[var(--th-color-muted)]">
-              <span>Item Subtotal</span>
-              <span className="font-medium text-[var(--th-color-text)]">
-                {currency} {subtotal.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between text-[var(--th-color-muted)]">
-              <span>Shipping & Handling</span>
-              <span className="text-[var(--th-color-muted)] italic">
-                Calculated separately
-              </span>
-            </div>
-            <div className="flex justify-between text-[var(--th-color-muted)]">
-              <span>Estimated Taxes</span>
-              <span className="text-[var(--th-color-muted)] italic">
-                Calculated separately
-              </span>
-            </div>
-
-            <div className="mt-2 pt-3 border-t border-[var(--th-color-border)] flex justify-between items-baseline">
-              <span className="text-sm font-semibold text-[var(--th-color-text)]">
-                Estimated Total
-              </span>
-              <span className="[font-family:var(--th-font-heading)] text-xl font-bold text-[var(--th-color-primary)]">
-                {currency} {subtotal.toFixed(2)}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-6 flex flex-col gap-3">
-            <Link
-              href={`/store/${store.slug}/checkout`}
-              className="flex w-full items-center justify-center gap-2 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] py-3 text-sm font-semibold text-[var(--surface)] shadow-sm transition-colors hover:bg-[var(--th-color-accent)]"
-            >
-              <span>Proceed to Checkout</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-
-            <Link
-              href={`/store/${store.slug}`}
-              className="flex w-full items-center justify-center rounded-[var(--th-radius-button)] border border-[var(--th-color-border)] py-2.5 text-xs font-medium text-[var(--th-color-text)] transition-colors hover:bg-[var(--th-color-border)]/40"
-            >
-              Continue Shopping
-            </Link>
-          </div>
-
-          {/* Guarantees */}
-          <div className="mt-6 pt-4 border-t border-[var(--th-color-border)]/60 flex flex-col gap-2 text-[11px] text-[var(--th-color-muted)]">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-[var(--th-color-primary)] shrink-0" />
-              <span>Authenticity & Quality Inspection Guaranteed</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Truck className="h-4 w-4 text-[var(--th-color-primary)] shrink-0" />
-              <span>Direct Merchant White-Glove Coordination</span>
-            </div>
-          </div>
-        </div>
+        <Link href={`/store/${store.slug}`} className="mt-6 inline-flex min-h-11 items-center rounded-[var(--th-radius-button)] border border-[var(--th-color-border)] px-5 text-sm text-[var(--th-color-text)] hover:bg-[var(--th-color-border)]/40 focus-visible:outline-2 focus-visible:outline-[#315BFF]">Continue Shopping</Link>
       </div>
     </main>
   )

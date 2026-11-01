@@ -179,7 +179,7 @@ export function SkillCommandPalette({
                     className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
                       isSelected
                         ? 'bg-[var(--primary)] text-[var(--surface)] shadow-2xs'
-                        : 'bg-[var(--primary)] text-[var(--primary)]'
+                        : 'bg-[var(--primary)] text-[var(--primary-foreground)]'
                     }`}
                   >
                     {icon}
@@ -191,7 +191,7 @@ export function SkillCommandPalette({
                         {skill.name}
                       </span>
                       {skill.badge && (
-                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)] font-medium">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] border border-[var(--primary)] font-medium">
                           {skill.badge}
                         </span>
                       )}
@@ -226,7 +226,7 @@ export function SkillCommandPalette({
                         onSelectSkill(skill, true)
                         onClose()
                       }}
-                      className="p-1.5  text-[var(--primary)] hover:text-[var(--surface)] hover:bg-[var(--primary)] transition-colors"
+                      className="p-1.5  text-[var(--primary-foreground)] hover:text-[var(--surface)] hover:bg-[var(--primary)] transition-colors"
                       title="立即执行此技能"
                     >
                       <Zap size={14} />

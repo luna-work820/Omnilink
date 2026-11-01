@@ -69,21 +69,18 @@ export function ProductKnowledgeWorkspace({
       console.error(e)
     }
 
-    const handleSync = () => {
+    const handleSync = (event: StorageEvent) => {
+      if (event.key !== 'omnilink_synced_product_docs') return
       try {
         const stored = localStorage.getItem('omnilink_synced_product_docs')
-        if (stored) {
-          setSyncedDocs(JSON.parse(stored))
-        }
+        setSyncedDocs(stored ? JSON.parse(stored) : [])
       } catch (e) {
         console.error(e)
       }
     }
     window.addEventListener('storage', handleSync)
-    const interval = setInterval(handleSync, 1000)
     return () => {
       window.removeEventListener('storage', handleSync)
-      clearInterval(interval)
     }
   }, [])
 
@@ -336,7 +333,7 @@ export function ProductKnowledgeWorkspace({
                 >
                   <Edit2 size={11} />
                 </button>
-                <span className="px-1.5 py-0.2 rounded-full bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)] text-[10px] font-bold shrink-0">
+                <span className="px-1.5 py-0.2 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] border border-[var(--primary)] text-[10px] font-bold shrink-0">
                   {mergedSources.length} 篇
                 </span>
               </div>
@@ -427,7 +424,7 @@ export function ProductKnowledgeWorkspace({
                     {/* Bound Products Accordion Trigger Button */}
                     <div
                       onClick={() => toggleFileDropdown(file.id)}
-                      className="flex items-center gap-1 px-2 py-1  bg-[var(--primary)] hover:bg-[var(--primary)]/80 border border-[var(--primary)] text-[var(--primary)] text-[10px] font-bold cursor-pointer transition-colors shrink-0"
+                      className="flex items-center gap-1 px-2 py-1  bg-[var(--primary)] hover:bg-[var(--primary)]/80 border border-[var(--primary)] text-[var(--primary-foreground)] text-[10px] font-bold cursor-pointer transition-colors shrink-0"
                       title="点击展开绑定商品详情"
                     >
                       <Link2 size={11} />
@@ -521,7 +518,7 @@ export function ProductKnowledgeWorkspace({
                                 <button
                                   type="button"
                                   onClick={() => handleAddBinding(file.id, p.id)}
-                                  className="px-1.5 py-0.5 rounded-[3px] bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--primary)] hover:text-[var(--surface)] text-[10px] font-bold cursor-pointer transition-colors shrink-0"
+                                  className="px-1.5 py-0.5 rounded-[3px] bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--primary-foreground)] hover:text-[var(--surface)] text-[10px] font-bold cursor-pointer transition-colors shrink-0"
                                 >
                                   + 关联
                                 </button>
@@ -558,7 +555,7 @@ export function ProductKnowledgeWorkspace({
                     </h4>
 
                     <div className="flex items-center gap-1.5 mt-1 text-[10px] text-[var(--lavender)] flex-wrap">
-                      <span className="px-1.5 py-0.2 rounded bg-[var(--primary)] text-[var(--primary)] font-bold text-[9px] uppercase tracking-wide border border-[var(--primary)]">
+                      <span className="px-1.5 py-0.2 rounded bg-[var(--primary)] text-[var(--primary-foreground)] font-bold text-[9px] uppercase tracking-wide border border-[var(--primary)]">
                         全系通用
                       </span>
                       <span className="px-1.5 py-0.2 rounded bg-[var(--surface-muted)] text-[var(--ink)] font-bold text-[9px] uppercase tracking-wide">
@@ -618,7 +615,7 @@ export function ProductKnowledgeWorkspace({
           }`}
           title="点击或拖拽上传产品资料"
         >
-          <div className="w-5 h-5  bg-[var(--primary)] text-[var(--primary)] flex items-center justify-center shrink-0">
+          <div className="w-5 h-5  bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center shrink-0">
             <Plus size={13} strokeWidth={2.5} />
           </div>
           <span className="text-[11px] font-bold text-[var(--ink)] group-hover:text-[var(--primary)]">
@@ -705,7 +702,7 @@ export function ProductKnowledgeWorkspace({
                           </div>
                         </div>
                       </div>
-                      <span className="text-[10px] text-[var(--primary)] font-bold bg-[var(--primary)] px-2 py-0.5  shrink-0 border border-[var(--primary)]">
+                      <span className="text-[10px] text-[var(--primary-foreground)] font-bold bg-[var(--primary)] px-2 py-0.5  shrink-0 border border-[var(--primary)]">
                         选择并上传
                       </span>
                     </div>

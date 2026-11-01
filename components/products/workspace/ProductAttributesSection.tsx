@@ -470,15 +470,15 @@ export function ProductAttributesSection({
     }
     if (confidence >= 0.85) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5  text-[10px] font-medium bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)]">
-          <Sparkles size={10} className="text-[var(--primary)]" />
+        <span className="inline-flex items-center gap-1 px-2 py-0.5  text-[10px] font-medium bg-[var(--primary)] text-[var(--primary-foreground)] border border-[var(--primary)]">
+          <Sparkles size={10} className="text-[var(--primary-foreground)]" />
           <span>✨ Canonical ({(confidence * 100).toFixed(0)}%)</span>
         </span>
       )
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5  text-[10px] font-medium bg-[var(--acid-sage)] text-[var(--acid-sage)] border border-[var(--acid-sage)]">
-        <Sparkles size={10} className="text-[var(--acid-sage)]" />
+        <span className="inline-flex items-center gap-1 rounded-[var(--radius-control)] border border-[var(--border)] bg-[var(--surface-muted)] px-2 py-0.5 text-[10px] font-medium text-[var(--text-secondary)]">
+          <Sparkles size={10} className="text-[var(--text-secondary)]" />
         <span>✨ 待确认 ({(confidence * 100).toFixed(0)}%)</span>
       </span>
     )
@@ -531,10 +531,10 @@ export function ProductAttributesSection({
 
       {/* Lightweight Loading State for AI Intelligence */}
       {isAnalyzing && (
-        <div className="p-4 rounded-xl bg-[var(--primary)]/80 border border-[var(--primary)] text-[var(--primary)] text-xs flex items-center gap-3 animate-pulse">
-          <Loader2 size={18} className="text-[var(--primary)] animate-spin shrink-0" />
+        <div className="p-4 rounded-[var(--radius-card-nested)] bg-[var(--accent-primary-soft)] border border-[var(--accent-primary)] text-[var(--text-primary)] text-xs flex items-center gap-3 animate-pulse">
+          <Loader2 size={18} className="text-[var(--accent-primary)] animate-spin shrink-0" />
           <div>
-            <p className="font-bold text-[var(--primary)]">{isZh ? '正在整理商品…' : 'Analyzing product specifications...'}</p>
+            <p className="font-bold text-[var(--accent-primary)]">{isZh ? '正在整理商品…' : 'Analyzing product specifications...'}</p>
             <p className="text-[11px] text-[var(--lavender)] mt-0.5">
               {isZh ? '从描述与结构化资料中归一化 Canonical 规范属性' : 'Extracting and normalizing canonical attributes'}
             </p>
@@ -807,15 +807,15 @@ export function ProductAttributesSection({
 
       {/* Category Change Notice */}
       {categoryChangeNotice && (
-        <div className="p-3 rounded-xl bg-[var(--primary)]/80 border border-[var(--primary)] text-[var(--primary)] text-xs flex items-center justify-between gap-2 transition-all">
+        <div className="p-3 rounded-[var(--radius-card-nested)] bg-[var(--accent-primary-soft)] border border-[var(--accent-primary)] text-[var(--text-primary)] text-xs flex items-center justify-between gap-2 transition-all">
           <div className="flex items-center gap-2">
-            <Info size={15} className="text-[var(--primary)] shrink-0" />
+            <Info size={15} className="text-[var(--accent-primary)] shrink-0" />
             <span>{categoryChangeNotice}</span>
           </div>
           <button
             type="button"
             onClick={() => setCategoryChangeNotice(null)}
-            className="text-[11px] font-semibold text-[var(--primary)] hover:text-[var(--primary)] cursor-pointer"
+            className="text-[11px] font-semibold text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] cursor-pointer"
           >
             {isZh ? '我知道了' : 'Dismiss'}
           </button>
@@ -892,7 +892,7 @@ export function ProductAttributesSection({
                   <h3 className="text-xs font-bold text-[var(--lavender)]">
                     {isZh ? '标准规格属性字段' : 'Standard Specification Fields'}
                   </h3>
-                  <span className="px-2 py-0.5 text-[10px] font-bold  bg-[var(--primary)] text-[var(--primary)] border border-[var(--primary)]">
+                  <span className="px-2 py-0.5 text-[10px] font-bold  bg-[var(--primary)] text-[var(--primary-foreground)] border border-[var(--primary)]">
                     {rules.size} {isZh ? '项' : 'fields'}
                   </span>
                 </div>
@@ -954,7 +954,7 @@ export function ProductAttributesSection({
                         >
                           <span className="truncate">{label}</span>
                           {isConditionalRequired ? (
-                            <span className="px-1.5 py-0.2  bg-[var(--primary)] text-[var(--primary)] text-[10px] font-bold border border-[var(--primary)] shrink-0">
+                            <span className="px-1.5 py-0.2  bg-[var(--primary)] text-[var(--primary-foreground)] text-[10px] font-bold border border-[var(--primary)] shrink-0">
                               {isZh ? '条件必填' : 'Required'}
                             </span>
                           ) : isRequired ? (

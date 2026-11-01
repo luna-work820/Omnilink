@@ -2,6 +2,7 @@
 
 import { initializeBrandProject } from '@/lib/brand/workspace'
 import { createClientServer } from '@/lib/supabase/server'
+import { initializeMerchantStore } from '@/lib/stores/service'
 
 export async function createStoreAction(formData: FormData) {
   const store_name = formData.get('store_name') as string
@@ -14,7 +15,7 @@ export async function createStoreAction(formData: FormData) {
   const concept = description?.trim() || null
 
   if (!name) {
-    return { success: false, error: '品牌名称不能为空' }
+    return { success: false, error: '发布者名称不能为空' }
   }
 
   // Get user from Supabase session
@@ -26,6 +27,11 @@ export async function createStoreAction(formData: FormData) {
   }
 
   try {
+    await initializeMerchantStore({
+      owner_id: user.id,
+      store_name: name,
+      currency: 'CNY',
+    })
     await initializeBrandProject({
       userId: user.id,
       name,
@@ -33,7 +39,7 @@ export async function createStoreAction(formData: FormData) {
       logoUrl: logo_url || null,
       concept,
     })
-    return { success: true, redirectUrl: '/dashboard' }
+    return { success: true, redirectUrl: '/dashboard/products' }
   } catch (error) {
     return {
       success: false,

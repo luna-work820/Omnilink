@@ -1,9 +1,8 @@
 'use client'
 
 import React from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, LockKeyhole } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
-import { UiverseButton } from '@/components/ui/UiverseButton'
 
 interface ProductCreateFooterProps {
   onSaveDraft: () => void
@@ -11,6 +10,8 @@ interface ProductCreateFooterProps {
   isSubmitting: boolean
   submitMode: 'draft' | 'active' | null
   disabled?: boolean
+  publishDisabled?: boolean
+  publishDisabledReason?: string
 }
 
 export function ProductCreateFooter({
@@ -19,36 +20,38 @@ export function ProductCreateFooter({
   isSubmitting,
   submitMode,
   disabled = false,
+  publishDisabled = false,
+  publishDisabledReason,
 }: ProductCreateFooterProps) {
   const { isZh } = useLanguage()
+  const draftSaving = isSubmitting && submitMode === 'draft'
+  const publishing = isSubmitting && submitMode === 'active'
+  const publishUnavailableLabel = publishDisabledReason || (isZh ? '虚拟商品交付未接入，暂不能上架' : 'Virtual product delivery is not connected, so publishing is unavailable')
 
   return (
-    <div className="pointer-events-auto flex justify-end">
-      <div className="flex items-center gap-3 rounded-full bg-[var(--surface)]/90 p-1.5 shadow-xl ring-1 ring-[var(--surface-muted)] backdrop-blur-sm">
-        <button
-          type="button"
-          onClick={onSaveDraft}
-          disabled={disabled || isSubmitting}
-          className="ui-secondary flex h-11 flex-1 items-center justify-center gap-1.5 px-5 text-xs font-bold sm:flex-none"
-        >
-          {isSubmitting && submitMode === 'draft' && (
-            <Loader2 size={13} className="animate-spin text-[var(--ink)]" />
-          )}
-          <span>{isSubmitting && submitMode === 'draft' ? (isZh ? '保存中...' : 'Saving...') : (isZh ? '保存草稿' : 'Save Draft')}</span>
-        </button>
+    <div className="grid grid-cols-2 gap-3">
+      <button
+        type="button"
+        onClick={onSaveDraft}
+        disabled={disabled || isSubmitting}
+        aria-label={draftSaving ? (isZh ? '正在保存草稿' : 'Saving draft') : (isZh ? '保存草稿' : 'Save draft')}
+        className="ui-interactive flex h-12 items-center justify-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-muted)] disabled:opacity-50"
+      >
+        {draftSaving && <Loader2 size={15} className="animate-spin" aria-hidden="true" />}
+        <span>{isZh ? '存稿' : 'Draft'}</span>
+      </button>
 
-        <UiverseButton
-          type="button"
-          onClick={onSaveAndPublish}
-          disabled={disabled || isSubmitting}
-          className="h-11 flex-1 text-xs sm:flex-none"
-        >
-          {isSubmitting && submitMode === 'active' && (
-            <Loader2 size={13} className="animate-spin text-[var(--surface)]" />
-          )}
-          <span>{isSubmitting && submitMode === 'active' ? (isZh ? '上架中...' : 'Publishing...') : (isZh ? '保存并上架' : 'Save & Publish')}</span>
-        </UiverseButton>
-      </div>
+      <button
+        type="button"
+        onClick={onSaveAndPublish}
+        disabled={disabled || isSubmitting || publishDisabled}
+        title={publishDisabled ? publishUnavailableLabel : undefined}
+        aria-label={publishDisabled ? publishUnavailableLabel : publishing ? (isZh ? '正在上架' : 'Publishing') : (isZh ? '保存并上架' : 'Save and publish')}
+        className="ui-interactive flex h-12 items-center justify-center gap-2 rounded-full bg-[var(--accent-secondary)] px-4 text-sm font-semibold text-[var(--accent-secondary-foreground)] transition-colors hover:bg-[var(--accent-secondary-hover)] disabled:bg-[var(--surface-muted)] disabled:text-[var(--text-muted)]"
+      >
+        {publishDisabled ? <LockKeyhole size={15} aria-hidden="true" /> : publishing ? <Loader2 size={15} className="animate-spin" aria-hidden="true" /> : null}
+        <span>{isZh ? '上架' : 'Publish'}</span>
+      </button>
     </div>
   )
 }

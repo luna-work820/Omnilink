@@ -29,7 +29,7 @@ const merchantProject = {
 
 export default function V3UIPreviewPage() {
   return (
-    <V3DashboardShell profile={profile}>
+    <V3DashboardShell profile={profile} workspaceMode="merchant" canSwitchWorkspace previewMode>
       <DashboardWorkspaceProvider>
         <WorkbenchHome displayName={profile.name} merchantProject={merchantProject} />
       </DashboardWorkspaceProvider>

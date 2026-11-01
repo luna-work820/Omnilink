@@ -27,7 +27,7 @@ import { createClientServer } from '@/lib/supabase/server'
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const rawNext = searchParams.get('next') ?? '/onboarding'
+  const rawNext = searchParams.get('next') ?? '/discover?openEva=1&newUser=1'
   const safeNext = sanitizeInternalPath(rawNext)
 
   if (code) {
@@ -49,13 +49,13 @@ export async function GET(request: NextRequest) {
  *   - do NOT start with "//" or "/\\" (protocol-relative URL)
  *   - do NOT contain a protocol prefix like "javascript:" or "http:"
  *
- * Any unsafe value falls back to /onboarding so we never redirect off-site.
+ * Any unsafe value falls back to /discover so we never redirect off-site.
  */
 function sanitizeInternalPath(value: string): string {
-  if (!value || typeof value !== 'string') return '/onboarding'
-  if (!value.startsWith('/')) return '/onboarding'
-  if (value.startsWith('//') || value.startsWith('/\\')) return '/onboarding'
+  if (!value || typeof value !== 'string') return '/discover'
+  if (!value.startsWith('/')) return '/discover'
+  if (value.startsWith('//') || value.startsWith('/\\')) return '/discover'
   // Belt-and-suspenders: reject any path that still smuggles a protocol.
-  if (/[\s]/.test(value)) return '/onboarding'
+  if (/[\s]/.test(value)) return '/discover'
   return value
 }

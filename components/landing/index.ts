@@ -4,4 +4,3 @@
  * drop the animation or its login flow.
  */
 export { KeynoteMotionLanding } from './KeynoteMotionLanding'
-export { FlowerStudiesLanding } from './FlowerStudiesLanding'

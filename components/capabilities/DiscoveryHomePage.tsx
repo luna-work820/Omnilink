@@ -349,7 +349,7 @@ export function DiscoveryHomePage({
                           className="flex items-center justify-between gap-3 p-2 bg-[var(--surface)] rounded-[6px] border border-[var(--border)] hover:border-[var(--primary)] transition-all"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-8 h-8  bg-[var(--primary)] border border-[var(--primary)] flex items-center justify-center text-[var(--primary)] text-xs font-bold shrink-0">
+                            <div className="w-8 h-8  bg-[var(--primary)] border border-[var(--primary)] flex items-center justify-center text-[var(--primary-foreground)] text-xs font-bold shrink-0">
                               <Wrench size={13} />
                             </div>
                             <div className="min-w-0">

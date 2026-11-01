@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useRef, useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { Check, Plus, X } from 'lucide-react'
 import { useLanguage } from '@/context/LanguageContext'
 
 /**
@@ -34,6 +34,9 @@ export interface AttributeRow {
   unit?: string
   /** Optional input hint, e.g. prefilled from a category template. */
   placeholder?: string
+  /** Category-generated row, used to replace untouched presets when the category changes. */
+  templateId?: string
+  templateValues?: string[]
 }
 
 interface QuickDef {
@@ -103,12 +106,14 @@ interface ProductAttributesPanelProps {
   rows: AttributeRow[]
   onChange: (rows: AttributeRow[]) => void
   disabled?: boolean
+  showHeader?: boolean
 }
 
 export function ProductAttributesPanel({
   rows,
   onChange,
   disabled = false,
+  showHeader = true,
 }: ProductAttributesPanelProps) {
   const { isZh } = useLanguage()
   // NOTE: a ref counter (instead of Date.now()/Math.random()) keeps id
@@ -205,16 +210,18 @@ export function ProductAttributesPanel({
 
   return (
     <div className="space-y-3.5">
-      <div className="flex items-center justify-between pb-2.5 border-b border-[var(--surface-muted)]">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-[var(--surface-muted)] text-[var(--primary)] flex items-center justify-center font-bold text-xs">
-            02
+      {showHeader && (
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-2.5">
+          <div className="flex items-center gap-2">
+            <div className="grid h-7 min-w-7 place-items-center rounded-[var(--radius-control)] bg-[var(--surface-muted)] px-1.5 text-xs font-semibold tabular-nums text-[var(--text-secondary)]">
+              02
+            </div>
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+              {isZh ? '商品规格' : 'Product Specifications'}
+            </h3>
           </div>
-          <h3 className="text-sm font-bold text-[var(--lavender)]">
-            {isZh ? '商品规格' : 'Product Specifications'}
-          </h3>
         </div>
-      </div>
+      )}
 
       {/* ───── 子区域 1：商品特征（单值 + 单位） ───── */}
       <AttributeSection
@@ -234,7 +241,7 @@ export function ProductAttributesPanel({
                 onChange={(e) => handleTraitValueChange(row.id, e.target.value)}
                 placeholder={placeholderFor(row)}
                 disabled={disabled}
-                className="w-full h-8 px-2.5  bg-[var(--surface)] border border-[var(--surface-muted)] text-xs text-[var(--lavender)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] transition-all"
+                className="h-10 w-full rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15"
               />
             </div>
             <div className="w-16 sm:w-20 shrink-0">
@@ -244,14 +251,14 @@ export function ProductAttributesPanel({
                 onChange={(e) => handleUnitChange(row.id, e.target.value)}
                 placeholder={isZh ? '单位' : 'Unit'}
                 disabled={disabled}
-                className="w-full h-8 px-2  bg-[var(--surface)] border border-[var(--surface-muted)] text-xs text-center text-[var(--lavender)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] transition-all"
+                className="h-10 w-full rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-2 text-center text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15"
               />
             </div>
             <button
               type="button"
               onClick={() => handleRemove(row.id)}
               disabled={disabled}
-              className="w-7 h-7  text-[var(--lavender)] hover:text-[var(--plum)] hover:bg-[var(--surface-muted)] flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+              className="ui-interactive grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius-control)] text-[var(--text-secondary)] hover:bg-[var(--surface-muted)] hover:text-[var(--plum)]"
               title={isZh ? '删除' : 'Remove'}
             >
               <X size={14} />
@@ -270,7 +277,7 @@ export function ProductAttributesPanel({
         badge="B"
         titleZh="销售规格"
         titleEn="Purchase Variants"
-        accentClass="bg-[var(--surface-muted)] text-[#B26A00] border-[#F0B400]/30"
+        accentClass="bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)] border-[var(--accent-secondary)]/20"
         rows={variantRows}
         disabled={disabled}
         renderRow={(row) => (
@@ -338,7 +345,7 @@ function AttributeSection({
   }
 
   return (
-    <div className="rounded-[6px] border border-[var(--surface-muted)] bg-[var(--surface)]/60 overflow-hidden">
+    <div className="ui-card--nested overflow-hidden border border-[var(--border-subtle)]">
       {/* 区域头 */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--surface-muted)]">
         <div className="flex items-center gap-2 min-w-0">
@@ -350,7 +357,7 @@ function AttributeSection({
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold text-[var(--lavender)]">
+              <span className="text-sm font-medium text-[var(--text-primary)]">
                 {isZh ? titleZh : titleEn}
               </span>
             </div>
@@ -391,12 +398,13 @@ function AttributeSection({
                 type="button"
                 onClick={() => onQuickAdd(def)}
                 disabled={disabled || added}
-                  className={`h-7 text-[11px] px-3 rounded-full border transition-all flex items-center gap-1 cursor-pointer ${
+              className={`ui-interactive flex h-8 items-center gap-1.5 rounded-[var(--radius-control)] border px-3 text-xs transition-colors ${
                   added
-                    ? 'bg-[var(--surface-muted)] text-[var(--lavender)] border-[var(--surface-muted)] cursor-default opacity-60'
-                    : 'bg-[var(--surface)] text-[var(--lavender)] border-[var(--surface-muted)] hover:border-[var(--primary)] hover:text-[var(--primary)] hover:bg-[var(--surface-muted)]'
+                    ? 'cursor-default border-[var(--accent-secondary)] bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)]'
+                    : 'border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-secondary)] hover:border-[var(--accent-secondary)] hover:text-[var(--accent-secondary)]'
                 }`}
               >
+                {added && <Check size={13} aria-hidden="true" />}
                 <span>{isZh ? def.labelZh : def.labelEn}</span>
               </button>
             )
@@ -408,7 +416,7 @@ function AttributeSection({
               disabled={disabled}
               aria-label={isZh ? `添加${titleZh.replace('商品', '').replace('销售', '')}` : `Add ${titleEn}`}
               title={isZh ? `添加${titleZh.replace('商品', '').replace('销售', '')}` : `Add ${titleEn}`}
-              className="w-7 h-7 rounded-full border border-[var(--surface-muted)] bg-[var(--surface)] text-[var(--primary)] hover:border-[var(--primary)] hover:bg-[var(--surface-muted)] flex items-center justify-center transition-colors cursor-pointer"
+              className="ui-interactive grid h-8 w-8 place-items-center rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-secondary)] hover:border-[var(--accent-secondary)] hover:text-[var(--accent-secondary)]"
             >
               <Plus size={13} />
             </button>
@@ -436,13 +444,13 @@ function AttributeSection({
                   ? `自定义${titleZh.replace('商品', '').replace('销售', '')}名称，回车添加`
                   : `Custom ${titleEn.toLowerCase()}, press Enter`
               }
-              className="flex-1 min-w-0 h-7 px-2  bg-[var(--surface)] border border-[var(--surface-muted)] text-xs text-[var(--lavender)] focus:outline-none focus:border-[var(--primary)]"
+              className="h-9 min-w-0 flex-1 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15"
             />
             <button
               type="button"
               onClick={confirm}
               disabled={!customName.trim()}
-              className="px-3 h-7 bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-[11px] font-bold rounded-full cursor-pointer disabled:opacity-40"
+              className="h-9 rounded-[var(--radius-control)] bg-[var(--accent-primary)] px-3 text-xs font-semibold text-[var(--accent-primary-foreground)] transition-colors hover:bg-[var(--accent-primary-hover)] disabled:opacity-40"
             >
               {isZh ? '添加' : 'Add'}
             </button>
@@ -452,7 +460,7 @@ function AttributeSection({
                 setCustomName('')
                 setShowCustom(false)
               }}
-              className="px-3 h-7 text-[11px] text-[var(--lavender)] hover:bg-[var(--surface)] rounded-full cursor-pointer"
+              className="ui-secondary h-9 rounded-[var(--radius-control)] px-3 text-xs"
             >
               {isZh ? '取消' : 'Cancel'}
             </button>
@@ -495,7 +503,7 @@ function VariantRowEditor({
       {row.values.map((v, vIdx) => (
         <span
           key={`${row.id}-val-${vIdx}`}
-          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[3px] bg-[var(--surface)] border border-[var(--surface-muted)] text-[11px] text-[var(--lavender)]"
+          className="inline-flex items-center gap-1 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-2 py-1 text-xs text-[var(--text-secondary)]"
         >
           <span>{v}</span>
           <button
@@ -522,7 +530,7 @@ function VariantRowEditor({
           }}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-28 h-6 px-1.5 rounded-[2px] bg-[var(--surface)] border border-[var(--surface-muted)] text-[11px] text-[var(--lavender)] focus:outline-none focus:border-[var(--primary)]"
+          className="h-9 w-32 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15"
         />
       </div>
 
@@ -530,7 +538,7 @@ function VariantRowEditor({
         type="button"
         onClick={onRemoveRow}
         disabled={disabled}
-        className="ml-auto w-6 h-6 rounded-[3px] text-[var(--lavender)] hover:text-[var(--plum)] hover:bg-[var(--surface-muted)] flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+        className="ui-interactive ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-[var(--radius-control)] text-[var(--text-secondary)] hover:bg-[var(--surface-muted)] hover:text-[var(--plum)]"
         title={isZh ? '删除该规格' : 'Remove variant'}
       >
         <X size={12} />

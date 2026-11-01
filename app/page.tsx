@@ -1,5 +1,5 @@
-import { FlowerStudiesLanding } from '@/components/landing'
+import { redirect } from 'next/navigation'
 
 export default function Home() {
-  return <FlowerStudiesLanding />
+  redirect('/discover')
 }

@@ -1,0 +1,155 @@
+{
+  "_note": "权重换算表。全部为确定性规则，无模型参与。改这里就改换算行为。",
+  "version": "1.0.0",
+
+  "value_order": {
+    "_note": "六组两两对决换算成四个维度的权重。规则：对每组对决，被选中的维度得 1 分，未选中得 0 分。归一化后得百分比。C6 是 C2 的顺序反转副本，用于检测位置偏差。",
+    "dimensions": ["durability", "design", "performance", "brand"],
+    "dimension_labels": {
+      "durability": "质量和耐用",
+      "design": "设计和外观",
+      "performance": "参数性能",
+      "brand": "品牌"
+    },
+    "pairs": [
+      { "id": "C1", "a": "durability", "b": "brand" },
+      { "id": "C2", "a": "design", "b": "durability" },
+      { "id": "C3", "a": "durability", "b": "performance" },
+      { "id": "C4", "a": "design", "b": "performance" },
+      { "id": "C5", "a": "design", "b": "brand" },
+      { "id": "C6", "a": "durability", "b": "design", "repeat_of": "C2" }
+    ],
+    "scoring": {
+      "method": "pairwise_win_count_then_normalize",
+      "win_value": 1,
+      "loss_value": 0,
+      "tie_value": 0.5,
+      "note": "允许平局（都还行），记 0.5 分。六组全答才有完整权重，否则按已答组计算并标注为部分。"
+    },
+    "position_bias_check": {
+      "pair": "C2",
+      "check_pair": "C6",
+      "rule": "C2 与 C6 是同一组对决，仅左右顺序相反。两次选择不同即判定存在位置偏好，输出 order_bias_detected 为 true，并在画像中提示该组权重可信度下降。",
+      "when_conflict": "以 C2 为准（C6 仅作检测），但权重可信度标注为「受选项顺序影响」"
+    },
+    "confidence": {
+      "high": { "min_pairs_answered": 6, "min_consistency": 1.0, "label": "高" },
+      "medium": { "min_pairs_answered": 4, "min_consistency": 0.8, "label": "中" },
+      "low": { "min_pairs_answered": 1, "min_consistency": 0.0, "label": "低" }
+    }
+  },
+
+  "tradeoff": {
+    "_note": "两个溢价阶梯换算成质量与设计的权重比。规则：阶梯每档是一个付费意愿信号。用户在最高仍选premium 的那档即为该维度的支付上限。",
+    "quality_field": "preferences.tradeoff_weights.quality_premium_max_pct",
+    "design_field": "preferences.tradeoff_weights.design_premium_max_pct",
+    "ladder_steps_pct": [10, 20, 35, 50],
+    "cap_pct": 50,
+    "cap_note": "阶梯最高档为 50%。用户全选 premium 时记为 50 并标注 capped 为 true，表示真实上限可能更高，需人工加档确认。",
+    "weight_from_pct": {
+      "_note": "支付意愿百分比映射成 0-100 权重。取支付上限的平方根再归一化，避免高上限维度压倒低上限维度。",
+      "transform": "sqrt",
+      "normalization": "two_dimension_sum_to_100",
+      "round_to": 1
+    },
+    "priority_rules": [
+      { "id": "TR1", "when": "quality_pct >= design_pct * 1.5", "result": "quality_dominant", "label": "质量优先" },
+      { "id": "TR2", "when": "design_pct >= quality_pct * 1.5", "result": "design_dominant", "label": "设计优先" },
+      { "id": "TR3", "when": "otherwise", "result": "balanced", "label": "质量与设计基本等价" }
+    ]
+  },
+
+  "price_band": {
+    "_note": "四档价格边界倍数换算成可读区间与敏感度。锚点为参照价，倍数表示相对锚点的位置。",
+    "band_order": ["doubt_multiplier", "bargain_multiplier", "expensive_multiplier", "reject_multiplier"],
+    "consistency_rule": {
+      "_note": "四档必须单调递增：起疑线 < 划算线 < 超预算线 < 不考虑线。不满足说明用户理解偏了或答案不一致。",
+      "expression": "doubt < bargain < expensive < reject",
+      "on_violation": "标 price_band_consistent 为 false，指出不满足的相邻对，并在画像中说明该区间不可用，需重新问该域"
+    },
+    "derived": {
+      "acceptable_low": "bargain_multiplier",
+      "acceptable_high": "expensive_multiplier",
+      "suspicion_gap": "bargain_multiplier - doubt_multiplier",
+      "stretch_gap": "reject_multiplier - expensive_multiplier"
+    },
+    "sensitivity": {
+      "_note": "用可接受区间宽度除以锚点倍数，判定价格敏感度。区间越窄越敏感。",
+      "formula": "(expensive_multiplier - bargain_multiplier) / bargain_multiplier",
+      "thresholds": [
+        { "max": 0.5, "level": "high", "label": "价格敏感" },
+        { "max": 1.0, "level": "medium", "label": "价格中等敏感" },
+        { "max": 999, "level": "low", "label": "价格不敏感" }
+      ]
+    }
+  },
+
+  "style_intensity": {
+    "_note": "风格强度换算。主风格与次风格按问卷采集的 0-100 分直接使用，异常值裁剪到 0-100。例外条件为 none 时表示风格刚性。",
+    "clamp": [0, 100],
+    "exceptions": {
+      "none": { "rigidity": "rigid", "label": "风格很固定" },
+      "discount": { "rigidity": "flexible", "label": "打折时会妥协" },
+      "occasion": { "rigidity": "flexible", "label": "场合需要时会妥协" },
+      "desire": { "rigidity": "flexible", "label": "很想要某件时会妥协" },
+      "recommend": { "rigidity": "flexible", "label": "被推荐时会妥协" }
+    }
+  },
+
+  "category_context": {
+    "_note": "品类情境。mode 为 different 时，各品类需分别测量参数，当前版本的锚点只覆盖主品类，其余品类标记为共用或待测。",
+    "category_labels": {
+      "apparel": "服饰鞋包",
+      "skincare": "护肤美妆",
+      "digital": "数码家电",
+      "home": "家居日用",
+      "food": "食品生鲜",
+      "sports": "运动户外",
+      "baby": "母婴",
+      "pet": "宠物",
+      "general": "通用"
+    },
+    "mode_behavior": {
+      "same": "all_categories_share_anchor",
+      "adjusted": "secondary_categories_use_scaled_anchor",
+      "different": "secondary_categories_need_separate_measurement"
+    },
+    "scale_hint": {
+      "apparel": 1.0,
+      "skincare": 0.4,
+      "digital": 3.0,
+      "home": 2.0,
+      "food": 0.2,
+      "sports": 1.5,
+      "baby": 1.2,
+      "pet": 1.0,
+      "general": 1.0
+    },
+    "scale_hint_note": "scale_hint 只用于 mode 为 adjusted 时给次品类一个粗略参考倍数，不写入档案作为测量值，档案中只记 mode 与品类清单。"
+  },
+
+  "portrait": {
+    "_note": "画像渲染用的措辞库。每句都从测量值推出，不做额外推断。",
+    "price_band_phrases": {
+      "high": "你对价格很敏感，太便宜的东西你会先怀疑质量，太贵的直接不考虑。",
+      "medium": "你的可接受价格区间比较宽，低到打折你会心动，高出一点你也会接受。",
+      "low": "价格对你不太构成约束，你更看东西本身值不值。"
+    },
+    "tradeoff_phrases": {
+      "quality_dominant": "愿意为更好的质量多掏钱，设计好不好是其次。",
+      "design_dominant": "愿意为更好看的设计多掏钱，质量差不多就行。",
+      "balanced": "质量和设计在你这儿基本等价，不分先后。"
+    },
+    "value_order_phrases": {
+      "durability": "你挑东西先看它结不结实、耐不耐造。",
+      "design": "你挑东西先看它好不好看。",
+      "performance": "你挑东西先看参数强不强。",
+      "brand": "你挑东西先看牌子响不响。"
+    },
+    "confidence_suffix": {
+      "high": "",
+      "medium": "（这组偏好把握一般，可以再确认一次）",
+      "low": "（这组偏好样本较少，仅供参考）"
+    }
+  }
+}

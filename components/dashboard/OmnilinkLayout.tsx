@@ -101,7 +101,7 @@ export default function OmnilinkLayout({
     .toUpperCase()
 
   return (
-    <div className="min-h-screen w-full bg-[var(--surface-muted)] dark:bg-[var(--surface-muted)] text-[var(--ink)] antialiased flex flex-col lg:flex-row">
+    <div className="min-h-screen w-full bg-[var(--background)] dark:bg-[var(--background)] text-[var(--ink)] antialiased flex flex-col lg:flex-row">
       {/* ============================================================
           左侧精致窄版侧边栏 (极简紧凑 + 高保真设计)
           ============================================================ */}
@@ -110,7 +110,7 @@ export default function OmnilinkLayout({
         onMouseLeave={() => setIsSidebarExpanded(false)}
         animate={{ width: isSidebarExpanded ? 180 : 56 }}
         transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-        className="hidden lg:flex flex-col justify-between bg-[var(--surface)] dark:bg-[var(--surface-muted)] border-r border-[var(--surface-muted)]/80 dark:border-[var(--surface-muted)]/80 py-3.5 px-1.5 shrink-0 sticky top-0 h-screen z-40 overflow-y-auto shadow-[1px_0_8px_var(--ink)] scrollbar-thin"
+        className="hidden lg:flex flex-col justify-between bg-[var(--background)] dark:bg-[var(--background)] border-r border-[var(--border-subtle)]/50 py-3.5 px-1.5 shrink-0 sticky top-0 h-screen z-40 overflow-y-auto scrollbar-thin"
       >
         {/* 上半部分：Logo、商户/用户区块、菜单导航 */}
         <div className="flex flex-col gap-2.5 w-full">
@@ -122,7 +122,7 @@ export default function OmnilinkLayout({
               isSidebarExpanded ? "justify-start px-2" : "justify-center"
             )}
           >
-            <div className="w-7 h-7  bg-[var(--primary)] flex items-center justify-center text-[var(--surface)] font-black text-xs shrink-0 shadow-[0_2px_6px_rgba(2,74,216,0.3)]">
+            <div className="w-7 h-7 bg-[var(--ink)] flex items-center justify-center text-[var(--surface)] font-black text-xs shrink-0">
               O
             </div>
             {isSidebarExpanded && (
@@ -133,13 +133,13 @@ export default function OmnilinkLayout({
           </Link>
 
           {/* 商户/用户账号信息卡片 */}
-          <div className={cn("w-full transition-all duration-300 pb-2 border-b border-[var(--surface-muted)] dark:border-[var(--surface-muted)]/60", isSidebarExpanded ? "px-1" : "flex flex-col items-center")}>
+          <div className={cn("w-full transition-all duration-300 pb-2", isSidebarExpanded ? "px-1" : "flex flex-col items-center")}>
             {isSidebarExpanded ? (
               <Link
                 href="/dashboard/account"
                 className="flex items-center gap-2 p-1 rounded-[6px] bg-[var(--surface-muted)]/80 dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] hover:bg-[var(--surface-muted)]/50 dark:hover:bg-[var(--surface-muted)]/80 transition-all cursor-pointer w-full"
               >
-                <div className="w-7 h-7 rounded-full overflow-hidden bg-gradient-to-tr from-[var(--primary)] to-[#7928CA] relative shrink-0 flex items-center justify-center text-[10px] font-bold text-[var(--surface)] shadow-3xs">
+                <div className="w-7 h-7 rounded-full overflow-hidden bg-[var(--primary)] relative shrink-0 flex items-center justify-center text-[10px] font-bold text-[var(--surface)] shadow-3xs">
                   {profile.avatarUrl ? (
                     <Image
                       src={profile.avatarUrl}
@@ -166,7 +166,7 @@ export default function OmnilinkLayout({
               <div className="relative group">
                 <Link
                   href="/dashboard/account"
-                  className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-tr from-[var(--primary)] to-[#7928CA] relative flex items-center justify-center text-[10px] font-bold text-[var(--surface)] shadow-3xs hover:ring-2 hover:ring-[var(--primary)] transition-all cursor-pointer"
+                  className="w-8 h-8 rounded-full overflow-hidden bg-[var(--primary)] relative flex items-center justify-center text-[10px] font-bold text-[var(--surface)] shadow-3xs hover:ring-2 hover:ring-[var(--primary)] transition-all cursor-pointer"
                 >
                   {profile.avatarUrl ? (
                     <Image
@@ -181,7 +181,7 @@ export default function OmnilinkLayout({
                     <span aria-hidden>{initials || 'M'}</span>
                   )}
                 </Link>
-                <div className="absolute left-[48px] top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap px-2 py-0.5  bg-[var(--surface-muted)] text-[var(--surface)] text-[10px] font-medium shadow-md">
+                <div className="absolute left-[48px] top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap px-2 py-0.5 bg-[var(--ink)] text-[var(--surface)] text-[10px] font-medium shadow-sm">
                   {displayName}
                 </div>
               </div>
@@ -205,17 +205,17 @@ export default function OmnilinkLayout({
                       className={cn(
                         'w-full h-8.5  px-2 flex items-center gap-2 transition-all duration-200 cursor-pointer border',
                         active
-                          ? 'bg-[var(--primary)] border-[var(--primary)] text-[var(--surface)] shadow-[0_2px_8px_rgba(2,74,216,0.25)] font-bold'
-                          : 'bg-[var(--surface-muted)]/50 dark:bg-[var(--surface-muted)]/20 border-[var(--surface-muted)] dark:border-[var(--surface-muted)] text-[var(--lavender)] dark:text-[var(--lavender)] hover:bg-[var(--surface-muted)]/50 dark:hover:bg-[var(--surface-muted)]'
+                          ? 'bg-[var(--accent-secondary-soft)] border-transparent text-[var(--accent-secondary)] font-semibold'
+                          : 'border-transparent text-[var(--lavender)] dark:text-[var(--lavender)] hover:bg-[var(--interactive-hover)]'
                       )}
                     >
                       <div
                         className={cn(
                           'w-5 h-5 rounded-full relative flex items-center justify-center transition-all duration-300 shrink-0',
-                          'bg-gradient-to-tr from-[#FF007A] via-[#7928CA] to-[var(--primary)]',
+                          'bg-[var(--ink)]',
                           active
-                            ? 'ring-1 ring-[var(--surface)] shadow-[0_0_6px_var(--surface)]'
-                            : 'shadow-[0_1px_3px_rgba(236,72,153,0.3)]'
+                            ? 'ring-1 ring-[var(--surface)]'
+                            : ''
                         )}
                       >
                         <Sparkles size={9} className="text-[var(--surface)]" />
@@ -233,8 +233,8 @@ export default function OmnilinkLayout({
                     className={cn(
                       'w-full h-8.5  px-2.5 flex items-center gap-2.5 transition-all duration-150 cursor-pointer',
                       active
-                        ? 'bg-[var(--primary)] text-[var(--surface)] shadow-[0_2px_8px_rgba(2,74,216,0.25)] font-bold'
-                        : 'text-[var(--lavender)] dark:text-[var(--lavender)] hover:text-[var(--lavender)] hover:bg-[var(--surface-muted)] dark:hover:bg-[var(--surface-muted)]/60'
+                        ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)] font-semibold'
+                        : 'text-[var(--lavender)] dark:text-[var(--lavender)] hover:bg-[var(--interactive-hover)]'
                     )}
                   >
                     <Icon size={14} className="shrink-0" />
@@ -258,16 +258,16 @@ export default function OmnilinkLayout({
                       <div
                         className={cn(
                           'w-7 h-7 rounded-full relative flex items-center justify-center transition-all duration-300',
-                          'bg-gradient-to-tr from-[#FF007A] via-[#7928CA] to-[var(--primary)]',
+                          'bg-[var(--ink)]',
                           active
-                            ? 'ring-2 ring-[var(--primary)] ring-offset-2 ring-offset-white shadow-[0_0_10px_rgba(2,74,216,0.5)]'
-                            : 'hover:shadow-[0_0_8px_rgba(2,74,216,0.4)]'
+                            ? 'ring-2 ring-[var(--accent-secondary)] ring-offset-2 ring-offset-white'
+                            : ''
                         )}
                       >
-                        <Sparkles size={10} className="text-[var(--surface)] animate-pulse" />
+                        <Sparkles size={10} className="text-[var(--surface)]" />
                       </div>
                     </Link>
-                    <div className="absolute left-[48px] top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap px-2 py-0.5  bg-[var(--surface-muted)] text-[var(--surface)] text-[10px] font-bold shadow-md">
+                    <div className="absolute left-[48px] top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap px-2 py-0.5 bg-[var(--ink)] text-[var(--surface)] text-[10px] font-bold shadow-sm">
                       {label}
                     </div>
                   </div>
@@ -282,13 +282,13 @@ export default function OmnilinkLayout({
                     className={cn(
                       'w-8.5 h-8.5  flex items-center justify-center transition-all duration-150',
                       active
-                        ? 'bg-[var(--primary)] text-[var(--surface)] shadow-[0_2px_6px_rgba(2,74,216,0.3)] scale-105'
-                        : 'text-[var(--lavender)] dark:text-[var(--lavender)] hover:text-[var(--lavender)] dark:hover:text-[var(--lavender)] hover:bg-[var(--surface-muted)] dark:hover:bg-[var(--surface-muted)]/80'
+                        ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)]'
+                        : 'text-[var(--lavender)] dark:text-[var(--lavender)] hover:bg-[var(--interactive-hover)]'
                     )}
                   >
                     <Icon size={15} />
                   </Link>
-                  <div className="absolute left-[48px] top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap px-2 py-0.5  bg-[var(--surface-muted)] text-[var(--surface)] text-[10px] font-medium shadow-md">
+                  <div className="absolute left-[48px] top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap px-2 py-0.5 bg-[var(--ink)] text-[var(--surface)] text-[10px] font-medium shadow-sm">
                     {label}
                   </div>
                 </div>
@@ -298,16 +298,15 @@ export default function OmnilinkLayout({
         </div>
 
         {/* 下半部分：高保真画廊推荐、语言切换、系统设置 */}
-        <div className="flex flex-col items-center gap-3 w-full mt-auto pt-3 border-t border-[var(--surface-muted)] dark:border-[var(--surface-muted)]/60">
+        <div className="flex flex-col items-center gap-3 w-full mt-auto pt-3">
           
           {/* 解锁高级商店功能 (主题色 var(--primary)) */}
           {isSidebarExpanded ? (
-            <div className="w-full bg-[var(--surface-muted)] dark:bg-[var(--primary)]/10 p-2.5  border border-[var(--border)] dark:border-[var(--primary)]/30 flex flex-col gap-1.5 relative overflow-hidden group shadow-2xs">
-              <div className="absolute -right-3 -bottom-3 w-10 h-10 bg-[var(--primary)]/10 rounded-full blur-md" />
+            <div className="w-full p-2.5 flex flex-col gap-1.5 relative overflow-hidden group">
               <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-1">
                   <Sparkles size={11} className="text-[var(--primary)] shrink-0" />
-                  <span className="text-[10.5px] font-extrabold text-[var(--primary)] dark:text-[#5B8FF9] leading-tight truncate">
+                  <span className="text-[10.5px] font-extrabold text-[var(--primary)] dark:text-[var(--theme-digital-blue)] leading-tight truncate">
                     {isZh ? '解锁高级商店功能' : 'Unlock Store Pro'}
                   </span>
                 </div>
@@ -325,10 +324,10 @@ export default function OmnilinkLayout({
             </div>
           ) : (
             <div className="relative group">
-              <div className="w-8.5 h-8.5  bg-[var(--surface-muted)] dark:bg-[var(--primary)]/20 flex items-center justify-center border border-[var(--border)] dark:border-[var(--primary)]/40 cursor-pointer shadow-3xs hover:bg-[var(--primary)] hover:text-[var(--surface)] transition-all text-[var(--primary)]">
-                <Sparkles size={13} className="text-[var(--primary)] group-hover:text-[var(--surface)] transition-colors" />
+              <div className="w-8.5 h-8.5 rounded-full bg-[var(--ink)] flex items-center justify-center cursor-pointer text-[var(--surface)]">
+                <Sparkles size={13} />
               </div>
-              <div className="absolute left-[48px] top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap px-2 py-0.5  bg-[var(--primary)] text-[var(--surface)] text-[10px] font-bold shadow-md">
+              <div className="absolute left-[48px] top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap px-2 py-0.5 bg-[var(--ink)] text-[var(--surface)] text-[10px] font-bold shadow-sm">
                 {isZh ? '解锁高级商店功能' : 'Unlock Store Pro'}
               </div>
             </div>
@@ -359,8 +358,8 @@ export default function OmnilinkLayout({
                     className={cn(
                       'w-full h-8.5  px-2.5 flex items-center gap-2.5 transition-all duration-150 cursor-pointer',
                       active
-                        ? 'bg-[var(--primary)] text-[var(--surface)] shadow-[0_2px_6px_rgba(2,74,216,0.25)] font-bold'
-                        : 'text-[var(--lavender)] dark:text-[var(--lavender)] hover:text-[var(--lavender)] hover:bg-[var(--surface-muted)] dark:hover:bg-[var(--surface-muted)]/60'
+                        ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)] font-semibold'
+                        : 'text-[var(--lavender)] dark:text-[var(--lavender)] hover:bg-[var(--interactive-hover)]'
                     )}
                   >
                     <Icon size={14} className="shrink-0" />
@@ -377,13 +376,13 @@ export default function OmnilinkLayout({
                     className={cn(
                       'w-8.5 h-8.5  flex items-center justify-center transition-all duration-150',
                       active
-                        ? 'bg-[var(--primary)] text-[var(--surface)] shadow-[0_2px_6px_rgba(2,74,216,0.3)] scale-105'
-                        : 'text-[var(--lavender)] dark:text-[var(--lavender)] hover:text-[var(--lavender)] dark:hover:text-[var(--lavender)] hover:bg-[var(--surface-muted)] dark:hover:bg-[var(--surface-muted)]/80'
+                        ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)]'
+                        : 'text-[var(--lavender)] dark:text-[var(--lavender)] hover:bg-[var(--interactive-hover)]'
                     )}
                   >
                     <Icon size={15} />
                   </Link>
-                  <div className="absolute left-[48px] top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap px-2 py-0.5  bg-[var(--surface-muted)] text-[var(--surface)] text-[10px] font-medium shadow-md">
+                  <div className="absolute left-[48px] top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap px-2 py-0.5 bg-[var(--ink)] text-[var(--surface)] text-[10px] font-medium shadow-sm">
                     {label}
                   </div>
                 </div>
@@ -410,7 +409,7 @@ export default function OmnilinkLayout({
                   className="w-8.5 h-8.5  flex items-center justify-center text-[var(--lavender)] hover:text-[var(--plum)] hover:bg-[var(--plum)]/60 dark:hover:bg-[var(--plum)]/20 transition-all cursor-pointer relative group"
                 >
                   <LogOut size={15} />
-                  <div className="absolute left-[48px] top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap px-2 py-0.5  bg-[var(--surface-muted)] text-[var(--surface)] text-[10px] font-medium shadow-md">
+                  <div className="absolute left-[48px] top-1/2 -translate-y-1/2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap px-2 py-0.5 bg-[var(--ink)] text-[var(--surface)] text-[10px] font-medium shadow-sm">
                     {t.nav.logout}
                   </div>
                 </button>
@@ -425,7 +424,7 @@ export default function OmnilinkLayout({
           ============================================================ */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
         {/* 移动端顶层快捷导航栏 */}
-        <div className="flex lg:hidden flex-wrap items-center justify-center gap-1.5 p-2.5 bg-[var(--surface)]/95 dark:bg-[var(--surface-muted)]/95 backdrop-blur-xl border-b border-[var(--surface-muted)]/60 dark:border-[var(--surface-muted)] shadow-3xs sticky top-0 z-40">
+        <div className="flex lg:hidden flex-wrap items-center justify-center gap-1.5 p-2.5 bg-[var(--background)] sticky top-0 z-40">
           {NAV_ITEMS.map((item) => {
             const active = item.match(pathname)
             if (item.isSpecialSprite) {
@@ -436,11 +435,11 @@ export default function OmnilinkLayout({
                   className={cn(
                     'px-2.5 py-1 rounded-full text-[11px] font-bold transition-all flex items-center gap-1',
                     active
-                      ? 'bg-gradient-to-r from-[#FF007A] via-[#7928CA] to-[var(--primary)] text-[var(--surface)] shadow-sm'
-                      : 'bg-[var(--primary)] dark:bg-[var(--primary)]/40 text-[var(--primary)] dark:text-[var(--primary)] border border-[var(--primary)]/40 dark:border-[var(--primary)]/50'
+                      ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)]'
+                      : 'text-[var(--lavender)] hover:bg-[var(--interactive-hover)]'
                   )}
                 >
-                  <Sparkles size={11} className={active ? 'text-[var(--acid-sage)] animate-pulse' : 'text-[var(--primary)]'} />
+                  <Sparkles size={11} className="text-[var(--ink)]" />
                   <span>{t.nav[item.key]}</span>
                 </Link>
               )
@@ -451,7 +450,7 @@ export default function OmnilinkLayout({
                 href={item.href}
                 className={cn(
                   'px-2.5 py-1 rounded-full text-[11px] font-medium transition-all',
-                  active ? 'bg-[var(--primary)] text-[var(--surface)] font-semibold' : 'bg-[var(--surface-muted)] dark:bg-[var(--surface-muted)] text-[var(--lavender)] dark:text-[var(--lavender)]'
+                  active ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)] font-semibold' : 'text-[var(--lavender)] dark:text-[var(--lavender)] hover:bg-[var(--interactive-hover)]'
                 )}
               >
                 {t.nav[item.key]}

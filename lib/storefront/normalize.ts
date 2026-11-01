@@ -12,6 +12,7 @@ import type {
   StorefrontProductOption,
   StorefrontProductVariant,
 } from './types'
+import { readOutboundLinks } from '@/lib/products/outbound-links'
 
 export interface CatalogVariantRow {
   id: string
@@ -39,6 +40,7 @@ export interface CatalogItemRow {
   title: string | null
   description: string | null
   details: unknown
+  cover_image?: string | null
   catalog_variants?: CatalogVariantRow[] | null
   catalog_media?: CatalogMediaRow[] | null
 }
@@ -51,6 +53,7 @@ export interface StorefrontProductRow {
   price: number | string | null
   currency: string | null
   details: unknown
+  cover_image?: string | null
   media?: Array<{
     url: string | null
     role: string | null
@@ -253,6 +256,8 @@ export function normalizeProduct(
   const gallery = extractImageGallery(row.media)
   const options = normalizeOptions(row.options)
   const variants = normalizeVariants(row.variants)
+  const details = row.details && typeof row.details === 'object' && !Array.isArray(row.details)
+    ? row.details as Record<string, unknown> : {}
 
   return {
     id,
@@ -260,9 +265,11 @@ export function normalizeProduct(
     // DB 无 slug 列：公开路由使用 /products/[id]，slug 即 id。
     slug: id,
     price: toFiniteNumber(row.price),
+    priceMode: details.price_mode === 'inquiry' ? 'inquiry' : details.price_mode === 'free' ? 'free' : 'amount',
+    outboundLinks: readOutboundLinks(details.outbound_links),
     currency: row.currency ?? opts.storeCurrency ?? 'USD',
-    imageUrl: gallery.primary,
-    images: gallery.all.length > 0 ? gallery.all : (gallery.primary ? [gallery.primary] : []),
+    imageUrl: gallery.primary ?? row.cover_image ?? null,
+    images: gallery.all.length > 0 ? gallery.all : (row.cover_image ? [row.cover_image] : []),
     href: `/store/${opts.storeSlug}/products/${id}`,
     description: row.description ?? null,
     attributes: resolveCanonicalAttributes(row),

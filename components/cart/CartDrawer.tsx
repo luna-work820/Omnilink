@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react'
+import { X, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react'
 import { useCart } from './CartContext'
 
 export default function CartDrawer() {
@@ -13,7 +13,6 @@ export default function CartDrawer() {
     closeCart,
     removeItem,
     updateQuantity,
-    subtotal,
     currency,
     storeSlug,
     isHydrated,
@@ -200,26 +199,7 @@ export default function CartDrawer() {
 
             {/* Footer / Summary */}
             <div className="border-t border-[var(--th-color-border)] bg-[var(--th-color-surface)] p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-xs text-[var(--th-color-muted)]">Subtotal</span>
-                <span className="[font-family:var(--th-font-heading)] text-base font-bold text-[var(--th-color-text)]">
-                  {currency} {subtotal.toFixed(2)}
-                </span>
-              </div>
-              <p className="mb-4 text-[10px] text-[var(--th-color-muted)] text-center">
-                Taxes and shipping calculated separately upon merchant confirmation.
-              </p>
-
-              <div className="flex flex-col gap-2">
-                <Link
-                  href={`/store/${storeSlug}/checkout`}
-                  onClick={closeCart}
-                  className="flex items-center justify-center gap-2 rounded-[var(--th-radius-button)] bg-[var(--th-color-primary)] py-3 text-xs font-semibold text-[var(--surface)] shadow-sm transition-colors hover:bg-[var(--th-color-accent)]"
-                >
-                  <span>Proceed to Checkout</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-
+              <div>
                 <Link
                   href={`/store/${storeSlug}/cart`}
                   onClick={closeCart}
