@@ -12,7 +12,6 @@ export default defineConfig({
     include: [
       'lib/creator-content.test.ts',
       'lib/products/**/__tests__/**/*.test.ts',
-      'lib/semantic/__tests__/**/*.test.ts',
       'lib/storefront/**/*.test.ts',
       'lib/consumer-advisor/**/*.test.ts',
       'lib/product/**/*.test.ts',

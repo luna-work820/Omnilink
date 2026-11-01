@@ -10,9 +10,9 @@
  *
  * Ownership resolves through:
  *   organization_members.user_id = auth.uid()
- *   store_settings / store_pages / catalog_items / imports / ai_jobs / store_plugins
- *     / agent_api_keys  →  store_id  →  stores.organization_id → organization_members
- *   catalog_media  →  catalog_item_id  →  catalog_items.organization_id
+ *   catalog_item_channels / catalog_items / catalog_media
+ *     →  store_id →  stores.organization_id → organization_members
+ *   store_settings / store_pages →  store_id →  stores.organization_id
  */
 
 import { NextResponse } from 'next/server'
