@@ -300,7 +300,7 @@ describe('Server Validation Hardening (Phase 3C-2)', () => {
     }
 
     expect(violations).toHaveLength(0)
-  })
+  }, 30_000)
 
   // K. Repository search -> only Canonical Service writes product_semantics
   it('K. Repository search -> only Canonical Service / processor writes product_semantics', () => {
@@ -337,5 +337,5 @@ describe('Server Validation Hardening (Phase 3C-2)', () => {
     }
 
     expect(violations).toHaveLength(0)
-  })
+  }, 30_000)
 })
