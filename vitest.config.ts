@@ -11,11 +11,11 @@ export default defineConfig({
     environment: 'node',
     include: [
       'lib/creator-content.test.ts',
+      'lib/ai/**/*.test.ts',
       'lib/products/**/__tests__/**/*.test.ts',
       'lib/storefront/**/*.test.ts',
       'lib/consumer-advisor/**/*.test.ts',
       'lib/product/**/*.test.ts',
-      'lib/imports/**/__tests__/**/*.test.ts',
     ],
     globals: false,
   },

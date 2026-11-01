@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getOwnedStoreId, requireUser } from '@/lib/api/auth'
-import { generateWorkspaceText, generateWorkspaceVisionText, type WorkspaceModel } from '@/lib/ai/workspace-generation'
+import { generateWorkspaceText, generateWorkspaceVisionText, ModelConfigurationError, type WorkspaceModel } from '@/lib/ai/workspace-generation'
 import {
   getWorkspaceSkillInstructions,
   loadMultiChannelProductContentContext,
@@ -63,6 +63,18 @@ function getSkillInstructions(skillId: string | null) {
     : null
 }
 
+/**
+ * Translate raw upstream provider errors into copy the merchant can act on.
+ * Kept in one place so the preview path and the authenticated path answer
+ * identically — they used to drift (the preview path leaked raw English
+ * provider errors while the authenticated path translated them).
+ */
+function publicModelErrorMessage(message: string): string {
+  if (/Invalid API-key/i.test(message)) return '千问 API Key 无效，请检查 B 端模型配置。'
+  if (/Insufficient Balance/i.test(message)) return 'DeepSeek 账户余额不足。'
+  return message
+}
+
 async function runPreview(request: NextRequest) {
   const body = await request.json() as { prompt?: unknown; model?: unknown; skillId?: unknown; toolId?: unknown; image?: unknown; images?: unknown; context?: Array<{ title?: unknown; summary?: unknown }> }
   const prompt = typeof body.prompt === 'string' ? body.prompt.trim().slice(0, 12000) : ''
@@ -98,7 +110,11 @@ export async function POST(request: NextRequest) {
       try {
         return await runPreview(request)
       } catch (error) {
-        return NextResponse.json({ error: error instanceof Error ? error.message : '模型请求失败。' }, { status: 500 })
+        if (error instanceof ModelConfigurationError) {
+          return NextResponse.json({ error: error.message }, { status: error.status })
+        }
+        const message = error instanceof Error ? error.message : '模型请求失败。'
+        return NextResponse.json({ error: publicModelErrorMessage(message) }, { status: 500 })
       }
     }
     return auth.response
@@ -205,6 +221,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ content: result, model })
   } catch (error) {
     console.error('[knowledge.assistant] request failed', error)
-    return NextResponse.json({ error: error instanceof Error ? error.message : '模型请求失败。' }, { status: 500 })
+    // A missing API key is the merchant's to fix (400), not an upstream
+    // outage — answering 500 made every BYOK misconfiguration look like the
+    // model was down.
+    if (error instanceof ModelConfigurationError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    const message = error instanceof Error ? error.message : '模型请求失败。'
+    // Same translation the consumer assistant uses, so an invalid platform key
+    // does not leak a raw English upstream error to the merchant.
+    return NextResponse.json({ error: publicModelErrorMessage(message) }, { status: 500 })
   }
 }

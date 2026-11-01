@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { NextResponse, type NextRequest } from 'next/server'
-import { generateWorkspaceText, generateWorkspaceVisionText, generateWorkspaceDeepSeekVisionText, type WorkspaceModel } from '@/lib/ai/workspace-generation'
+import { generateWorkspaceText, generateWorkspaceVisionText, generateWorkspaceDeepSeekVisionText, ModelConfigurationError, type WorkspaceModel } from '@/lib/ai/workspace-generation'
 import { getStorefrontDiscoveryItems } from '@/lib/storefront/service'
 import { productsList } from '@/components/consumer-market/data/mockData'
 import { createClientServer } from '@/lib/supabase/server'
@@ -257,7 +257,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ text: answer.text, styleTag: answer.styleTag, matchedProductIds: answer.matchedProductIds, matchReasons: answer.matchReasons, memorySaved, model, fallback: usedFallback, visionModel: imageSource ? (model === 'deepseek-flash' || model === 'deepseek-v4-pro' ? 'deepseek-flash' : 'gemini') : null })
   } catch (error) {
     const message = error instanceof Error ? error.message : '模型请求失败。'
-    const status = error instanceof SyntaxError || /图片.*(格式|3 MB)|PDF (中没有可提取的文字|文件无效或无法读取)/.test(message) ? 400 : 502
+    // A missing BYOK key is the caller's to fix (400), not an upstream outage.
+    // Everything else keeps the existing 400/502 split.
+    const status = error instanceof ModelConfigurationError
+      ? error.status
+      : (error instanceof SyntaxError || /图片.*(格式|3 MB)|PDF (中没有可提取的文字|文件无效或无法读取)/.test(message) ? 400 : 502)
     const publicMessage = /Invalid API-key/i.test(message) ? '千问 API Key 无效，请检查 B 端模型配置。'
       : /Insufficient Balance/i.test(message) ? 'DeepSeek 账户余额不足。'
       : message
