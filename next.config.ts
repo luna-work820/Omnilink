@@ -8,6 +8,9 @@ const localDevOrigins = Object.values(networkInterfaces())
 
 const nextConfig: NextConfig = {
   output: process.env.VERCEL ? undefined : "standalone",
+  experimental: {
+    agentUpgrade: "security",
+  },
   serverExternalPackages: ['pdfjs-dist'],
   allowedDevOrigins: [
     "localhost",
