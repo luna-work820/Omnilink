@@ -226,7 +226,7 @@ export function CategorySelector({
                     {currentBreadcrumb.secondary.name}
                   </span>
                   {currentBreadcrumb.secondary.templateKey && (
-                    <span className="shrink-0 text-[10px] font-medium bg-[var(--primary)]/10 text-[var(--primary)] px-1.5 py-0.5 rounded-[3px] border border-[var(--primary)]/20 ml-1">
+                    <span className="shrink-0 text-[10px] font-medium bg-[var(--primary)]/10 text-[var(--primary)] px-1.5 py-0.5 rounded-sm border border-[var(--primary)]/20 ml-1">
                       {isZh ? '规格模版' : 'Template'}
                     </span>
                   )}
@@ -262,7 +262,7 @@ export function CategorySelector({
 
       {/* Compact admin taxonomy picker: search + two-level taxonomy, inspired by Medusa/Spree. */}
       {isOpen && (
-        <div className="absolute z-50 left-0 w-[min(580px,calc(100vw-32px))] mt-2 bg-[var(--surface)] rounded-[12px] border border-[var(--surface-muted)] shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute z-50 left-0 w-[min(580px,calc(100vw-32px))] mt-2 bg-[var(--surface)] rounded-lg border border-[var(--surface-muted)] shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           {/* Header & Search Bar */}
           <div className="p-3 border-b border-[var(--surface-muted)] bg-[var(--surface-muted)]/70 space-y-2.5">
             <div className="relative">
@@ -376,7 +376,7 @@ export function CategorySelector({
                       key={l1.id}
                       type="button"
                       onClick={() => setSelectedL1Id(l1.id)}
-                      className={`w-full px-2.5 py-2 rounded-[5px] text-left text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                      className={`w-full px-2.5 py-2 rounded-sm text-left text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
                         isCurrent
                           ? 'bg-[var(--surface)] text-[var(--primary)] shadow-xs font-bold border-l-3 border-l-[var(--primary)]'
                           : 'text-[var(--lavender)] hover:bg-[var(--surface-muted)] hover:text-[var(--lavender)]'
@@ -409,7 +409,7 @@ export function CategorySelector({
                         key={child.id}
                         type="button"
                         onClick={() => handleSelectCategory(child, activeL1)}
-                        className={`p-2 rounded-[5px] border text-left transition-all flex items-center justify-between gap-2 cursor-pointer ${
+                        className={`p-2 rounded-sm border text-left transition-all flex items-center justify-between gap-2 cursor-pointer ${
                           isSelected
                             ? 'bg-[var(--surface-muted)] border-[var(--primary)] text-[var(--primary)] shadow-xs font-bold'
                             : 'bg-[var(--surface)] border-[var(--surface-muted)] hover:border-[var(--surface-muted)] hover:bg-[var(--surface-muted)]/80 text-[var(--lavender)]'

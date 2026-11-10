@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowLeft, Store, MapPin } from 'lucide-react';
 import { ProductItem } from '../types';
 import { useOmnilink } from '../context/OmnilinkContext';
+import { DisplayPrice } from '../components/DisplayPrice';
 
 interface StoreScreenProps {
   storeName: string;
@@ -34,7 +35,8 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
         {/* Back button */}
         <button
           onClick={onClose}
-          className="absolute top-5 left-5 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 backdrop-blur-md text-white shadow-md active:scale-95 transition-transform"
+          data-glasswork="auto"
+          className="absolute top-5 left-5 z-20 flex h-9 w-9 items-center justify-center rounded-full active:scale-95 transition-transform"
           aria-label="返回"
         >
           <ArrowLeft size={18} />
@@ -43,7 +45,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
         <div className="absolute bottom-6 left-6 right-6 text-white max-w-2xl mx-auto">
           <div className="flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-[0.2em] text-[var(--market-accent)] bg-white/95 w-fit px-2 py-0.5 rounded-xs">
             <Store size={11} />
-            <span>发布者</span>
+            <span>商家</span>
           </div>
           <h1 className="mt-2 font-editorial text-3xl sm:text-4xl font-bold text-white drop-shadow-sm">
             {storeName}
@@ -65,7 +67,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
           </h2>
           <p className="mt-2 font-editorial text-base text-[var(--market-ink)] leading-relaxed">
             {sampleProduct.storeDescription ||
-              '发布者介绍暂未提供。'}
+              '商家介绍暂未提供。'}
           </p>
         </div>
 
@@ -102,7 +104,7 @@ export const StoreScreen: React.FC<StoreScreenProps> = ({
                 </div>
 
                 <span className="text-xs font-bold text-[var(--market-ink)] shrink-0">
-                  {product.formattedPrice}
+                  <DisplayPrice product={product} />
                 </span>
               </div>
             ))}

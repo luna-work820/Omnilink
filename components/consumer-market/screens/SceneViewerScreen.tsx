@@ -1,3 +1,4 @@
+import { DisplayPrice } from '../components/DisplayPrice';
 import React, { useState } from 'react';
 import {
   X,
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react';
 import { ScenePost, ProductItem } from '../types';
 import { useOmnilink } from '../context/OmnilinkContext';
+import { LiquidGlass } from '@/components/ui/liquid-glass';
 
 interface SceneViewerScreenProps {
   scenePosts: ScenePost[];
@@ -40,20 +42,20 @@ export const SceneViewerScreen: React.FC<SceneViewerScreenProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black text-white select-none animate-in fade-in duration-200">
       {/* Top Floating Control Bar */}
-      <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 pt-safe bg-gradient-to-b from-black/80 to-transparent">
+      <LiquidGlass tone="dark" radius={0} bevelDepth={20} aberration={0.18} frost={0.1} className="scene-viewer-top-glass absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 pt-safe">
         <button
           onClick={onClose}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white/90 backdrop-blur-md hover:bg-black/60 active:scale-95 transition-all"
+          className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-white/10 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)]"
           aria-label="关闭场景预览"
         >
           <X size={18} />
         </button>
 
         {/* Scene index indicator & Up/Down navigation */}
-        <div className="flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1 text-xs backdrop-blur-md text-white/80">
+        <div className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs">
           <button
             onClick={handlePrev}
-            className="p-0.5 hover:text-white transition-colors"
+            className="p-0.5 transition-colors"
             title="上一个空间"
           >
             <ChevronUp size={14} />
@@ -63,13 +65,13 @@ export const SceneViewerScreen: React.FC<SceneViewerScreenProps> = ({
           </span>
           <button
             onClick={handleNext}
-            className="p-0.5 hover:text-white transition-colors"
+            className="p-0.5 transition-colors"
             title="下一个空间"
           >
             <ChevronDown size={14} />
           </button>
         </div>
-      </div>
+      </LiquidGlass>
 
       {/* Main Full-screen Media Background */}
       <div className="relative flex-1 w-full overflow-hidden flex items-center justify-center">
@@ -84,16 +86,20 @@ export const SceneViewerScreen: React.FC<SceneViewerScreenProps> = ({
 
         {/* Video Play/Pause Touch Area */}
         {scene.isVideo && (
-          <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="absolute z-20 flex h-14 w-14 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md border border-white/20 active:scale-90 transition-transform"
-          >
-            {isPlaying ? (
-              <Pause size={24} className="fill-white" />
-            ) : (
-              <Play size={24} className="fill-white ml-0.5" />
-            )}
-          </button>
+          <LiquidGlass radius={999} bevelDepth={14} aberration={0.2} frost={0.05} className="scene-viewer-play-glass absolute z-20 h-14 w-14 rounded-full">
+            <button
+              type="button"
+              onClick={() => setIsPlaying(!isPlaying)}
+              aria-label={isPlaying ? '暂停视频' : '播放视频'}
+              className="flex h-full w-full items-center justify-center rounded-full active:scale-90 transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)]"
+            >
+              {isPlaying ? (
+                <Pause size={24} className="fill-current" />
+              ) : (
+                <Play size={24} className="ml-0.5 fill-current" />
+              )}
+            </button>
+          </LiquidGlass>
         )}
       </div>
 
@@ -142,7 +148,7 @@ export const SceneViewerScreen: React.FC<SceneViewerScreenProps> = ({
                       <img src={prod.mainImage} alt="" className="h-11 w-11 shrink-0 rounded-lg bg-neutral-800 object-cover" />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-xs font-semibold text-white">{prod.name}</span>
-                        <span className="block text-xs text-white/80">{prod.formattedPrice}</span>
+                        <span className="block text-xs text-white/80"><DisplayPrice product={prod} /></span>
                       </span>
                     </button>
                     <button

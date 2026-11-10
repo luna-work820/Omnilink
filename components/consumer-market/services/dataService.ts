@@ -24,8 +24,9 @@ const STORAGE_KEYS = {
   QNA: 'omnilink_qna_history_v1',
   AI_CHAT: 'omnilink_ai_chat_v4',
   REJECTED: 'omnilink-rejected-products-v1',
-  ARCHIVED_CONVERSATIONS: 'omnilink-eva-archived-conversations',
+  ARCHIVED_CONVERSATIONS: 'omnilink-ai-assistant-archived-conversations',
 };
+const LEGACY_ARCHIVED_CONVERSATIONS_KEY = 'omnilink-eva-archived-conversations';
 
 function getBrowserStorage(): Storage | null {
   try {
@@ -39,9 +40,24 @@ function getBrowserStorage(): Storage | null {
 
 function readStringList(key: string): string[] {
   try {
-    const value = getBrowserStorage()?.getItem(key);
+    const storage = getBrowserStorage();
+    const currentValue = storage?.getItem(key);
+    const legacyValue = !currentValue && key === STORAGE_KEYS.ARCHIVED_CONVERSATIONS
+      ? storage?.getItem(LEGACY_ARCHIVED_CONVERSATIONS_KEY)
+      : null;
+    const value = currentValue ?? legacyValue;
     const parsed: unknown = value ? JSON.parse(value) : [];
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+    if (!Array.isArray(parsed)) return [];
+    const result = parsed.filter((item): item is string => typeof item === 'string');
+    if (key === STORAGE_KEYS.ARCHIVED_CONVERSATIONS && storage && legacyValue) {
+      try {
+        storage.setItem(key, JSON.stringify(result));
+        storage.removeItem(LEGACY_ARCHIVED_CONVERSATIONS_KEY);
+      } catch {
+        // Existing archive data remains readable when storage is read-only.
+      }
+    }
+    return result;
   } catch {
     return [];
   }

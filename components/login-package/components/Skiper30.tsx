@@ -321,7 +321,7 @@ export const Skiper30 = () => {
                   "filter 0.75s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.65s ease, transform 0.85s cubic-bezier(0.22, 1, 0.36, 1)",
                 willChange: "transform, opacity",
               }}
-              className="absolute inset-0 w-full h-full rounded-[28px] bg-white border border-black/[0.08] shadow-[0_24px_70px_rgba(0,0,0,0.07),0_4px_16px_rgba(0,0,0,0.03)] p-8 sm:p-9 flex flex-col justify-between overflow-hidden"
+              className="absolute inset-0 w-full h-full rounded-4xl bg-white border border-black/[0.08] shadow-[0_24px_70px_rgba(0,0,0,0.07),0_4px_16px_rgba(0,0,0,0.03)] p-8 sm:p-9 flex flex-col justify-between overflow-hidden"
             >
               {/* 卡片顶部：翻转回 OMNILINK 按钮 */}
               <div className="absolute top-4 right-4 z-20">

@@ -131,6 +131,10 @@ export function isStylingGoal(text: string): boolean {
   return /(穿搭|搭配|衣橱|服装|衣服|造型|形象管理|形象顾问|适合穿什么|护肤|皮肤|面霜|洁面|精华|保湿|控油|护肤品)/i.test(text) || isStyleDiscoveryGoal(text) || isProfileGoal(text)
 }
 
+export function isOutfitStylingGoal(text: string): boolean {
+  return /(穿搭|穿衣搭配|衣橱|服装搭配|怎么穿|适合穿什么|整套造型|(?:搭配|配一套).{0,8}(?:衣服|衣物|衣橱|穿着|造型|风格|一套|鞋|裙|裤)|(?:衣服|衣物|衣橱|上衣|裤子|裙子|外套|鞋子|鞋|这件|这套).{0,8}(?:怎么搭|怎么配|搭配|穿|造型)|outfit|styling|what should i wear)/i.test(text)
+}
+
 export function parseAdvisorResult(raw: string, catalog: AdvisorProduct[], goal: string): AdvisorResult {
   const cleaned = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
   const value = JSON.parse(cleaned) as Record<string, unknown>

@@ -1,18 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { DisplayPrice } from '../components/DisplayPrice';
+
+import { useEffect } from 'react'
 import Image from 'next/image'
 import { ExternalLink, X } from 'lucide-react'
 import type { ProductItem, ScenePost } from '../types'
-import { useOmnilink } from '../context/OmnilinkContext'
 
 export function CreatorPostReader({ post, onClose, onOpenProduct }: {
   post: ScenePost
   onClose: () => void
   onOpenProduct: (product: ProductItem) => void
 }) {
-  const { addMultipleToCart, selectTab } = useOmnilink()
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKeyDown)
@@ -34,20 +33,17 @@ export function CreatorPostReader({ post, onClose, onOpenProduct }: {
           if (block.type === 'image') return block.url ? <Image key={block.id} unoptimized src={block.url} alt="" width={800} height={500} className="w-full rounded-[var(--radius-card)]" /> : null
           if (block.type === 'video') return block.url ? <video key={block.id} controls playsInline preload="metadata" className="max-h-[70vh] w-full rounded-[var(--radius-card)] bg-black" aria-label="作品视频"><source src={block.url} type={block.url.split('?')[0].toLowerCase().endsWith('.webm') ? 'video/webm' : 'video/mp4'} />浏览器不支持播放此视频。</video> : null
           const products = block.productIds.map((id) => post.linkedProducts.find((item) => item.id === id)).filter((item): item is ProductItem => Boolean(item))
-          return <div key={block.id} className={block.type === 'group' ? 'grid gap-4 sm:grid-cols-2' : ''}>{products.map((product) => <button key={product.id} type="button" onClick={() => onOpenProduct(product)} className="flex w-full items-center gap-3 rounded-[var(--radius-control)] p-2 text-left hover:bg-[#E9EDF2] focus-visible:outline-2 focus-visible:outline-[#315BFF]"><Image unoptimized src={product.mainImage} alt="" width={72} height={72} className="size-18 rounded-[var(--radius-control)] object-cover" /><span className="min-w-0"><span className="block text-sm font-semibold">{product.name}</span><span className="mt-1 block text-sm text-[var(--market-text-secondary)]">{product.formattedPrice}</span></span></button>)}</div>
+          return <div key={block.id} className={block.type === 'group' ? 'grid gap-4 sm:grid-cols-2' : ''}>{products.map((product) => <button key={product.id} type="button" onClick={() => onOpenProduct(product)} className="flex w-full items-center gap-3 rounded-[var(--radius-control)] p-2 text-left hover:bg-[#E9EDF2] focus-visible:outline-2 focus-visible:outline-[#315BFF]"><Image unoptimized src={product.mainImage} alt="" width={72} height={72} className="size-18 rounded-[var(--radius-control)] object-cover" /><span className="min-w-0"><span className="block text-sm font-semibold">{product.name}</span><span className="mt-1 block text-sm text-[var(--market-text-secondary)]"><DisplayPrice product={product} /></span></span></button>)}</div>
         }) : <p className="whitespace-pre-wrap text-base leading-8">{post.description}</p>}</div>
         {post.linkedProducts.length > 0 && <section id="post-look" aria-labelledby="post-products" className="mt-10 border-t border-[var(--market-border)] pt-6 scroll-mt-20">
           <h2 id="post-products" className="mb-2 text-lg font-semibold">同款清单</h2>
-          <p className="mb-4 text-xs text-[var(--market-text-secondary)]">选择需要的商品。</p>
           <div className="space-y-3">{post.linkedProducts.map((product, index) => {
             const links = Object.entries(product.outboundLinks ?? {}).filter((entry): entry is ['xiaohongshu' | 'douyin', string] => Boolean(entry[1]));
-            return <div key={product.id} className="grid grid-cols-[24px_80px_minmax(0,1fr)] items-start gap-3 rounded-[var(--radius-card)] p-2 hover:bg-[#E9EDF2] sm:grid-cols-[24px_96px_minmax(0,1fr)]">
-              <input type="checkbox" aria-label={`选择${product.name}`} checked={selectedIds.includes(product.id)} onChange={() => setSelectedIds((current) => current.includes(product.id) ? current.filter((id) => id !== product.id) : [...current, product.id])} className="mt-8 size-4 accent-[#315BFF] focus-visible:outline-2 focus-visible:outline-[#315BFF]" />
+            return <div key={product.id} className="grid grid-cols-[80px_minmax(0,1fr)] items-start gap-3 rounded-[var(--radius-card)] p-2 hover:bg-[#E9EDF2] sm:grid-cols-[96px_minmax(0,1fr)]">
               <button type="button" onClick={() => onOpenProduct(product)} aria-label={`查看${product.name}`} className="focus-visible:outline-2 focus-visible:outline-[#315BFF]"><Image unoptimized src={product.mainImage} alt="" width={96} height={96} className="aspect-square w-full rounded-[var(--radius-control)] object-cover" /></button>
-              <div className="min-w-0"><p className="text-xs text-[var(--market-text-secondary)]">{String(index + 1).padStart(2, '0')}</p><button type="button" onClick={() => onOpenProduct(product)} className="mt-1 text-left text-sm font-semibold hover:underline">{product.name}</button><p className="mt-1 text-sm text-[var(--market-text-secondary)]">{product.formattedPrice}</p><div className="mt-2 flex flex-wrap gap-3">{links.map(([platform, url]) => <a key={platform} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-9 items-center gap-1 text-sm text-[#315BFF] hover:underline focus-visible:outline-2 focus-visible:outline-[#315BFF]">前往{platform === 'xiaohongshu' ? '小红书' : '抖音'}<ExternalLink size={13} /></a>)}</div></div>
+              <div className="min-w-0"><p className="text-xs text-[var(--market-text-secondary)]">{String(index + 1).padStart(2, '0')}</p><button type="button" onClick={() => onOpenProduct(product)} className="mt-1 text-left text-sm font-semibold hover:underline">{product.name}</button><p className="mt-1 text-sm text-[var(--market-text-secondary)]"><DisplayPrice product={product} /></p><div className="mt-2 flex flex-wrap gap-3">{links.map(([platform, url]) => <a key={platform} href={url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-9 items-center gap-1 text-sm text-[#315BFF] hover:underline focus-visible:outline-2 focus-visible:outline-[#315BFF]">前往{platform === 'xiaohongshu' ? '小红书' : '抖音'}<ExternalLink size={13} /></a>)}</div></div>
             </div>
           })}</div>
-          <button type="button" disabled={!selectedIds.length} onClick={() => { addMultipleToCart(post.linkedProducts.filter((product) => selectedIds.includes(product.id))); onClose(); selectTab('CART') }} className="mt-5 min-h-11 rounded-full bg-black px-5 text-sm font-semibold text-white disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#315BFF]">加入选品清单（{selectedIds.length}）</button>
         </section>}
       </div>
     </div>

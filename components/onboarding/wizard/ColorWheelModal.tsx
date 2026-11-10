@@ -45,7 +45,7 @@ export function ColorWheelModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-[16px] bg-[var(--surface)] p-6 shadow-2xl text-[var(--ink)] space-y-5"
+        className="w-full max-w-sm rounded-xl bg-[var(--surface)] p-6 shadow-2xl text-[var(--ink)] space-y-5"
         style={{ border: 'none' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -112,7 +112,7 @@ export function ColorWheelModal({
                 key={swatch}
                 type="button"
                 onClick={() => setCurrentHex(swatch)}
-                className={`w-6 h-6 rounded-[3px] transition-transform cursor-pointer hover:scale-110 ${
+                className={`w-6 h-6 rounded-sm transition-transform cursor-pointer hover:scale-110 ${
                   currentHex.toUpperCase() === swatch.toUpperCase()
                     ? 'ring-2 ring-[var(--primary)] scale-105'
                     : ''

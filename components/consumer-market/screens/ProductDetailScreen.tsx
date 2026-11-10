@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { getDiscoveryType, type ProductItem } from '../types';
 import { useOmnilink } from '../context/OmnilinkContext';
-import { formatConsumerPrice } from '../services/cartHandoff';
+import { DisplayPrice } from '../components/DisplayPrice';
 
 interface ProductDetailScreenProps {
   product: ProductItem;
@@ -65,9 +65,8 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
       ))
     : product.variants?.find((variant) => variant.id === product.defaultVariantId);
   const selectedPrice = selectedVariant?.price ?? product.price;
-  const formattedPrice = product.priceMode === 'inquiry' ? '询价' : product.priceMode === 'free' || selectedPrice === 0 ? '免费' : selectedVariant?.price == null
-      ? product.formattedPrice
-      : formatConsumerPrice(selectedPrice, selectedVariant.currency ?? product.currency);
+  const invalidSelection = Boolean(options.length && product.variants?.length && !selectedVariant);
+  const formattedPrice = product.priceMode === 'inquiry' ? '询价' : product.priceMode === 'free' || selectedPrice === 0 ? '免费' : null;
   const outboundLinks = Object.entries(product.outboundLinks ?? {}).filter((entry): entry is ['xiaohongshu' | 'douyin', string] => Boolean(entry[1]));
 
   const handleShare = () => {
@@ -125,7 +124,8 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
               <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-3.5 pointer-events-none">
                 <button
                   onClick={onClose}
-                  className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-black/25 backdrop-blur-md text-white border border-white/25 shadow-xs hover:bg-black/40 active:scale-95 transition-all"
+                  data-glasswork="auto"
+                  className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full active:scale-95 transition-transform"
                   aria-label="返回"
                 >
                   <ArrowLeft size={18} />
@@ -133,7 +133,8 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
 
                 <button
                   onClick={handleShare}
-                  className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-black/25 backdrop-blur-md text-white border border-white/25 shadow-xs hover:bg-black/40 active:scale-95 transition-all"
+                  data-glasswork="auto"
+                  className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full active:scale-95 transition-transform"
                   title="更多操作"
                 >
                   <MoreVertical size={18} />
@@ -142,19 +143,16 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
 
               {/* 轮播圆点指示器 */}
               {images.length > 1 && (
-                <div className="absolute bottom-3.5 left-0 right-0 flex justify-center items-center gap-1.5">
+                <div className="absolute bottom-2 left-0 right-0 flex justify-center items-center gap-1">
                   {images.map((_, idx) => (
                     <button
                       key={idx}
                       type="button"
                       onClick={() => setActiveImageIdx(idx)}
                       aria-label={`查看第 ${idx + 1} 张图片`}
-                      className={`rounded-full transition-all duration-300 ${
-                        idx === activeImageIdx
-                          ? 'h-2 w-2 bg-white shadow-sm ring-2 ring-black/20'
-                          : 'h-1.5 w-1.5 bg-white/60'
-                      }`}
-                    />
+                      aria-current={idx === activeImageIdx ? 'true' : undefined}
+                      className="flex h-8 w-8 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)]"
+                    ><span aria-hidden="true" className={`rounded-full bg-white ${idx === activeImageIdx ? 'h-2 w-2 shadow-sm ring-2 ring-black/20' : 'h-1.5 w-1.5 opacity-60'}`} /></button>
                   ))}
                 </div>
               )}
@@ -199,7 +197,7 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
                 {product.name}
               </h1>
               <span className="text-lg font-bold text-[var(--market-ink)] shrink-0">
-                {formattedPrice}
+                {invalidSelection ? '暂无此规格' : formattedPrice ?? <DisplayPrice product={product} amount={selectedPrice} currency={selectedVariant?.currency ?? product.currency} />}
               </span>
             </div>
 
@@ -211,20 +209,15 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
             )}
 
             {/* 评分行 */}
-            <div
-              onClick={averageRating ? onOpenReviews : undefined}
-              className={`mt-2 flex items-center gap-1.5 text-xs ${averageRating ? 'cursor-pointer' : ''}`}
-            >
+            {averageRating ? <button type="button" onClick={onOpenReviews} aria-label={`查看 ${product.reviews.length} 条评价，评分 ${averageRating.toFixed(1)}`} className="mt-2 flex min-h-9 items-center gap-1.5 rounded-md text-xs focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">
               <div className="flex items-center text-amber-500">
                 {[...Array(5)].map((_, i) => (
                   <Star key={i} size={13} fill={averageRating && i < Math.round(averageRating) ? 'currentColor' : 'none'} />
                 ))}
               </div>
-              {averageRating ? <>
-                <span className="font-bold text-[var(--market-ink)]">{averageRating.toFixed(1)}</span>
-                <span className="text-[var(--market-text-muted)] text-[11px] hover:underline">({product.reviews.length} 条评价)</span>
-              </> : <span className="text-[var(--market-text-muted)] text-[11px]">暂无评价</span>}
-            </div>
+              <span className="font-bold text-[var(--market-ink)]">{averageRating.toFixed(1)}</span>
+              <span className="text-[var(--market-text-muted)] hover:underline">({product.reviews.length} 条评价)</span>
+            </button> : <div className="mt-2 flex min-h-9 items-center gap-1.5 text-xs text-[var(--market-text-muted)]">暂无评价</div>}
 
             {isPhysicalProduct && <div className="mt-4" aria-label="商品规格选择">
               <h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--market-text-muted)]">选择规格</h3>
@@ -235,12 +228,21 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
                     {option.values.map((value) => {
                       const name = typeof value === 'string' ? value : value.name;
                       const active = selectedOptions[option.code] === name;
+                      const available = !product.variants?.length || product.variants.some((variant) => (variant.optionValues[option.code] ?? variant.optionValues[option.name]) === name);
                       return <button
                         key={name}
                         type="button"
                         aria-pressed={active}
-                        onClick={() => setSelectedOptions((current) => ({ ...current, [option.code]: name }))}
-                        className={`inline-flex h-9 items-center justify-center rounded-full border px-4 text-xs transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--market-accent)] ${active ? 'border-[var(--market-accent)] bg-[var(--market-accent)]/5 font-semibold text-[var(--market-accent)]' : 'border-[var(--market-border)] text-[var(--market-text-secondary)] hover:border-[var(--market-accent)]'}`}
+                        disabled={!available}
+                        onClick={() => setSelectedOptions((current) => {
+                          const desired = { ...current, [option.code]: name };
+                          if (!product.variants?.length) return desired;
+                          const exact = product.variants.find((variant) => options.every((item) => (variant.optionValues[item.code] ?? variant.optionValues[item.name]) === desired[item.code]));
+                          if (exact) return desired;
+                          const fallback = product.variants.find((variant) => (variant.optionValues[option.code] ?? variant.optionValues[option.name]) === name);
+                          return fallback ? Object.fromEntries(options.map((item) => [item.code, fallback.optionValues[item.code] ?? fallback.optionValues[item.name] ?? desired[item.code]])) : current;
+                        })}
+                        className={`inline-flex min-h-9 items-center justify-center rounded-full border px-4 text-xs transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--market-accent)] disabled:cursor-not-allowed disabled:opacity-40 ${active ? 'border-[var(--market-accent)] bg-[var(--market-accent)]/5 font-semibold text-[var(--market-accent)]' : 'border-[var(--market-border)] text-[var(--market-text-secondary)] hover:border-[var(--market-accent)]'}`}
                       >{name}</button>;
                     })}
                   </div>

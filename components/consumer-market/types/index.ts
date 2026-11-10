@@ -30,6 +30,8 @@ export interface ProductItem {
   reviews: Review[];
   specs: Record<string, string>;
   storeName: string;
+  sourceUrl?: string;
+  sourceDate?: string;
   storeDescription?: string;
   storeImage?: string;
   contextStory?: string;
@@ -128,6 +130,8 @@ export interface QnaMessage {
   timestamp?: string;
 }
 
+export type ConsumerTaskIntent = 'ingredient-lookup' | 'image-analysis' | 'document-analysis' | 'outfit-styling' | 'product-search' | 'product-question' | 'comparison' | 'personalized-recommendation' | 'cart-request' | 'assistant';
+
 export interface AiChatMessage {
   id: string;
   conversationId?: string;
@@ -135,15 +139,13 @@ export interface AiChatMessage {
   isUser: boolean;
   image?: string;
   styleTag?: string;
+  intent?: ConsumerTaskIntent;
   matchedProducts?: ProductItem[];
   matchReasons?: Record<string, string>;
+  usedPreferences?: string[];
   fileName?: string;
   timestamp?: string;
   model?: ConsumerAiModel;
 }
 
 export type ConsumerAiModel = 'gemini' | 'qwen-plus' | 'deepseek-flash' | 'deepseek-v4-pro';
-
-export type MainTab = 'WORLD' | 'PERSONAL' | 'CART' | 'FAVORITES' | 'PROFILE';
-export type PersonalSubTab = 'AI' | 'ME';
-export type ProfileTab = 'CART' | 'SAVED' | 'PREFERENCES' | 'ORDERS';

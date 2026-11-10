@@ -117,7 +117,7 @@ export async function signupAction(
     email,
     password,
     options: {
-      data: { eva_onboarding_started: true, enabled_skills: ['personal-advisor', 'shopping-preferences'], ...(name ? { full_name: name } : {}) },
+      data: { ai_assistant_onboarding_started: true, enabled_skills: ['personal-advisor', 'shopping-preferences'], ...(name ? { full_name: name } : {}) },
       ...(origin ? { emailRedirectTo: `${origin}/auth/callback` } : {}),
     },
   })
@@ -141,7 +141,7 @@ export async function signupAction(
   }
 
   // Email confirmation OFF: session is established immediately.
-  return { redirectUrl: '/discover?openEva=1&newUser=1' }
+  return { redirectUrl: '/discover?openAssistant=1&newUser=1' }
 }
 
 export async function logoutAction(formData: FormData): Promise<void> {

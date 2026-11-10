@@ -505,7 +505,7 @@ function ProductCard({
     <Link
       href={`/dashboard/products/${p.id}/edit`}
       prefetch={true}
-      className={`group relative bg-[var(--surface)] border rounded-[8px] p-3 flex flex-col justify-between transition-all duration-200 hover:shadow-md hover:border-[var(--primary)] cursor-pointer ${
+      className={`group relative bg-[var(--surface)] border rounded-md p-3 flex flex-col justify-between transition-all duration-200 hover:shadow-md hover:border-[var(--primary)] cursor-pointer ${
         selected
           ? 'border-[var(--primary)] ring-2 ring-[var(--primary)] shadow-xs'
           : 'border-[var(--surface-muted)]'
@@ -527,7 +527,7 @@ function ProductCard({
 
       <div>
         {/* 商品图：方形圆角 + Hover 放大 */}
-        <div className="w-full aspect-square rounded-[6px] overflow-hidden bg-[var(--surface-muted)] border border-[var(--surface-muted)] flex items-center justify-center relative">
+        <div className="w-full aspect-square rounded-md overflow-hidden bg-[var(--surface-muted)] border border-[var(--surface-muted)] flex items-center justify-center relative">
           {p.image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img

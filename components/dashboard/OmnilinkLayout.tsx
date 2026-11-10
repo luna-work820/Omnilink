@@ -137,7 +137,7 @@ export default function OmnilinkLayout({
             {isSidebarExpanded ? (
               <Link
                 href="/dashboard/account"
-                className="flex items-center gap-2 p-1 rounded-[6px] bg-[var(--surface-muted)]/80 dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] hover:bg-[var(--surface-muted)]/50 dark:hover:bg-[var(--surface-muted)]/80 transition-all cursor-pointer w-full"
+                className="flex items-center gap-2 p-1 rounded-md bg-[var(--surface-muted)]/80 dark:bg-[var(--surface-muted)] border border-[var(--surface-muted)] dark:border-[var(--surface-muted)] hover:bg-[var(--surface-muted)]/50 dark:hover:bg-[var(--surface-muted)]/80 transition-all cursor-pointer w-full"
               >
                 <div className="w-7 h-7 rounded-full overflow-hidden bg-[var(--primary)] relative shrink-0 flex items-center justify-center text-[10px] font-bold text-[var(--surface)] shadow-3xs">
                   {profile.avatarUrl ? (

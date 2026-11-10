@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sparkles, X } from 'lucide-react';
 import { ProductItem } from '../types';
+import { DisplayPrice } from './DisplayPrice';
 
 interface AiCartComparisonDialogProps {
   pair: [ProductItem, ProductItem] | null;
@@ -57,7 +58,7 @@ export const AiCartComparisonDialog: React.FC<AiCartComparisonDialogProps> = ({
                 {product.name}
               </h4>
               <span className="text-xs font-bold text-[var(--market-accent)]">
-                {product.formattedPrice}
+                <DisplayPrice product={product} />
               </span>
               <div className="mt-2 space-y-1 border-t border-[var(--market-border)]/60 pt-2 text-[10px] text-[var(--market-text-muted)]">
                 <div>

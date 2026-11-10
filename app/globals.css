@@ -1,6 +1,64 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import "../node_modules/shadcn/dist/tailwind.css";
+@import "../components/ui/glasswork/glass.css";
+
+.glass {
+  --m-k: calc(var(--l-k, 1) * var(--glass-k, 1) * var(--glass-interaction, 1));
+  border-radius: var(--glasswork-radius, calc(var(--radius, 28) * var(--u, 1px)));
+  transition-duration: 250ms;
+  transition-timing-function: ease-out;
+}
+
+.glass[data-kind="dark"] {
+  --m-k: calc(var(--d-k, 1) * var(--glass-k, 1) * var(--glass-interaction, 1));
+}
+
+@property --glass-interaction {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    --ink: var(--market-ink, #000000);
+    --ink-2: var(--market-text-secondary, rgb(60 60 67 / 0.7));
+    --ink-solid: var(--market-ink, #000000);
+    --ink-a: 1;
+    --blend: normal;
+    color: var(--ink) !important;
+    background: var(--market-canvas, var(--m-tint, #ffffff)) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+
+  .glass[data-kind="dark"] {
+    --ink: var(--market-canvas, #ffffff);
+    --ink-2: var(--market-canvas, #ffffff);
+    --ink-solid: var(--market-canvas, #ffffff);
+    background: var(--market-ink, #000000) !important;
+  }
+
+  .liquid-glass-interactive::after { display: none; }
+}
+
+@media (forced-colors: active) {
+  .glass {
+    border: 1px solid CanvasText !important;
+    background: Canvas !important;
+    color: CanvasText !important;
+    box-shadow: none !important;
+    forced-color-adjust: auto;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass { transition: none !important; }
+}
 
 /* Scope the imported consumer market's original visual system to /discover. */
 html:has(.consumer-market-shell),
@@ -12,6 +70,12 @@ body:has(.consumer-market-shell) {
   min-height: 100dvh;
   margin: 0;
   background: var(--palette-cloud);
+}
+
+@media (prefers-color-scheme: dark) {
+  body:has(.consumer-market-shell) {
+    background: rgb(20 20 24);
+  }
 }
 
 body:has(.consumer-market-shell) {
@@ -33,14 +97,23 @@ body:has(.consumer-market-shell) {
   --market-accent-hover: var(--palette-action-hover);
   --market-support: var(--palette-cobalt);
   --market-support-soft: var(--palette-cobalt-soft);
-  --market-glass-surface: color-mix(in srgb, var(--market-surface) 84%, transparent);
-  --market-glass-panel: color-mix(in srgb, var(--market-surface) 94%, transparent);
-  --market-glass-ink: var(--market-ink);
-  --market-glass-foreground: var(--market-surface);
-  --market-glass-control: color-mix(in srgb, var(--market-surface) 88%, transparent);
-  --market-glass-border: color-mix(in srgb, var(--market-text-secondary) 9%, transparent);
-  --market-glass-highlight: color-mix(in srgb, var(--market-surface) 96%, transparent);
-  --market-glass-blur: 24px;
+  --market-glass-surface: rgb(255 255 255 / 0.14);
+  --market-glass-panel: rgb(255 255 255 / 0.18);
+  --market-glass-ink: rgb(29 31 35 / 0.86);
+  --market-glass-ink-secondary: rgb(60 60 67 / 0.7);
+  --market-glass-foreground: var(--market-ink);
+  --market-glass-control: rgb(255 255 255 / 0.12);
+  --market-glass-active: color-mix(in srgb, var(--palette-porcelain) 84%, transparent);
+  --market-glass-active-ink: var(--palette-ink);
+  --market-glass-border: rgb(29 31 35 / 0.1);
+  --market-glass-highlight: rgb(255 255 255 / 0.95);
+  --market-glass-blur: 2px;
+  --market-glass-strength-light: 1;
+  --market-glass-strength-dark: 1;
+  --market-glass-strength: var(--market-glass-strength-light);
+  --l-k: var(--market-glass-strength-light);
+  --d-k: var(--market-glass-strength-dark);
+  color-scheme: light;
   --market-font-serif: 'Cormorant Garamond', Georgia, Cambria, serif;
   --market-font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   box-sizing: border-box;
@@ -59,46 +132,224 @@ body:has(.consumer-market-shell) {
   -webkit-tap-highlight-color: transparent;
 }
 
+.consumer-market-shell .glass {
+  --m-k: calc(var(--market-glass-strength, 1) * var(--glass-k, 1) * var(--glass-interaction, 1));
+}
+
+@property --market-glass-strength-light {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+
+@property --market-glass-strength-dark {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .consumer-market-shell {
+    --market-canvas: rgb(20 20 24);
+    --market-surface: rgb(28 28 32);
+    --market-surface-muted: rgb(38 38 44);
+    --market-surface-raised: rgb(48 48 55);
+    --market-border: rgb(235 235 245 / 0.14);
+    --market-hover: rgb(235 235 245 / 0.1);
+    --market-ink: rgb(235 235 245);
+    --market-text-secondary: rgb(235 235 245 / 0.76);
+    --market-text-muted: rgb(235 235 245 / 0.62);
+    --market-accent: var(--market-surface-raised);
+    --market-accent-hover: color-mix(in srgb, var(--market-surface-raised) 78%, white);
+    --market-support-soft: rgb(49 91 255 / 0.2);
+    --market-glass-surface: rgb(20 20 24 / 0.26);
+    --market-glass-panel: rgb(20 20 24 / 0.34);
+    --market-glass-ink: rgb(235 235 245 / 0.94);
+    --market-glass-ink-secondary: rgb(235 235 245 / 0.64);
+    --market-glass-foreground: var(--market-ink);
+    --market-glass-control: rgb(20 20 24 / 0.3);
+    --market-glass-border: rgb(235 235 245 / 0.16);
+    --market-glass-highlight: rgb(235 235 245 / 0.3);
+    --market-glass-strength: var(--market-glass-strength-dark);
+    color-scheme: dark;
+  }
+
+  .consumer-market-shell .bg-white {
+    background-color: var(--market-surface) !important;
+  }
+
+  .consumer-market-shell [class~="bg-[var(--market-ink)]"],
+  .consumer-market-shell .bg-black.text-white {
+    background-color: var(--market-surface-raised) !important;
+  }
+}
+
 .consumer-market-shell .font-editorial { font-family: var(--market-font-serif); }
 .consumer-market-shell .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .consumer-market-shell .no-scrollbar::-webkit-scrollbar { display: none; }
 
-.consumer-market-shell .consumer-market-header {
-  background: var(--market-glass-surface);
-  border-bottom: 0.5px solid var(--market-glass-border);
-  box-shadow: inset 0 0.5px 0 var(--market-glass-highlight);
-  transition: width 250ms ease-out, margin-left 250ms ease-out;
+@property --home-sidebar-width {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 44px;
 }
 
-.consumer-market-shell .home-navigation-toggle {
-  border: 0.5px solid color-mix(in srgb, var(--market-text-secondary) 14%, transparent);
-  background: color-mix(in srgb, var(--market-surface) 72%, transparent);
-  box-shadow: inset 0 0.5px 0 var(--market-glass-highlight);
-  backdrop-filter: blur(16px) saturate(1.1);
-  -webkit-backdrop-filter: blur(16px) saturate(1.1);
-  transition: background-color 250ms ease-out, border-color 250ms ease-out;
+.consumer-market-shell .consumer-market-world-layout {
+  --home-sidebar-width: 44px;
+  transition: --home-sidebar-width 850ms cubic-bezier(0.45, 0, 0.25, 1);
 }
 
-.consumer-market-shell .home-navigation-toggle:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--market-text-secondary) 20%, transparent);
-  background: color-mix(in srgb, var(--market-surface) 88%, transparent);
+.consumer-market-shell .consumer-market-world-layout[data-navigation-open='true'] {
+  --home-sidebar-width: clamp(280px, 27.6vw, 320px);
 }
 
-.consumer-market-shell .home-navigation-drawer [class~="text-sm"] { font-size: 13px; }
-.consumer-market-shell .home-navigation-drawer [class~="text-base"] { font-size: 14px; }
-.consumer-market-shell .home-navigation-drawer [class~="text-lg"] { font-size: 16px; }
-
-@media (prefers-reduced-transparency: reduce) {
-  .consumer-market-shell .consumer-market-header {
-    background: var(--market-canvas);
+@media (min-width: 768px) {
+  .consumer-market-shell :is(.home-feed-scroller, .home-chat-scroller) {
+    right: auto;
+    left: var(--home-sidebar-width);
+    width: calc(100% - var(--home-sidebar-width));
   }
 }
 
-.consumer-market-shell .eva-interface :is(button, [data-eva-button]) {
+.consumer-market-shell .feed-masonry-card {
+  position: relative;
+}
+
+.consumer-market-shell .feed-masonry-card[data-dragging='true'] {
+  opacity: 0.65;
+}
+
+.consumer-market-shell .feed-card-drag-ghost {
+  position: fixed;
+  z-index: 80;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform-origin: top left;
+  filter: drop-shadow(0 8px 16px color-mix(in srgb, var(--market-ink) 18%, transparent));
+}
+
+.consumer-market-shell .feed-chat-fluid-card[data-drag-over='true'] {
+  outline: 1px solid var(--market-support);
+  outline-offset: 3px;
+  border-radius: 24px;
+}
+
+.consumer-market-shell .home-navigation-rail {
+  transition: opacity 120ms ease-out;
+}
+
+.consumer-market-shell .home-navigation-fluid-shell {
+  width: var(--home-sidebar-width);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--market-surface) 84%, transparent);
+  backdrop-filter: blur(16px) saturate(1.12);
+  -webkit-backdrop-filter: blur(16px) saturate(1.12);
+}
+
+.consumer-market-shell .home-navigation-fluid-shell.is-expanded {
+  border-right: 0.5px solid var(--market-glass-border);
+}
+
+.consumer-market-shell .home-navigation-fluid-shell.is-expanded .home-navigation-rail {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.consumer-market-shell .home-navigation-drawer-stage {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease-out;
+}
+
+.consumer-market-shell .home-navigation-drawer-stage.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transition-delay: 90ms;
+}
+
+.consumer-market-shell .feed-discovery-trigger-surface {
+  border: 0.5px solid var(--market-glass-border);
+}
+
+.consumer-market-shell .feed-discovery-popup {
+  transform-origin: bottom left;
+  border: 0.5px solid var(--market-glass-border);
+  background: color-mix(in srgb, var(--market-surface) 88%, transparent);
+  backdrop-filter: blur(12px) saturate(1.12);
+  -webkit-backdrop-filter: blur(12px) saturate(1.12);
+  animation: feed-discovery-rise 250ms ease-out both;
+}
+
+.consumer-market-shell .feed-discovery-option:is(:hover, :focus-visible) {
+  background: var(--market-hover);
+}
+
+@keyframes feed-discovery-rise {
+  from { opacity: 0; transform: translateY(10px) scale(0.88); border-radius: 999px; }
+  to { opacity: 1; transform: translateY(0) scale(1); border-radius: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .consumer-market-shell .feed-discovery-popup { animation: none; }
+  .consumer-market-shell .feed-discovery-trigger svg { transition: none; }
+}
+
+@media (max-width: 639px) {
+  .consumer-market-shell .feed-discovery-types {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    margin: 0;
+  }
+
+  .consumer-market-shell .feed-discovery-types[data-picker-open='true'] {
+    visibility: hidden;
+  }
+}
+
+@media (max-width: 767px) {
+  .consumer-market-shell .home-navigation-fluid-shell {
+    height: 44px;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transition: width 850ms cubic-bezier(0.45, 0, 0.25, 1), height 850ms cubic-bezier(0.45, 0, 0.25, 1);
+  }
+
+  .consumer-market-shell .home-navigation-fluid-shell.is-expanded {
+    width: 100vw;
+    height: 100dvh;
+    border-right: 0;
+    background: color-mix(in srgb, var(--market-surface) 94%, transparent);
+    backdrop-filter: blur(16px) saturate(1.12);
+    -webkit-backdrop-filter: blur(16px) saturate(1.12);
+  }
+
+  .consumer-market-shell .home-navigation-rail {
+    background: transparent;
+  }
+
+  .consumer-market-shell .home-navigation-rail > button:not(:first-child) {
+    display: none;
+  }
+}
+
+.consumer-market-shell .home-navigation-drawer [class~="text-sm"] { font-size: 12px; }
+.consumer-market-shell .home-navigation-drawer [class~="text-base"] { font-size: 13px; }
+.consumer-market-shell .home-navigation-drawer [class~="text-lg"] { font-size: 14px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .consumer-market-shell .conversation-action { opacity: 0.65; }
+  .consumer-market-shell .conversation-row:is(:hover, :focus-within) .conversation-action { opacity: 1; }
+}
+
+.consumer-market-shell .ai-assistant-interface :is(button, [data-ai-assistant-button]) {
   background-color: var(--market-surface);
 }
 
-.consumer-market-shell .eva-interface :is(button, [data-eva-button]):hover:not(:disabled) {
+.consumer-market-shell .ai-assistant-interface :is(button, [data-ai-assistant-button]):hover:not(:disabled) {
   background-color: var(--market-surface-muted);
 }
 
@@ -148,8 +399,8 @@ body:has(.consumer-market-shell) {
   background: transparent;
 }
 
-.consumer-market-shell .pill-nav :is(button, [data-eva-button]).pill-nav__item,
-.consumer-market-shell .pill-nav :is(button, [data-eva-button]).pill-nav__item:hover:not(:disabled) {
+.consumer-market-shell .pill-nav :is(button, [data-ai-assistant-button]).pill-nav__item,
+.consumer-market-shell .pill-nav :is(button, [data-ai-assistant-button]).pill-nav__item:hover:not(:disabled) {
   background: transparent;
 }
 
@@ -159,15 +410,15 @@ body:has(.consumer-market-shell) {
   }
 }
 
-.consumer-market-shell .eva-interface .swipe-row__action::after {
+.consumer-market-shell .ai-assistant-interface .swipe-row__action::after {
   background-color: var(--market-surface-muted);
 }
 
-.consumer-market-shell .eva-interface .eva-composer-dock {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-composer-dock {
   isolation: isolate;
 }
 
-.consumer-market-shell .eva-interface .eva-composer-dock__glass {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-composer-dock__glass {
   position: absolute;
   z-index: -1;
   inset: -22px 0 0;
@@ -176,7 +427,7 @@ body:has(.consumer-market-shell) {
   pointer-events: none;
 }
 
-.consumer-market-shell .eva-interface .eva-skill-launcher {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-skill-launcher {
   width: 40px;
   height: 40px;
   overflow: hidden;
@@ -187,23 +438,23 @@ body:has(.consumer-market-shell) {
   transition: width 250ms ease-out, height 250ms ease-out, border-radius 250ms ease-out;
 }
 
-.consumer-market-shell .eva-interface .eva-skill-launcher[data-open='true'] {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-skill-launcher[data-open='true'] {
   width: calc(100% - 8px);
   height: min(280px, 55dvh);
   border-radius: 24px;
-  background: var(--market-glass-panel);
-  backdrop-filter: blur(var(--market-glass-blur)) saturate(1.15);
-  -webkit-backdrop-filter: blur(var(--market-glass-blur)) saturate(1.15);
+  background: var(--market-surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-.consumer-market-shell .eva-interface .eva-skill-launcher__content {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-skill-launcher__content {
   position: absolute;
   inset: 4px 8px 44px;
   align-content: start;
   background: transparent;
 }
 
-.consumer-market-shell .eva-interface .eva-skill-trigger {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-skill-trigger {
   position: absolute;
   right: 0;
   bottom: 0;
@@ -219,14 +470,14 @@ body:has(.consumer-market-shell) {
   font-size: 12px;
 }
 
-.consumer-market-shell .eva-interface .eva-skill-launcher[data-open='true'] .eva-skill-trigger {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-skill-launcher[data-open='true'] .ai-assistant-skill-trigger {
   justify-content: flex-start;
   padding-left: 18px;
   border-radius: 0 0 24px 24px;
   background: transparent;
 }
 
-.consumer-market-shell .eva-interface .eva-skill-trigger span {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-skill-trigger span {
   width: 0;
   overflow: hidden;
   opacity: 0;
@@ -234,51 +485,67 @@ body:has(.consumer-market-shell) {
   transition: width 250ms ease-out, opacity 250ms ease-out;
 }
 
-.consumer-market-shell .eva-interface .eva-skill-launcher[data-open='true'] .eva-skill-trigger span {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-skill-launcher[data-open='true'] .ai-assistant-skill-trigger span {
   width: 56px;
   opacity: 1;
 }
 
-.consumer-market-shell .eva-interface .eva-skill-shortcut {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-skill-shortcut {
   border: 0.5px solid var(--market-border);
   background: var(--market-glass-surface);
 }
 
-.consumer-market-shell .eva-interface .eva-skill-shortcut[aria-pressed='true'] {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-skill-shortcut[aria-pressed='true'] {
   background: var(--market-surface-muted);
   color: var(--market-ink);
 }
 
-.consumer-market-shell .eva-interface #eva-skills-panel > .eva-skill-row[data-highlighted='true'],
-.consumer-market-shell .eva-interface #eva-skills-panel > .eva-skill-row:hover,
-.consumer-market-shell .eva-interface #eva-skills-panel > .eva-skill-row:focus-within {
+.consumer-market-shell .ai-assistant-interface #ai-assistant-skills-panel > .ai-assistant-skill-row[data-highlighted='true'],
+.consumer-market-shell .ai-assistant-interface #ai-assistant-skills-panel > .ai-assistant-skill-row:hover,
+.consumer-market-shell .ai-assistant-interface #ai-assistant-skills-panel > .ai-assistant-skill-row:focus-within {
   background: var(--market-hover);
 }
 
-.consumer-market-shell .eva-interface .eva-skill-option {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-skill-option {
   border-radius: 999px;
   background: transparent;
 }
 
-.consumer-market-shell .eva-interface .eva-skill-pin {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-skill-pin {
   background: transparent;
 }
 
-.consumer-market-shell .eva-interface .eva-skill-pin:hover {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-skill-pin:hover {
   color: var(--market-ink);
 }
 
 .consumer-market-shell .feed-chat-picker-card {
   border: 0.5px solid var(--market-glass-border);
-  border-radius: 24px;
+  border-radius: var(--radius-dialog);
   color: var(--market-ink);
-  background: var(--market-glass-panel);
-  backdrop-filter: blur(var(--market-glass-blur)) saturate(1.15);
-  -webkit-backdrop-filter: blur(var(--market-glass-blur)) saturate(1.15);
-  box-shadow:
-    inset 0 1px 0 var(--market-glass-highlight),
-    0 12px 32px color-mix(in srgb, var(--market-ink) 8%, transparent);
+  background: var(--market-surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--market-ink) 8%, transparent);
   animation: feed-chat-picker-rise 250ms ease-out both;
+}
+
+.consumer-market-shell .feed-chat-picker-card.feed-chat-attachment-panel {
+  right: auto;
+  width: min(320px, calc(100vw - 24px));
+  border-radius: var(--radius-dialog);
+  background: var(--market-surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.consumer-market-shell .feed-chat-attachment-option {
+  background: transparent;
+  transition: background-color 180ms ease-out;
+}
+
+.consumer-market-shell .feed-chat-attachment-option:is(:hover, :focus-visible) {
+  background: var(--market-hover);
 }
 
 @keyframes feed-chat-picker-rise {
@@ -298,75 +565,118 @@ body:has(.consumer-market-shell) {
   background: var(--market-surface);
 }
 
-.consumer-market-shell .feed-chat-skill-trigger,
-.consumer-market-shell .feed-chat-attachment-trigger {
-  border: 0.5px solid transparent;
-  background: transparent;
-  transition: background-color 250ms ease-out, border-color 250ms ease-out;
+.consumer-market-shell .feed-chat-dock .feed-chat-control:not(.feed-chat-model-trigger):not(.feed-chat-model-option):not(.feed-chat-voice-trigger):not(.feed-chat-attachment-trigger):not(.ai-assistant-composer-send) {
+  border: 0.5px solid var(--market-glass-border);
+  background: var(--market-glass-control);
+  color: var(--market-ink);
+  box-shadow: inset 0 0.5px 0 var(--market-glass-highlight);
+  transition: background-color 180ms ease-out, border-color 180ms ease-out, color 180ms ease-out, box-shadow 180ms ease-out, backdrop-filter 180ms ease-out;
 }
 
-.consumer-market-shell .feed-chat-skill-trigger:is(:hover, :focus-visible, [aria-expanded='true']),
-.consumer-market-shell .feed-chat-attachment-trigger:is(:hover, :focus-visible, [aria-expanded='true']) {
-  border-color: var(--market-glass-border);
-  background: var(--market-surface);
+.consumer-market-shell .feed-chat-dock .feed-chat-control:not(.feed-chat-model-trigger):not(.feed-chat-model-option):not(.feed-chat-voice-trigger):not(.feed-chat-attachment-trigger):not(.ai-assistant-composer-send):is(:hover, :focus-visible, :active, [aria-expanded='true'], [aria-pressed='true']):not(:disabled) {
+  border-color: color-mix(in srgb, var(--palette-porcelain) 72%, var(--market-glass-border));
+  background: var(--market-glass-active);
+  color: var(--market-glass-active-ink);
+  box-shadow:
+    inset 0 0.5px 0 var(--market-glass-highlight),
+    inset 0 0 0 0.5px color-mix(in srgb, var(--palette-porcelain) 55%, transparent);
+  backdrop-filter: blur(14px) saturate(1.12);
+  -webkit-backdrop-filter: blur(14px) saturate(1.12);
+}
+
+.consumer-market-shell .feed-chat-dock .feed-chat-control.feed-chat-attachment-trigger,
+.consumer-market-shell .feed-chat-dock .feed-chat-control.feed-chat-attachment-trigger:is(:hover, :focus-visible, :active, [aria-expanded='true']):not(:disabled) {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.consumer-market-shell .feed-chat-attachment-trigger::before {
+  position: absolute;
+  inset: 6px;
+  border: 0.5px solid var(--market-glass-border);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--market-surface) 36%, transparent);
+  box-shadow: inset 0 0.5px 0 var(--market-glass-highlight);
+  backdrop-filter: blur(10px) saturate(1.12);
+  -webkit-backdrop-filter: blur(10px) saturate(1.12);
+  content: '';
+  pointer-events: none;
+}
+
+.consumer-market-shell .feed-chat-attachment-trigger:is(:hover, :focus-visible, :active)::before {
+  background: color-mix(in srgb, var(--market-surface) 52%, transparent);
+}
+
+.consumer-market-shell .feed-chat-attachment-trigger svg {
+  position: relative;
+  z-index: 1;
+}
+
+.consumer-market-shell .feed-chat-dock :is(.feed-chat-model-trigger, .feed-chat-voice-trigger) {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: color 180ms ease-out;
+}
+
+.consumer-market-shell .feed-chat-dock :is(.feed-chat-model-trigger, .feed-chat-voice-trigger):is(:hover, :focus-visible, :active, [aria-expanded='true']):not(:disabled) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--market-ink);
+  box-shadow: none;
+}
+
+.consumer-market-shell .feed-chat-dock .feed-chat-voice-trigger[aria-pressed='true'] {
+  color: var(--market-support);
+}
+
+.consumer-market-shell .feed-chat-dock .feed-chat-model-option {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  transition: background-color 250ms ease-out;
+}
+
+.consumer-market-shell .feed-chat-dock .feed-chat-model-option:is(:hover, :focus-visible):not(:disabled) {
+  background: var(--market-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .consumer-market-shell .feed-chat-dock .feed-chat-model-option { transition: none; }
 }
 
 .consumer-market-shell .feed-chat-secondary-panel {
-  background: var(--market-glass-panel);
+  background: color-mix(in srgb, var(--market-surface) 82%, transparent);
   border-color: var(--market-glass-border);
-  box-shadow:
-    inset 0 0.5px 0 var(--market-glass-highlight),
-    0 12px 32px color-mix(in srgb, var(--market-ink) 8%, transparent);
-  backdrop-filter: blur(var(--market-glass-blur)) saturate(1.15);
-  -webkit-backdrop-filter: blur(var(--market-glass-blur)) saturate(1.15);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--market-ink) 8%, transparent);
+  backdrop-filter: blur(16px) saturate(1.12);
+  -webkit-backdrop-filter: blur(16px) saturate(1.12);
 }
 
 .consumer-market-shell .home-navigation-drawer {
-  background: color-mix(in srgb, var(--market-surface) 68%, transparent);
-  box-shadow:
-    inset -0.5px 0 0 var(--market-glass-highlight),
-    inset 0 0.5px 0 var(--market-glass-highlight),
-    12px 0 32px color-mix(in srgb, var(--market-ink) 8%, transparent);
-  backdrop-filter: blur(30px) saturate(1.12);
-  -webkit-backdrop-filter: blur(30px) saturate(1.12);
-  animation: home-navigation-enter 250ms ease-out both;
+  border: 0;
+  border-radius: 0;
+  width: var(--home-sidebar-width);
+  box-shadow: none;
 }
 
-@media (prefers-reduced-transparency: reduce) {
-  .consumer-market-shell .home-navigation-toggle {
-    background: var(--market-surface);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-}
-
-@keyframes home-navigation-enter {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(0); }
+.consumer-market-shell .home-navigation-drawer {
+  background: transparent;
 }
 
 @media (min-width: 768px) {
-  .consumer-market-shell .consumer-market-header--navigation-open {
-    width: calc(100% - 340px);
-    margin-left: 340px;
-  }
-
-  .consumer-market-shell .consumer-market-header--navigation-open .consumer-market-header__categories {
-    gap: 16px;
-  }
-
-  .consumer-market-shell .consumer-market-header--navigation-open .consumer-market-header__categories button {
-    padding-top: 12px;
-    padding-bottom: 12px;
-    font-size: 13px;
-  }
-
-  .consumer-market-shell .home-feed-scroller[data-navigation-open='true'] {
-    padding-left: 340px;
+  .consumer-market-shell .feed-chat-dock-shell {
+    transition: padding-left 850ms cubic-bezier(0.45, 0, 0.25, 1);
   }
 
   .consumer-market-shell .feed-chat-dock-shell[data-navigation-open='true'] {
-    padding-left: 352px;
+    padding-left: calc(var(--home-sidebar-width) + 12px);
   }
 }
 
@@ -375,43 +685,307 @@ body:has(.consumer-market-shell) {
     width: 100vw;
     max-width: none;
   }
+
 }
 
 @media (prefers-reduced-transparency: reduce) {
   .consumer-market-shell .feed-chat-secondary-panel,
   .consumer-market-shell .feed-chat-picker-card,
-  .consumer-market-shell .eva-composer-surface,
-  .consumer-market-shell .eva-interface .eva-skill-launcher[data-open='true'],
+  .consumer-market-shell .feed-chat-dock .feed-chat-control:not(.feed-chat-model-trigger):not(.feed-chat-model-option):not(.feed-chat-voice-trigger):not(.feed-chat-attachment-trigger):not(.ai-assistant-composer-send),
+  .consumer-market-shell .ai-assistant-composer-surface,
+  .consumer-market-shell .ai-assistant-interface .ai-assistant-skill-launcher[data-open='true'],
   .consumer-market-shell .home-navigation-drawer,
-  .consumer-market-shell .eva-interface .eva-menu-panel {
+  .consumer-market-shell .ai-assistant-interface .ai-assistant-menu-panel {
     background: var(--market-surface) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
 }
 
-.consumer-market-shell .eva-interface .eva-composer-plus {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-composer-plus {
   background: var(--market-surface-muted);
 }
 
-.consumer-market-shell .eva-interface .eva-composer-plus svg {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-composer-plus svg {
   transition: transform 250ms ease-out;
 }
 
-.consumer-market-shell .eva-interface .eva-composer-plus[aria-expanded='true'] svg {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-composer-plus[aria-expanded='true'] svg {
   transform: rotate(90deg);
 }
 
-.consumer-market-shell .eva-composer-surface {
-  border-color: var(--market-glass-border);
-  transition: background-color 250ms ease-out;
+.consumer-market-shell .ai-assistant-composer-surface {
+  --l-blur: 16;
+  --l-dense: 0.3;
+  --m-catch: 0.72;
+  --m-shadow: 0.4;
+  --m-bevel: 0.72;
+  border-color: transparent;
+  background: linear-gradient(
+    112deg,
+    color-mix(in srgb, var(--palette-porcelain) 26%, transparent),
+    color-mix(in srgb, var(--palette-porcelain) 18%, transparent) 38%,
+    color-mix(in srgb, var(--palette-porcelain) 24%, transparent)
+  );
   box-shadow:
-    inset 0 0.5px 0 var(--market-glass-highlight),
-    0 0 0 0.5px color-mix(in srgb, var(--market-surface) 90%, transparent),
-    0 6px 22px color-mix(in srgb, var(--market-ink) 7%, transparent);
+    inset 0 1px 1.5px color-mix(in srgb, var(--palette-porcelain) 68%, transparent),
+    inset 0 -1px 2px color-mix(in srgb, var(--market-ink) 4%, transparent),
+    0 0 8px color-mix(in srgb, var(--palette-porcelain) 14%, transparent);
+  transition: min-height 500ms ease-out, background 250ms ease-out, box-shadow 250ms ease-out, --m-blur 250ms ease-out, --m-dense 250ms ease-out;
 }
 
-.consumer-market-shell .eva-composer-input {
+.consumer-market-shell .ai-assistant-composer-surface:is(:hover, :focus-within),
+.consumer-market-shell .ai-assistant-composer-surface:has(:active, [aria-expanded='true'], [aria-pressed='true']) {
+  --l-blur: 22;
+  --l-dense: 0.36;
+  border-color: transparent;
+  background: linear-gradient(
+    112deg,
+    color-mix(in srgb, var(--palette-porcelain) 94%, transparent),
+    color-mix(in srgb, var(--palette-porcelain) 88%, transparent) 42%,
+    color-mix(in srgb, var(--palette-porcelain) 94%, transparent)
+  );
+  box-shadow:
+    inset 0 1px 2px color-mix(in srgb, var(--palette-porcelain) 82%, transparent),
+    inset 0 -1px 2px color-mix(in srgb, var(--market-ink) 5%, transparent),
+    0 0 10px color-mix(in srgb, var(--palette-porcelain) 18%, transparent);
+}
+
+.consumer-market-shell .ai-assistant-composer-surface:is(:active, :has(:active))::after {
+  background: radial-gradient(
+    96px circle at var(--glass-pointer-x) var(--glass-pointer-y),
+    color-mix(in srgb, var(--market-glass-highlight) 74%, transparent),
+    color-mix(in srgb, var(--market-glass-highlight) 24%, transparent) 45%,
+    transparent 85%
+  );
+  opacity: 0.68;
+  transition-duration: 100ms;
+}
+
+.consumer-market-shell .ai-assistant-composer-surface:is(:active, :has(:active)) {
+  box-shadow:
+    inset 0 0 0 0.5px var(--market-glass-highlight),
+    inset 0 0 12px color-mix(in srgb, var(--market-glass-highlight) 36%, transparent);
+}
+
+.consumer-market-shell .ai-assistant-composer-surface.is-chat-open {
+  min-height: 48px;
+  align-items: center;
+  background: rgb(255 255 255 / 0.84);
+}
+
+.consumer-market-shell .feed-chat-fluid-card {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--radius-dialog);
+}
+
+.consumer-market-shell .feed-chat-fluid-card.is-expanded {
+  border-radius: var(--radius-dialog);
+  overflow: hidden;
+  box-shadow: 0 0 0 0.5px var(--market-glass-border), 0 0 14px rgb(255 255 255 / 0.22);
+}
+
+.consumer-market-shell .feed-chat-fluid-card::before {
+  position: absolute;
+  inset: 0;
+  border: 0.5px solid var(--market-glass-border);
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--palette-porcelain) 84%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.82);
+  backdrop-filter: blur(18px) saturate(1.08);
+  -webkit-backdrop-filter: blur(18px) saturate(1.08);
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+}
+
+.consumer-market-shell .feed-chat-fluid-card.is-expanded::before {
+  opacity: 1;
+}
+
+.consumer-market-shell .feed-chat-card-reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.consumer-market-shell .feed-chat-fluid-card.is-expanded .feed-chat-card-reveal {
+  grid-template-rows: 1fr;
+}
+
+.consumer-market-shell .feed-chat-conversation-card {
+  min-height: 0;
+  overflow: hidden;
+  color: var(--market-ink);
+}
+
+.consumer-market-shell .feed-chat-fluid-card.is-expanded .feed-chat-conversation-card {
+  box-shadow: inset 0 -0.5px 0 var(--market-glass-border);
+}
+
+.consumer-market-shell .feed-chat-composer-region,
+.consumer-market-shell .feed-chat-card-reveal {
+  position: relative;
+  z-index: 1;
+}
+
+.consumer-market-shell .feed-chat-card-heading {
+  opacity: 0;
+  transform: translateY(5px);
+  transition: opacity 160ms ease-out, transform 220ms ease-out;
+}
+
+.consumer-market-shell .feed-chat-fluid-card.is-expanded .feed-chat-card-heading {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 80ms;
+}
+
+.consumer-market-shell .feed-chat-history-reveal {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 300ms ease-out, opacity 220ms ease-out;
+}
+
+.consumer-market-shell .feed-chat-conversation-card.is-expanded .feed-chat-history-reveal {
+  max-height: min(42dvh, 360px);
+  opacity: 1;
+}
+
+.consumer-market-shell .feed-chat-card-history {
+  max-height: min(42dvh, 360px);
+  border-top: 0.5px solid var(--market-glass-border);
+  overscroll-behavior: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .consumer-market-shell .consumer-market-world-layout,
+  .consumer-market-shell .feed-chat-dock-shell,
+  .consumer-market-shell .home-navigation-fluid-shell,
+  .consumer-market-shell .home-navigation-drawer-stage,
+  .consumer-market-shell .home-navigation-rail { transition: none; }
+  .consumer-market-shell .feed-chat-card-reveal,
+  .consumer-market-shell .feed-chat-card-heading { transition: none; }
+  .consumer-market-shell .feed-chat-history-reveal { transition: none; }
+}
+
+.consumer-market-shell .ai-assistant-composer-surface.is-chat-card {
+  min-height: 48px;
+  align-items: center;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.consumer-market-shell .ai-assistant-composer-surface.is-chat-card::after {
+  display: none;
+}
+
+.consumer-market-shell .ai-assistant-composer-surface.is-chat-open .feed-chat-message-field {
+  align-self: auto;
+  justify-content: center;
+  padding-top: 0;
+}
+
+.consumer-market-shell .ai-assistant-composer-surface.is-chat-open .ai-assistant-composer-input {
+  height: 20px;
+  min-height: 20px;
+  max-height: 20px;
+  field-sizing: fixed;
+}
+
+.consumer-market-shell .ai-assistant-composer-surface.is-chat-card .feed-chat-message-field {
+  align-self: auto;
+  justify-content: center;
+  padding-top: 0;
+}
+
+.consumer-market-shell .ai-assistant-composer-surface.is-chat-card .ai-assistant-composer-input {
+  min-height: 20px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .consumer-market-shell .ai-assistant-composer-surface.is-chat-open {
+    background: rgb(255 255 255 / 0.1);
+  }
+
+  .consumer-market-shell .feed-chat-fluid-card::before {
+    background: color-mix(in srgb, var(--market-surface-raised) 78%, transparent);
+  }
+
+  .consumer-market-shell .feed-chat-fluid-card.is-expanded {
+    box-shadow: 0 0 0 0.5px rgb(255 255 255 / 0.74), 0 0 16px rgb(255 255 255 / 0.32);
+  }
+
+  .consumer-market-shell .feed-chat-fluid-card.is-expanded::before {
+    border-color: rgb(255 255 255 / 0.68);
+  }
+
+}
+
+.spark-shockwave {
+  --spark-shockwave-1: rgb(130 95 240);
+  --spark-shockwave-2: rgb(185 125 245);
+  --spark-shockwave-3: rgb(245 185 80);
+  --spark-shockwave-4: rgb(250 215 120);
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.2;
+}
+
+.consumer-market-shell[data-color-scheme='dark'] .spark-shockwave {
+  --spark-shockwave-1: rgb(140 100 255);
+  --spark-shockwave-2: rgb(200 130 255);
+  --spark-shockwave-3: rgb(255 200 110);
+  --spark-shockwave-4: rgb(255 235 170);
+  opacity: 0.28;
+}
+
+.spark-shockwave-motion {
+  animation: spark-shockwave-expand 1000ms cubic-bezier(0.15, 0.82, 0.22, 1) both,
+    spark-shockwave-strength 1000ms linear both;
+}
+
+@keyframes spark-shockwave-expand {
+  from { transform: scale(1); }
+  to { transform: scale(var(--shockwave-end-scale)); }
+}
+
+@keyframes spark-shockwave-strength {
+  0% { opacity: 0; }
+  3% { opacity: 1; }
+  70% { opacity: 0.65; }
+  100% { opacity: 0; }
+}
+
+@media (min-width: 768px) {
+.spark-shockwave.is-navigation-open { left: 227px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spark-shockwave { opacity: 0.1; }
+  .consumer-market-shell[data-color-scheme='dark'] .spark-shockwave { opacity: 0.14; }
+  .consumer-market-shell .spark-shockwave-motion {
+    animation: spark-shockwave-still 600ms ease-out both;
+    animation-duration: 600ms !important;
+  }
+  @keyframes spark-shockwave-still {
+    0%, 100% { opacity: 0; }
+    40% { opacity: 1; }
+  }
+  .consumer-market-shell .ai-assistant-composer-surface { transition-duration: 0.01ms; }
+  .consumer-market-shell .ai-assistant-composer-surface::after { transition: none; }
+}
+
+.consumer-market-shell .ai-assistant-composer-input {
   display: block;
   width: 100%;
   min-height: 20px;
@@ -423,8 +997,15 @@ body:has(.consumer-market-shell) {
   resize: none;
 }
 
-.consumer-market-shell .eva-composer-plus::before,
-.consumer-market-shell .eva-composer-send::before {
+.consumer-market-shell .feed-chat-inline-input {
+  scrollbar-width: none;
+}
+
+.consumer-market-shell .feed-chat-inline-input::-webkit-scrollbar {
+  display: none;
+}
+
+.consumer-market-shell .ai-assistant-composer-plus::before {
   position: absolute;
   inset: 4px;
   border-radius: 50%;
@@ -433,34 +1014,51 @@ body:has(.consumer-market-shell) {
   pointer-events: none;
 }
 
-.consumer-market-shell .eva-composer-plus svg,
-.consumer-market-shell .eva-composer-send svg {
+.consumer-market-shell .ai-assistant-composer-plus svg,
+.consumer-market-shell .ai-assistant-composer-send svg {
   position: relative;
   z-index: 1;
 }
 
-.consumer-market-shell .eva-composer-send {
+.consumer-market-shell .ai-assistant-composer-send {
+  border-color: transparent;
+  background: transparent;
   color: var(--market-ink);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-.consumer-market-shell .eva-composer-send:disabled {
+.consumer-market-shell .ai-assistant-composer-send::before {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: var(--market-surface-raised);
+  content: '';
+  pointer-events: none;
+}
+
+.consumer-market-shell .feed-chat-dock .ai-assistant-composer-send:is(:hover, :focus-visible, :active):not(:disabled) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--market-ink);
+  box-shadow: none;
+}
+
+.consumer-market-shell .feed-chat-dock .ai-assistant-composer-send:is(:hover, :focus-visible, :active):not(:disabled)::before {
+  background: var(--palette-cool-gray);
+}
+
+.consumer-market-shell .ai-assistant-composer-send:disabled {
   color: var(--market-text-muted);
 }
 
-.consumer-market-shell .eva-composer-send:not(:disabled)::before {
-  background: var(--market-accent);
-}
-
-.consumer-market-shell .eva-composer-send:hover:not(:disabled)::before {
-  background: var(--market-accent-hover);
-}
-
-.consumer-market-shell .eva-interface .eva-composer-sheet {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-composer-sheet {
   transform-origin: bottom left;
-  animation: eva-composer-sheet-rise 250ms ease-out both;
+  animation: ai-assistant-composer-sheet-rise 250ms ease-out both;
 }
 
-@keyframes eva-composer-sheet-rise {
+@keyframes ai-assistant-composer-sheet-rise {
   from { opacity: 0; transform: translateY(10px) scaleY(0.96); }
   to { opacity: 1; transform: translateY(0) scaleY(1); }
 }
@@ -470,80 +1068,85 @@ body:has(.consumer-market-shell) {
     animation: none;
   }
 
+  .consumer-market-shell .feed-chat-picker-card {
+    animation: none;
+  }
+
   .consumer-market-shell .feed-chat-picker-card,
+  .consumer-market-shell .feed-chat-control,
   .consumer-market-shell .feed-chat-skill-trigger,
   .consumer-market-shell .feed-chat-attachment-trigger,
-  .consumer-market-shell .eva-composer-surface,
-  .consumer-market-shell .eva-interface .eva-skill-launcher,
+  .consumer-market-shell .ai-assistant-composer-surface,
+  .consumer-market-shell .ai-assistant-interface .ai-assistant-skill-launcher,
   .consumer-market-shell .home-navigation-drawer,
-  .consumer-market-shell .eva-interface .eva-skill-trigger span,
-  .consumer-market-shell .eva-interface .eva-composer-plus svg {
+  .consumer-market-shell .ai-assistant-interface .ai-assistant-skill-trigger span,
+  .consumer-market-shell .ai-assistant-interface .ai-assistant-composer-plus svg {
     transition: none;
   }
 
-  .consumer-market-shell .eva-interface .eva-composer-sheet {
+  .consumer-market-shell .ai-assistant-interface .ai-assistant-composer-sheet {
     animation: none;
   }
 }
 
-.consumer-market-shell .eva-interface .eva-menu-panel {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu-panel {
   position: fixed;
   inset: 0;
   z-index: 1;
   width: 100%;
   height: 100dvh;
   overflow: hidden;
-  background: var(--market-glass-panel);
-  backdrop-filter: blur(var(--market-glass-blur)) saturate(1.12);
-  -webkit-backdrop-filter: blur(var(--market-glass-blur)) saturate(1.12);
+  background: var(--market-surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   color: var(--market-ink);
-  animation: eva-menu-enter 220ms ease-out both;
+  animation: ai-assistant-menu-enter 220ms ease-out both;
 }
 
-body:has(.eva-menu-panel) nextjs-portal {
+body:has(.ai-assistant-menu-panel) nextjs-portal {
   display: none;
 }
 
-@keyframes eva-menu-enter {
+@keyframes ai-assistant-menu-enter {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-.consumer-market-shell .eva-interface .eva-menu__header,
-.consumer-market-shell .eva-interface .eva-menu__footer {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__header,
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__footer {
   position: absolute;
   right: 0;
   left: 0;
   z-index: 3;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__header::before,
-.consumer-market-shell .eva-interface .eva-menu__footer::before {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__header::before,
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__footer::before {
   position: absolute;
   inset: 0;
   content: '';
   pointer-events: none;
-  -webkit-backdrop-filter: blur(18px) saturate(1.15);
-  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__header::before {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__header::before {
   -webkit-mask-image: linear-gradient(to bottom, black 62%, transparent);
   mask-image: linear-gradient(to bottom, black 62%, transparent);
 }
 
-.consumer-market-shell .eva-interface .eva-menu__footer::before {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__footer::before {
   -webkit-mask-image: linear-gradient(to top, black 62%, transparent);
   mask-image: linear-gradient(to top, black 62%, transparent);
 }
 
-.consumer-market-shell .eva-interface .eva-menu__header {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__header {
   top: 0;
   padding-top: env(safe-area-inset-top, 0px);
   background: linear-gradient(to bottom, var(--market-canvas) 68%, color-mix(in srgb, var(--market-canvas) 78%, transparent) 88%, transparent);
 }
 
-.consumer-market-shell .eva-interface .eva-menu__header-inner {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__header-inner {
   position: relative;
   display: flex;
   width: min(100%, 1040px);
@@ -554,7 +1157,7 @@ body:has(.eva-menu-panel) nextjs-portal {
   padding: 18px 24px 20px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__settings {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__settings {
   display: grid;
   width: 46px;
   height: 46px;
@@ -565,12 +1168,12 @@ body:has(.eva-menu-panel) nextjs-portal {
   color: var(--market-ink);
 }
 
-.consumer-market-shell .eva-interface .eva-menu__header-actions {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__header-actions {
   display: flex;
   gap: 13px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__glass-button {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__glass-button {
   display: grid;
   width: 46px;
   height: 46px;
@@ -580,8 +1183,8 @@ body:has(.eva-menu-panel) nextjs-portal {
   color: var(--market-ink);
 }
 
-.consumer-market-shell .eva-interface .eva-menu__glass-action,
-.consumer-market-shell .eva-interface .eva-menu__glass-action:hover:not(:disabled) {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__glass-action,
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__glass-action:hover:not(:disabled) {
   display: grid;
   width: 100%;
   height: 100%;
@@ -591,52 +1194,52 @@ body:has(.eva-menu-panel) nextjs-portal {
   color: inherit;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__glass-action[aria-pressed="true"] {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__glass-action[aria-pressed="true"] {
   background: color-mix(in srgb, var(--market-ink) 9%, transparent);
 }
 
-.consumer-market-shell .eva-interface .eva-menu__scroll {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__scroll {
   height: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: calc(99px + env(safe-area-inset-top, 0px)) 24px calc(106px + env(safe-area-inset-bottom, 0px));
 }
 
-.consumer-market-shell .eva-interface .eva-menu__content {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__content {
   width: min(100%, 992px);
   margin-inline: auto;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__nav {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__nav {
   display: grid;
   gap: 4px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__nav-item {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__nav-item {
   display: flex;
   width: 100%;
   min-height: 56px;
   align-items: center;
   gap: 18px;
   padding: 0 14px;
-  border-radius: 14px;
+  border-radius: var(--radius-overlay);
   background: transparent;
   color: var(--market-ink);
   font-size: 16px;
   text-align: left;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__nav-item:hover:not(:disabled),
-.consumer-market-shell .eva-interface .eva-menu__nav-item[aria-current="page"] {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__nav-item:hover:not(:disabled),
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__nav-item[aria-current="page"] {
   background: var(--market-surface-muted);
 }
 
-.consumer-market-shell .eva-interface .eva-menu__history {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__history {
   margin-top: 30px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__history h2,
-.consumer-market-shell .eva-interface .eva-menu__model-list legend {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__history h2,
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__model-list legend {
   margin: 0 0 10px;
   padding-inline: 14px;
   color: var(--market-text-secondary);
@@ -644,16 +1247,16 @@ body:has(.eva-menu-panel) nextjs-portal {
   font-weight: 600;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__history-list {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__history-list {
   display: grid;
   gap: 4px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__result-group {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__result-group {
   margin-top: 24px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__result-group h2 {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__result-group h2 {
   margin: 0 0 10px;
   padding-inline: 14px;
   color: var(--market-text-secondary);
@@ -661,49 +1264,49 @@ body:has(.eva-menu-panel) nextjs-portal {
   font-weight: 600;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__result {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__result {
   display: flex;
   width: 100%;
   min-height: 52px;
   align-items: center;
   gap: 16px;
   padding: 8px 14px;
-  border-radius: 14px;
+  border-radius: var(--radius-overlay);
   background: transparent;
   color: var(--market-ink);
   font-size: 16px;
   text-align: left;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__result:hover:not(:disabled) {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__result:hover:not(:disabled) {
   background: var(--market-surface-muted);
 }
 
-.consumer-market-shell .eva-interface .eva-menu__result-copy {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__result-copy {
   display: grid;
   min-width: 0;
   gap: 3px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__result-copy > span,
-.consumer-market-shell .eva-interface .eva-menu__result-copy small {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__result-copy > span,
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__result-copy small {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__result-copy small,
-.consumer-market-shell .eva-interface .eva-menu__result-status {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__result-copy small,
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__result-status {
   color: var(--market-text-secondary);
   font-size: 12px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__result-status {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__result-status {
   margin-left: auto;
   white-space: nowrap;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__result-avatar {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__result-avatar {
   display: grid;
   width: 22px;
   height: 22px;
@@ -714,17 +1317,17 @@ body:has(.eva-menu-panel) nextjs-portal {
   font-size: 12px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__history-list .swipe-row__clip:hover {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__history-list .swipe-row__clip:hover {
   background: var(--market-surface-muted);
 }
 
-.consumer-market-shell .eva-interface .eva-menu__empty {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__empty {
   padding: 12px 14px;
   color: var(--market-text-secondary);
   font-size: 14px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__search {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__search {
   display: flex;
   min-height: 52px;
   align-items: center;
@@ -735,7 +1338,7 @@ body:has(.eva-menu-panel) nextjs-portal {
   color: var(--market-text-secondary);
 }
 
-.consumer-market-shell .eva-interface .eva-menu__search input {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__search input {
   width: 100%;
   min-width: 0;
   border: 0;
@@ -745,26 +1348,26 @@ body:has(.eva-menu-panel) nextjs-portal {
   font-size: 16px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__search:focus-within {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__search:focus-within {
   border-bottom-color: var(--market-support);
 }
 
-.consumer-market-shell .eva-interface .eva-menu-panel .eva-menu__search input:focus-visible {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu-panel .ai-assistant-menu__search input:focus-visible {
   outline: none;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__subpage h2 {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__subpage h2 {
   margin: 0 0 24px;
   font-size: 18px;
   font-weight: 600;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__api-settings {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__api-settings {
   margin: 0 0 20px;
   padding: 0 14px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__api-heading {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__api-heading {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -772,25 +1375,25 @@ body:has(.eva-menu-panel) nextjs-portal {
   margin-bottom: 10px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__api-heading h3 {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__api-heading h3 {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__api-heading span {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__api-heading span {
   color: var(--market-text-secondary);
   font-size: 12px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__api-form {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__api-form {
   display: flex;
   min-width: 0;
   align-items: center;
   gap: 8px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__api-form input {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__api-form input {
   width: 100%;
   min-width: 0;
   height: 44px;
@@ -803,11 +1406,11 @@ body:has(.eva-menu-panel) nextjs-portal {
   outline: none;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__api-form input:focus-visible {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__api-form input:focus-visible {
   border-color: var(--market-text-secondary);
 }
 
-.consumer-market-shell .eva-interface .eva-menu__api-form button {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__api-form button {
   min-width: 68px;
   height: 44px;
   flex: 0 0 auto;
@@ -819,22 +1422,22 @@ body:has(.eva-menu-panel) nextjs-portal {
   font-weight: 600;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__api-form button:disabled {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__api-form button:disabled {
   opacity: 0.45;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__api-form button:focus-visible {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__api-form button:focus-visible {
   outline: 2px solid var(--market-support);
   outline-offset: 2px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__api-error {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__api-error {
   margin: 8px 0 0;
   color: var(--market-accent);
   font-size: 12px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__back {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__back {
   display: flex;
   min-height: 42px;
   align-items: center;
@@ -845,7 +1448,7 @@ body:has(.eva-menu-panel) nextjs-portal {
   font-size: 14px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__model-list {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__model-list {
   display: grid;
   gap: 2px;
   margin: 0;
@@ -853,7 +1456,7 @@ body:has(.eva-menu-panel) nextjs-portal {
   border: 0;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__model-option {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__model-option {
   display: flex;
   min-height: 52px;
   align-items: center;
@@ -864,15 +1467,15 @@ body:has(.eva-menu-panel) nextjs-portal {
   cursor: pointer;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__model-option:hover {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__model-option:hover {
   background: var(--market-surface-muted);
 }
 
-.consumer-market-shell .eva-interface .eva-menu__model-option input {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__model-option input {
   accent-color: var(--market-ink);
 }
 
-.consumer-market-shell .eva-interface .eva-menu__profile-link {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__profile-link {
   min-height: 50px;
   padding: 0 14px;
   border-radius: 12px;
@@ -880,13 +1483,13 @@ body:has(.eva-menu-panel) nextjs-portal {
   font-size: 16px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__footer {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__footer {
   bottom: 0;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background: linear-gradient(to top, var(--market-canvas) 63%, color-mix(in srgb, var(--market-canvas) 78%, transparent) 86%, transparent);
 }
 
-.consumer-market-shell .eva-interface .eva-menu__footer-inner {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__footer-inner {
   position: relative;
   display: flex;
   width: min(100%, 1040px);
@@ -897,7 +1500,7 @@ body:has(.eva-menu-panel) nextjs-portal {
   padding: 18px 24px 22px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__account {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__account {
   display: flex;
   min-width: 0;
   min-height: 48px;
@@ -909,7 +1512,7 @@ body:has(.eva-menu-panel) nextjs-portal {
   text-align: left;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__avatar {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__avatar {
   display: grid;
   width: 42px;
   height: 42px;
@@ -921,42 +1524,42 @@ body:has(.eva-menu-panel) nextjs-portal {
   font-weight: 600;
 }
 
-.consumer-market-shell .eva-interface .eva-menu__account-name {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu__account-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.consumer-market-shell .eva-interface .eva-menu-panel :is(button, input):focus-visible,
-.consumer-market-shell .eva-interface .eva-menu-panel .eva-menu__model-option:focus-within {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu-panel :is(button, input):focus-visible,
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu-panel .ai-assistant-menu__model-option:focus-within {
   outline: 2px solid var(--market-support);
   outline-offset: 2px;
 }
 
-.consumer-market-shell .eva-interface .eva-menu-panel .swipe-row__action {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu-panel .swipe-row__action {
   color: var(--market-ink) !important;
 }
 
-.consumer-market-shell .eva-interface .eva-menu-panel .swipe-row__action--commit,
-.consumer-market-shell .eva-interface .eva-menu-panel .swipe-row__action--commit:hover:not(:disabled) {
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu-panel .swipe-row__action--commit,
+.consumer-market-shell .ai-assistant-interface .ai-assistant-menu-panel .swipe-row__action--commit:hover:not(:disabled) {
   background-color: transparent;
 }
 
 @media (max-width: 480px) {
-  .consumer-market-shell .eva-interface .eva-menu__header-inner,
-  .consumer-market-shell .eva-interface .eva-menu__footer-inner {
+  .consumer-market-shell .ai-assistant-interface .ai-assistant-menu__header-inner,
+  .consumer-market-shell .ai-assistant-interface .ai-assistant-menu__footer-inner {
     padding-inline: 18px;
   }
-  .consumer-market-shell .eva-interface .eva-menu__header-actions {
+  .consumer-market-shell .ai-assistant-interface .ai-assistant-menu__header-actions {
     gap: 9px;
   }
-  .consumer-market-shell .eva-interface .eva-menu__scroll {
+  .consumer-market-shell .ai-assistant-interface .ai-assistant-menu__scroll {
     padding-inline: 18px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .consumer-market-shell .eva-interface .eva-menu-panel { animation: none; }
+  .consumer-market-shell .ai-assistant-interface .ai-assistant-menu-panel { animation: none; }
 }
 .consumer-market-shell .pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
 .consumer-market-shell .pt-safe { padding-top: env(safe-area-inset-top, 12px); }
@@ -1089,16 +1692,22 @@ body:has(.eva-menu-panel) nextjs-portal {
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --radius-xs: 4px;
   --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 10px;
-  --radius-2xl: 12px;
-  --radius-3xl: 14px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+  --radius-4xl: 28px;
 }
 
 :root {
   /* Cool white surfaces, black actions, and restrained cobalt/orange emphasis. */
+  --l-tint: #ffffff;
+  --d-tint: #ffffff;
+  --d-thin: 0.06;
+  --d-dense: 0.22;
   --palette-cloud: #FCFDFE;
   --palette-porcelain: #FCFDFE;
   --palette-moon: #F7F9FB;
@@ -1203,11 +1812,14 @@ body:has(.eva-menu-panel) nextjs-portal {
   --input: var(--border);
   --ring: var(--accent-secondary);
 
-  --radius: 0.5rem;
+  --radius: 8px;
   --radius-control: 8px;
-  --radius-card-nested: 8px;
   --radius-card: 12px;
-  --radius-overlay: 14px;
+  --radius-card-nested: calc(var(--radius-card) - 4px);
+  --radius-overlay: 16px;
+  --radius-dialog: 24px;
+  --radius-dialog-inner: calc(var(--radius-dialog) - 8px);
+  --hover-pill-inline: 12px;
   --motion-press-duration: 110ms;
   --motion-state-duration: 170ms;
   --motion-nav-duration: 210ms;
@@ -1362,7 +1974,7 @@ body:has(.eva-menu-panel) nextjs-portal {
 
 .workbench-chat-stage .prompt-composer {
   border: 1px solid var(--border-subtle);
-  border-radius: 14px;
+  border-radius: var(--radius-overlay);
   background: var(--surface);
   box-shadow: 0 4px 18px rgb(20 25 35 / 7%);
   transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, outline-color 180ms ease;
@@ -1385,7 +1997,7 @@ body:has(.eva-menu-panel) nextjs-portal {
 
 .workbench-ai-input {
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--radius-overlay);
   background: transparent;
   box-shadow: none;
   transition: background-color 180ms ease;
@@ -1589,7 +2201,7 @@ body:has(.eva-menu-panel) nextjs-portal {
 
 .workbench-model {
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--radius-overlay);
   background: transparent;
   outline: none;
   text-align: left;
@@ -1621,7 +2233,7 @@ body:has(.eva-menu-panel) nextjs-portal {
   height: 28px;
   flex-shrink: 0;
   place-items: center;
-  border-radius: 9px;
+  border-radius: var(--radius-control);
   background: var(--surface-subtle);
   color: var(--glass-foreground);
 }
@@ -1715,7 +2327,7 @@ body:has(.eva-menu-panel) nextjs-portal {
 
 .add-menu {
   border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   background: #fff;
   box-shadow: 0 8px 20px rgb(31 29 27 / 0.08);
 }
@@ -1739,7 +2351,7 @@ body:has(.eva-menu-panel) nextjs-portal {
   width: 100%;
   align-items: center;
   gap: 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   padding: 0 10px;
   color: var(--text-secondary);
   text-align: left;
@@ -1798,7 +2410,7 @@ body:has(.eva-menu-panel) nextjs-portal {
   align-items: center;
   justify-content: space-between;
   gap: 4px;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   padding: 5px 7px;
   color: #252525;
   font-size: 10px;
@@ -1859,7 +2471,7 @@ body:has(.eva-menu-panel) nextjs-portal {
   width: 100%;
   align-items: center;
   gap: 9px;
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   padding: 0 10px;
   color: var(--text-primary);
   font-size: 8px;
@@ -1877,7 +2489,7 @@ body:has(.eva-menu-panel) nextjs-portal {
   flex-shrink: 0;
   place-items: center;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   color: var(--surface);
   font-size: 11px;
 }
@@ -2089,7 +2701,7 @@ body:has(.eva-menu-panel) nextjs-portal {
     font-size: 12px;
     font-weight: 500;
     padding: 5px 10px;
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     white-space: nowrap;
     opacity: 0;
     pointer-events: none;
@@ -2161,7 +2773,7 @@ body:has(.eva-menu-panel) nextjs-portal {
 
   .btn-omni {
     @apply h-9 px-4 text-sm font-medium;
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     transition: background 0.2s ease-out, color 0.2s ease-out,
       border-color 0.2s ease-out;
   }
@@ -2229,7 +2841,7 @@ body:has(.eva-menu-panel) nextjs-portal {
     backdrop-filter: blur(24px) saturate(180%);
     -webkit-backdrop-filter: blur(24px) saturate(180%);
     border: 1px solid var(--glass-border);
-    border-radius: 2px;
+    border-radius: 4px;
     box-shadow: 0 10px 40px -10px var(--ink);
     z-index: 10;
   }
@@ -2314,7 +2926,7 @@ body:has(.eva-menu-panel) nextjs-portal {
     border: none;
     background: var(--ink);
     color: var(--bg);
-    border-radius: 2px;
+    border-radius: 4px;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
@@ -2341,7 +2953,7 @@ body:has(.eva-menu-panel) nextjs-portal {
     background: transparent;
     color: var(--ink);
     border: 1px solid var(--ink);
-    border-radius: 2px;
+    border-radius: 4px;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
@@ -2653,7 +3265,7 @@ body:has(.eva-menu-panel) nextjs-portal {
   border-radius: var(--radius-card-nested) !important;
 }
 .product-feed-card__details {
-  border-radius: 8px !important;
+  border-radius: var(--radius-card-nested) !important;
 }
 .product-feed-card__photo {
   transform-origin: 50% 50%;
@@ -2670,12 +3282,12 @@ body:has(.eva-menu-panel) nextjs-portal {
   transform: scale(1.09);
 }
 .scene-post-card {
-  border-radius: 18px !important;
+  border-radius: var(--radius-card) !important;
 }
 .scene-post-card__glass {
   background: linear-gradient(180deg, rgba(28, 26, 24, 0.08), rgba(28, 26, 24, 0.67));
-  backdrop-filter: blur(5px) saturate(110%);
-  -webkit-backdrop-filter: blur(5px) saturate(110%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 button:focus-visible {
   outline: 2px solid var(--accent-secondary) !important;
@@ -2840,7 +3452,6 @@ button:disabled {
 .guided-flow { position: relative; width: 100%; background: var(--surface); }
 .guided-step { position: relative; min-height: 100svh; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2rem 1rem; }
 .step-content { width: min(1120px, calc(100vw - 32px)); margin: 0 auto; will-change: transform, opacity, filter; transition: opacity .3s ease, transform .3s ease; }
-.liquid-glass { background: var(--surface); backdrop-filter: blur(28px) saturate(150%); -webkit-backdrop-filter: blur(28px) saturate(150%); border: 1px solid var(--surface); box-shadow: 0 18px 60px var(--ink), inset 0 1px 0 var(--surface); border-radius: 28px; }
 .liquid-glass-subtle { background: var(--surface); backdrop-filter: blur(20px) saturate(140%); -webkit-backdrop-filter: blur(20px) saturate(140%); border: 1px solid var(--surface); box-shadow: 0 10px 30px var(--ink), inset 0 1px 0 var(--surface); border-radius: 20px; }
 
 .uiverse-next-btn { cursor: pointer; display: inline-flex; justify-content: center; align-items: center; gap: 12px; border: 0; border-radius: var(--radius-control); padding: .7em 1.5em .7em 1.8em; color: var(--surface); background: var(--accent-primary); font: 600 14px inherit; box-shadow: 0 1px 2px rgb(29 31 35 / 0.12); transition: background-color var(--motion-state-duration) var(--motion-ease-out), transform var(--motion-press-duration) var(--motion-ease-out), box-shadow var(--motion-state-duration) var(--motion-ease-out); }
@@ -3115,7 +3726,7 @@ button:disabled {
   padding: 12px 16px;
   border-inline-start: 3px solid color-mix(in srgb, var(--primary) 42%, var(--border));
   background: color-mix(in srgb, var(--surface-muted) 46%, transparent);
-  border-radius: 0 10px 10px 0;
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
 }
 
 .milkdown-product-detail .milkdown .ProseMirror pre,
@@ -3130,7 +3741,7 @@ button:disabled {
   overflow-x: auto;
   padding: 12px 14px;
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   background: color-mix(in srgb, var(--surface-muted) 56%, transparent);
 }
 
@@ -3187,7 +3798,7 @@ button:disabled {
   color: var(--text-primary);
   background: color-mix(in srgb, var(--surface) 96%, transparent);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-overlay);
   box-shadow: 0 12px 28px color-mix(in srgb, var(--ink) 18%, transparent);
 }
 
@@ -3243,7 +3854,7 @@ button:disabled {
   gap: 10px;
   padding: 8px 10px;
   cursor: pointer;
-  border-radius: 9px;
+  border-radius: var(--radius-control);
 }
 
 .milkdown-product-detail .milkdown .milkdown-slash-menu .menu-groups .menu-group li:hover,
@@ -3288,7 +3899,7 @@ button:disabled {
   color: var(--text-primary);
   background: color-mix(in srgb, var(--surface) 96%, transparent);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-overlay);
   box-shadow: 0 12px 28px color-mix(in srgb, var(--ink) 18%, transparent);
   font-family: var(--font-sans, Arial, sans-serif);
   font-size: 14px;
@@ -3336,7 +3947,7 @@ button:disabled {
   padding: 10px 14px;
   border-inline-start: 3px solid color-mix(in srgb, var(--primary) 42%, var(--border));
   background: color-mix(in srgb, var(--surface-muted) 46%, transparent);
-  border-radius: 0 10px 10px 0;
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
 }
 
 .product-detail-preview img {
@@ -3355,7 +3966,7 @@ button:disabled {
 .product-detail-preview pre {
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
-  border-radius: 10px;
+  border-radius: var(--radius-control);
   background: color-mix(in srgb, var(--surface-muted) 56%, transparent);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -3394,7 +4005,7 @@ button:disabled {
   gap: 10px;
   padding: 8px 10px;
   cursor: pointer;
-  border-radius: 9px;
+  border-radius: var(--radius-control);
 }
 
 .milkdown-product-detail > .milkdown-slash-menu .menu-group li:hover,
@@ -3427,7 +4038,7 @@ button:disabled {
   max-height: 200px !important;
   overflow: hidden !important;
   border: 1px solid var(--border) !important;
-  border-radius: 14px !important;
+  border-radius: var(--radius-overlay) !important;
   background: color-mix(in srgb, var(--surface) 96%, transparent) !important;
   color: var(--text-primary) !important;
   box-shadow: 0 12px 28px color-mix(in srgb, var(--ink) 18%, transparent) !important;
@@ -3586,4 +4197,67 @@ button:disabled {
 :is(button, a)[class*="bg-[var(--accent-primary)]"],
 .consumer-market-shell :is(button, a)[class*="bg-[var(--market-accent)]"] {
   border-radius: 9999px;
+}
+
+/* Continuous corners for standard UI surfaces; full pills keep a circular curve. */
+@supports (corner-shape: superellipse(1.25)) {
+  body :where([class*="rounded-"]:not([class*="rounded-full"]), .ui-card, .ui-card--nested, .ui-card--floating, .feed-chat-picker-card, .feed-chat-fluid-card, .product-feed-card__image, .product-feed-card__details, .scene-post-card, .ai-assistant-menu__nav-item, .ai-assistant-menu__result, .add-menu, .model-menu, .prompt-composer, .milkdown-slash-menu) {
+    corner-shape: superellipse(1.25);
+  }
+
+  body :where([class*="rounded-full"], .glass[data-pill]) {
+    corner-shape: round;
+  }
+
+  :is(button, a)[class*="bg-[var(--primary)]"],
+  :is(button, a)[class*="bg-[var(--accent-primary)]"],
+  .consumer-market-shell :is(button, a)[class*="bg-[var(--market-accent)]"] {
+    corner-shape: round;
+  }
+}
+
+/* Shared capsule hover treatment for text actions and menu rows. */
+.consumer-market-shell .market-hover-pill {
+  border-radius: 9999px;
+  padding-inline: var(--hover-pill-inline);
+  transition: background-color 250ms ease-out;
+}
+
+.consumer-market-shell .market-hover-pill:is(:hover, :focus-visible) {
+  background: var(--market-hover);
+}
+
+.consumer-market-shell :is(.feed-chat-attachment-option, .feed-chat-model-option, .feed-discovery-option, .feed-chat-picker-row),
+.consumer-market-shell .ai-assistant-interface :is(.ai-assistant-menu__nav-item, .ai-assistant-menu__result, .ai-assistant-menu__model-option, .ai-assistant-menu__back),
+:is(.mention-option, .add-menu__item, .add-menu__choice, .model-menu__item) {
+  border-radius: 9999px;
+  corner-shape: round;
+}
+
+.consumer-market-shell :is(.feed-chat-attachment-option, .feed-chat-model-option, .feed-discovery-option),
+.consumer-market-shell .ai-assistant-interface :is(.ai-assistant-menu__nav-item, .ai-assistant-menu__result, .ai-assistant-menu__model-option, .ai-assistant-menu__back),
+:is(.mention-option, .add-menu__item, .add-menu__choice, .model-menu__item) {
+  padding-inline: var(--hover-pill-inline);
+}
+
+:is(.add-menu__heading, .add-menu__section, .model-menu__heading) {
+  padding-inline: var(--hover-pill-inline);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .consumer-market-shell .market-hover-pill { transition: none; }
+}
+
+.consumer-market-shell .sidebar-profile-popover {
+  transform-origin: bottom left;
+  animation: sidebar-profile-rise 250ms ease-out both;
+}
+
+@keyframes sidebar-profile-rise {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .consumer-market-shell .sidebar-profile-popover { animation: none; }
 }

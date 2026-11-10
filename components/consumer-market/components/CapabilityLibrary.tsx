@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react'
 import { MagnifyingGlass, Plus } from '@phosphor-icons/react'
 import { Brain, Check, ShoppingBag, UserRound } from 'lucide-react'
 
-export const EVA_SKILLS_STORAGE_KEY = 'omnilink_consumer_skills_v2'
+export const AI_ASSISTANT_SKILLS_STORAGE_KEY = 'omnilink_consumer_skills_v2'
 
-export const EVA_SKILLS = [
+export const AI_ASSISTANT_SKILLS = [
   {
     id: 'personal-advisor',
-    title: '个人助手',
+    title: 'AI assistant',
     description: '依据你确认的偏好、记忆和真实商品目录，提供购物与生活建议。',
-    prompt: '请以个人助手身份回应，结合本轮目标、购物偏好、已确认的专项资料与记忆、收藏商品和真实商品目录，优先给出有依据的建议。购物偏好只是跨品类参考，当前明确要求优先。只有缺少会实质改变结果的条件时才追问一个问题；对未核实的信息明确说明。',
+    prompt: '请以 AI assistant 的身份回应，结合本轮目标、购物偏好、已确认的专项资料与记忆、收藏商品和真实商品目录，优先给出有依据的建议。购物偏好只是跨品类参考，当前明确要求优先。只有缺少会实质改变结果的条件时才追问一个问题；对未核实的信息明确说明。',
     icon: UserRound,
   },
   {
@@ -28,28 +28,28 @@ export const EVA_SKILLS = [
   },
 ] as const
 
-export type EvaSkillId = (typeof EVA_SKILLS)[number]['id']
-export const DEFAULT_INSTALLED_SKILL_IDS: EvaSkillId[] = ['personal-advisor', 'shopping-preferences']
+export type AiAssistantSkillId = (typeof AI_ASSISTANT_SKILLS)[number]['id']
+export const DEFAULT_INSTALLED_SKILL_IDS: AiAssistantSkillId[] = ['personal-advisor', 'shopping-preferences']
 
-export function readInstalledSkillIds(): EvaSkillId[] {
+export function readInstalledSkillIds(): AiAssistantSkillId[] {
   try {
-    const stored = localStorage.getItem(EVA_SKILLS_STORAGE_KEY)
+    const stored = localStorage.getItem(AI_ASSISTANT_SKILLS_STORAGE_KEY)
     if (stored === null) {
-      localStorage.setItem(EVA_SKILLS_STORAGE_KEY, JSON.stringify(DEFAULT_INSTALLED_SKILL_IDS))
+      localStorage.setItem(AI_ASSISTANT_SKILLS_STORAGE_KEY, JSON.stringify(DEFAULT_INSTALLED_SKILL_IDS))
       return [...DEFAULT_INSTALLED_SKILL_IDS]
     }
     const saved: unknown = JSON.parse(stored)
     if (!Array.isArray(saved)) return []
-    return EVA_SKILLS.map((skill) => skill.id).filter((id) => saved.includes(id))
+    return AI_ASSISTANT_SKILLS.map((skill) => skill.id).filter((id) => saved.includes(id))
   } catch {
     return []
   }
 }
 
 export function CapabilityLibrary({ onInstalledSkillsChange }: {
-  onInstalledSkillsChange: (ids: EvaSkillId[]) => void
+  onInstalledSkillsChange: (ids: AiAssistantSkillId[]) => void
 }) {
-  const [installedIds, setInstalledIds] = useState<EvaSkillId[]>([])
+  const [installedIds, setInstalledIds] = useState<AiAssistantSkillId[]>([])
   const [query, setQuery] = useState('')
   const [section, setSection] = useState<'skills' | 'plugins'>('skills')
 
@@ -57,25 +57,31 @@ export function CapabilityLibrary({ onInstalledSkillsChange }: {
     queueMicrotask(() => setInstalledIds(readInstalledSkillIds()))
   }, [])
 
-  const toggleSkill = (id: EvaSkillId) => {
+  const toggleSkill = (id: AiAssistantSkillId) => {
     const next = installedIds.includes(id) ? installedIds.filter((item) => item !== id) : [...installedIds, id]
     setInstalledIds(next)
-    localStorage.setItem(EVA_SKILLS_STORAGE_KEY, JSON.stringify(next))
+    localStorage.setItem(AI_ASSISTANT_SKILLS_STORAGE_KEY, JSON.stringify(next))
     onInstalledSkillsChange(next)
   }
 
-  const filteredSkills = EVA_SKILLS.filter((skill) => skill.title.includes(query.trim()) || skill.description.includes(query.trim()))
+  const filteredSkills = AI_ASSISTANT_SKILLS.filter((skill) => skill.title.includes(query.trim()) || skill.description.includes(query.trim()))
 
   return (
     <section aria-label="插件和技能" className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[var(--market-surface)] text-[var(--market-ink)]">
       <div className="mx-auto w-full max-w-5xl px-5 pb-12 sm:px-8">
         <h1 className="mt-8 text-xl font-semibold sm:mt-10">插件和技能</h1>
-        <div role="group" aria-label="类型" className="mt-7 flex gap-5 border-b-[0.5px] border-[var(--market-border)]">
-          <button type="button" aria-pressed={section === 'skills'} onClick={() => setSection('skills')} className={`border-b-[0.5px] px-1 pb-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-[var(--market-support)] ${section === 'skills' ? 'border-[var(--market-ink)] text-[var(--market-ink)]' : 'border-transparent text-[var(--market-text-muted)]'}`}>技能</button>
-          <button type="button" aria-pressed={section === 'plugins'} onClick={() => setSection('plugins')} className={`border-b-[0.5px] px-1 pb-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-[var(--market-support)] ${section === 'plugins' ? 'border-[var(--market-ink)] text-[var(--market-ink)]' : 'border-transparent text-[var(--market-text-muted)]'}`}>插件</button>
+        <div role="tablist" aria-label="类型" onKeyDown={(event) => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+          event.preventDefault()
+          const next = event.key === 'Home' ? 'skills' : event.key === 'End' ? 'plugins' : section === 'skills' ? 'plugins' : 'skills'
+          setSection(next)
+          event.currentTarget.querySelector<HTMLButtonElement>(`#capability-tab-${next}`)?.focus()
+        }} className="mt-7 flex gap-5 border-b-[0.5px] border-[var(--market-border)]">
+          <button type="button" id="capability-tab-skills" role="tab" aria-controls="capability-panel" aria-selected={section === 'skills'} tabIndex={section === 'skills' ? 0 : -1} onClick={() => setSection('skills')} className={`border-b-[0.5px] px-1 pb-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-[var(--market-support)] ${section === 'skills' ? 'border-[var(--market-ink)] text-[var(--market-ink)]' : 'border-transparent text-[var(--market-text-muted)]'}`}>技能</button>
+          <button type="button" id="capability-tab-plugins" role="tab" aria-controls="capability-panel" aria-selected={section === 'plugins'} tabIndex={section === 'plugins' ? 0 : -1} onClick={() => setSection('plugins')} className={`border-b-[0.5px] px-1 pb-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-[var(--market-support)] ${section === 'plugins' ? 'border-[var(--market-ink)] text-[var(--market-ink)]' : 'border-transparent text-[var(--market-text-muted)]'}`}>插件</button>
         </div>
 
-        {section === 'skills' ? <div>
+        <div id="capability-panel" role="tabpanel" aria-labelledby={`capability-tab-${section}`} tabIndex={0}>{section === 'skills' ? <div>
           <label className="mt-6 flex h-11 items-center gap-3 rounded-full border-[0.5px] border-[var(--market-border)] px-4 focus-within:border-[var(--market-support)]">
             <MagnifyingGlass size={18} className="shrink-0 text-[var(--market-text-muted)]" aria-hidden="true" />
             <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索技能" aria-label="搜索技能" className="min-w-0 flex-1 bg-transparent text-sm text-[var(--market-ink)] outline-none placeholder:text-[var(--market-text-muted)]" />
@@ -103,7 +109,7 @@ export function CapabilityLibrary({ onInstalledSkillsChange }: {
               </article>
             })}
           </div> : <p className="pt-5 text-sm text-[var(--market-text-muted)]">没有匹配的技能</p>}
-        </div> : <div className="pt-8 text-sm text-[var(--market-text-muted)]">暂无可用插件</div>}
+        </div> : <div className="pt-8 text-sm text-[var(--market-text-muted)]">暂无可用插件</div>}</div>
       </div>
     </section>
   )

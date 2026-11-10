@@ -8,8 +8,10 @@ import {
   FeedItem,
 } from '../types';
 import collectedProductData from './collected-demo-products.json';
+import fiveStoreProductData from './five-store-demo-products.json';
 
 const demoProducts = collectedProductData as unknown as ProductItem[];
+export const fiveStoreDemoProducts = fiveStoreProductData as ProductItem[];
 const cleanedProductImages: Record<string, string> = {
   P0010: '/consumer-market/cleaned/collected-p0010-clean.webp',
   P0011: '/consumer-market/cleaned/collected-p0011-clean.webp',
@@ -483,7 +485,11 @@ const curatedProductsList: ProductItem[] = [
   clockProduct,
 ];
 
-export const productsList: ProductItem[] = [...collectedDemoProducts, ...curatedProductsList];
+export const productsList: ProductItem[] = [
+  ...fiveStoreDemoProducts.flatMap((product, index) => [product, collectedDemoProducts[index]]),
+  ...collectedDemoProducts.slice(fiveStoreDemoProducts.length),
+  ...curatedProductsList,
+];
 
 export const sampleScene1: ScenePost = {
   id: 'scene_01',

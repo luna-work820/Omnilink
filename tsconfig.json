@@ -23,6 +23,15 @@
       }
     ],
     "paths": {
+      "@phosphor-icons/react": [
+        "./components/ui/line-icons/phosphor"
+      ],
+      "@hugeicons/react": [
+        "./components/ui/line-icons/hugeicons"
+      ],
+      "@hugeicons/core-free-icons": [
+        "./components/ui/line-icons/hugeicons-data"
+      ],
       "@/*": [
         "./*"
       ]

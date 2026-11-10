@@ -47,7 +47,7 @@ function PlatformPicker({ value, disabledPlatform, disabled, onChange }: { value
 
 function PlatformMark({ platform }: { platform: OutboundPlatform }) {
   return platform === 'xiaohongshu'
-    ? <span aria-hidden="true" className="grid size-5 place-items-center rounded-[5px] bg-[#ff2442] text-[10px] font-bold leading-none text-white">书</span>
+    ? <span aria-hidden="true" className="grid size-5 place-items-center rounded-sm bg-[#ff2442] text-[10px] font-bold leading-none text-white">书</span>
     : <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5"><path fill="#25F4EE" d="M13.2 2v12.1a3.2 3.2 0 1 1-2.4-3.1V8.5a7 7 0 1 0 5.7 6.9V8.2a9.6 9.6 0 0 0 4.2 1.1V5.8A5.7 5.7 0 0 1 16.5 2h-3.3Z"/><path fill="#FE2C55" d="M15.2 2v12.1a3.2 3.2 0 1 1-2.4-3.1V8.5a7 7 0 1 0 5.7 6.9V8.2a9.6 9.6 0 0 0 4.2 1.1V5.8A5.7 5.7 0 0 1 18.5 2h-3.3Z"/><path fill="#111" d="M14.2 2v12.1a3.2 3.2 0 1 1-2.4-3.1V8.5a7 7 0 1 0 5.7 6.9V8.2a9.6 9.6 0 0 0 4.2 1.1V5.8A5.7 5.7 0 0 1 17.5 2h-3.3Z"/></svg>
 }
 

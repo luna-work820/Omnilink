@@ -1,10 +1,10 @@
 import App from '@/components/consumer-market/App'
-import { productsList, shelfProduct, cratesProduct, mobileTableProduct } from '@/components/consumer-market/data/mockData'
+import { fiveStoreDemoProducts, productsList, shelfProduct, cratesProduct, mobileTableProduct } from '@/components/consumer-market/data/mockData'
 import type { AiChatMessage, ProductItem, ScenePost } from '@/components/consumer-market/types'
 import { getStorefrontDiscoveryItems } from '@/lib/storefront/service'
 import { createClientServer } from '@/lib/supabase/server'
 import { getStoreByOwnerId } from '@/lib/stores/service'
-import { emptyEvaProfile, readEvaProfile } from '@/lib/consumer-advisor/eva-onboarding'
+import { emptyAiAssistantProfile, readAiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-profile'
 import { readContentBlocks } from '@/lib/creator-content'
 import { ShoppingPreferenceSurveyFlow } from '@/components/consumer-market/screens/ShoppingPreferenceSurveyFlow'
 import { readDeepSeekKeyForUser } from '@/lib/consumer-advisor/deepseek-key-cookie'
@@ -16,7 +16,7 @@ export const metadata = {
   description: '浏览创作者发布的内容、商品与推荐。',
 }
 
-const evaFirstUsePreviewMessages: AiChatMessage[] = [
+const aiAssistantFirstUsePreviewMessages: AiChatMessage[] = [
   {
     id: 'first-use-preview-user',
     conversationId: 'first-use-preview',
@@ -29,7 +29,7 @@ const evaFirstUsePreviewMessages: AiChatMessage[] = [
     conversationId: 'first-use-preview',
     text: '三种收纳方式对比：\n\n| 商品 | 收纳方式 | 参考价 |\n| --- | --- | ---: |\n| ![壁架](/consumer-market/img_exhibition_apartment.jpg) 极简隐形实木壁架 | 利用墙面收纳 | ¥210 |\n| ![桌面收纳箱](/consumer-market/img_crates.jpg) 三层铝合金桌面模块化收纳箱 | 桌面分类整理 | ¥125 |\n| ![移动边几](/consumer-market/img_mobile_table.jpg) 移动式建筑感亚克力边几 | 沙发旁灵活收纳 | ¥380 |',
     isUser: false,
-    timestamp: '个人助手',
+    timestamp: 'AI assistant',
     model: 'gemini',
     matchedProducts: [shelfProduct, cratesProduct, mobileTableProduct],
   },
@@ -86,9 +86,9 @@ function toConsumerProduct(
   }
 }
 
-export default async function ConsumerMarketPage({ searchParams }: { searchParams: Promise<{ evaPreview?: string; openEva?: string; activatePersonalAdvisor?: string; demoLogin?: string; newUserPreview?: string; feedChatPreview?: string; signupPreviewComplete?: string; shoppingPreferences?: string; shoppingPreferencesPreview?: string; post?: string }> }) {
+export default async function ConsumerMarketPage({ searchParams }: { searchParams: Promise<{ aiAssistantPreview?: string; openAssistant?: string; activatePersonalAdvisor?: string; demoLogin?: string; newUserPreview?: string; feedChatPreview?: string; signupPreviewComplete?: string; shoppingPreferences?: string; shoppingPreferencesPreview?: string; post?: string }> }) {
   const params = await searchParams
-  const evaPreview = process.env.NODE_ENV !== 'production' && params.evaPreview === '1'
+  const aiAssistantPreview = process.env.NODE_ENV !== 'production' && params.aiAssistantPreview === '1'
   const demoLogin = process.env.NODE_ENV !== 'production' && params.demoLogin === '1'
   const newUserPreview = process.env.NODE_ENV !== 'production' && params.newUserPreview === '1'
   const feedChatPreview = process.env.NODE_ENV !== 'production' && params.feedChatPreview === '1'
@@ -96,32 +96,35 @@ export default async function ConsumerMarketPage({ searchParams }: { searchParam
     return <App initialProducts={productsList} profileName="预览用户" profilePreview feedChatHomePreview />
   }
   if (newUserPreview) {
-    return <App initialProducts={productsList} profileName="预览用户" initialEvaChat initialEvaProfile={{ ...emptyEvaProfile, name: '预览用户' }} initialOnboarding deepSeekKeyConfigured={false} onboardingPreview initialInstalledSkillIds={DEFAULT_INSTALLED_SKILL_IDS} profilePreview />
+    return <App initialProducts={productsList} profileName="预览用户" initialAiAssistantChat initialAiAssistantProfile={{ ...emptyAiAssistantProfile, name: '预览用户' }} initialOnboarding deepSeekKeyConfigured={false} onboardingPreview initialInstalledSkillIds={DEFAULT_INSTALLED_SKILL_IDS} profilePreview />
   }
   const signupPreviewComplete = process.env.NODE_ENV !== 'production' && params.signupPreviewComplete === '1'
   if (signupPreviewComplete) {
-    return <App initialProducts={productsList} profileName="预览用户" initialEvaChat initialInstalledSkillIds={['personal-advisor', 'shopping-preferences']} profilePreview />
+    return <App initialProducts={productsList} profileName="预览用户" initialAiAssistantChat initialInstalledSkillIds={['personal-advisor', 'shopping-preferences']} profilePreview />
   }
   const shoppingPreferencesPreview = process.env.NODE_ENV !== 'production' && params.shoppingPreferencesPreview === '1'
   if (shoppingPreferencesPreview) {
-    return <ShoppingPreferenceSurveyFlow preview initialProfile={{ ...emptyEvaProfile, name: '预览用户', stage: 'done' }} />
+    return <ShoppingPreferenceSurveyFlow preview initialProfile={{ ...emptyAiAssistantProfile, name: '预览用户', stage: 'done' }} />
   }
-  if (demoLogin || evaPreview) {
+  if ((demoLogin || aiAssistantPreview) && params.shoppingPreferences === '1') {
+    return <ShoppingPreferenceSurveyFlow initialProfile={{ ...emptyAiAssistantProfile, name: '预览用户' }} preview />
+  }
+  if (demoLogin || aiAssistantPreview) {
     return <App
       initialProducts={productsList}
       profileName="预览用户"
-      initialEvaChat={evaPreview}
-      initialAiMessages={evaPreview ? evaFirstUsePreviewMessages : undefined}
+      initialAiAssistantChat={aiAssistantPreview}
+      initialAiMessages={aiAssistantPreview ? aiAssistantFirstUsePreviewMessages : undefined}
       profilePreview
     />
   }
   const supabase = await createClientServer()
   const { data: { user } } = await supabase.auth.getUser()
-  const evaProfile = readEvaProfile(user?.user_metadata?.eva_profile)
+  const aiAssistantProfile = readAiAssistantProfile(user?.user_metadata?.ai_assistant_profile)
   const signupName = typeof user?.user_metadata?.full_name === 'string' ? user.user_metadata.full_name.trim().slice(0, 40) : ''
-  const initialEvaProfile = {
-    ...(evaProfile.name ? evaProfile : { ...evaProfile, name: signupName }),
-    avatarUrl: typeof user?.user_metadata?.avatar_url === 'string' ? user.user_metadata.avatar_url : evaProfile.avatarUrl,
+  const initialAiAssistantProfile = {
+    ...(aiAssistantProfile.name ? aiAssistantProfile : { ...aiAssistantProfile, name: signupName }),
+    avatarUrl: typeof user?.user_metadata?.avatar_url === 'string' ? user.user_metadata.avatar_url : aiAssistantProfile.avatarUrl,
   }
   const rawEnabledSkills = user?.user_metadata?.enabled_skills
   const initialInstalledSkillIds: ('personal-advisor' | 'shopping-preferences' | 'know-yourself')[] = Array.isArray(rawEnabledSkills)
@@ -130,22 +133,25 @@ export default async function ConsumerMarketPage({ searchParams }: { searchParam
   if (user && !Array.isArray(rawEnabledSkills)) {
     await supabase.auth.updateUser({ data: { enabled_skills: initialInstalledSkillIds } })
   }
-  const needsWelcome = user?.user_metadata?.eva_onboarding_started === true && user.user_metadata?.eva_onboarding_complete !== true && evaProfile.stage !== 'done'
+  const needsWelcome = user?.user_metadata?.ai_assistant_onboarding_started === true && user.user_metadata?.ai_assistant_onboarding_complete !== true && aiAssistantProfile.stage !== 'done'
   const deepSeekKeyConfigured = user ? Boolean(await readDeepSeekKeyForUser(user.id)) : false
-  if (user && params.shoppingPreferences === '1') {
-    return <ShoppingPreferenceSurveyFlow initialProfile={initialEvaProfile} />
+  if (params.shoppingPreferences === '1' && (user || process.env.NODE_ENV !== 'production')) {
+    return <ShoppingPreferenceSurveyFlow
+      initialProfile={user ? initialAiAssistantProfile : { ...emptyAiAssistantProfile, name: '预览用户' }}
+      preview={!user}
+    />
   }
   const activatePersonalAdvisor = params.activatePersonalAdvisor === '1'
     && (!user || initialInstalledSkillIds.includes('personal-advisor'))
 
   const publisherReady = user ? Boolean(await getStoreByOwnerId(user.id)) : false
-  let initialProducts: ProductItem[] = []
+  let initialProducts: ProductItem[] = process.env.NODE_ENV === 'production' ? [] : fiveStoreDemoProducts
   let initialPosts: ScenePost[] = []
 
   try {
     const liveItems = await getStorefrontDiscoveryItems(100)
     const publishedProducts = liveItems.map(toConsumerProduct)
-    initialProducts = publishedProducts
+    initialProducts = process.env.NODE_ENV === 'production' ? publishedProducts : [...fiveStoreDemoProducts, ...publishedProducts]
     const { data: posts, error: postsError } = await supabase.from('creator_posts')
       .select('id, store_id, title, cover_url, body, product_ids, blocks')
       .eq('status', 'published').order('published_at', { ascending: false }).limit(30)
@@ -173,5 +179,5 @@ export default async function ConsumerMarketPage({ searchParams }: { searchParam
   }
 
   const hasLiveContent = process.env.NODE_ENV === 'production' || initialProducts.length > 0 || initialPosts.length > 0
-  return <App initialProducts={initialProducts} initialPosts={initialPosts} hasLiveProducts={hasLiveContent} profileName={initialEvaProfile.name || user?.email || null} publisherReady={publisherReady} initialEvaChat={params.openEva === '1' || needsWelcome} initialEvaProfile={initialEvaProfile} initialOnboarding={Boolean(user && needsWelcome)} deepSeekKeyConfigured={deepSeekKeyConfigured} initialInstalledSkillIds={user ? initialInstalledSkillIds : undefined} initialActiveSkillId={activatePersonalAdvisor ? 'personal-advisor' : undefined} initialPostId={params.post} />
+  return <App initialProducts={initialProducts} initialPosts={initialPosts} hasLiveProducts={hasLiveContent} profileName={initialAiAssistantProfile.name || user?.email || null} publisherReady={publisherReady} initialAiAssistantChat={params.openAssistant === '1' || needsWelcome} initialAiAssistantProfile={initialAiAssistantProfile} initialOnboarding={Boolean(user && needsWelcome)} deepSeekKeyConfigured={deepSeekKeyConfigured} initialInstalledSkillIds={user ? initialInstalledSkillIds : undefined} initialActiveSkillId={activatePersonalAdvisor ? 'personal-advisor' : undefined} initialPostId={params.post} />
 }

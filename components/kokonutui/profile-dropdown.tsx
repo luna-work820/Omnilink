@@ -161,7 +161,7 @@ const NAV_KEYS = new Set([
 ]);
 
 const ITEM_CLASS =
-  "flex w-full cursor-default items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-left text-sm text-zinc-700 outline-none transition-colors duration-100 focus:bg-zinc-100 focus:text-zinc-950 dark:text-zinc-300 dark:focus:bg-zinc-800 dark:focus:text-zinc-50";
+  "flex w-full cursor-default items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm text-zinc-700 outline-none transition-colors duration-100 focus:bg-zinc-100 focus:text-zinc-950 dark:text-zinc-300 dark:focus:bg-zinc-800 dark:focus:text-zinc-50";
 
 type Phase = "closed" | "open" | "closing";
 type Page = "main" | "accounts";
@@ -458,7 +458,7 @@ function HoldSignOut({
       {/* The fill: an inverted copy of the row, revealed left to right. */}
       <span
         aria-hidden="true"
-        className="absolute inset-0 flex items-center gap-2.5 rounded-[10px] bg-zinc-900 px-2.5 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900"
+        className="absolute inset-0 flex items-center gap-2.5 rounded-md bg-zinc-900 px-2.5 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900"
         style={{
           clipPath:
             holding || done
@@ -536,7 +536,7 @@ function ThemeRow({
       className="m-0 flex min-w-0 items-center justify-between border-0 py-1 pe-1 ps-2.5"
     >
       <span className="text-sm text-zinc-500 dark:text-zinc-400">Theme</span>
-      <span className="flex rounded-[10px] bg-zinc-100 p-0.5 dark:bg-zinc-800">
+      <span className="flex rounded-md bg-zinc-100 p-0.5 dark:bg-zinc-800">
         {THEMES.map(({ id, label, Icon }) => {
           const checked = id === theme;
           return (

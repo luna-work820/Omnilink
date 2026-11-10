@@ -4,7 +4,7 @@ import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'r
 import Link from 'next/link'
 import { ArrowLeft, ArrowUp, LockKeyhole, LockKeyholeOpen, Plus, RotateCcw, Sparkles, X } from 'lucide-react'
 import { LiquidGlass } from '@/components/ui/liquid-glass'
-import { EVA_SKILLS, type EvaSkillId } from '@/components/consumer-market/components/CapabilityLibrary'
+import { AI_ASSISTANT_SKILLS, type AiAssistantSkillId } from '@/components/consumer-market/components/CapabilityLibrary'
 import styles from './preview.module.css'
 
 const PINNED_SKILLS_STORAGE_KEY = 'omnilink_pinned_skills_v1'
@@ -89,8 +89,8 @@ export default function AiChatPreviewPage() {
   const [pendingImage, setPendingImage] = useState<ChatImage | null>(null)
   const [error, setError] = useState('')
   const [skillMenuOpen, setSkillMenuOpen] = useState(false)
-  const [selectedSkill, setSelectedSkill] = useState<EvaSkillId | null>(null)
-  const [pinnedSkillIds, setPinnedSkillIds] = useState<EvaSkillId[]>([])
+  const [selectedSkill, setSelectedSkill] = useState<AiAssistantSkillId | null>(null)
+  const [pinnedSkillIds, setPinnedSkillIds] = useState<AiAssistantSkillId[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const resultRef = useRef<HTMLDivElement>(null)
 
@@ -98,7 +98,7 @@ export default function AiChatPreviewPage() {
     try {
       const saved: unknown = JSON.parse(localStorage.getItem(PINNED_SKILLS_STORAGE_KEY) ?? '[]')
       if (Array.isArray(saved)) {
-        setPinnedSkillIds(EVA_SKILLS.map((skill) => skill.id).filter((id) => saved.includes(id)))
+        setPinnedSkillIds(AI_ASSISTANT_SKILLS.map((skill) => skill.id).filter((id) => saved.includes(id)))
       }
     } catch {
       setPinnedSkillIds([])
@@ -174,7 +174,7 @@ export default function AiChatPreviewPage() {
     setConfirmed(selected)
   }
 
-  function togglePinnedSkill(id: EvaSkillId) {
+  function togglePinnedSkill(id: AiAssistantSkillId) {
     const next = pinnedSkillIds.includes(id)
       ? pinnedSkillIds.filter((item) => item !== id)
       : [...pinnedSkillIds, id]
@@ -282,7 +282,7 @@ export default function AiChatPreviewPage() {
               {skillMenuOpen ? <X size={16} aria-hidden="true" /> : <Sparkles size={17} aria-hidden="true" />}
             </button>
             {pinnedSkillIds.map((id) => {
-              const skill = EVA_SKILLS.find((item) => item.id === id)
+              const skill = AI_ASSISTANT_SKILLS.find((item) => item.id === id)
               if (!skill) return null
               const Icon = skill.icon
               return (
@@ -294,7 +294,7 @@ export default function AiChatPreviewPage() {
             })}
             {skillMenuOpen && (
               <section id="ai-chat-skills" className={styles.skillPanel} aria-label="选择技能">
-                {EVA_SKILLS.map((skill) => {
+                {AI_ASSISTANT_SKILLS.map((skill) => {
                   const Icon = skill.icon
                   const pinned = pinnedSkillIds.includes(skill.id)
                   return (
@@ -322,15 +322,15 @@ export default function AiChatPreviewPage() {
             frost={0.6}
             tint={0.78}
             interactive
-            className={`${styles.composerGlass} eva-composer-surface`}
+            className={`${styles.composerGlass} ai-assistant-composer-surface`}
           >
             <div className={styles.composerRow}>
-              <button type="button" className={`${styles.addImage} eva-composer-plus`} onClick={() => fileInputRef.current?.click()} aria-label="添加图片" title="添加图片">
+              <button type="button" className={`${styles.addImage} ai-assistant-composer-plus`} onClick={() => fileInputRef.current?.click()} aria-label="添加图片" title="添加图片">
                 <Plus size={16} aria-hidden="true" />
               </button>
               <div className={styles.composerInputGroup}>
                 {selectedSkill && (() => {
-                  const skill = EVA_SKILLS.find((item) => item.id === selectedSkill)
+                  const skill = AI_ASSISTANT_SKILLS.find((item) => item.id === selectedSkill)
                   if (!skill) return null
                   const Icon = skill.icon
                   return <span className={styles.selectedSkill}><Icon size={13} aria-hidden="true" />{skill.title}<button type="button" onClick={() => setSelectedSkill(null)} aria-label={`移除${skill.title}`}><X size={13} aria-hidden="true" /></button></span>
@@ -343,7 +343,7 @@ export default function AiChatPreviewPage() {
                   </div>
                 )}
                 <textarea
-                  className={`eva-composer-input ${styles.textarea}`}
+                  className={`ai-assistant-composer-input ${styles.textarea}`}
                   value={draft}
                   onChange={(event) => { setDraft(event.target.value); if (error) setError('') }}
                   rows={1}
@@ -356,7 +356,7 @@ export default function AiChatPreviewPage() {
                 />
               </div>
               <span className={styles.modelName}>DeepSeek V4 Pro</span>
-              <button type="submit" className={`${styles.sendButton} eva-composer-send`} disabled={!draft.trim() && !pendingImage} aria-label="发送消息">
+              <button type="submit" className={`${styles.sendButton} ai-assistant-composer-send`} disabled={!draft.trim() && !pendingImage} aria-label="发送消息">
                 <ArrowUp size={16} aria-hidden="true" />
               </button>
             </div>

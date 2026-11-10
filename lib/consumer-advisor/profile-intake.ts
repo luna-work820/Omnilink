@@ -74,7 +74,7 @@ export function buildAdvisorProfile(answers: string[]): AdvisorProfile {
   return { version: 1, selfReported }
 }
 
-export function advisorProfileFromEvaProfile(value: unknown): AdvisorProfile {
+export function advisorProfileFromAiAssistantProfile(value: unknown): AdvisorProfile {
   const answers = value && typeof value === 'object' ? (value as { answers?: unknown }).answers : null
   const source = answers && typeof answers === 'object' ? answers as Record<string, unknown> : {}
   const selfReported = Object.fromEntries(PROFILE_QUESTIONS.map(({ key }) => {

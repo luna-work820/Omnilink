@@ -372,7 +372,7 @@ function SourceList({ id, sources }: { id: string; sources: SearchSource[] }) {
       initial={{ height: 0, opacity: 0 }}
       transition={{ duration: 0.25, ease: EASE_OUT }}
     >
-      <ol className="max-h-60 overflow-y-auto rounded-[18px] bg-white py-1 shadow-[0_1px_2px_rgb(0_0_0/0.04)] ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10">
+      <ol className="max-h-60 overflow-y-auto rounded-xl bg-white py-1 shadow-[0_1px_2px_rgb(0_0_0/0.04)] ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10">
         {sources.map((source, i) => (
           <motion.li
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -1016,7 +1016,7 @@ function SendStopButton({
               <>
                 <span className="max-sm:hidden">停止</span>
                 <span className="flex size-4 items-center justify-center">
-                  <span className="size-2 rounded-[2px] bg-current" />
+                  <span className="size-2 rounded-sm bg-current" />
                 </span>
               </>
             ) : (
@@ -1209,7 +1209,7 @@ export default function AI_Input_Search({
       <div className={cn("mx-auto w-full max-w-lg py-4", className)}>
         {/* biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents lint/a11y/noNoninteractiveElementInteractions: pointer-only shortcut; the textarea and buttons inside are keyboard reachable */}
         <div
-          className={cn("relative w-full cursor-text rounded-[22px] bg-black/[0.04] p-1 text-start dark:bg-white/[0.04]", shellClassName)}
+          className={cn("relative w-full cursor-text rounded-3xl bg-black/[0.04] p-1 text-start dark:bg-white/[0.04]", shellClassName)}
           onClick={(e) => handleContainerClick(e.target)}
         >
           {shellHeader}
@@ -1221,7 +1221,7 @@ export default function AI_Input_Search({
           {/* Card on a soft frame, as in AI Prompt; the trace opens in the frame. */}
           <div
             className={cn(
-              "flex flex-col rounded-[18px] bg-white ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10",
+              "flex flex-col rounded-xl bg-white ring-1 ring-black/[0.08] dark:bg-zinc-900 dark:ring-white/10",
               "shadow-[0_1px_2px_rgb(0_0_0/0.04),0_6px_20px_-10px_rgb(0_0_0/0.12)]",
               "transition-shadow duration-150 has-[textarea:focus-visible]:ring-black/20 dark:has-[textarea:focus-visible]:ring-white/25",
               inputContainerClassName

@@ -1,23 +1,25 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, Check, Download, FileText, Heart, Layers, Play, Plus, ShoppingBag, X } from 'lucide-react';
 import { useOmnilink } from '../context/OmnilinkContext';
 import { getDiscoveryType, type DiscoveryType, type ProductItem, type ScenePost } from '../types';
 import { rankDiscoveryFeed } from '@/lib/consumer-advisor/discovery-ranking';
-import { FeedChatDock, FEED_CHAT_SCROLL_KEY, type FeedAttachment } from '../components/FeedChatDock';
+import { FeedChatDock, FEED_CHAT_SCROLL_KEY, type FeedAttachment, type FeedDroppedReference } from '../components/FeedChatDock';
+import { SparkShockwave } from '../components/SparkShockwave';
+import { DisplayPrice } from '../components/DisplayPrice';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { AiChatMessage } from '../types';
 import { InitialAssistantSetup } from './InitialAssistantSetup';
-import { emptyEvaProfile, type EvaProfile } from '@/lib/consumer-advisor/eva-onboarding';
-import { DEFAULT_INSTALLED_SKILL_IDS, EVA_SKILLS, EVA_SKILLS_STORAGE_KEY, readInstalledSkillIds, type EvaSkillId } from '../components/CapabilityLibrary';
+import { emptyAiAssistantProfile, type AiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-profile';
+import { DEFAULT_INSTALLED_SKILL_IDS, AI_ASSISTANT_SKILLS, AI_ASSISTANT_SKILLS_STORAGE_KEY, readInstalledSkillIds, type AiAssistantSkillId } from '../components/CapabilityLibrary';
 
 const excludedDiscoveryProductIds = new Set(['P0006', 'ssd-cat-paw-slippers']);
 
-export const HomeScreen: React.FC<{ selectedType: DiscoveryType; navigationOpen?: boolean; chatDockPreview?: boolean; initialOnboarding?: boolean; initialEvaProfile?: EvaProfile; profileName?: string | null; deepSeekKeyConfigured?: boolean; onboardingPreview?: boolean; initialInstalledSkillIds?: EvaSkillId[]; persistSkillChanges?: boolean }> = ({ selectedType, navigationOpen = false, chatDockPreview = false, initialOnboarding = false, initialEvaProfile, profileName, deepSeekKeyConfigured = false, onboardingPreview = false, initialInstalledSkillIds, persistSkillChanges = false }) => {
+export const HomeScreen: React.FC<{ selectedType: DiscoveryType; onTypeSelect: (type: DiscoveryType) => void; navigationOpen?: boolean; feedBeforeRects?: Map<string, DOMRect>; chatDockPreview?: boolean; initialOnboarding?: boolean; initialAiAssistantProfile?: AiAssistantProfile; profileName?: string | null; deepSeekKeyConfigured?: boolean; onboardingPreview?: boolean; initialInstalledSkillIds?: AiAssistantSkillId[]; persistSkillChanges?: boolean }> = ({ selectedType, onTypeSelect, navigationOpen = false, feedBeforeRects, chatDockPreview = false, initialOnboarding = false, initialAiAssistantProfile, profileName, deepSeekKeyConfigured = false, onboardingPreview = false, initialInstalledSkillIds, persistSkillChanges = false }) => {
   const {
     feedItems,
     products,
@@ -25,6 +27,7 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; navigationOpen?
     rejectedProductIds,
     toggleSaveProduct,
     toggleRejectProduct,
+    addToCart,
     openFloatingProduct,
     openScenePost,
     aiMessages,
@@ -37,29 +40,108 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; navigationOpen?
     homeChatOpen,
     setHomeChatOpen,
   } = useOmnilink();
-  const visibleFeedItems = rankDiscoveryFeed(feedItems.filter((item) => item.type === 'product'
+  const visibleFeedItems = useMemo(() => {
+    const rankedFeedItems = rankDiscoveryFeed(feedItems.filter((item) => item.type === 'product'
       ? !excludedDiscoveryProductIds.has(item.product.id) && getDiscoveryType(item.product) === selectedType
       : item.scenePost.linkedProducts.some((product) => getDiscoveryType(product) === selectedType)), products, savedProductIds, rejectedProductIds);
+    const scenes = rankedFeedItems.filter((item) => item.type === 'scene');
+    return rankedFeedItems.filter((item) => item.type === 'product').flatMap((item, index) => [
+      item,
+      ...(index % 4 === 2 && scenes.length ? [scenes[Math.floor(index / 4) % scenes.length]] : []),
+    ]);
+  }, [feedItems, products, rejectedProductIds, savedProductIds, selectedType]);
   const feedScrollerRef = useRef<HTMLDivElement>(null);
+  const feedMasonryRef = useRef<HTMLDivElement>(null);
+  const feedEnteredRef = useRef(false);
+  const previousNavigationOpenRef = useRef(navigationOpen);
   const chatScrollerRef = useRef<HTMLElement>(null);
-  const [feedView, setFeedView] = useState<'feed' | 'chat' | 'returning'>(homeChatOpen ? 'chat' : 'feed');
+  const [feedView, setFeedView] = useState<'feed' | 'card' | 'chat' | 'returning'>(homeChatOpen ? 'chat' : 'feed');
+  const [shockwaveRun, setShockwaveRun] = useState<number | null>(null);
+  const shockwaveActiveRef = useRef(false);
   const [previewMessages, setPreviewMessages] = useState<AiChatMessage[]>([]);
+  const [cardHistoryOpen, setCardHistoryOpen] = useState(false);
+  const [droppedReferences, setDroppedReferences] = useState<FeedDroppedReference[]>([]);
+  const holdCleanupRef = useRef<(() => void) | null>(null);
+  const suppressCardClickRef = useRef(false);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [deepSeekConnected, setDeepSeekConnected] = useState(deepSeekKeyConfigured);
-  const [installedSkillIds, setInstalledSkillIds] = useState<EvaSkillId[]>(initialInstalledSkillIds ?? DEFAULT_INSTALLED_SKILL_IDS);
+  const [installedSkillIds, setInstalledSkillIds] = useState<AiAssistantSkillId[]>(initialInstalledSkillIds ?? DEFAULT_INSTALLED_SKILL_IDS);
   const [knowYourselfStage, setKnowYourselfStage] = useState<'closed' | 'preview' | 'detail'>('closed');
   const closeKnowYourselfPreview = useCallback(() => setKnowYourselfStage('closed'), []);
   const openKnowYourselfDetail = useCallback(() => setKnowYourselfStage('detail'), []);
   const returnToKnowYourselfPreview = useCallback(() => setKnowYourselfStage('preview'), []);
   const onboardingActive = initialOnboarding && !onboardingCompleted;
   const conversationMessages = chatDockPreview ? previewMessages : aiMessages.filter((message) => message.conversationId === activeAiConversationId);
-  const knowYourselfSkill = EVA_SKILLS.find((skill) => skill.id === 'know-yourself')!;
+  const knowYourselfSkill = AI_ASSISTANT_SKILLS.find((skill) => skill.id === 'know-yourself')!;
   const knowYourselfInstalled = installedSkillIds.includes(knowYourselfSkill.id);
+
+  useLayoutEffect(() => {
+    const masonry = feedMasonryRef.current;
+    if (!masonry) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      feedEnteredRef.current = true;
+      return;
+    }
+
+    const startedAt = performance.now();
+    let timer = 0;
+    const animateEntry = () => {
+      const visibleCards = Array.from(masonry.querySelectorAll<HTMLElement>('[data-feed-key]')).filter((card) => {
+        const rect = card.getBoundingClientRect();
+        return rect.height > 1 && rect.bottom > -120 && rect.top < window.innerHeight + 120;
+      });
+      const columns = [...new Set(visibleCards.map((card) => Math.round(card.getBoundingClientRect().left)))].sort((a, b) => a - b);
+      const elapsed = performance.now() - startedAt;
+      if ((elapsed < 200 || columns.length < Number(getComputedStyle(masonry).columnCount)) && elapsed < 1400) {
+        timer = window.setTimeout(animateEntry, 80);
+        return;
+      }
+      visibleCards.forEach((card) => {
+        const column = columns.indexOf(Math.round(card.getBoundingClientRect().left));
+        const rises = columns.length === 2 ? column % 2 === 0 : column !== 2;
+        const delay = Math.max(0, column) * 65;
+        const animation = card.animate([
+          { opacity: 0.6, filter: 'blur(2.5px)', transform: `translateY(${rises ? 84 : -84}px) scaleY(1.03)` },
+          { opacity: 1, filter: 'blur(0px)', transform: 'translateY(0) scaleY(1)' },
+        ], { duration: 1000, delay, easing: 'cubic-bezier(0.45, 0, 0.25, 1)' });
+      });
+      feedEnteredRef.current = true;
+    };
+    timer = window.setTimeout(animateEntry, 80);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (previousNavigationOpenRef.current !== navigationOpen && feedEnteredRef.current && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const masonry = feedMasonryRef.current;
+      const visibleCards = Array.from(masonry?.querySelectorAll<HTMLElement>('[data-feed-key]') ?? []).filter((card) => {
+        const rect = card.getBoundingClientRect();
+        return rect.height > 1 && rect.bottom > -120 && rect.top < window.innerHeight + 120;
+      });
+      visibleCards.forEach((card) => {
+        const before = feedBeforeRects?.get(card.dataset.feedKey ?? '');
+        if (!before) return;
+        const after = card.getBoundingClientRect();
+        const wasVisible = before.bottom > -120 && before.top < window.innerHeight + 120;
+        const dx = wasVisible ? Math.max(-96, Math.min(96, before.left - after.left)) : 0;
+        const dy = wasVisible ? Math.max(-72, Math.min(72, before.top - after.top)) : 32;
+        const sx = wasVisible ? Math.max(0.8, Math.min(1.2, before.width / after.width)) : 0.98;
+        const sy = wasVisible ? Math.max(0.8, Math.min(1.2, before.height / after.height)) : 0.98;
+        if (!Number.isFinite(sx * sy) || (Math.abs(dx) < 1 && Math.abs(dy) < 1 && Math.abs(sx - 1) < 0.01)) return;
+        card.getAnimations().forEach((animation) => animation.cancel());
+        const animation = card.animate([
+          { opacity: wasVisible ? 0.88 : 0.68, filter: 'blur(2px)', transformOrigin: 'top left', transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})` },
+          { opacity: 1, filter: 'blur(0px)', transformOrigin: 'top left', transform: 'translate(0, 0) scale(1, 1)' },
+        ], { duration: 900, easing: 'cubic-bezier(0.45, 0, 0.25, 1)' });
+      });
+    }
+    previousNavigationOpenRef.current = navigationOpen;
+  }, [navigationOpen, feedBeforeRects]);
 
   useEffect(() => {
     const ids = initialInstalledSkillIds ?? readInstalledSkillIds();
     setInstalledSkillIds(ids);
-    if (initialInstalledSkillIds) localStorage.setItem(EVA_SKILLS_STORAGE_KEY, JSON.stringify(ids));
+    if (initialInstalledSkillIds) localStorage.setItem(AI_ASSISTANT_SKILLS_STORAGE_KEY, JSON.stringify(ids));
   }, [initialInstalledSkillIds]);
 
   const toggleKnowYourself = () => {
@@ -67,9 +149,9 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; navigationOpen?
       ? installedSkillIds.filter((id) => id !== knowYourselfSkill.id)
       : [...installedSkillIds, knowYourselfSkill.id];
     setInstalledSkillIds(next);
-    localStorage.setItem(EVA_SKILLS_STORAGE_KEY, JSON.stringify(next));
+    localStorage.setItem(AI_ASSISTANT_SKILLS_STORAGE_KEY, JSON.stringify(next));
     if (!persistSkillChanges) return;
-    void fetch('/api/consumer/eva-profile', {
+    void fetch('/api/consumer/ai-assistant-profile', {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -114,14 +196,14 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; navigationOpen?
     };
   }, [feedView]);
 
-  const submitFeedMessage = (message: string, selectedProductIds: string[]) => {
+  const submitFeedMessage = (message: string, selectedProductIds: string[], hasActiveSkill: boolean) => {
     if (onboardingActive) return;
     if (chatDockPreview) setPreviewMessages((current) => [...current, { id: `preview-${Date.now()}`, conversationId: activeAiConversationId, text: message, isUser: true }]);
-    else sendAiMessage(message, selectedProductIds);
-    setHomeChatOpen(true);
+    else sendAiMessage(message, selectedProductIds, hasActiveSkill);
+    setFeedView((current) => current === 'chat' ? current : 'card');
   };
 
-  const submitFeedAttachment = (attachment: FeedAttachment, message: string, selectedProductIds: string[]) => {
+  const submitFeedAttachment = (attachment: FeedAttachment, message: string, selectedProductIds: string[], hasActiveSkill: boolean) => {
     if (onboardingActive) return;
     if (chatDockPreview) {
       setPreviewMessages((current) => [...current, {
@@ -132,20 +214,127 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; navigationOpen?
         ...(attachment.kind === 'image' ? { image: attachment.data } : { fileName: attachment.name }),
       }]);
     } else if (attachment.kind === 'image') {
-      sendAiImageMessage(attachment.data, message, selectedProductIds);
+      sendAiImageMessage(attachment.data, message, selectedProductIds, hasActiveSkill);
     } else {
-      sendAiFileMessage(attachment.name, attachment.data, message, selectedProductIds);
+      sendAiFileMessage(attachment.name, attachment.data, message, selectedProductIds, hasActiveSkill);
     }
-    setHomeChatOpen(true);
+    setFeedView((current) => current === 'chat' ? current : 'card');
   };
 
-  const returnToFeed = () => setHomeChatOpen(false);
+  const activateChat = () => {
+    if (feedView !== 'feed') return;
+    setFeedView('card');
+    if (shockwaveActiveRef.current) return;
+    shockwaveActiveRef.current = true;
+    setShockwaveRun((current) => (current ?? 0) + 1);
+  };
 
-  const feedContent = <>
-    <section className="px-2 sm:px-2.5">
-      {visibleFeedItems.length === 0 && <p className="mx-auto max-w-md py-16 text-center text-sm text-[var(--market-text-secondary)]">{selectedType}暂无内容。</p>}
-      <div className={`columns-2 gap-1.5 ${navigationOpen ? 'lg:columns-2 2xl:columns-2' : 'lg:columns-3 2xl:columns-4'}`}>
-        <div className="mb-1.5 break-inside-avoid">
+  const returnToFeed = () => {
+    shockwaveActiveRef.current = false;
+    setShockwaveRun(null);
+    setCardHistoryOpen(false);
+    if (feedView === 'card') setFeedView('feed');
+    else setHomeChatOpen(false);
+  };
+
+  useEffect(() => () => holdCleanupRef.current?.(), []);
+
+  const startCardHold = (event: React.PointerEvent<HTMLDivElement>, reference: FeedDroppedReference) => {
+    if (event.button !== 0 || onboardingActive || (event.target as HTMLElement).closest('[role="group"]')) return;
+    holdCleanupRef.current?.();
+    const card = event.currentTarget;
+    const pointerId = event.pointerId;
+    const startX = event.clientX;
+    const startY = event.clientY;
+    let active = false;
+    let ghost: HTMLDivElement | null = null;
+    let overComposer = false;
+    let lastX = startX;
+    let lastY = startY;
+    const dropTarget = document.querySelector<HTMLElement>('.feed-chat-fluid-card');
+    const clear = () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', cancel);
+      window.removeEventListener('touchmove', preventTouchScroll);
+      dropTarget?.removeAttribute('data-drag-over');
+      card.removeAttribute('data-dragging');
+      ghost?.remove();
+      holdCleanupRef.current = null;
+    };
+    const update = (x: number, y: number) => {
+      if (!ghost) return;
+      ghost.style.transform = `translate3d(${x + 14}px, ${y + 14}px, 0) scale(${ghost.dataset.dragScale})`;
+      const bounds = dropTarget?.getBoundingClientRect();
+      overComposer = Boolean(bounds && x >= bounds.left - 12 && x <= bounds.right + 12 && y >= bounds.top - 12 && y <= bounds.bottom + 12);
+      if (overComposer) dropTarget?.setAttribute('data-drag-over', 'true');
+      else dropTarget?.removeAttribute('data-drag-over');
+    };
+    const activate = () => {
+      if (active) return;
+      active = true;
+      card.setAttribute('data-dragging', 'true');
+      ghost = document.createElement('div');
+      ghost.className = 'feed-card-drag-ghost';
+      ghost.setAttribute('aria-hidden', 'true');
+      ghost.inert = true;
+      const rect = card.getBoundingClientRect();
+      ghost.style.width = `${rect.width}px`;
+      ghost.style.height = `${rect.height}px`;
+      ghost.dataset.dragScale = String(Math.min(0.82, 230 / rect.width, 310 / rect.height));
+      ghost.appendChild(card.firstElementChild!.cloneNode(true));
+      document.querySelector('.consumer-market-shell')?.appendChild(ghost);
+      update(lastX, lastY);
+    };
+    const timer = window.setTimeout(activate, 380);
+    const move = (moveEvent: PointerEvent) => {
+      if (moveEvent.pointerId !== pointerId) return;
+      lastX = moveEvent.clientX;
+      lastY = moveEvent.clientY;
+      if (!active && Math.hypot(lastX - startX, lastY - startY) > 9) {
+        if (moveEvent.pointerType === 'mouse') activate();
+        else { clear(); return; }
+      }
+      if (active) { moveEvent.preventDefault(); update(lastX, lastY); }
+    };
+    const end = (upEvent: PointerEvent) => {
+      if (upEvent.pointerId !== pointerId) return;
+      if (active) update(upEvent.clientX, upEvent.clientY);
+      const shouldDrop = active && overComposer;
+      if (active) {
+        suppressCardClickRef.current = true;
+        window.setTimeout(() => { suppressCardClickRef.current = false; }, 500);
+      }
+      clear();
+      if (shouldDrop) {
+        setDroppedReferences((current) => current.some((item) => item.key === reference.key) ? current : [...current, reference]);
+        setFeedView((current) => current === 'feed' ? 'card' : current);
+      }
+    };
+    const cancel = (cancelEvent: PointerEvent) => { if (cancelEvent.pointerId === pointerId) clear(); };
+    const preventTouchScroll = (touchEvent: TouchEvent) => { if (active) touchEvent.preventDefault(); };
+    window.addEventListener('pointermove', move, { passive: false });
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', cancel);
+    window.addEventListener('touchmove', preventTouchScroll, { passive: false });
+    holdCleanupRef.current = clear;
+  };
+
+  const renderFeedItem = (item: (typeof visibleFeedItems)[number], index: number) =>
+    <div key={`${item.type}-${item.type === 'product' ? item.product.id : item.scenePost.id}-${index}`} data-feed-key={`${item.type}-${item.type === 'product' ? item.product.id : item.scenePost.id}-${index}`} className="feed-masonry-card mb-1.5 break-inside-avoid" onPointerDown={(event) => startCardHold(event, item.type === 'product' ? { key: `product-${item.product.id}`, title: item.product.name, url: item.product.sourceUrl ?? (item.product.storeSlug ? `${window.location.origin}/store/${encodeURIComponent(item.product.storeSlug)}/products/${encodeURIComponent(item.product.id)}` : undefined), productId: item.product.id, detail: [item.product.storeName, item.product.formattedPrice, item.product.shortDescription].filter(Boolean).join('；').slice(0, 300) } : { key: `scene-${item.scenePost.id}`, title: item.scenePost.title, url: `${window.location.origin}/discover?post=${encodeURIComponent(item.scenePost.id)}`, detail: [item.scenePost.editorName, item.scenePost.description].filter(Boolean).join('；').slice(0, 300) })} onDragStart={(event) => event.preventDefault()} onContextMenu={(event) => { if (event.currentTarget.hasAttribute('data-dragging')) event.preventDefault(); }} onClickCapture={(event) => { if (suppressCardClickRef.current) { event.preventDefault(); event.stopPropagation(); suppressCardClickRef.current = false; } }}>
+      {item.type === 'product'
+        ? <FeedProductCard product={item.product} onClick={() => item.product.sourceUrl ? window.location.assign(item.product.sourceUrl) : openFloatingProduct(item.product)} />
+        : <FeedSceneCard scenePost={item.scenePost} onClick={() => openScenePost(item.scenePost)} />}
+    </div>;
+
+  const feedColumnClasses = navigationOpen ? 'columns-2' : 'columns-2 lg:columns-3';
+  const feedInteractive = feedView === 'feed' || feedView === 'card';
+
+  const feedContent = <section id="discovery-feed-panel" aria-label="探索内容" className="px-2 sm:px-2.5">
+      {visibleFeedItems.length === 0 && <p className="mx-auto max-w-md py-16 text-center text-sm text-[var(--market-text-secondary)]">{selectedType === '数字' ? '信息' : selectedType}暂无内容。</p>}
+      <div ref={feedMasonryRef} className={`${feedColumnClasses} gap-1.5`}>
+        <div data-feed-key="know-yourself" className="feed-masonry-card mb-1.5 break-inside-avoid">
           <article className="product-feed-card group w-full select-none rounded-[var(--radius-card)] bg-[var(--market-canvas)] p-1 transition-colors duration-200 hover:bg-[var(--market-hover)]">
             <div className="px-2">
               <div className="flex min-h-16 w-full min-w-0 flex-col justify-center gap-0.5 py-2.5">
@@ -154,35 +343,26 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; navigationOpen?
               </div>
             </div>
             <button type="button" onClick={() => setKnowYourselfStage('preview')} aria-label="预览识己技能" className="block w-full cursor-pointer text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)]">
-              <img src="/consumer-market/skills/know-yourself-cover.png" alt="" className="block aspect-[3/4] w-full object-cover" loading="lazy" />
+              <img src="/consumer-market/skills/know-yourself-cover.png" alt="" className="block aspect-[3/4] w-full rounded-[var(--radius-card-nested)] object-cover" loading="lazy" />
               <span className="flex min-h-10 items-center px-2 py-2">
                 <span className="text-xs font-medium leading-tight text-[var(--market-ink)] sm:text-sm">{knowYourselfSkill.title}</span>
               </span>
             </button>
           </article>
         </div>
-        {visibleFeedItems.map((item, idx) =>
-          <div key={`${item.type}-${idx}`} className="mb-1.5 break-inside-avoid">
-            {item.type === 'product' ? (
-              <FeedProductCard product={item.product} onClick={() => openFloatingProduct(item.product)} />
-            ) : (
-              <FeedSceneCard scenePost={item.scenePost} onClick={() => openScenePost(item.scenePost)} />
-            )}
-          </div>
-        )}
+        {visibleFeedItems.map(renderFeedItem)}
       </div>
-    </section>
-  </>;
+    </section>;
 
   return (
     <div className="relative h-full min-h-0 w-full overflow-hidden bg-[var(--market-canvas)]">
       <div className="relative h-full min-h-0 w-full overflow-hidden">
         <div
           ref={feedScrollerRef}
-          aria-hidden={feedView !== 'feed'}
-          inert={feedView !== 'feed'}
+          aria-hidden={!feedInteractive}
+          inert={!feedInteractive}
           data-navigation-open={navigationOpen}
-          className={`home-feed-scroller absolute inset-0 overflow-y-auto overscroll-contain pb-[calc(6rem+env(safe-area-inset-bottom))] pt-[54px] transition-[transform,padding] duration-500 ease-out motion-reduce:transition-none ${feedView === 'chat' ? '-translate-y-full' : feedView === 'returning' ? 'translate-y-full transition-none' : 'translate-y-0'}`}
+          className={`home-feed-scroller absolute inset-x-0 bottom-0 top-0 overscroll-contain pb-[calc(6rem+env(safe-area-inset-bottom))] pt-[56px] md:pt-[24px] transition-transform duration-500 ease-out motion-reduce:transition-none ${feedInteractive ? 'overflow-y-auto' : 'overflow-hidden'} ${feedView === 'chat' ? '-translate-y-full' : feedView === 'returning' ? 'translate-y-full transition-none' : 'translate-y-0'}`}
         >
           {feedContent}
         </div>
@@ -192,24 +372,60 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; navigationOpen?
           aria-live="polite"
           aria-hidden={feedView !== 'chat'}
           inert={feedView !== 'chat'}
-          className={`absolute inset-0 overflow-y-auto bg-[var(--market-canvas)] px-4 pb-36 pt-[74px] transition-transform duration-500 ease-out motion-reduce:transition-none sm:px-6 sm:pb-28 ${feedView === 'chat' ? 'translate-y-0' : feedView === 'returning' ? '-translate-y-full' : 'translate-y-full'}`}
+          className={`home-chat-scroller absolute inset-x-0 bottom-0 top-0 overflow-y-auto bg-[var(--market-canvas)] px-4 pb-36 pt-[72px] transition-transform duration-500 ease-out motion-reduce:transition-none sm:px-6 sm:pb-28 ${feedView === 'chat' ? 'translate-y-0' : feedView === 'returning' ? '-translate-y-full' : 'translate-y-full'}`}
         >
           <div className="mx-auto w-full max-w-3xl space-y-6">
-            {initialOnboarding && <InitialAssistantSetup initialProfile={initialEvaProfile ?? emptyEvaProfile} defaultName={profileName ?? ''} deepSeekConfigured={deepSeekConnected} preview={onboardingPreview} onDeepSeekConfigured={() => setDeepSeekConnected(true)} onComplete={() => setOnboardingCompleted(true)} />}
+            {initialOnboarding && <InitialAssistantSetup initialProfile={initialAiAssistantProfile ?? emptyAiAssistantProfile} defaultName={profileName ?? ''} deepSeekConfigured={deepSeekConnected} preview={onboardingPreview} onDeepSeekConfigured={() => setDeepSeekConnected(true)} onComplete={() => setOnboardingCompleted(true)} />}
             {conversationMessages.map((message) => <div key={message.id} className={message.isUser ? 'flex justify-end' : 'text-[var(--market-ink)]'}>
-              {message.isUser ? <div className="max-w-[88%] rounded-[20px] bg-[var(--market-surface-muted)] px-4 py-3 text-sm leading-6 sm:text-base">{message.image && <img src={message.image} alt="已发送的图片" className="mb-2 max-h-64 max-w-full rounded-[12px] object-contain" />}{message.fileName && <p className="mb-1 text-xs">{message.fileName}</p>}<p className="whitespace-pre-wrap break-words">{message.text}</p></div> : <div className="max-w-full break-words text-sm leading-7 sm:text-base [&_p]:mb-3 [&_table]:my-3 [&_table]:w-full [&_table]:border-collapse [&_td]:border-b-[0.5px] [&_td]:border-[var(--market-border)] [&_td]:p-2 [&_th]:border-b-[0.5px] [&_th]:border-[var(--market-border)] [&_th]:p-2 [&_th]:text-left"><ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: ({ src, alt }) => typeof src === 'string' && src.startsWith('/consumer-market/') ? <img src={src} alt={alt ?? ''} className="mr-2 inline-block h-11 w-11 rounded-[8px] object-cover align-middle" /> : null }}>{message.text}</ReactMarkdown>{message.matchedProducts?.length ? <div className="mt-3 flex gap-2 overflow-x-auto pb-2">{message.matchedProducts.map((product) => <div key={product.id} className="w-44 shrink-0 rounded-[14px] border-[0.5px] border-[var(--market-border)] p-2 text-xs"><button type="button" onClick={() => openFloatingProduct(product)} className="flex w-full flex-col gap-2 text-left focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><img src={product.mainImage} alt="" className="aspect-square w-full rounded-[8px] object-cover" /><span className="line-clamp-2">{product.name}</span><span className="text-[var(--market-text-muted)]">{product.formattedPrice}</span></button><div className="mt-2 flex items-center gap-3 border-t-[0.5px] border-[var(--market-border)] pt-1"><button type="button" onClick={() => toggleSaveProduct(product.id)} aria-label={`${savedProductIds.includes(product.id) ? '取消收藏' : '收藏'}${product.name}`} aria-pressed={savedProductIds.includes(product.id)} className="flex min-h-8 items-center gap-1"><Heart size={14} fill={savedProductIds.includes(product.id) ? 'currentColor' : 'none'} aria-hidden="true" />收藏</button><button type="button" onClick={() => toggleRejectProduct(product.id)} aria-pressed={rejectedProductIds.includes(product.id)} className="min-h-8 text-[var(--market-text-muted)]">{rejectedProductIds.includes(product.id) ? '撤销' : '不合适'}</button></div></div>)}</div> : null}</div>}
+              {message.isUser ? <div className="max-w-[88%] rounded-2xl bg-[var(--market-surface-muted)] px-4 py-3 text-sm leading-6 sm:text-base">{message.image && <img src={message.image} alt="已发送的图片" className="mb-2 max-h-64 max-w-full rounded-lg object-contain" />}{message.fileName && <p className="mb-1 text-xs">{message.fileName}</p>}<p className="whitespace-pre-wrap break-words">{message.text}</p></div> : <div className="max-w-full break-words text-sm leading-7 sm:text-base [&_p]:mb-3 [&_table]:my-3 [&_table]:w-full [&_table]:border-collapse [&_td]:border-b-[0.5px] [&_td]:border-[var(--market-border)] [&_td]:p-2 [&_th]:border-b-[0.5px] [&_th]:border-[var(--market-border)] [&_th]:p-2 [&_th]:text-left">{message.intent === 'outfit-styling' && <p className="mb-1 text-xs font-medium text-[var(--market-text-muted)]">穿搭建议</p>}<ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: ({ src, alt }) => typeof src === 'string' && src.startsWith('/consumer-market/') ? <img src={src} alt={alt ?? ''} className="mr-2 inline-block h-11 w-11 rounded-md object-cover align-middle" /> : null }}>{message.text}</ReactMarkdown>{message.matchedProducts?.length ? <div className="mt-3 flex gap-2 overflow-x-auto pb-2">{message.matchedProducts.map((product) => {
+                const defaultVariant = product.variants?.find((variant) => variant.id === product.defaultVariantId);
+                const needsVariant = Boolean(product.options?.length);
+                const canQuickAdd = getDiscoveryType(product) === '商品' && product.priceMode !== 'inquiry' && (!needsVariant || Boolean(defaultVariant));
+                const defaultVariantLabel = defaultVariant ? Object.values(defaultVariant.optionValues).filter(Boolean).join(' / ') || '标准' : '标准';
+
+                return <div key={product.id} className="w-44 shrink-0 rounded-xl border-[0.5px] border-[var(--market-border)] p-2 text-xs">
+                  <button type="button" onClick={() => openFloatingProduct(product)} className="flex w-full flex-col gap-2 text-left focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">
+                    <img src={product.mainImage} alt="" className="aspect-square w-full rounded-md object-cover" />
+                    <span className="line-clamp-2">{product.name}</span>
+                    <span className="text-[var(--market-text-muted)]"><DisplayPrice product={product} /></span>
+                    {message.matchReasons?.[product.id] && <span className="line-clamp-2 text-[var(--market-text-secondary)]">{message.matchReasons[product.id]}</span>}
+                  </button>
+                  {canQuickAdd && <button type="button" onClick={() => addToCart(product, defaultVariantLabel, defaultVariant?.optionValues)} aria-label={`将${product.name}加入购物车`} className="mt-2 flex min-h-9 w-full items-center justify-center gap-1 rounded-full bg-[var(--market-ink)] px-2 text-[var(--market-canvas)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)]">
+                    <ShoppingBag size={14} aria-hidden="true" />加入购物车
+                  </button>}
+                  <div className="mt-2 flex items-center gap-3 border-t-[0.5px] border-[var(--market-border)] pt-1">
+                    <button type="button" onClick={() => toggleSaveProduct(product.id)} aria-label={`${savedProductIds.includes(product.id) ? '取消收藏' : '收藏'}${product.name}`} aria-pressed={savedProductIds.includes(product.id)} className="flex min-h-8 items-center gap-1"><Heart size={14} fill={savedProductIds.includes(product.id) ? 'currentColor' : 'none'} aria-hidden="true" />收藏</button>
+                    <button type="button" onClick={() => toggleRejectProduct(product.id)} aria-pressed={rejectedProductIds.includes(product.id)} className="min-h-8 text-[var(--market-text-muted)]">{rejectedProductIds.includes(product.id) ? '撤销' : '不合适'}</button>
+                  </div>
+                </div>;
+              })}</div> : null}{message.usedPreferences?.length ? <p className="mt-2 text-xs text-[var(--market-text-muted)]">参考偏好：{message.usedPreferences.join('、')}</p> : null}</div>}
             </div>)}
             {isAiThinking && !chatDockPreview && <p className="text-sm text-[var(--market-text-muted)]" role="status">正在分析</p>}
           </div>
         </section>
+        {shockwaveRun !== null && <SparkShockwave key={shockwaveRun} navigationOpen={navigationOpen} onComplete={() => {
+          shockwaveActiveRef.current = false;
+          setShockwaveRun(null);
+        }} />}
         <FeedChatDock
-          chatOpen={feedView === 'chat'}
+          selectedType={selectedType}
+          onTypeSelect={onTypeSelect}
+          chatOpen={feedView === 'card' || feedView === 'chat'}
+          chatCardOpen={feedView === 'card'}
+          cardHistoryOpen={cardHistoryOpen}
+          onToggleCardHistory={() => setCardHistoryOpen((open) => !open)}
+          onExpandChat={() => setHomeChatOpen(true)}
+          conversationMessages={conversationMessages}
           navigationOpen={navigationOpen}
           disabled={onboardingActive}
           initialInstalledSkillIds={initialInstalledSkillIds}
           onSubmitMessage={submitFeedMessage}
           onSubmitAttachment={submitFeedAttachment}
           onBrowse={returnToFeed}
+          onActivate={activateChat}
+          droppedReferences={droppedReferences}
+          onRemoveDroppedReference={(key) => setDroppedReferences((current) => current.filter((reference) => reference.key !== key))}
+          onClearDroppedReferences={() => setDroppedReferences([])}
           getFeedScrollTop={() => feedScrollerRef.current?.scrollTop ?? 0}
         />
         {knowYourselfStage === 'preview' && <KnowYourselfPreview onClose={closeKnowYourselfPreview} onOpenDetail={openKnowYourselfDetail} />}
@@ -240,7 +456,7 @@ const KnowYourselfPreview: React.FC<{ onClose: () => void; onOpenDetail: () => v
             <span className="flex min-h-0 flex-1 flex-col justify-center gap-3 overflow-y-auto px-5 py-6 sm:px-8">
               <span className="text-xs text-[var(--market-text-muted)]">发布者 Luna</span>
               <span className="text-2xl font-semibold leading-tight sm:text-3xl">识己</span>
-              <span className="max-w-xl text-sm leading-6 text-[var(--market-text-secondary)]">{EVA_SKILLS.find((skill) => skill.id === 'know-yourself')?.description}</span>
+              <span className="max-w-xl text-sm leading-6 text-[var(--market-text-secondary)]">{AI_ASSISTANT_SKILLS.find((skill) => skill.id === 'know-yourself')?.description}</span>
               <span className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-[var(--market-ink)]">查看详情 <ArrowRight size={16} aria-hidden="true" /></span>
             </span>
           </button>
@@ -271,7 +487,7 @@ const KnowYourselfDetail: React.FC<{ installed: boolean; onClose: () => void; on
           <div className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl bg-[var(--market-surface-muted)]">
             <img src="/consumer-market/skills/know-yourself-cover.png" alt="识己技能封面" className="h-full w-full object-cover" />
             <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between p-3.5">
-              <button type="button" onClick={onClose} aria-label="返回预览" className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-black/25 text-white backdrop-blur-md transition-colors hover:bg-black/40 focus-visible:outline-2 focus-visible:outline-white">
+              <button type="button" onClick={onClose} aria-label="返回预览" data-glasswork="auto" className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full transition-transform focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">
                 <ArrowLeft size={18} aria-hidden="true" />
               </button>
               <span className="rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-[var(--market-ink)] backdrop-blur-md">技能</span>
@@ -286,7 +502,7 @@ const KnowYourselfDetail: React.FC<{ installed: boolean; onClose: () => void; on
             <h1 className="mt-3 text-lg font-semibold leading-snug">识己</h1>
             <div className="mt-5">
               <h2 className="mb-2 text-[11px] font-semibold tracking-[0.12em] text-[var(--market-text-muted)]">技能介绍</h2>
-              <p className="text-sm leading-6 text-[var(--market-text-secondary)]">{EVA_SKILLS.find((skill) => skill.id === 'know-yourself')?.description}</p>
+              <p className="text-sm leading-6 text-[var(--market-text-secondary)]">{AI_ASSISTANT_SKILLS.find((skill) => skill.id === 'know-yourself')?.description}</p>
             </div>
             <div className="mt-5 pb-8">
               <h2 className="mb-2 text-[11px] font-semibold tracking-[0.12em] text-[var(--market-text-muted)]">技能文件</h2>
@@ -333,12 +549,12 @@ const FeedProductCard: React.FC<{
             aria-label={`进入${product.storeName}的网页`}
             title={product.storeName}
           >
-            <span className="text-[11px] font-medium tracking-[0.12em] text-[var(--market-text-muted)]">发布者</span>
+            <span className="text-[11px] font-medium tracking-[0.12em] text-[var(--market-text-muted)]">商家</span>
             <span className="w-full truncate text-base font-semibold leading-[1.25] text-[var(--market-ink)] hover:underline sm:text-lg">{product.storeName}</span>
           </Link>
         ) : (
           <div className="flex min-h-16 min-w-0 flex-col justify-center gap-0.5 py-2.5" title={product.storeName}>
-            <span className="text-[11px] font-medium tracking-[0.12em] text-[var(--market-text-muted)]">发布者</span>
+            <span className="text-[11px] font-medium tracking-[0.12em] text-[var(--market-text-muted)]">商家</span>
             <span className="w-full truncate text-base font-semibold leading-[1.25] text-[var(--market-ink)] sm:text-lg">{product.storeName}</span>
           </div>
         )}
@@ -391,7 +607,7 @@ const FeedProductCard: React.FC<{
         className="product-feed-card__details flex min-h-10 w-full cursor-pointer items-center justify-between gap-2 px-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--market-accent)]"
       >
         <span className="min-w-0 flex-1 truncate text-xs font-normal leading-tight text-[var(--market-text-secondary)] sm:text-sm">{product.name}</span>
-        <span className="shrink-0 text-xs font-normal text-[var(--market-text-muted)]">{product.formattedPrice}</span>
+        <span className="shrink-0 text-xs font-normal text-[var(--market-text-muted)]"><DisplayPrice product={product} /></span>
       </button>
     </div>
   );

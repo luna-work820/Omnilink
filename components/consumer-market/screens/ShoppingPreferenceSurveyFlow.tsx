@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { advanceEvaProfile, readEvaProfile, type EvaProfile } from '@/lib/consumer-advisor/eva-onboarding'
+import { advanceAiAssistantProfile, readAiAssistantProfile, type AiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-profile'
+import { readPreviewAiAssistantProfile, savePreviewAiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-preview-storage'
 import {
   nextShoppingPreferenceDeepQuestion,
   shoppingPreferenceSurveyProgress,
@@ -13,7 +14,7 @@ import {
 const INSTALLED_SKILLS = ['personal-advisor', 'shopping-preferences']
 
 type Props = {
-  initialProfile: EvaProfile
+  initialProfile: AiAssistantProfile
   preview?: boolean
   signupMode?: boolean
   embedded?: boolean
@@ -48,17 +49,17 @@ export function ShoppingPreferenceSurveyFlow({ initialProfile, preview = false, 
     setBusy(true)
     setError(null)
     try {
-      let nextProfile: EvaProfile
+      let nextProfile: AiAssistantProfile
       if (preview) {
-        nextProfile = advanceEvaProfile(profile, payload)
-        try { localStorage.setItem('omnilink_preview_eva_profile', JSON.stringify(nextProfile)) } catch {}
+        nextProfile = advanceAiAssistantProfile(profile, payload)
+        savePreviewAiAssistantProfile(nextProfile)
         try { localStorage.setItem('omnilink_consumer_skills_v2', JSON.stringify(INSTALLED_SKILLS)) } catch {}
       } else {
-        const response = await fetch('/api/consumer/eva-profile', {
+        const response = await fetch('/api/consumer/ai-assistant-profile', {
           method: 'PATCH', credentials: 'include',
           headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
         })
-        const result = await response.json() as { profile?: EvaProfile; error?: string }
+        const result = await response.json() as { profile?: AiAssistantProfile; error?: string }
         if (!response.ok || !result.profile) throw new Error(result.error || '保存失败，请重试。')
         nextProfile = result.profile
       }
@@ -69,8 +70,8 @@ export function ShoppingPreferenceSurveyFlow({ initialProfile, preview = false, 
         onComplete?.()
       } else if (payload.action === 'shopping-preference-pause' || (signupMode && payload.action !== 'shopping-preference-reset' && nextProfile.shoppingPreferenceSurvey.status === 'complete')) {
         router.replace(preview && signupMode
-          ? '/discover?openEva=1&activatePersonalAdvisor=1&signupPreviewComplete=1'
-          : '/discover?openEva=1&activatePersonalAdvisor=1')
+          ? '/discover?openAssistant=1&activatePersonalAdvisor=1&signupPreviewComplete=1'
+          : '/discover?openAssistant=1&activatePersonalAdvisor=1')
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '保存失败，请重试。')
@@ -103,27 +104,25 @@ export function ShoppingPreferenceSurveyFlow({ initialProfile, preview = false, 
     if (next.length <= (question.max_select ?? values.length)) setSelection(next)
   }
 
-  const appBackUrl = signupMode ? '/discover' : '/discover?openEva=1&activatePersonalAdvisor=1'
+  const appBackUrl = signupMode ? '/discover' : '/discover?openAssistant=1&activatePersonalAdvisor=1'
 
   useEffect(() => {
     if (!preview || signupMode) return
-    try {
-      const saved = localStorage.getItem('omnilink_preview_eva_profile')
-      if (saved) setProfile(readEvaProfile(JSON.parse(saved)))
-    } catch {}
+    const saved = readPreviewAiAssistantProfile()
+    if (saved) setProfile(readAiAssistantProfile(saved))
   }, [preview, signupMode])
 
   return <div className={embedded ? 'w-full text-[var(--market-ink)]' : 'consumer-market-shell flex min-h-dvh flex-col bg-white text-[var(--market-ink)]'}>
     {!embedded && <header className="sticky top-0 z-10 border-b-[0.5px] border-[var(--market-border)] bg-white/95 px-4 py-3 backdrop-blur-sm">
       <div className="mx-auto flex max-w-3xl items-center gap-3">
-        <a href={appBackUrl} aria-label="返回个人助手" className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><ArrowLeft size={18} /></a>
+        <a href={appBackUrl} aria-label="返回 AI assistant" className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><ArrowLeft size={18} /></a>
         <h1 className="text-sm font-semibold">购物偏好</h1>
         <span className="ml-auto text-xs text-[var(--market-text-muted)]">保存后可继续</span>
       </div>
     </header>}
 
     <main className={embedded ? 'w-full' : 'mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 pb-10 pt-8 sm:px-6'} aria-live="polite">
-      {question ? <section aria-label="购物偏好测量" className={embedded ? 'w-full max-w-3xl rounded-[24px] border-[0.5px] border-[var(--market-border)] bg-white p-5 sm:p-6' : 'my-auto w-full'}>
+      {question ? <section aria-label="购物偏好测量" className={embedded ? 'w-full max-w-3xl rounded-3xl border-[0.5px] border-[var(--market-border)] bg-white p-5 sm:p-6' : 'my-auto w-full'}>
         {!embedded && <div className="mb-5 flex items-center justify-between text-xs text-[var(--market-text-muted)]">
           <span>购物偏好</span><span>{answerCount} 项已记录</span>
         </div>}
@@ -164,10 +163,10 @@ export function ShoppingPreferenceSurveyFlow({ initialProfile, preview = false, 
         {error && <p role="alert" className="mt-4 text-sm text-[var(--market-accent)]">{error}</p>}
       </section> : <section className="my-auto w-full" aria-label="购物偏好已完成">
         <h2 className="text-lg font-semibold">偏好已整理</h2>
-        <p className="mt-2 text-sm leading-6 text-[var(--market-text-muted)]">测量结果已写入你的用户档案，个人助手会把它作为可调整的推荐参考。</p>
+        <p className="mt-2 text-sm leading-6 text-[var(--market-text-muted)]">测量结果已写入你的用户档案，AI assistant 会把它作为可调整的推荐参考。</p>
         <div className="mt-6 flex flex-wrap gap-3">
           <button type="button" disabled={busy} onClick={() => void save({ action: 'shopping-preference-reset' })} className="min-h-11 rounded-full border-[0.5px] border-[var(--market-border)] px-5 text-sm hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">重新测量</button>
-          <a href={appBackUrl} className="inline-flex min-h-11 items-center rounded-full bg-[var(--market-accent)] px-5 text-sm font-semibold text-white">返回个人助手</a>
+          <a href={appBackUrl} className="inline-flex min-h-11 items-center rounded-full bg-[var(--market-accent)] px-5 text-sm font-semibold text-white">返回 AI assistant</a>
         </div>
         {error && <p role="alert" className="mt-4 text-sm text-[var(--market-accent)]">{error}</p>}
       </section>}

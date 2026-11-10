@@ -1,3 +1,4 @@
+import { DisplayPrice } from '../components/DisplayPrice';
 import React from 'react';
 import { ArrowLeft, ShoppingBag } from 'lucide-react';
 import { Exhibition, ProductItem } from '../types';
@@ -27,7 +28,8 @@ export const ExhibitionDetailScreen: React.FC<ExhibitionDetailScreenProps> = ({
         {/* Floating Back Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 left-5 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-white shadow-md backdrop-blur-md active:scale-95 transition-transform"
+          data-glasswork="auto"
+          className="absolute top-5 left-5 z-20 flex h-9 w-9 items-center justify-center rounded-full active:scale-95 transition-transform"
           aria-label="返回"
         >
           <ArrowLeft size={18} />
@@ -88,7 +90,7 @@ export const ExhibitionDetailScreen: React.FC<ExhibitionDetailScreenProps> = ({
                       <ShoppingBag size={12} className="text-[var(--market-accent)]" />
                       <span>{prod.name}</span>
                       <span className="text-[var(--market-text-muted)] font-semibold">
-                        • {prod.formattedPrice}
+                        • <DisplayPrice product={prod} />
                       </span>
                     </button>
                   ))}

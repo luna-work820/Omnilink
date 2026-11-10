@@ -27,7 +27,7 @@ import { createClientServer } from '@/lib/supabase/server'
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const rawNext = searchParams.get('next') ?? '/discover?openEva=1&newUser=1'
+  const rawNext = searchParams.get('next') ?? '/discover?openAssistant=1&newUser=1'
   const safeNext = sanitizeInternalPath(rawNext)
 
   if (code) {

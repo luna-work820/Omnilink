@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "@/components/ui/line-icons/line-icons.css";
 import { cn } from "@/lib/utils";
 import { LanguageProvider } from "@/context/LanguageContext";
 

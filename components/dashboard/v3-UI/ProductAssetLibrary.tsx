@@ -41,12 +41,12 @@ export function ProductAssetLibrary({ products }: { products: ProductRow[] }) {
             <LibraryTab active={view === 'media'} onClick={() => setView('media')} icon={<FileImage className="h-3.5 w-3.5" />} label="媒体" count={media.length} />
           </div>
           <div className="flex items-center gap-2 pb-3">
-            <label className="flex h-10 min-h-10 w-full items-center gap-2 rounded-[10px] border border-[var(--border-subtle)] bg-[var(--surface)] px-3 focus-within:border-[var(--primary)] sm:w-64">
+            <label className="flex h-10 min-h-10 w-full items-center gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--surface)] px-3 focus-within:border-[var(--primary)] sm:w-64">
               <Search className="h-3.5 w-3.5 text-[var(--lavender)]" aria-hidden="true" />
               <span className="sr-only">搜索资产</span>
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={view === 'media' ? '搜索媒体或内容' : '搜索名称、SKU 或分类'} className="w-full bg-transparent text-base outline-none sm:text-xs" />
             </label>
-            <button type="button" onClick={() => setGrid((value) => !value)} className="grid h-10 w-10 shrink-0 place-items-center rounded-[10px] border border-[var(--border-subtle)] text-[var(--lavender)] hover:bg-[var(--surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2" aria-label={grid ? '切换列表视图' : '切换网格视图'} title={grid ? '列表视图' : '网格视图'}>{grid ? <List className="h-4 w-4" /> : <Grid2X2 className="h-4 w-4" />}</button>
+            <button type="button" onClick={() => setGrid((value) => !value)} className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-[var(--border-subtle)] text-[var(--lavender)] hover:bg-[var(--surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2" aria-label={grid ? '切换列表视图' : '切换网格视图'} title={grid ? '列表视图' : '网格视图'}>{grid ? <List className="h-4 w-4" /> : <Grid2X2 className="h-4 w-4" />}</button>
           </div>
         </div>
 
@@ -98,7 +98,7 @@ function ProductCard({ product }: { product: ProductRow }) {
 }
 
 function ProductRowItem({ product }: { product: ProductRow }) {
-  return <div className="flex min-h-16 items-center gap-3 rounded-[12px] border border-[var(--border-subtle)] bg-[var(--surface)] p-2.5"><div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[8px] bg-[var(--surface-muted)]">{product.image_url ? <Image src={product.image_url} alt="" fill unoptimized className="object-cover" /> : <ImageIcon className="m-3 h-6 w-6 text-[var(--lavender)]" aria-hidden="true" />}</div><Link href={`/dashboard/products/${product.id}`} className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{product.name}</p>{(product.listingType || 'product') === 'product' ? <p className="mt-1 truncate text-[10px] text-[var(--lavender)]">库存量：{product.inventory ?? 0}</p> : null}</Link><span className="hidden tabular-nums text-xs font-semibold sm:block">{product.priceMode === 'inquiry' ? '询价' : product.priceMode === 'free' ? '免费' : `¥${Number(product.price || 0).toLocaleString('zh-CN')}`}</span>{product.channel_visibility_supported ? <StorefrontVisibilityButton product={product} /> : <span className="shrink-0 text-[10px] text-[var(--text-muted)]">演示数据</span>}
+  return <div className="flex min-h-16 items-center gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-2.5"><div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-[var(--surface-muted)]">{product.image_url ? <Image src={product.image_url} alt="" fill unoptimized className="object-cover" /> : <ImageIcon className="m-3 h-6 w-6 text-[var(--lavender)]" aria-hidden="true" />}</div><Link href={`/dashboard/products/${product.id}`} className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{product.name}</p>{(product.listingType || 'product') === 'product' ? <p className="mt-1 truncate text-[10px] text-[var(--lavender)]">库存量：{product.inventory ?? 0}</p> : null}</Link><span className="hidden tabular-nums text-xs font-semibold sm:block">{product.priceMode === 'inquiry' ? '询价' : product.priceMode === 'free' ? '免费' : `¥${Number(product.price || 0).toLocaleString('zh-CN')}`}</span>{product.channel_visibility_supported ? <StorefrontVisibilityButton product={product} /> : <span className="shrink-0 text-[10px] text-[var(--text-muted)]">演示数据</span>}
   </div>
 }
 
@@ -131,7 +131,7 @@ function StorefrontVisibilityButton({ product }: { product: ProductRow }) {
       {busy ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : visible ? <EyeOff className="h-3.5 w-3.5" aria-hidden="true" /> : <Eye className="h-3.5 w-3.5" aria-hidden="true" />}
       {visible ? '下架' : '展示'}
     </button>
-    {error && <span role="status" className="absolute bottom-full right-0 z-10 mb-1 max-w-56 rounded-[8px] border border-red-200 bg-white px-2 py-1 text-left text-[10px] leading-4 text-red-700 shadow-sm">{error}</span>}
+    {error && <span role="status" className="absolute bottom-full right-0 z-10 mb-1 max-w-56 rounded-md border border-red-200 bg-white px-2 py-1 text-left text-[10px] leading-4 text-red-700 shadow-sm">{error}</span>}
   </div>
 }
 
@@ -145,7 +145,7 @@ function MediaCard({ product }: { product: ProductRow }) {
 }
 
 function MediaRow({ product }: { product: ProductRow }) {
-  return <div className="flex items-center gap-3 rounded-[12px] border border-[var(--border-subtle)] bg-[var(--surface)] p-2.5"><div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-[8px] bg-[var(--surface-muted)]"><Image src={product.image_url as string} alt="" fill unoptimized className="object-cover" /></div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{product.name}</p><p className="mt-1 truncate text-[10px] text-[var(--lavender)]">库存量：{product.inventory ?? 0}</p></div></div>
+  return <div className="flex items-center gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-2.5"><div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-[var(--surface-muted)]"><Image src={product.image_url as string} alt="" fill unoptimized className="object-cover" /></div><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{product.name}</p><p className="mt-1 truncate text-[10px] text-[var(--lavender)]">库存量：{product.inventory ?? 0}</p></div></div>
 }
 
 function EmptyLibrary({ icon, title, description, onClear }: { icon: React.ReactNode; title: string; description: string; onClear?: () => void }) {

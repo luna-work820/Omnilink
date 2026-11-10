@@ -412,7 +412,7 @@ export function BrandStudioWizard() {
               setIsDragging(false)
               handleFileUpload(e.dataTransfer.files)
             }}
-            className={`w-full max-w-2xl min-h-[240px] rounded-[16px] flex flex-col justify-center items-center p-6 transition-all ${
+            className={`w-full max-w-2xl min-h-[240px] rounded-xl flex flex-col justify-center items-center p-6 transition-all ${
               isDragging ? 'bg-[var(--surface-muted)]' : 'bg-[var(--surface-muted)]/90 hover:bg-[var(--surface-muted)]/70'
             }`}
             style={{ border: 'none' }}
@@ -461,7 +461,7 @@ export function BrandStudioWizard() {
                   {images.map((img, idx) => (
                     <div
                       key={img.id}
-                      className="group relative rounded-[12px] overflow-hidden aspect-square flex items-center justify-center shadow-md bg-[var(--ink)]"
+                      className="group relative rounded-lg overflow-hidden aspect-square flex items-center justify-center shadow-md bg-[var(--ink)]"
                     >
                       <img
                         src={img.url}
@@ -469,11 +469,11 @@ export function BrandStudioWizard() {
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute top-2 left-2 flex items-center gap-1">
-                        <span className="px-1.5 py-0.5 rounded-[3px] bg-[var(--ink)]/70 text-[var(--surface)] text-[10px] font-medium">
+                        <span className="px-1.5 py-0.5 rounded-sm bg-[var(--ink)]/70 text-[var(--surface)] text-[10px] font-medium">
                           0{idx + 1}
                         </span>
                         {img.isHero && (
-                          <span className="px-1.5 py-0.5 rounded-[3px] bg-[var(--primary)] text-[var(--surface)] text-[10px] font-bold">
+                          <span className="px-1.5 py-0.5 rounded-sm bg-[var(--primary)] text-[var(--surface)] text-[10px] font-bold">
                             主图
                           </span>
                         )}
@@ -511,7 +511,7 @@ export function BrandStudioWizard() {
                   {images.length < 3 && (
                     <div
                       onClick={() => fileInputRef.current?.click()}
-                      className="rounded-[12px] bg-[var(--surface)] aspect-square flex flex-col items-center justify-center text-[var(--lavender)] hover:text-[var(--primary)] cursor-pointer transition-colors shadow-sm"
+                      className="rounded-lg bg-[var(--surface)] aspect-square flex flex-col items-center justify-center text-[var(--lavender)] hover:text-[var(--primary)] cursor-pointer transition-colors shadow-sm"
                     >
                       <Plus size={20} />
                       <span className="text-[11px] font-semibold mt-1">添加</span>
@@ -628,11 +628,11 @@ export function BrandStudioWizard() {
               <div
                 key={c.role}
                 onClick={() => setEditingColorIndex(idx)}
-                className="group relative bg-[var(--surface)] rounded-[12px] p-3.5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col items-center text-center cursor-pointer border border-transparent hover:border-[var(--surface-muted)]"
+                className="group relative bg-[var(--surface)] rounded-lg p-3.5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col items-center text-center cursor-pointer border border-transparent hover:border-[var(--surface-muted)]"
               >
                 {/* 顶部色彩预览块 */}
                 <div
-                  className="w-full h-20 rounded-[8px] shadow-xs mb-2.5 transition-transform group-hover:scale-[1.03] flex items-center justify-center relative overflow-hidden"
+                  className="w-full h-20 rounded-md shadow-xs mb-2.5 transition-transform group-hover:scale-[1.03] flex items-center justify-center relative overflow-hidden"
                   style={{ backgroundColor: c.hex }}
                 >
                   <span className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--surface)]/90 text-[var(--lavender)] shadow-xs">
@@ -799,7 +799,7 @@ export function BrandStudioWizard() {
           {activeTab === 'desktop' && (
             <div className="w-full max-w-4xl space-y-4 animate-fadeIn">
               <div
-                className="mx-auto w-full bg-[var(--surface)] rounded-[16px] shadow-2xl overflow-hidden transition-all duration-300"
+                className="mx-auto w-full bg-[var(--surface)] rounded-xl shadow-2xl overflow-hidden transition-all duration-300"
                 style={{ border: 'none' }}
               >
                 {/* 顶端控制条 (无域名) */}
@@ -843,7 +843,7 @@ export function BrandStudioWizard() {
                       </button>
                     </div>
 
-                    <div className="aspect-4/3 rounded-[12px] overflow-hidden bg-[var(--surface)] shadow-md">
+                    <div className="aspect-4/3 rounded-lg overflow-hidden bg-[var(--surface)] shadow-md">
                       <img
                         src={heroImage}
                         alt={displayBrandName}
@@ -860,7 +860,7 @@ export function BrandStudioWizard() {
           {activeTab === 'mobile' && (
             <div className="w-full max-w-[360px] space-y-4 animate-fadeIn">
               <div
-                className="mx-auto w-full bg-[var(--surface)] rounded-[24px] shadow-2xl overflow-hidden transition-all duration-300"
+                className="mx-auto w-full bg-[var(--surface)] rounded-3xl shadow-2xl overflow-hidden transition-all duration-300"
                 style={{ border: 'none' }}
               >
                 {/* 顶端控制条 (无域名) */}
@@ -880,7 +880,7 @@ export function BrandStudioWizard() {
                     <ShoppingBag size={14} className="text-[var(--lavender)]" />
                   </header>
 
-                  <div className="aspect-square rounded-[12px] overflow-hidden bg-[var(--surface)] shadow-sm">
+                  <div className="aspect-square rounded-lg overflow-hidden bg-[var(--surface)] shadow-sm">
                     <img
                       src={heroImage}
                       alt={displayBrandName}
@@ -889,7 +889,7 @@ export function BrandStudioWizard() {
                   </div>
 
                   <div className="space-y-2">
-                    <span className="text-[10px] px-2 py-0.5 rounded-[3px] bg-[var(--ink)] text-[var(--surface)] font-semibold inline-block">
+                    <span className="text-[10px] px-2 py-0.5 rounded-sm bg-[var(--ink)] text-[var(--surface)] font-semibold inline-block">
                       {selectedTemplate.title}
                     </span>
                     <h3 className="text-lg font-extrabold text-[var(--lavender)] leading-tight">
@@ -914,7 +914,7 @@ export function BrandStudioWizard() {
           {activeTab === 'posters' && (
             <div className="w-full max-w-md space-y-4 animate-fadeIn">
               <div
-                className="relative aspect-3/4 rounded-[16px] overflow-hidden shadow-2xl p-7 flex flex-col justify-between"
+                className="relative aspect-3/4 rounded-xl overflow-hidden shadow-2xl p-7 flex flex-col justify-between"
                 style={{
                   border: 'none',
                   backgroundImage: `linear-gradient(to top, var(--ink) 0%, var(--ink) 60%, var(--ink) 100%), url(${heroImage})`,
@@ -971,7 +971,7 @@ export function BrandStudioWizard() {
                     href={product.href}
                     target="_blank"
                     rel="noreferrer"
-                    className="group bg-[var(--surface)] rounded-[8px] overflow-hidden border border-[var(--surface-muted)] hover:border-[var(--primary)] transition-colors"
+                    className="group bg-[var(--surface)] rounded-md overflow-hidden border border-[var(--surface-muted)] hover:border-[var(--primary)] transition-colors"
                   >
                     <div className="aspect-square bg-[var(--surface-muted)] overflow-hidden">
                       <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform" />

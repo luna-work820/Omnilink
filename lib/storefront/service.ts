@@ -11,7 +11,9 @@
  */
 
 import { createClientServer } from '@/lib/supabase/server'
+import type { Database } from '@/lib/database.types'
 import { readOutboundLinks } from '@/lib/products/outbound-links'
+import { SEED_CATEGORIES } from '@/lib/product/categories'
 import {
   normalizeProduct,
   normalizeProducts,
@@ -91,6 +93,50 @@ type StoreRef = Pick<StorefrontStore, 'id' | 'slug'> & {
 export type StorefrontDiscoveryItem = {
   store: Pick<StorefrontStore, 'name' | 'slug'>
   product: StorefrontProduct
+}
+
+function searchTokens(text: string) {
+  const tokens: string[] = []
+  for (const part of text.toLowerCase().match(/\p{Script=Han}+|[a-z0-9]+/gu) ?? []) {
+    if (!/^\p{Script=Han}/u.test(part)) {
+      tokens.push(part)
+      continue
+    }
+    if (part.length === 1) tokens.push(part)
+    for (const size of [2, 3]) {
+      for (let index = 0; index <= part.length - size; index += 1) tokens.push(part.slice(index, index + size))
+    }
+    if (part.length <= 4) tokens.push(part)
+  }
+  return tokens
+}
+
+function rankDiscoveryItems(items: StorefrontDiscoveryItem[], queryTerms: string[]) {
+  if (items.length < 2 || !queryTerms.length) return items
+  const documents = items.map(({ product }) => searchTokens(
+    `${product.name} ${product.name} ${product.category} ${product.category} ${product.description ?? ''}`,
+  ))
+  const documentFrequency = new Map<string, number>()
+  for (const document of documents) {
+    for (const term of new Set(document)) documentFrequency.set(term, (documentFrequency.get(term) ?? 0) + 1)
+  }
+  const averageLength = documents.reduce((sum, document) => sum + document.length, 0) / documents.length || 1
+  const uniqueQueryTerms = new Set(queryTerms)
+  const ranked = items.map((item, index) => {
+    const document = documents[index]
+    const frequencies = new Map<string, number>()
+    for (const term of document) frequencies.set(term, (frequencies.get(term) ?? 0) + 1)
+    let score = 0
+    for (const term of uniqueQueryTerms) {
+      const frequency = frequencies.get(term) ?? 0
+      if (!frequency) continue
+      const count = documentFrequency.get(term) ?? 0
+      const inverse = Math.log(1 + (items.length - count + 0.5) / (count + 0.5))
+      score += inverse * frequency * 2.2 / (frequency + 1.2 * (0.25 + 0.75 * document.length / averageLength))
+    }
+    return { item, index, score }
+  })
+  return ranked.sort((left, right) => right.score - left.score || left.index - right.index).map(({ item }) => item)
 }
 
 /**
@@ -477,7 +523,54 @@ export async function getStorefrontDiscoveryItems(limit = 36): Promise<Storefron
   const { data, error } = await supabase.from('discovery_products').select('*')
     .order('created_at', { ascending: false }).limit(limit)
   if (error) throw new Error(`Failed to load storefront discovery: ${error.message}`)
-  return (data ?? []).flatMap((row) => {
+  return mapStorefrontDiscoveryRows(data ?? [])
+}
+
+export async function searchStorefrontDiscoveryItems(query: string, limit = 24): Promise<StorefrontDiscoveryItem[]> {
+  const queryText = query.toLowerCase()
+    .replace(/预算(?:不超过|最多|控制在|上限|为|是)?\s*\d+(?:\.\d+)?\s*(?:元|块)?/g, ' ')
+    .replace(/帮我|给我|想要|想买|找一个|找一款|搜索|查找|推荐|看看/g, ' ')
+  const normalized = queryText.replace(/[^\p{L}\p{N}]/gu, '')
+  if (normalized.length < 2) return []
+
+  const matchedCategories = SEED_CATEGORIES.filter((category) =>
+    [category.name, category.nameEn, ...(category.keywords ?? [])]
+      .some((term) => term && normalized.includes(term.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ''))),
+  )
+  const familyIds = new Set(matchedCategories.flatMap((category) => [category.id, category.parentId].filter((id): id is string => Boolean(id))))
+  const categoryTerms = SEED_CATEGORIES.filter((category) => familyIds.has(category.id) || (category.parentId && familyIds.has(category.parentId)))
+    .flatMap((category) => [category.name, ...(category.keywords ?? [])])
+  const phraseTerms = [...(queryText.match(/\p{Script=Han}{2,}/gu) ?? [])]
+  const hanBigrams = phraseTerms.flatMap((phrase) => Array.from({ length: Math.max(0, phrase.length - 1) }, (_, index) => phrase.slice(index, index + 2)))
+  const englishTerms = queryText.match(/[a-z0-9]{2,}/g) ?? []
+  const terms = [...new Set([...phraseTerms, ...englishTerms, ...categoryTerms, ...hanBigrams]
+    .map((term) => term.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ''))
+    .filter((term) => term.length >= 2))].slice(0, 36)
+  if (!terms.length) return []
+
+  const filters = terms.flatMap((term) => [
+    `title.ilike.%${term}%`,
+    `category.ilike.%${term}%`,
+    `description.ilike.%${term}%`,
+  ])
+  const supabase = await createClientServer()
+  const { data, error } = await supabase.from('discovery_products').select('*')
+    .or(filters.join(',')).order('created_at', { ascending: false }).limit(Math.min(Math.max(limit, 1), 48))
+  if (error) throw new Error(`Failed to search storefront discovery: ${error.message}`)
+  return rankDiscoveryItems(mapStorefrontDiscoveryRows(data ?? []), terms.flatMap((term) => searchTokens(term)))
+}
+
+export async function getStorefrontDiscoveryItemsByIds(productIds: string[], limit = 6): Promise<StorefrontDiscoveryItem[]> {
+  const ids = [...new Set(productIds.filter((id) => typeof id === 'string' && id.length > 0))].slice(0, Math.min(Math.max(limit, 1), 100))
+  if (!ids.length) return []
+  const supabase = await createClientServer()
+  const { data, error } = await supabase.from('discovery_products').select('*').in('id', ids)
+  if (error) throw new Error(`Failed to load prior storefront products: ${error.message}`)
+  return mapStorefrontDiscoveryRows(data ?? [])
+}
+
+function mapStorefrontDiscoveryRows(rows: Database['public']['Views']['discovery_products']['Row'][]) {
+  return rows.flatMap((row) => {
     const outboundLinks = readOutboundLinks({ xiaohongshu: row.xiaohongshu_url, douyin: row.douyin_url })
     if (!Object.keys(outboundLinks).length) return []
     const price = Number(row.price ?? 0)

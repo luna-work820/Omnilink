@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { ArrowRight, UserRound } from 'lucide-react'
-import type { EvaProfile } from '@/lib/consumer-advisor/eva-onboarding'
-import { advanceEvaProfile } from '@/lib/consumer-advisor/eva-onboarding'
+import type { AiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-profile'
+import { advanceAiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-profile'
 import { Message, MessageContent, MessageScrollerItem } from '@/components/ai-elements/chat'
 
 type Props = {
-  initialProfile: EvaProfile
+  initialProfile: AiAssistantProfile
   defaultName?: string
   deepSeekConfigured: boolean
   preview: boolean
@@ -56,17 +56,17 @@ export function InitialAssistantSetup({ initialProfile, defaultName = '', deepSe
 
   async function completeSetup(sourceProfile = profile) {
     if (preview) {
-      setProfile(advanceEvaProfile(sourceProfile, { action: 'complete-onboarding' }))
+      setProfile(advanceAiAssistantProfile(sourceProfile, { action: 'complete-onboarding' }))
       setStep('done')
       onComplete()
       return
     }
-    const response = await fetch('/api/consumer/eva-profile', {
+    const response = await fetch('/api/consumer/ai-assistant-profile', {
       method: 'PATCH', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'complete-onboarding' }),
     })
-    const result = await response.json() as { profile?: EvaProfile; error?: string }
+    const result = await response.json() as { profile?: AiAssistantProfile; error?: string }
     if (!response.ok || !result.profile) throw new Error(result.error || '无法完成设置，请重试。')
     setProfile(result.profile)
     setStep('done')
@@ -118,17 +118,17 @@ export function InitialAssistantSetup({ initialProfile, defaultName = '', deepSe
         nextAvatarUrl = uploadResult.avatarUrl
         setAvatarUrl(nextAvatarUrl)
       }
-      const payload = { action: 'basic', name: name.trim(), assistantName: profile.assistantName || '个人助手', ...(avatarFile || preview ? { avatarUrl: nextAvatarUrl } : {}) }
-      let nextProfile: EvaProfile
+      const payload = { action: 'basic', name: name.trim(), assistantName: profile.assistantName || 'AI assistant', ...(avatarFile || preview ? { avatarUrl: nextAvatarUrl } : {}) }
+      let nextProfile: AiAssistantProfile
       if (preview) {
-        nextProfile = advanceEvaProfile(profile, payload)
+        nextProfile = advanceAiAssistantProfile(profile, payload)
       } else {
-        const response = await fetch('/api/consumer/eva-profile', {
+        const response = await fetch('/api/consumer/ai-assistant-profile', {
           method: 'PATCH', credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         })
-        const result = await response.json() as { profile?: EvaProfile; error?: string }
+        const result = await response.json() as { profile?: AiAssistantProfile; error?: string }
         if (!response.ok || !result.profile) throw new Error(result.error || '保存失败，请重试。')
         nextProfile = result.profile
       }
@@ -159,7 +159,7 @@ export function InitialAssistantSetup({ initialProfile, defaultName = '', deepSe
     }
   }
 
-  const assistantName = profile.assistantName || '个人助手'
+  const assistantName = profile.assistantName || 'AI assistant'
 
   return <div className="w-full space-y-6 pb-2">
     <MessageScrollerItem messageId="initial-assistant-profile">
@@ -187,7 +187,7 @@ export function InitialAssistantSetup({ initialProfile, defaultName = '', deepSe
     {basicsSaved && <MessageScrollerItem messageId="initial-user-profile" scrollAnchor>
       <Message align="end" data-role="user" className="max-w-[88%]">
         <MessageContent>
-          <div className="flex items-center gap-2 rounded-[14px] bg-[var(--market-surface-muted)] px-4 py-3 text-sm leading-6">
+          <div className="flex items-center gap-2 rounded-xl bg-[var(--market-surface-muted)] px-4 py-3 text-sm leading-6">
             {avatarUrl ? <img src={avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" /> : <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[var(--market-text-secondary)]"><UserRound size={16} aria-hidden="true" /></span>}
             <span>{name.trim() || profile.name}</span>
           </div>
@@ -215,12 +215,12 @@ export function InitialAssistantSetup({ initialProfile, defaultName = '', deepSe
 
     {step === 'done' && apiJustConnected && <MessageScrollerItem messageId="initial-user-api-connected" scrollAnchor>
       <Message align="end" data-role="user" className="max-w-[88%]">
-        <MessageContent><div className="rounded-[14px] bg-[var(--market-surface-muted)] px-4 py-3 text-sm leading-6">DeepSeek 已连接</div></MessageContent>
+        <MessageContent><div className="rounded-xl bg-[var(--market-surface-muted)] px-4 py-3 text-sm leading-6">DeepSeek 已连接</div></MessageContent>
       </Message>
     </MessageScrollerItem>}
     {step === 'done' && continuedWithConfiguredKey && <MessageScrollerItem messageId="initial-user-continue" scrollAnchor>
       <Message align="end" data-role="user" className="max-w-[88%]">
-        <MessageContent><div className="rounded-[14px] bg-[var(--market-surface-muted)] px-4 py-3 text-sm leading-6">继续</div></MessageContent>
+        <MessageContent><div className="rounded-xl bg-[var(--market-surface-muted)] px-4 py-3 text-sm leading-6">继续</div></MessageContent>
       </Message>
     </MessageScrollerItem>}
     {step === 'done' && <MessageScrollerItem messageId="initial-assistant-ready">

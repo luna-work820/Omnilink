@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { ProductItem } from '../types';
 import { useOmnilink } from '../context/OmnilinkContext';
+import { DisplayPrice } from './DisplayPrice';
 
 interface FloatingProductCardProps {
   product: ProductItem | null;
@@ -145,13 +146,14 @@ export const FloatingCard: React.FC<FloatingProductCardProps> = ({
       >
         {/* Position and close control */}
         <div className="w-full flex items-center justify-between pb-2 px-1 text-white/90 text-[11px] font-medium">
-          <div className="rounded-full bg-white/15 px-2.5 py-1 font-semibold text-white backdrop-blur-md shadow-xs" aria-label={`第 ${currentIndex + 1} 件，共 ${sameCategoryProducts.length} 件`}>
+          <div data-glasswork="auto" className="rounded-full px-2.5 py-1 font-semibold" aria-label={`第 ${currentIndex + 1} 件，共 ${sameCategoryProducts.length} 件`}>
             {currentIndex + 1}/{sameCategoryProducts.length}
           </div>
 
           <button
             onClick={onDismiss}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white/30 active:scale-90 transition-all shadow-xs"
+            data-glasswork="auto"
+            className="flex h-7 w-7 items-center justify-center rounded-full active:scale-90 transition-transform"
             aria-label="关闭商品卡片"
           >
             <X size={15} />
@@ -225,7 +227,7 @@ export const FloatingCard: React.FC<FloatingProductCardProps> = ({
                   {activeProduct.name}
                 </h3>
                 <span className="text-sm font-bold text-[var(--market-ink)] shrink-0">
-                  {activeProduct.formattedPrice}
+                  <DisplayPrice product={activeProduct} />
                 </span>
               </div>
 
