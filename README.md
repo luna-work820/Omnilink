@@ -16,7 +16,7 @@
 
 商家工作台不需要单独拆成一个代码仓库或购买另一个域名；/merchant 是消费者主站直达工作台的入口。
 
-此前的 [new--shopping](https://github.com/Luna-7/new--shopping)、[Omnilink-Consumer-UI](https://github.com/Luna-7/Omnilink-Consumer-UI) 和 [Omnilink--version3](https://github.com/Luna-7/Omnilink--version3) 仓库作为迁移历史保留；后续开发以本仓库为准。
+三个旧仓库已停止作为开发入口；消费者主页、商家入口和创作者中心统一在本仓库维护，后续开发以本仓库为唯一主线。
 
 Omnilink 是一个面向商家的独立站平台。你不需要懂代码，也不用寄身于某个大平台的分销位：注册、开店、选一套视觉主题、上架商品，就能拥有一个带独立品牌、可对外访问的店面，并跑通从浏览、加购、结账到订单的完整购物链路。
 
