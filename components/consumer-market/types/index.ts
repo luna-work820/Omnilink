@@ -17,7 +17,7 @@ export interface ProductItem {
   itemType?: 'product' | 'service' | 'skill';
   price: number;
   formattedPrice: string;
-  priceMode?: 'amount' | 'inquiry' | 'free';
+  priceMode?: 'amount' | 'inquiry' | 'free' | 'unknown';
   outboundLinks?: OutboundLinks;
   mainImage: string;
   videoUrl?: string;
@@ -130,7 +130,7 @@ export interface QnaMessage {
   timestamp?: string;
 }
 
-export type ConsumerTaskIntent = 'ingredient-lookup' | 'image-analysis' | 'document-analysis' | 'outfit-styling' | 'product-search' | 'product-question' | 'comparison' | 'personalized-recommendation' | 'cart-request' | 'assistant';
+export type ConsumerTaskIntent = 'ingredient-lookup' | 'image-analysis' | 'document-analysis' | 'outfit-styling' | 'product-search' | 'product-question' | 'comparison' | 'personalized-recommendation' | 'cart-request' | 'assistant' | 'information-search';
 
 export interface AiChatMessage {
   id: string;
@@ -146,6 +146,11 @@ export interface AiChatMessage {
   fileName?: string;
   timestamp?: string;
   model?: ConsumerAiModel;
+  searchRef?: import('@/lib/consumer-advisor/discovery-contract').DiscoveryReference;
+  retrySpec?: import('@/lib/consumer-advisor/discovery-contract').DiscoverySpec;
+  blocks?: import('@/lib/consumer-advisor/response-contract').ResponseBlock[];
+  state?: 'streaming'|'completed'|'failed'|'cancelled';
+  matchedSourceIds?:string[];
 }
 
 export type ConsumerAiModel = 'gemini' | 'qwen-plus' | 'deepseek-flash' | 'deepseek-v4-pro';

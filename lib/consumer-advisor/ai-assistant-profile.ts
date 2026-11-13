@@ -28,7 +28,7 @@ export type AiAssistantProfile = {
   service: AiAssistantService | null
   answers: Record<string, string>
   stage: AiAssistantStage
-  memories: { id: string; domain: AiAssistantService | 'space' | 'other'; text: string; origin?: 'user' | 'inferred'; status?: 'active' | 'rejected'; evidence?: string | null; sourceMessageId?: string | null; supportIds?: string[] }[]
+  memories: { id: string; domain: AiAssistantService | 'space' | 'other'; text: string; origin?: 'user' | 'inferred'; status?: 'proposed' | 'active' | 'rejected'; evidence?: string | null; sourceMessageId?: string | null; supportIds?: string[]; confirmedAt?: string | null; revision?: number; supersedeIds?: string[]; sourceKind?: 'manual' | 'chat' | 'assessment' | 'legacy'; sourcePayload?: Record<string, unknown>; originalText?: string }[]
   preferences: { clothing: string; other: string }
   shoppingPreferences: ShoppingPreferences
   shoppingPreferenceSurvey: ShoppingPreferenceSurvey
@@ -36,6 +36,11 @@ export type AiAssistantProfile = {
 }
 
 export const emptyAiAssistantProfile: AiAssistantProfile = { name: '', assistantName: 'AI assistant', avatarUrl: '', ageRange: '', gender: '', service: null, answers: {}, stage: 'basic', memories: [], preferences: { clothing: '', other: '' }, shoppingPreferences: {}, shoppingPreferenceSurvey: { ...emptyShoppingPreferenceSurvey, answers: {}, skipped: [], ladders: {} }, shoppingPreferenceProfile: null }
+
+export function assistantIdentityContext(value: unknown) {
+  const profile = readAiAssistantProfile(value)
+  return { name: profile.name.trim().slice(0, 40), assistantName: profile.assistantName }
+}
 
 export function parseAiAssistantMemoryCandidate(value: unknown, prompt: string, activeIds: string[]) {
   if (!value || typeof value !== 'object') return null

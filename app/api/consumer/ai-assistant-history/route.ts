@@ -8,7 +8,7 @@ export async function GET() {
   const auth = await requireUser()
   if (!auth.ok) return auth.response
   const { data, error } = await (auth.supabase as any).from('consumer_AI assistant_messages')
-    .select('id, conversation_id, role, content, style_tag, matched_product_ids, model, created_at')
+    .select('id, conversation_id, role, content, style_tag, matched_product_ids, model, response_blocks, created_at')
     .eq('user_id', auth.user.id).order('created_at', { ascending: false }).limit(200)
   if (error) return NextResponse.json({ error: '对话读取失败。' }, { status: 500 })
   return NextResponse.json({ messages: (data ?? []).reverse() })

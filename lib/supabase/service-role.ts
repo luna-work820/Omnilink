@@ -3,8 +3,9 @@
  *
  * SECURITY BOUNDARY — read before using:
  *   - This client uses SUPABASE_SERVICE_ROLE_KEY and BYPASSES Row Level Security.
- *   - It MUST only be used for internal, system-trusted reads of SERVICE_ROLE_ONLY
- *     reference data. It must NEVER be used to:
+ *   - Allowed uses: trusted reference reads, authorized storage signing, and
+ *     the service-only consumer memory RPC after the request user is verified.
+ *     It must NEVER be used to:
  *       * resolve user identity (requireUser / auth)
  *       * authorize merchant requests (ownsStore / ownsProduct)
  *       * perform merchant-data CRUD (Catalog item writes)

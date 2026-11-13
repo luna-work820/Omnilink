@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BookOpen, Compass, Home, LayoutGrid, PanelsTopLeft, Settings, User, PenLine, ShoppingBag } from 'lucide-react'
 import ProfileDropdown from '@/components/kokonutui/profile-dropdown'
 import { cn } from 'cn'
@@ -27,7 +27,7 @@ import {
 type WorkspaceMode = 'merchant' | 'creator'
 
 const merchantNavItems = [
-  { group: '商家工作台', href: '/dashboard', label: '工作台', icon: Home, active: (path: string) => path === '/dashboard' },
+  { group: '商家工作台', href: '/dashboard?workspace=merchant', label: '工作台', icon: Home, active: (path: string) => path === '/dashboard' },
   { group: '商家工作台', href: '/dashboard/storefront', label: '设计', icon: PanelsTopLeft, active: (path: string) => path.startsWith('/dashboard/storefront') },
   { group: '商家工作台', href: '/dashboard/products', label: '商品', icon: LayoutGrid, active: (path: string) => path.startsWith('/dashboard/products') },
   { group: '资料库', href: '/dashboard/knowledge', label: '知识库', icon: BookOpen, active: (path: string) => path.startsWith('/dashboard/knowledge') },
@@ -50,6 +50,16 @@ export function V3DashboardShell({ children, profile, workspaceMode, canSwitchWo
   const router = useRouter()
   const creatorPath = pathname.startsWith('/dashboard/content') || pathname.startsWith('/dashboard/creator-products')
   const [mode, setMode] = useState<WorkspaceMode>(() => workspaceMode === 'creator' || ((previewMode || canSwitchWorkspace) && creatorPath) ? 'creator' : 'merchant')
+  useEffect(() => {
+    const merchantWorkspaceRequested = new URLSearchParams(window.location.search).get('workspace') === 'merchant'
+    if (merchantWorkspaceRequested && (canSwitchWorkspace || previewMode)) {
+      setMode('merchant')
+    } else if (workspaceMode === 'creator' || ((previewMode || canSwitchWorkspace) && creatorPath)) {
+      setMode('creator')
+    } else {
+      setMode('merchant')
+    }
+  }, [canSwitchWorkspace, creatorPath, pathname, previewMode, workspaceMode])
   const navItems = mode === 'creator' ? creatorNavItems : merchantNavItems
   const canChangeWorkspace = canSwitchWorkspace || previewMode
   const accountName = profile.name || profile.email || '商家'
@@ -98,7 +108,7 @@ export function V3DashboardShell({ children, profile, workspaceMode, canSwitchWo
               onSwitchWorkspace={canChangeWorkspace ? () => {
                 const nextMode = mode === 'creator' ? 'merchant' : 'creator'
                 setMode(nextMode)
-                router.push(nextMode === 'creator' ? '/dashboard/content' : '/dashboard')
+                router.push(nextMode === 'creator' ? '/dashboard/content' : '/dashboard?workspace=merchant')
               } : undefined}
             />
           </SidebarFooter>
@@ -119,7 +129,7 @@ function SidebarBrand({ mode }: { mode: WorkspaceMode }) {
   const { state } = useSidebar()
   return (
     <Link
-      href={mode === 'creator' ? '/dashboard/content' : '/dashboard'}
+      href={mode === 'creator' ? '/dashboard/content' : '/dashboard?workspace=merchant'}
       aria-label={`Omnilink ${mode === 'creator' ? '创作者中心' : '商家工作台'}`}
       className="flex min-w-0 items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sidebar-ring)] focus-visible:outline-offset-2"
     >

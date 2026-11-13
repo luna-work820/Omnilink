@@ -9,6 +9,7 @@ export interface SignupFormProps extends React.ComponentProps<"div"> {
   onSwitchToLogin: () => void;
   variant?: "dark" | "light";
   hideTitle?: boolean;
+  redirectTo?: string;
 }
 
 export function SignupForm({
@@ -16,6 +17,7 @@ export function SignupForm({
   onSwitchToLogin,
   variant = "dark",
   hideTitle = false,
+  redirectTo,
   ...props
 }: SignupFormProps) {
   const [state, action, pending] = useActionState<AuthState, FormData>(signupAction, null);
@@ -53,6 +55,7 @@ export function SignupForm({
         action={action}
         className="flex flex-col gap-4"
       >
+        {redirectTo && <input type="hidden" name="redirectTo" value={redirectTo} />}
         {(state?.message || state?.error) && (
           <div
             role={state.error ? "alert" : "status"}

@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import { requireUser } from '@/lib/api/auth'
 import { advanceAiAssistantProfile, editAiAssistantProfile, readAiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-profile'
-import { loadAiAssistantMemories, profileWithAiAssistantMemories } from '@/lib/consumer-advisor/ai-assistant-memory'
+import { loadAiAssistantMemories, manageAiAssistantMemory, profileWithAiAssistantMemories } from '@/lib/consumer-advisor/ai-assistant-memory'
+import { assessmentMemoryProposal } from '@/lib/consumer-advisor/assessment-memory-proposal'
+import { isUuid } from '@/lib/utils/uuid'
+import { loadPersonalContext } from '@/lib/consumer-advisor/personal-context'
 
 export const runtime = 'nodejs'
 
@@ -9,8 +12,8 @@ export async function GET() {
   const auth = await requireUser()
   if (!auth.ok) return auth.response
   try {
-    const memories = await loadAiAssistantMemories(auth.supabase, auth.user.id, auth.user.user_metadata?.ai_assistant_profile)
-    return NextResponse.json({ profile: profileWithAiAssistantMemories(auth.user.user_metadata?.ai_assistant_profile, memories) })
+    const [memories,context]=await Promise.all([loadAiAssistantMemories(auth.supabase,auth.user.id),loadPersonalContext(auth.user.id)])
+    return NextResponse.json({ profile: profileWithAiAssistantMemories(auth.user.user_metadata?.ai_assistant_profile, memories),contextVersion:context.version })
   } catch { return NextResponse.json({ error: '个人资料读取失败。' }, { status: 500 }) }
 }
 
@@ -20,6 +23,17 @@ export async function PATCH(request: Request) {
   const body = await request.json().catch(() => null) as Record<string, unknown> | null
   if (!body || typeof body.action !== 'string') return NextResponse.json({ error: '请求无效。' }, { status: 400 })
   const action = body.action
+  if(action==='assessment-propose') {
+    try{
+      const memories=await loadAiAssistantMemories(auth.supabase,auth.user.id)
+      const profile=profileWithAiAssistantMemories(auth.user.user_metadata?.ai_assistant_profile,memories)
+      const proposal=await assessmentMemoryProposal(profile)
+      if(!proposal) return NextResponse.json({error:'请先完成评测。'},{status:400})
+      await manageAiAssistantMemory(auth.user.id,'propose',proposal)
+      const [next,context]=await Promise.all([loadAiAssistantMemories(auth.supabase,auth.user.id),loadPersonalContext(auth.user.id)])
+      return NextResponse.json({profile:profileWithAiAssistantMemories(profile,next),contextVersion:context.version})
+    }catch{return NextResponse.json({error:'提案暂时无法生成，请重试。'},{status:503})}
+  }
   if (action === 'basic' && typeof body.avatarUrl === 'string' && body.avatarUrl) {
     try {
       const supabaseOrigin = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').origin
@@ -43,35 +57,27 @@ export async function PATCH(request: Request) {
   }
   if (['memory', 'forget', 'correct', 'confirm', 'reject'].includes(action)) {
     try {
-      const db = auth.supabase as any
-      await loadAiAssistantMemories(auth.supabase, auth.user.id, auth.user.user_metadata?.ai_assistant_profile)
       if (action === 'memory') {
         const text = typeof body.text === 'string' ? body.text.trim() : ''
         const domain = String(body.domain)
-        if (!text || text.length > 120 || !['clothing', 'skin', 'hair', 'space', 'other'].includes(domain)) return NextResponse.json({ error: '记忆内容或类别无效。' }, { status: 400 })
-        const { error } = await db.from('consumer_AI assistant_memories').insert({ user_id: auth.user.id, text, domain, origin: 'user', evidence: '你手动保存的记忆' })
-        if (error) throw error
+        if (!text || text.length > 240 || !['clothing', 'skin', 'hair', 'space', 'other'].includes(domain)) return NextResponse.json({ error: '记忆内容或类别无效。' }, { status: 400 })
+        await manageAiAssistantMemory(auth.user.id, 'manual', { text, domain, evidence: '你手动保存的记忆' })
       } else {
-        if (typeof body.id !== 'string') return NextResponse.json({ error: '记忆不存在。' }, { status: 400 })
-        const query = db.from('consumer_AI assistant_memories').eq('id', body.id).eq('user_id', auth.user.id)
-        let result
-        if (action === 'forget') result = await query.delete()
-        else if (action === 'reject') result = await query.update({ status: 'rejected', updated_at: new Date().toISOString() })
-        else {
-          const text = action === 'correct' && typeof body.text === 'string' ? body.text.trim() : ''
-          if (action === 'correct' && (!text || text.length > 120)) return NextResponse.json({ error: '请输入 120 字以内的修正内容。' }, { status: 400 })
-          result = await query.update({ ...(action === 'correct' ? { text } : {}), origin: 'user', status: 'active', evidence: action === 'correct' ? '你已修正此判断' : '你已确认此判断', updated_at: new Date().toISOString() })
-        }
-        if (result.error) throw result.error
-        if (['forget', 'reject', 'correct'].includes(action)) {
-          const { error: dependentError } = await db.from('consumer_AI assistant_memories').update({ status: 'rejected', updated_at: new Date().toISOString() })
-            .eq('user_id', auth.user.id).eq('origin', 'inferred').contains('support_ids', [body.id])
-          if (dependentError) throw dependentError
-        }
+        if (typeof body.id !== 'string' || !isUuid(body.id)) return NextResponse.json({ error: '记忆不存在。' }, { status: 400 })
+        if (!Number.isInteger(body.revision) || Number(body.revision) < 1) return NextResponse.json({ error: '请刷新后重试。' }, { status: 400 })
+        const text = action === 'correct' && typeof body.text === 'string' ? body.text.trim() : ''
+        if (action === 'correct' && (!text || text.length > 240)) return NextResponse.json({ error: '请输入 240 字以内的修正内容。' }, { status: 400 })
+        await manageAiAssistantMemory(auth.user.id, action as 'forget' | 'reject' | 'correct' | 'confirm', {
+          id: body.id, revision: body.revision, ...(action === 'correct' ? { text } : {}),
+        })
       }
-      const memories = await loadAiAssistantMemories(auth.supabase, auth.user.id, null)
-      return NextResponse.json({ profile: profileWithAiAssistantMemories(auth.user.user_metadata?.ai_assistant_profile, memories), complete: true })
-    } catch { return NextResponse.json({ error: '记忆保存失败，请重试。' }, { status: 500 }) }
+      const [memories,context]=await Promise.all([loadAiAssistantMemories(auth.supabase,auth.user.id),loadPersonalContext(auth.user.id)])
+      return NextResponse.json({ profile: profileWithAiAssistantMemories(auth.user.user_metadata?.ai_assistant_profile, memories), complete: true,contextVersion:context.version })
+    } catch (cause) {
+      const code = (cause as { code?: string }).code
+      const status = code === '40001' || code === '23505' ? 409 : code === 'P0002' ? 404 : code === '22023' || code === '54000' ? 422 : 503
+      return NextResponse.json({ error: status === 409 ? '记忆已更新，请刷新后重试。' : '记忆保存失败，请重试。' }, { status })
+    }
   }
   let profile
   try { profile = ['update', 'memory', 'forget'].includes(body.action) ? editAiAssistantProfile(readAiAssistantProfile(auth.user.user_metadata?.ai_assistant_profile), body) : advanceAiAssistantProfile(readAiAssistantProfile(auth.user.user_metadata?.ai_assistant_profile), body) }
@@ -89,9 +95,14 @@ export async function PATCH(request: Request) {
   const { error } = await auth.supabase.auth.updateUser({ data: metadataUpdate })
   if (error) return NextResponse.json({ error: '资料保存失败，请重试。' }, { status: 502 })
   try {
-    const memories = await loadAiAssistantMemories(auth.supabase, auth.user.id, profile)
-    return NextResponse.json({ profile: profileWithAiAssistantMemories(profile, memories), complete })
+    if (action.startsWith('shopping-preference-')) {
+      const previous=await loadAiAssistantMemories(auth.supabase,auth.user.id)
+      const proposal = await assessmentMemoryProposal(profileWithAiAssistantMemories(profile,previous))
+      if (proposal) await manageAiAssistantMemory(auth.user.id, 'propose', proposal)
+    }
+    const [memories,context]=await Promise.all([loadAiAssistantMemories(auth.supabase,auth.user.id),loadPersonalContext(auth.user.id)])
+    return NextResponse.json({ profile: profileWithAiAssistantMemories(profile, memories), complete,contextVersion:context.version })
   } catch {
-    return NextResponse.json({ profile: profileWithAiAssistantMemories(profile, []), complete })
+    return NextResponse.json({ error: '资料已保存，记忆暂时不可用，请重试。' }, { status: 503 })
   }
 }

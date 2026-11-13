@@ -6,7 +6,7 @@ import { createClientServer } from '@/lib/supabase/server'
 import { getStoreByOwnerId } from '@/lib/stores/service'
 import { emptyAiAssistantProfile, readAiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-profile'
 import { readContentBlocks } from '@/lib/creator-content'
-import { ShoppingPreferenceSurveyFlow } from '@/components/consumer-market/screens/ShoppingPreferenceSurveyFlow'
+import { toConsumerProduct } from '@/lib/consumer-advisor/consumer-product'
 import { readDeepSeekKeyForUser } from '@/lib/consumer-advisor/deepseek-key-cookie'
 
 const DEFAULT_INSTALLED_SKILL_IDS: ('personal-advisor' | 'shopping-preferences')[] = ['personal-advisor', 'shopping-preferences']
@@ -35,57 +35,6 @@ const aiAssistantFirstUsePreviewMessages: AiChatMessage[] = [
   },
 ]
 
-function toConsumerProduct(
-  item: Awaited<ReturnType<typeof getStorefrontDiscoveryItems>>[number]
-): ProductItem {
-  const { product, store } = item
-  const image = product.imageUrl || '/consumer-market/img_app_icon.jpg'
-  const currency = product.currency || 'CNY'
-  let formattedPrice = `${currency} ${product.price.toLocaleString('zh-CN')}`
-  try {
-    formattedPrice = new Intl.NumberFormat('zh-CN', {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 2,
-    }).format(product.price)
-  } catch {
-    // Keep the explicit currency fallback for non-ISO currency values.
-  }
-
-  return {
-    id: product.id,
-    name: product.name,
-    creator: store.name,
-    itemType: product.itemType,
-    price: product.price,
-    formattedPrice: product.priceMode === 'inquiry' ? '询价' : product.priceMode === 'free' || product.price === 0 ? '免费' : formattedPrice,
-    priceMode: product.priceMode,
-    outboundLinks: product.outboundLinks,
-    mainImage: image,
-    aspectRatio: 0.82,
-    secondaryImages: (product.images ?? []).filter((url) => url !== image),
-    category: product.category || product.attributes.category || product.attributes.category_name || (product.itemType === 'service' ? '服务' : product.deliveryType === 'digital' || product.deliveryType === 'ai_capability' ? '数字' : '商品'),
-    shortDescription: product.description || '',
-    aiSummary: product.description || '商品信息由创作者维护。',
-    reviews: [],
-    specs: product.attributes,
-    storeName: store.name,
-    storeSlug: store.slug,
-    storeImage: undefined,
-    contextStory: product.description || undefined,
-    currency,
-    defaultVariantId: product.variants?.find((variant) => variant.status === 'active')?.id ?? product.variants?.[0]?.id ?? null,
-    options: product.options,
-    variants: product.variants,
-    deliveryType: product.deliveryType === 'ai_capability' || product.attributes.delivery_type === 'ai_capability' ? 'ai_capability' : product.deliveryType === 'digital' || product.attributes.delivery_type === 'digital' ? 'digital' : 'physical',
-    capabilityKind: product.capabilityKind === 'question_set' || product.capabilityKind === 'skill' || product.capabilityKind === 'plugin'
-      ? product.capabilityKind
-      : product.attributes.capability_kind === 'question_set' || product.attributes.capability_kind === 'skill' || product.attributes.capability_kind === 'plugin'
-        ? product.attributes.capability_kind
-      : undefined,
-  }
-}
-
 export default async function ConsumerMarketPage({ searchParams }: { searchParams: Promise<{ aiAssistantPreview?: string; openAssistant?: string; activatePersonalAdvisor?: string; demoLogin?: string; newUserPreview?: string; feedChatPreview?: string; signupPreviewComplete?: string; shoppingPreferences?: string; shoppingPreferencesPreview?: string; post?: string }> }) {
   const params = await searchParams
   const aiAssistantPreview = process.env.NODE_ENV !== 'production' && params.aiAssistantPreview === '1'
@@ -104,10 +53,7 @@ export default async function ConsumerMarketPage({ searchParams }: { searchParam
   }
   const shoppingPreferencesPreview = process.env.NODE_ENV !== 'production' && params.shoppingPreferencesPreview === '1'
   if (shoppingPreferencesPreview) {
-    return <ShoppingPreferenceSurveyFlow preview initialProfile={{ ...emptyAiAssistantProfile, name: '预览用户', stage: 'done' }} />
-  }
-  if ((demoLogin || aiAssistantPreview) && params.shoppingPreferences === '1') {
-    return <ShoppingPreferenceSurveyFlow initialProfile={{ ...emptyAiAssistantProfile, name: '预览用户' }} preview />
+    return <App initialProducts={productsList} profileName="预览用户" profilePreview onboardingPreview initialAiAssistantProfile={{...emptyAiAssistantProfile,name:'预览用户',stage:'done'}} />
   }
   if (demoLogin || aiAssistantPreview) {
     return <App
@@ -135,12 +81,6 @@ export default async function ConsumerMarketPage({ searchParams }: { searchParam
   }
   const needsWelcome = user?.user_metadata?.ai_assistant_onboarding_started === true && user.user_metadata?.ai_assistant_onboarding_complete !== true && aiAssistantProfile.stage !== 'done'
   const deepSeekKeyConfigured = user ? Boolean(await readDeepSeekKeyForUser(user.id)) : false
-  if (params.shoppingPreferences === '1' && (user || process.env.NODE_ENV !== 'production')) {
-    return <ShoppingPreferenceSurveyFlow
-      initialProfile={user ? initialAiAssistantProfile : { ...emptyAiAssistantProfile, name: '预览用户' }}
-      preview={!user}
-    />
-  }
   const activatePersonalAdvisor = params.activatePersonalAdvisor === '1'
     && (!user || initialInstalledSkillIds.includes('personal-advisor'))
 
@@ -179,5 +119,5 @@ export default async function ConsumerMarketPage({ searchParams }: { searchParam
   }
 
   const hasLiveContent = process.env.NODE_ENV === 'production' || initialProducts.length > 0 || initialPosts.length > 0
-  return <App initialProducts={initialProducts} initialPosts={initialPosts} hasLiveProducts={hasLiveContent} profileName={initialAiAssistantProfile.name || user?.email || null} publisherReady={publisherReady} initialAiAssistantChat={params.openAssistant === '1' || needsWelcome} initialAiAssistantProfile={initialAiAssistantProfile} initialOnboarding={Boolean(user && needsWelcome)} deepSeekKeyConfigured={deepSeekKeyConfigured} initialInstalledSkillIds={user ? initialInstalledSkillIds : undefined} initialActiveSkillId={activatePersonalAdvisor ? 'personal-advisor' : undefined} initialPostId={params.post} />
+  return <App initialProducts={initialProducts} initialPosts={initialPosts} hasLiveProducts={hasLiveContent} userId={user?.id??null} profileName={initialAiAssistantProfile.name || user?.email || null} publisherReady={publisherReady} initialAiAssistantChat={params.openAssistant === '1' || needsWelcome} initialAiAssistantProfile={initialAiAssistantProfile} initialOnboarding={Boolean(user && needsWelcome)} deepSeekKeyConfigured={deepSeekKeyConfigured} initialInstalledSkillIds={user ? initialInstalledSkillIds : undefined} initialActiveSkillId={activatePersonalAdvisor ? 'personal-advisor' : undefined} initialPostId={params.post} />
 }

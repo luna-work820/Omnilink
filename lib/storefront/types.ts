@@ -51,7 +51,7 @@ export interface StorefrontProduct {
   slug: string
   /** 数值型价格；非法/缺失归一为 0。 */
   price: number
-  priceMode?: 'amount' | 'inquiry' | 'free'
+  priceMode?: 'amount' | 'inquiry' | 'free' | 'unknown'
   outboundLinks?: OutboundLinks
   /** 商品货币；缺省回退店铺货币，最后回退 schema 默认 'USD'。 */
   currency: string

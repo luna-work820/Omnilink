@@ -156,7 +156,8 @@ const taskMemorySchema = z.object({
   domain: z.enum(['clothing', 'skin', 'hair', 'space', 'other']),
   text: z.string().max(240),
   origin: z.enum(['user', 'inferred']),
-  status: z.enum(['active', 'rejected']),
+  status: z.enum(['proposed', 'active', 'rejected']),
+  confirmedAt: z.string().nullable().optional(),
 })
 
 const taskProductSchema = z.object({
@@ -228,7 +229,7 @@ function relevantMemoryIds(input: z.infer<typeof taskPlanInput>): string[] {
   if (/(空间|家居|家具|灯|沙发|桌|椅|房间|装修)/.test(query)) queryDomains.add('space')
   if (!queryDomains.size) queryDomains.add('other')
 
-  const active = input.memories.filter((memory) => memory.status === 'active')
+  const active = input.memories.filter((memory) => memory.status === 'active' && memory.confirmedAt)
   const ranked = active.map((memory, index) => {
     const terms = memoryTerms(memory.text)
     let score = [...terms].filter((term) => queryTerms.has(term)).length * 2
@@ -380,7 +381,7 @@ const validateMemoryEvidence = createStep({
     candidate: parseAiAssistantMemoryCandidate(
       inputData.memoryUpdate,
       inputData.prompt,
-      inputData.memories.filter((memory) => memory.status === 'active').map((memory) => memory.id),
+      inputData.memories.filter((memory) => memory.status === 'active' && memory.confirmedAt).map((memory) => memory.id),
     ),
     memories: inputData.memories,
   }),
@@ -392,9 +393,9 @@ const rejectDuplicateMemory = createStep({
   outputSchema: z.object({ candidate: memoryCandidateSchema.nullable() }),
   execute: async ({ inputData }) => {
     const candidate = inputData.candidate
-    if (!candidate || inputData.memories.length >= 50) return { candidate: null }
+    if (!candidate || inputData.memories.filter((memory) => memory.status !== 'rejected').length >= 50) return { candidate: null }
     const duplicate = inputData.memories.some((memory) =>
-      memory.status === 'active' && memory.domain === candidate.domain && memory.text === candidate.text)
+      memory.status !== 'rejected' && memory.domain === candidate.domain && memory.text.trim().toLowerCase().replace(/\s+/g, ' ') === candidate.text.trim().toLowerCase().replace(/\s+/g, ' '))
     return { candidate: duplicate ? null : candidate }
   },
 })

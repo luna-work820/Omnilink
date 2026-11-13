@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { safeInternalRedirectPath } from '@/lib/auth/redirect-path'
 import { createClientServer } from '@/lib/supabase/server'
 
 /**
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const rawNext = searchParams.get('next') ?? '/discover?openAssistant=1&newUser=1'
-  const safeNext = sanitizeInternalPath(rawNext)
+  const safeNext = safeInternalRedirectPath(rawNext, '/discover')
 
   if (code) {
     const supabase = await createClientServer()
@@ -39,23 +40,4 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
-}
-
-/**
- * Returns a path that is guaranteed to be same-origin and absolute-rooted.
- *
- * Accepts only strings that:
- *   - start with a single "/" (internal path)
- *   - do NOT start with "//" or "/\\" (protocol-relative URL)
- *   - do NOT contain a protocol prefix like "javascript:" or "http:"
- *
- * Any unsafe value falls back to /discover so we never redirect off-site.
- */
-function sanitizeInternalPath(value: string): string {
-  if (!value || typeof value !== 'string') return '/discover'
-  if (!value.startsWith('/')) return '/discover'
-  if (value.startsWith('//') || value.startsWith('/\\')) return '/discover'
-  // Belt-and-suspenders: reject any path that still smuggles a protocol.
-  if (/[\s]/.test(value)) return '/discover'
-  return value
 }

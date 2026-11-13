@@ -39,7 +39,7 @@ export async function createStoreAction(formData: FormData) {
       logoUrl: logo_url || null,
       concept,
     })
-    return { success: true, redirectUrl: '/dashboard/products' }
+    return { success: true, redirectUrl: '/dashboard?workspace=merchant' }
   } catch (error) {
     return {
       success: false,

@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { advanceAiAssistantProfile, readAiAssistantProfile, type AiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-profile'
 import { readPreviewAiAssistantProfile, savePreviewAiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-preview-storage'
+import { assessmentMemoryProposal } from '@/lib/consumer-advisor/assessment-memory-proposal'
 import {
   nextShoppingPreferenceDeepQuestion,
   shoppingPreferenceSurveyProgress,
@@ -19,6 +20,7 @@ type Props = {
   signupMode?: boolean
   embedded?: boolean
   onComplete?: () => void
+  onReview?: () => void
 }
 
 function questionOptions(question: ShoppingPreferenceQuestion) {
@@ -26,13 +28,15 @@ function questionOptions(question: ShoppingPreferenceQuestion) {
   return question.options ?? []
 }
 
-export function ShoppingPreferenceSurveyFlow({ initialProfile, preview = false, signupMode = false, embedded = false, onComplete }: Props) {
+export function ShoppingPreferenceSurveyFlow({ initialProfile, preview = false, signupMode = false, embedded = false, onComplete,onReview }: Props) {
   const router = useRouter()
   const [profile, setProfile] = useState(initialProfile)
   const [selection, setSelection] = useState<unknown>(null)
   const [numericInput, setNumericInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [loading,setLoading]=useState(!preview)
+  const [readFailed,setReadFailed]=useState(false),[readAttempt,setReadAttempt]=useState(0)
   const survey = profile.shoppingPreferenceSurvey
   const question = nextShoppingPreferenceDeepQuestion(survey)
   const progress = shoppingPreferenceSurveyProgress(survey)
@@ -52,6 +56,10 @@ export function ShoppingPreferenceSurveyFlow({ initialProfile, preview = false, 
       let nextProfile: AiAssistantProfile
       if (preview) {
         nextProfile = advanceAiAssistantProfile(profile, payload)
+        const proposal=await assessmentMemoryProposal(nextProfile)
+        if(proposal&&!nextProfile.memories.some((m)=>m.sourcePayload?.assessmentId===proposal.sourcePayload.assessmentId&&m.status!=='rejected')){
+          nextProfile={...nextProfile,memories:[...nextProfile.memories,{...proposal,id:crypto.randomUUID(),status:'proposed',confirmedAt:null,revision:1}]}
+        }
         savePreviewAiAssistantProfile(nextProfile)
         try { localStorage.setItem('omnilink_consumer_skills_v2', JSON.stringify(INSTALLED_SKILLS)) } catch {}
       } else {
@@ -66,9 +74,8 @@ export function ShoppingPreferenceSurveyFlow({ initialProfile, preview = false, 
       setProfile(nextProfile)
       setSelection(null)
       setNumericInput('')
-      if (embedded && signupMode && nextProfile.stage === 'done') {
-        onComplete?.()
-      } else if (payload.action === 'shopping-preference-pause' || (signupMode && payload.action !== 'shopping-preference-reset' && nextProfile.shoppingPreferenceSurvey.status === 'complete')) {
+      if(embedded){if(payload.action==='shopping-preference-pause')onComplete?.()}
+      else if (payload.action === 'shopping-preference-pause' || (signupMode && payload.action !== 'shopping-preference-reset' && nextProfile.shoppingPreferenceSurvey.status === 'complete')) {
         router.replace(preview && signupMode
           ? '/discover?openAssistant=1&activatePersonalAdvisor=1&signupPreviewComplete=1'
           : '/discover?openAssistant=1&activatePersonalAdvisor=1')
@@ -107,10 +114,19 @@ export function ShoppingPreferenceSurveyFlow({ initialProfile, preview = false, 
   const appBackUrl = signupMode ? '/discover' : '/discover?openAssistant=1&activatePersonalAdvisor=1'
 
   useEffect(() => {
-    if (!preview || signupMode) return
-    const saved = readPreviewAiAssistantProfile()
-    if (saved) setProfile(readAiAssistantProfile(saved))
-  }, [preview, signupMode])
+    if(preview){const saved=readPreviewAiAssistantProfile();if(saved)setProfile(readAiAssistantProfile(saved));return}
+    const abort=new AbortController()
+    setLoading(true);setReadFailed(false);setError(null)
+    void fetch('/api/consumer/ai-assistant-profile',{signal:abort.signal,credentials:'include',cache:'no-store'})
+      .then(async(response)=>{const data=await response.json();if(!response.ok||!data.profile)throw new Error(data.error??'偏好暂时无法读取。');return data.profile})
+      .then((value)=>setProfile(readAiAssistantProfile(value)))
+      .catch((cause)=>{if(!abort.signal.aborted){setReadFailed(true);setError(cause instanceof Error?cause.message:'偏好暂时无法读取。')}})
+      .finally(()=>{if(!abort.signal.aborted)setLoading(false)})
+    return()=>abort.abort()
+  }, [preview, signupMode,readAttempt])
+
+  if(loading)return <p role="status" className="px-4 py-8 text-sm text-[var(--market-ink)]">正在读取购物偏好…</p>
+  if(readFailed)return <div role="alert" className="px-4 py-8 text-sm text-[var(--market-ink)]"><p>{error}</p><button type="button" onClick={()=>setReadAttempt((value)=>value+1)} className="mt-3 min-h-11 rounded-full px-4 hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">重新读取</button></div>
 
   return <div className={embedded ? 'w-full text-[var(--market-ink)]' : 'consumer-market-shell flex min-h-dvh flex-col bg-white text-[var(--market-ink)]'}>
     {!embedded && <header className="sticky top-0 z-10 border-b-[0.5px] border-[var(--market-border)] bg-white/95 px-4 py-3 backdrop-blur-sm">
@@ -122,7 +138,7 @@ export function ShoppingPreferenceSurveyFlow({ initialProfile, preview = false, 
     </header>}
 
     <main className={embedded ? 'w-full' : 'mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 pb-10 pt-8 sm:px-6'} aria-live="polite">
-      {question ? <section aria-label="购物偏好测量" className={embedded ? 'w-full max-w-3xl rounded-3xl border-[0.5px] border-[var(--market-border)] bg-white p-5 sm:p-6' : 'my-auto w-full'}>
+      {question ? <section aria-label="购物偏好测量" className={embedded ? 'w-full max-w-3xl px-4 py-3' : 'my-auto w-full'}>
         {!embedded && <div className="mb-5 flex items-center justify-between text-xs text-[var(--market-text-muted)]">
           <span>购物偏好</span><span>{answerCount} 项已记录</span>
         </div>}
@@ -138,13 +154,20 @@ export function ShoppingPreferenceSurveyFlow({ initialProfile, preview = false, 
             <span className="text-sm text-[var(--market-text-muted)]">{question.id === 'A2' ? '元' : '分'}</span>
           </label>}
 
-          {(question.type === 'single_choice' || question.type === 'pairwise' || question.type === 'multi_choice') && <div className="mt-5 grid gap-1" role={question.type === 'multi_choice' ? 'group' : 'radiogroup'} aria-label={question.prompt}>
-            {questionOptions(question).map((option) => {
+          {(question.type === 'single_choice' || question.type === 'pairwise' || question.type === 'multi_choice') && <div className="mt-5 grid gap-1" role={question.type === 'multi_choice' ? 'group' : 'radiogroup'} aria-label={question.prompt} onKeyDown={(event)=>{
+            if(question.type==='multi_choice'||busy||!['ArrowDown','ArrowRight','ArrowUp','ArrowLeft','Home','End'].includes(event.key))return
+            event.preventDefault()
+            const options=questionOptions(question),buttons=Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button'))
+            const index=buttons.indexOf(document.activeElement as HTMLButtonElement),delta=['ArrowDown','ArrowRight'].includes(event.key)?1:-1
+            const next=event.key==='Home'?0:event.key==='End'?options.length-1:(index+delta+options.length)%options.length
+            setSelection(options[next].value);buttons[next]?.focus()
+          }}>
+            {questionOptions(question).map((option,index) => {
               const selected = question.type === 'multi_choice'
                 ? Array.isArray(selection) && selection.includes(option.value)
                 : selection === option.value
-              return <button key={String(option.value)} type="button" disabled={busy} aria-pressed={selected} onClick={() => question.type === 'multi_choice' ? toggleOption(option.value) : setSelection(option.value)} className={`flex min-h-12 w-full items-center gap-3 rounded-[var(--radius-card-nested)] px-3 text-left text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)] disabled:opacity-60 ${selected ? embedded ? 'bg-[var(--market-hover)]' : 'bg-[var(--market-support-soft)]' : 'bg-white hover:bg-[var(--market-hover)]'}`}>
-                <span aria-hidden="true" className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${selected ? 'border-[var(--market-ink)]' : 'border-[var(--market-border)]'}`}>{selected && <span className="h-2.5 w-2.5 rounded-full bg-[var(--market-ink)]" />}</span>
+              return <button key={String(option.value)} type="button" disabled={busy} role={question.type==='multi_choice'?'checkbox':'radio'} aria-checked={selected} tabIndex={question.type==='multi_choice'||selected||(selection===null&&index===0)?0:-1} onClick={() => question.type === 'multi_choice' ? toggleOption(option.value) : setSelection(option.value)} className={`flex min-h-12 w-full items-center gap-3 rounded-full px-3 text-left text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)] disabled:opacity-60 ${selected ? embedded ? 'bg-[var(--market-hover)]' : 'bg-[var(--market-support-soft)]' : 'bg-transparent hover:bg-[var(--market-hover)]'}`}>
+                <span aria-hidden="true" className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[0.5px] ${selected ? 'border-[var(--market-ink)]' : 'border-[var(--market-border)]'}`}>{selected && <span className="h-2.5 w-2.5 rounded-full bg-[var(--market-ink)]" />}</span>
                 <span>{option.label}</span>
               </button>
             })}
@@ -159,14 +182,14 @@ export function ShoppingPreferenceSurveyFlow({ initialProfile, preview = false, 
           {question.type !== 'ladder' && <button type="button" disabled={busy || (question.type === 'numeric' ? !numericInput.trim() || !Number.isFinite(Number(numericInput)) : question.type === 'multi_choice' ? !Array.isArray(selection) || selection.length === 0 : selection === null)} onClick={submitAnswer} className={`${embedded ? 'min-h-12 w-full bg-[var(--market-ink)] text-white' : 'min-h-11 bg-[var(--market-accent)] text-white'} rounded-full px-6 text-sm font-semibold disabled:opacity-40`}>{embedded ? '提交答案' : '继续'}</button>}
           <button type="button" disabled={busy} onClick={() => void save({ action: 'shopping-preference-skip', key: question.id })} className="min-h-11 px-3 text-sm text-[var(--market-text-muted)] hover:text-[var(--market-ink)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)] disabled:opacity-50">跳过</button>
         </div>
-        {!embedded && <button type="button" disabled={busy} onClick={() => void save({ action: 'shopping-preference-pause' })} className="mt-6 min-h-10 text-xs text-[var(--market-text-muted)] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-[var(--market-support)] disabled:opacity-50">稍后继续</button>}
+        <button type="button" disabled={busy} onClick={() => void save({ action: 'shopping-preference-pause' })} className="mt-6 min-h-11 rounded-full px-3 text-xs text-[var(--market-text-secondary)] hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)] disabled:opacity-50">稍后继续</button>
         {error && <p role="alert" className="mt-4 text-sm text-[var(--market-accent)]">{error}</p>}
       </section> : <section className="my-auto w-full" aria-label="购物偏好已完成">
-        <h2 className="text-lg font-semibold">偏好已整理</h2>
-        <p className="mt-2 text-sm leading-6 text-[var(--market-text-muted)]">测量结果已写入你的用户档案，AI assistant 会把它作为可调整的推荐参考。</p>
+        <h2 className="text-base font-semibold">评测已完成</h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--market-text-secondary)]">确认提案后，才会用于长期推荐。</p>
         <div className="mt-6 flex flex-wrap gap-3">
           <button type="button" disabled={busy} onClick={() => void save({ action: 'shopping-preference-reset' })} className="min-h-11 rounded-full border-[0.5px] border-[var(--market-border)] px-5 text-sm hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">重新测量</button>
-          <a href={appBackUrl} className="inline-flex min-h-11 items-center rounded-full bg-[var(--market-accent)] px-5 text-sm font-semibold text-white">返回 AI assistant</a>
+          {onReview?<button type="button" onClick={onReview} className="min-h-11 rounded-full bg-[var(--market-accent)] px-5 text-sm font-medium text-white">查看提案</button>:<a href="/discover?memories=1" className="inline-flex min-h-11 items-center rounded-full bg-[var(--market-accent)] px-5 text-sm font-semibold text-white">查看提案</a>}
         </div>
         {error && <p role="alert" className="mt-4 text-sm text-[var(--market-accent)]">{error}</p>}
       </section>}

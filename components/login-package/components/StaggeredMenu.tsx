@@ -18,6 +18,7 @@ export const StaggeredMenu = ({
   isFixed = true,
   closeOnClickAway = true,
   theme: propTheme,
+  redirectTo,
   onMenuOpen,
   onMenuClose
 }: any) => {
@@ -474,6 +475,7 @@ export const StaggeredMenu = ({
                 className="w-full"
                 hideTitle={false}
                 onSwitchToSignup={() => setAuthMode('signup')}
+                redirectTo={redirectTo}
               />
             ) : (
               <SignupForm
@@ -481,6 +483,7 @@ export const StaggeredMenu = ({
                 className="w-full"
                 hideTitle={false}
                 onSwitchToLogin={() => setAuthMode('login')}
+                redirectTo={redirectTo}
               />
             )}
           </div>

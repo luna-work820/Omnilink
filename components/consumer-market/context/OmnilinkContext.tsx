@@ -3,8 +3,10 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useLayoutEffect,
   useCallback,
   useMemo,
+  useRef,
 } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -22,6 +24,10 @@ import {
 import { DataService } from '../services/dataService';
 import { feedItemsList } from '../data/mockData';
 import { readPreviewAiAssistantProfile as readStoredPreviewAiAssistantProfile, savePreviewAiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-preview-storage';
+import { useDiscoveryWorkspace,type PersonalView,type DiscoveryFailure } from '../hooks/useDiscoveryWorkspace';
+import { readDiscoveryReference,type DiscoveryPage,type DiscoverySpec } from '@/lib/consumer-advisor/discovery-contract';
+import { fetchConsumerReply } from '@/lib/consumer-advisor/client-response';
+import { readExecutionBlocks,readSourceIds,type ExecutionTask,type ResponseBlock } from '@/lib/consumer-advisor/response-contract';
 
 const persistedIntentByStyleTag = {
   '穿搭建议': 'outfit-styling',
@@ -33,6 +39,19 @@ const persistedIntentByStyleTag = {
 } as const satisfies Record<string, NonNullable<AiChatMessage['intent']>>
 
 interface OmnilinkContextType {
+  discovery:DiscoveryPage|null;
+  discoveryBusy:boolean;
+  discoveryError:DiscoveryFailure|null;
+  loadMoreDiscovery:()=>void;
+  refreshDiscovery:(spec?:DiscoverySpec)=>void;
+  clearDiscovery:()=>void;
+  refineDiscovery:(answer:string)=>void;
+  skipDiscoveryQuestion:()=>void;
+  resumeDiscovery:(runId:string,version:number,spec?:DiscoverySpec)=>void;
+  personalView:PersonalView;
+  openPersonalView:(view:PersonalView)=>void;
+  contextVersion:number;
+  updateContextVersion:(version:number)=>void;
   homeChatOpen: boolean;
   setHomeChatOpen: (open: boolean) => void;
 
@@ -105,6 +124,8 @@ interface OmnilinkContextType {
   sendAiMessage: (prompt: string, selectedProductIds?: string[], hasActiveSkill?: boolean) => void;
   sendAiImageMessage: (imageSrc: string, promptText?: string, selectedProductIds?: string[], hasActiveSkill?: boolean) => void;
   sendAiFileMessage: (fileName: string, fileData: string, promptText?: string, selectedProductIds?: string[], hasActiveSkill?: boolean) => void;
+  sendAiUrlMessage:(url:string,promptText?:string,selectedProductIds?:string[])=>void;
+  stopAiResponse:()=>void;
   deleteMatchedItem: (messageId: string, productId: string) => void;
   replaceMatchedItem: (messageId: string, oldProductId: string, newProduct: ProductItem) => void;
   openAiPage: (initialPrompt?: string, initialImage?: string) => void;
@@ -132,7 +153,7 @@ function readPreviewAiAssistantProfile() {
 }
 
 type PreviewMemoryUpdate = {
-  memory: { id: string; domain: 'clothing' | 'skin' | 'hair' | 'space' | 'other'; text: string; origin: 'user' | 'inferred'; status: 'active'; evidence: string | null; sourceMessageId: string | null; supportIds: string[] };
+  memory: { id: string; domain: 'clothing' | 'skin' | 'hair' | 'space' | 'other'; text: string; origin: 'user' | 'inferred'; status: 'proposed'; evidence: string | null; sourceMessageId: string | null; supportIds: string[]; supersedeIds: string[]; confirmedAt: null; revision: number };
   supersedeIds: string[];
 };
 
@@ -144,12 +165,7 @@ function persistPreviewMemory(update: PreviewMemoryUpdate) {
       ? profile.memories.filter((item: unknown) => item && typeof item === 'object' && !Array.isArray(item)) as Record<string, unknown>[]
       : [];
     if (existing.length >= 50 || existing.some((memory) => memory.id === update.memory.id)) return false;
-    const supersededIds = new Set(update.supersedeIds);
-    const memories = existing.map((memory) => {
-      const dependsOnSuperseded = memory.origin === 'inferred' && Array.isArray(memory.supportIds)
-        && memory.supportIds.some((id) => typeof id === 'string' && supersededIds.has(id));
-      return supersededIds.has(String(memory.id)) || dependsOnSuperseded ? { ...memory, status: 'rejected' } : memory;
-    });
+    const memories = [...existing];
     memories.push(update.memory);
     savePreviewAiAssistantProfile({ ...profile, memories });
     return true;
@@ -179,7 +195,9 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
   const [homeChatOpen, setHomeChatOpen] = useState(false);
 
   // Repositories
-  const [products] = useState<ProductItem[]>(() => hasLiveProducts ? initialProducts : (initialProducts.length ? initialProducts : DataService.getProducts()));
+  const [products,setProducts] = useState<ProductItem[]>(() => hasLiveProducts ? initialProducts : (initialProducts.length ? initialProducts : DataService.getProducts()));
+  const initialProductCatalog=useRef(products);
+  const registerProducts=useCallback((incoming:ProductItem[]) => setProducts((current) => [...new Map([...current,...incoming].map((p) => [p.id,p])).values()]),[]);
   const [feedItems] = useState<FeedItem[]>(() => {
     if (hasLiveProducts) {
       const mixed: FeedItem[] = initialProducts.map((product) => ({ type: 'product', product }));
@@ -240,9 +258,19 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
   const [archivedAiConversationIds, setArchivedAiConversationIds] = useState<string[]>([]);
   const [isAiThinking, setIsAiThinking] = useState(false);
   const [aiModel, setAiModel] = useState<ConsumerAiModel>(authenticated ? 'deepseek-v4-pro' : 'qwen-plus');
+  const discoveryWorkspace=useDiscoveryWorkspace(activeAiConversationId,registerProducts);
+  const {acceptDiscovery,resumeDiscovery}=discoveryWorkspace;
+  const previousSearchQuery=discoveryWorkspace.discovery?.query;
+  const restoredSearchRef=useRef<string|null>(null);
+  const responseEpoch=useRef(0);
+  const responseAbort=useRef<AbortController|null>(null);
+  const activeConversationRef=useRef(activeAiConversationId);
+  useLayoutEffect(()=>{activeConversationRef.current=activeAiConversationId},[activeAiConversationId]);
+  useEffect(() => {responseEpoch.current++;responseAbort.current?.abort();setIsAiThinking(false)},[activeAiConversationId]);
+  useEffect(()=>()=>responseAbort.current?.abort(),[]);
 
   useEffect(() => {
-    setCartItems(DataService.getCart(products, initialProducts.length > 0));
+    setCartItems(DataService.getCart(initialProductCatalog.current, initialProducts.length > 0));
     setSavedProductIds(DataService.getSavedProductIds());
     setRejectedProductIds(DataService.getRejectedProductIds());
     setQnaHistory(DataService.getQnaHistory());
@@ -260,21 +288,24 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
     }
 
     setLocalStateLoaded(true);
-  }, [authenticated, initialAiMessages, initialProducts.length, initialWelcome, products]);
+  }, [authenticated, initialAiMessages, initialProducts.length, initialWelcome]);
 
   useEffect(() => {
     if (!authenticated) return;
     let cancelled = false;
     void fetch('/api/consumer/ai-assistant-history').then(async (response) => {
       if (!response.ok) throw new Error('对话历史暂时无法读取');
-      return response.json() as Promise<{ messages: { id: string; conversation_id: string; role: string; content: string; style_tag: string | null; matched_product_ids: string[]; model: string | null }[] }>;
+      return response.json() as Promise<{ messages: { id: string; conversation_id: string; role: string; content: string; style_tag: string | null; matched_product_ids: string[]; model: string | null;response_blocks?:unknown }[] }>;
     }).then(({ messages }) => {
       if (cancelled) return;
       const storedMessages = messages.map((message) => ({
         id: message.id, conversationId: message.conversation_id, isUser: message.role === 'user',
         text: message.content, styleTag: message.style_tag ?? undefined,
         intent: message.style_tag ? persistedIntentByStyleTag[message.style_tag as keyof typeof persistedIntentByStyleTag] : undefined,
-        matchedProducts: products.filter((product) => message.matched_product_ids?.includes(product.id)),
+        matchedProducts: readDiscoveryReference(message.response_blocks)?undefined:initialProductCatalog.current.filter((product) => message.matched_product_ids?.includes(product.id)),
+        searchRef:readDiscoveryReference(message.response_blocks),
+        blocks:readExecutionBlocks(message.response_blocks),
+        matchedSourceIds:readSourceIds(message.response_blocks),
         model: message.model as ConsumerAiModel | undefined,
         timestamp: message.role === 'user' ? '你' : message.style_tag && message.style_tag in persistedIntentByStyleTag ? message.style_tag : message.style_tag === '成分资料检索' ? '资料检索' : 'AI assistant',
       }));
@@ -289,7 +320,17 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
       if (!cancelled) setActiveAiConversationId((current) => current === initialConversationId ? createConversationId() : current);
     });
     return () => { cancelled = true; };
-  }, [authenticated, products, initialConversationId]);
+  }, [authenticated, initialConversationId]);
+
+  useEffect(()=>{
+    const latest=[...aiMessages].reverse().find((message)=>message.conversationId===activeAiConversationId&&message.searchRef)?.searchRef;
+    if(!latest)return;
+    const key=`${activeAiConversationId}:${latest.searchRunId}`;
+    if(discoveryWorkspace.discovery){restoredSearchRef.current=key;return;}
+    if(discoveryWorkspace.discoveryBusy||restoredSearchRef.current===key)return;
+    restoredSearchRef.current=key;
+    resumeDiscovery(latest.searchRunId,latest.contextVersion,latest.spec);
+  },[activeAiConversationId,aiMessages,discoveryWorkspace.discovery,discoveryWorkspace.discoveryBusy,resumeDiscovery]);
 
   // Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -590,74 +631,113 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
   );
 
   const requestAiResponse = useCallback(async (promptText: string, image?: string, selectedProductIds: string[] = [], messageId?: string, document?: { name: string; data: string }, hasActiveSkill = false) => {
+    responseAbort.current?.abort();
+    const abort=new AbortController();responseAbort.current=abort;
+    const turn=++responseEpoch.current;
+    const sessionId=activeAiConversationId;
+    const requestId=messageId??`m_${crypto.randomUUID()}`,replyId=`reply_${requestId}`;
+    let retrySpec:DiscoverySpec|undefined;
     setIsAiThinking(true);
     try {
       const previousAssistant = [...aiMessages].reverse().find((message) => message.conversationId === activeAiConversationId && !message.isUser && message.timestamp !== '连接失败');
       const previousIntent = previousAssistant?.intent ?? (previousAssistant?.styleTag
         ? persistedIntentByStyleTag[previousAssistant.styleTag as keyof typeof persistedIntentByStyleTag]
         : undefined);
-      const response = await fetch('/api/consumer/assistant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const response = await fetchConsumerReply(JSON.stringify({
           prompt: promptText,
           image,
           document,
           model: aiModel,
           conversationId: activeAiConversationId,
-          messageId,
+          messageId:requestId,
           selectedProductIds,
           previousProductIds: previousAssistant?.matchedProducts?.map((product) => product.id) ?? [],
           hasActiveSkill,
           previousIntent,
+          previousSearch:previousSearchQuery,
+          previousTaskId:previousAssistant?.blocks?.find((block)=>block.type==='task_progress')?.id,
+          previousSourceIds:[...(previousAssistant?.matchedSourceIds??[]),...(previousAssistant?.blocks?.flatMap((block)=>block.type==='information_feed'?block.data.items.filter((item)=>item.entityType==='source').map((item)=>item.id):[])??[])].slice(0,6),
           savedProductIds,
           rejectedProductIds,
           history: aiMessages.filter((message) => message.conversationId === activeAiConversationId && message.timestamp !== '连接失败')
             .slice(-6).map((message) => ({ role: message.isUser ? 'user' : 'assistant', content: message.text })),
           profile: authenticated ? undefined : readPreviewAiAssistantProfile(),
-        }),
-      });
-      const result = await response.json() as { text?: string; styleTag?: string; intent?: AiChatMessage['intent']; matchedProductIds?: string[]; matchReasons?: Record<string, string>; usedPreferences?: string[]; memorySaved?: boolean; memoryOrigin?: 'user' | 'inferred' | null; demoMemoryUpdate?: PreviewMemoryUpdate; model?: ConsumerAiModel | null; source?: string; error?: string };
+        }),abort.signal,(delta)=>{
+          if(turn!==responseEpoch.current||activeConversationRef.current!==sessionId)return;
+          setAiMessages((current)=>{
+            const existing=current.find((message)=>message.id===replyId);
+            return existing?current.map((message)=>message.id===replyId?{...message,text:message.text+delta}:message):[...current,
+              {id:replyId,conversationId:sessionId,text:delta,isUser:false,timestamp:'AI 助手',model:aiModel,state:'streaming'}];
+          });
+        });
+      const result = response.body as { text?: string; styleTag?: string; intent?: AiChatMessage['intent']; matchedProductIds?: string[]; matchReasons?: Record<string, string>; usedPreferences?: string[]; memorySaved?: boolean; memoryProposed?:boolean; memoryOrigin?: 'user' | 'inferred' | null; demoMemoryUpdate?: PreviewMemoryUpdate; model?: ConsumerAiModel | null; source?: string; error?: string; discovery?:DiscoveryPage; retrySpec?:DiscoverySpec; sessionId?:string;blocks?:ResponseBlock[];task?:ExecutionTask;matchedSourceIds?:string[] };
+      if(turn!==responseEpoch.current || activeConversationRef.current!==sessionId) return;
+      retrySpec=result.retrySpec;
       if (!response.ok || !result.text) throw new Error(result.error || '模型没有返回可用内容。');
+      if(result.discovery) {acceptDiscovery(result.discovery);setHomeChatOpen(false);}
+      if(result.task||result.blocks?.some((block)=>block.type==='information_feed'))setHomeChatOpen(true);
       if (!authenticated && result.demoMemoryUpdate && persistPreviewMemory(result.demoMemoryUpdate)) {
-        showToast(result.demoMemoryUpdate.memory.origin === 'user' ? '已记住这项偏好' : '已记录一条待确认偏好');
-      } else if (authenticated && result.memorySaved) {
-        showToast(result.memoryOrigin === 'inferred' ? '已记录一条待确认偏好' : '已记住这项偏好');
+        showToast('已生成一条待确认偏好');
+      } else if (authenticated && result.memoryProposed) {
+        showToast('已生成一条待确认偏好');
       }
       const matchedIds = new Set(result.matchedProductIds || []);
       const finalMessage: AiChatMessage = {
-        id: `m_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        id: replyId,
         text: result.text!,
         isUser: false,
         conversationId: activeAiConversationId,
         styleTag: result.styleTag,
         intent: result.intent,
-        matchedProducts: products.filter((product) => matchedIds.has(product.id)).slice(0, 3),
+        matchedProducts: result.discovery?undefined:products.filter((product) => matchedIds.has(product.id)).slice(0, 3),
+        searchRef:result.discovery?{searchRunId:result.discovery.searchRunId,contextVersion:result.discovery.contextVersion,spec:result.discovery.spec}:undefined,
         matchReasons: result.matchReasons,
         usedPreferences: result.usedPreferences,
         timestamp: result.intent === 'outfit-styling' ? '穿搭建议' : result.source === 'ingredient-index' ? '资料检索' : result.source === 'catalog-index' ? '商品检索' : 'AI 助手',
         model: result.model === null ? undefined : result.model ?? aiModel,
+        blocks:result.discovery?undefined:readExecutionBlocks(result.blocks),
+        state:'completed',
+        matchedSourceIds:result.matchedSourceIds,
       };
-      setAiMessages((prev) => [...prev, finalMessage]);
+      setAiMessages((prev) => [...prev.filter((message)=>message.id!==replyId), finalMessage]);
     } catch (error) {
+      if(abort.signal.aborted || turn!==responseEpoch.current || activeConversationRef.current!==sessionId) return;
+      setAiMessages((current)=>current.map((message)=>message.id===replyId?{...message,state:'failed'}:message));
       const failedMessage: AiChatMessage = {
         id: `m_${Date.now()}_${Math.random().toString(36).slice(2)}`,
         text: error instanceof Error ? `模型暂时无法回答：${error.message}` : '模型暂时无法回答，请稍后重试。',
         isUser: false,
         conversationId: activeAiConversationId,
         timestamp: '连接失败',
+        retrySpec,
         model: aiModel,
       };
       setAiMessages((prev) => [...prev, failedMessage]);
     } finally {
-      setIsAiThinking(false);
+      if(turn===responseEpoch.current)setIsAiThinking(false);
     }
-  }, [activeAiConversationId, aiMessages, aiModel, authenticated, products, savedProductIds, rejectedProductIds, showToast]);
+  }, [activeAiConversationId, aiMessages, aiModel, authenticated, products, savedProductIds, rejectedProductIds, showToast,acceptDiscovery,previousSearchQuery]);
+
+  const stopAiResponse=useCallback(()=>{
+    responseEpoch.current++;responseAbort.current?.abort();setIsAiThinking(false);
+    setAiMessages((current)=>current.map((message)=>message.state==='streaming'?{...message,state:'cancelled'}:message));
+  },[]);
+  const sendAiUrlMessage=useCallback((url:string,promptText='',selectedProductIds:string[]=[])=>{
+    const sessionId=activeAiConversationId,requestId=`url_${crypto.randomUUID()}`;
+    setAiMessages((current)=>[...current,{id:requestId,conversationId:sessionId,isUser:true,text:[promptText||`阅读 ${new URL(url).hostname} 的资料`,url].join('\n'),timestamp:'你'}]);
+    setHomeChatOpen(true);
+    void fetch('/api/consumer/tasks',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'create',sessionId,requestId,input:{urls:[url],productIds:selectedProductIds}})})
+      .then(async(response)=>{const result=await response.json();if(!response.ok||!result.task)throw new Error(result.error??'任务暂时无法创建。');return result.task as ExecutionTask})
+      .then((task)=>{if(activeConversationRef.current!==sessionId)return;setAiMessages((current)=>[...current,
+        {id:`reply_${requestId}`,conversationId:sessionId,isUser:false,text:'已创建资料任务。',timestamp:'AI 助手',blocks:[{type:'task_progress',id:task.id,version:1,data:task}]}])})
+      .catch((cause)=>{if(activeConversationRef.current===sessionId)showToast(cause instanceof Error?cause.message:'任务暂时无法创建。')});
+  },[activeAiConversationId,showToast]);
 
   const sendAiMessage = useCallback((promptText: string, selectedProductIds: string[] = [], hasActiveSkill = false) => {
     if (!promptText.trim() || isAiThinking) return;
     const userMsg: AiChatMessage = {
-      id: `m_${Date.now()}`,
+      id: `m_${crypto.randomUUID()}`,
       text: promptText.trim(),
       isUser: true,
       conversationId: activeAiConversationId,
@@ -673,7 +753,7 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
     (imageSrc: string, promptText?: string, selectedProductIds: string[] = [], hasActiveSkill = false) => {
       if (isAiThinking) return;
       const userMsg: AiChatMessage = {
-        id: `m_${Date.now()}`,
+        id: `m_${crypto.randomUUID()}`,
         text: promptText?.trim() || '看看这张图',
         isUser: true,
         conversationId: activeAiConversationId,
@@ -690,7 +770,7 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
   const sendAiFileMessage = useCallback((fileName: string, fileData: string, promptText = '', selectedProductIds: string[] = [], hasActiveSkill = false) => {
     if (isAiThinking) return;
     const userMsg: AiChatMessage = {
-      id: `m_${Date.now()}`,
+      id: `m_${crypto.randomUUID()}`,
       text: promptText.trim(),
       fileName,
       isUser: true,
@@ -754,6 +834,8 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
   return (
     <OmnilinkContext.Provider
       value={{
+        ...discoveryWorkspace,
+        sendAiUrlMessage,stopAiResponse,
         homeChatOpen,
         setHomeChatOpen,
         products,

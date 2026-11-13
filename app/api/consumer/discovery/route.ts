@@ -1,0 +1,62 @@
+import { NextRequest,NextResponse } from 'next/server'
+import { z } from 'zod'
+import { resolveRequestUser } from '@/lib/api/request-user'
+import { requestIdentitySchema,resolveRequestIdentity } from '@/lib/consumer-advisor/request-contract'
+import { attachDiscoveryActor,continueDiscovery,discoveryActor,ownedDiscoveryRun,resumeDiscovery,startDiscovery } from '@/lib/consumer-advisor/discovery-engine'
+import { DiscoveryError,discoveryQuestion,discoverySpecSchema } from '@/lib/consumer-advisor/discovery-contract'
+import { discoveryResponse } from '@/lib/consumer-advisor/discovery-response'
+import { manageAiAssistantMemory } from '@/lib/consumer-advisor/ai-assistant-memory'
+
+const actionSchema=z.discriminatedUnion('action',[
+  z.object({action:z.literal('start'),spec:discoverySpecSchema}),
+  z.object({action:z.literal('page'),searchRunId:z.string().uuid(),cursor:z.string().max(2048)}),
+  z.object({action:z.literal('resume'),searchRunId:z.string().uuid(),contextVersion:z.number().int().nonnegative()}),
+  z.object({action:z.literal('refine'),searchRunId:z.string().uuid(),questionId:z.literal('style'),answer:z.enum(['simple','natural','vintage','any'])}),
+  z.object({action:z.literal('skip-question'),searchRunId:z.string().uuid()}),
+])
+
+export async function POST(request:NextRequest) {
+  if(Number(request.headers.get('content-length')??0)>16_384)return NextResponse.json({error:'请求内容过大。'},{status:413})
+  const auth=await resolveRequestUser(request)
+  if(!auth.ok) return auth.response
+  const text=await request.text()
+  if(Buffer.byteLength(text)>16_384) return NextResponse.json({error:'请求内容过大。'},{status:413})
+  let value:unknown
+  try{value=JSON.parse(text)}catch{return NextResponse.json({error:'请求无效。'},{status:400})}
+  const action=actionSchema.safeParse(value),ids=requestIdentitySchema.safeParse(value)
+  if(!action.success || !ids.success || (!ids.data.sessionId && !ids.data.conversationId)) return NextResponse.json({error:'请求或会话标识无效。'},{status:400})
+  const identity=resolveRequestIdentity(ids.data,auth.user?.id??null)
+  const actor=discoveryActor(request,auth.user?.id??null,identity.session.id)
+  const reply=(data:Record<string,unknown>,status=200) => attachDiscoveryActor(NextResponse.json({...data,requestId:identity.requestId,
+    sessionId:actor.sessionId,conversationId:actor.sessionId,contractVersion:1},{status}),actor)
+  try{
+    const input=action.data
+    if(input.action==='start') return reply(discoveryResponse(await startDiscovery(actor,input.spec)))
+    if(input.action==='page') return reply(discoveryResponse(await continueDiscovery(actor,input.cursor,input.searchRunId)))
+    if(input.action==='resume') return reply(discoveryResponse(await resumeDiscovery(actor,input.searchRunId,input.contextVersion)))
+    const run=await ownedDiscoveryRun(actor,input.searchRunId)
+    if(input.action==='skip-question') {
+      const {createServiceRoleClient}=await import('@/lib/supabase/service-role')
+      const {error}=await createServiceRoleClient().from('consumer_discovery_runs').update({spec:{...run.spec,questionDismissed:true}}).eq('id',run.id)
+      if(error) throw new DiscoveryError('CATALOG_UNAVAILABLE',503,'暂时无法保存，请重试。')
+      return reply({dismissed:true,searchRunId:run.id})
+    }
+    const option=discoveryQuestion(run.spec)?.options.find((o) => o.value===input.answer)
+    if(!option) throw new DiscoveryError('QUESTION_CHANGED',409,'问题已更新，请刷新结果。')
+    const page=await startDiscovery(actor,{...run.spec,sessionTerms:option.terms,questionDismissed:true})
+    let memoryProposed=false
+    let memoryWarning:string|undefined
+    if(auth.user && option.terms.length) {
+      try{
+        await manageAiAssistantMemory(auth.user.id,'propose',{text:`购物时偏好${option.label}风格`,domain:'space',origin:'user',sourceKind:'assessment',
+          evidence:`本轮风格选择：${option.label}`,sourcePayload:{assessmentVersion:'discovery-style-v1',questionId:'style',answer:option.value,
+            searchRunId:run.id,preferenceSignals:{positiveTerms:option.terms,avoidTerms:[]}}})
+        memoryProposed=true
+      }catch{memoryWarning='本次排序已更新，长期偏好提案暂时未保存。'}
+    }
+    return reply({...discoveryResponse(page),memoryProposed,...(memoryWarning?{memoryWarning}:{})})
+  }catch(error){
+    if(error instanceof DiscoveryError) return reply({status:'failed',blocks:[],code:error.code,error:error.message},error.status)
+    return reply({status:'failed',blocks:[],code:'CATALOG_UNAVAILABLE',error:'商品暂时无法读取，请重试。'},503)
+  }
+}

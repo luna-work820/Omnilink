@@ -1,4 +1,5 @@
 import { readOutboundLinks } from '@/lib/products/outbound-links'
+import { creatorVideoPath } from '@/lib/creator-video'
 
 export type ContentBlock =
   | { id: string; type: 'text'; text: string }
@@ -29,6 +30,7 @@ export function validContentImageUrl(value: string): boolean {
 }
 
 export function validContentVideoUrl(value: string): boolean {
+  if (creatorVideoPath(value)) return true
   try {
     const url = new URL(value)
     return url.protocol === 'https:' && Boolean(url.hostname) && /\.(mp4|webm)$/i.test(url.pathname)

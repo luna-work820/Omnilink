@@ -31,6 +31,24 @@ afterEach(() => {
 })
 
 describe('model gateway upstream resilience', () => {
+  it('honors a smaller classification budget instead of retrying a paid call',async()=>{
+    const fetchMock=vi.fn().mockImplementation(async()=>jsonResponse({error:{message:'busy'}},503))
+    vi.stubGlobal('fetch',fetchMock)
+    await expect(generateWorkspaceText('deepseek-flash','hi',undefined,{maxOutputTokens:512,totalBudgetMs:8000,maxAttempts:1})).rejects.toThrow('busy')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).max_tokens).toBe(512)
+  })
+  it('propagates cancellation to a provider request',async()=>{
+    const abort=new AbortController()
+    const fetchMock=vi.fn().mockImplementation((_url,init)=>new Promise((_resolve,reject)=>{
+      init.signal.addEventListener('abort',()=>reject(init.signal.reason),{once:true})
+    }))
+    vi.stubGlobal('fetch',fetchMock)
+    const pending=generateWorkspaceText('deepseek-flash','hi',undefined,{signal:abort.signal,maxAttempts:1})
+    abort.abort(new Error('cancelled'))
+    await expect(pending).rejects.toThrow('cancelled')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
   it('retries a 429 and succeeds on the next attempt', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(jsonResponse({ error: { message: 'rate limited' } }, 429))
@@ -85,6 +103,17 @@ describe('model gateway upstream resilience', () => {
 })
 
 describe('model gateway configuration errors', () => {
+  it('reports invalid platform credentials as configuration failure and does not retry',async()=>{
+    process.env.DASHSCOPE_API_KEY='invalid-test-key'
+    const fetchMock=vi.fn().mockResolvedValue(jsonResponse({error:{code:'invalid_api_key',message:'Invalid API-key provided.'}},401))
+    vi.stubGlobal('fetch',fetchMock)
+    await expect(generateWorkspaceText('qwen-plus','hello',undefined,{maxAttempts:1})).rejects.toMatchObject({status:500,code:'MODEL_PROVIDER_UNAVAILABLE'})
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+  it('distinguishes invalid user BYOK credentials from a provider outage',async()=>{
+    vi.stubGlobal('fetch',vi.fn().mockResolvedValue(jsonResponse({error:{message:'Authentication failed'}},401)))
+    await expect(generateWorkspaceText('deepseek-flash','hello',undefined,{apiKey:'invalid-user-key',allowEnvironmentKey:false})).rejects.toMatchObject({status:400,code:'MODEL_KEY_INVALID'})
+  })
   it('reports a missing BYOK key as a 400-class configuration error', async () => {
     delete process.env.DEEPSEEK_API_KEY
     const error = await generateWorkspaceText('deepseek-flash', 'hi', undefined, { allowEnvironmentKey: false })

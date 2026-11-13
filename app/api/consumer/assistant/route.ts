@@ -4,16 +4,26 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { generateWorkspaceText, generateWorkspaceVisionText, generateWorkspaceDeepSeekVisionText, ModelConfigurationError, type WorkspaceModel } from '@/lib/ai/workspace-generation'
 import { getStorefrontDiscoveryItemsByIds, type StorefrontDiscoveryItem } from '@/lib/storefront/service'
 import { productsList } from '@/components/consumer-market/data/mockData'
-import { createClientServer } from '@/lib/supabase/server'
-import { loadAiAssistantMemories, memoryContext, type AiAssistantMemory } from '@/lib/consumer-advisor/ai-assistant-memory'
-import { readAiAssistantProfile, type AiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-profile'
-import { PROFILE_QUESTIONS } from '@/lib/consumer-advisor/profile-intake'
+import { manageAiAssistantMemory, memoryContext, type AiAssistantMemory } from '@/lib/consumer-advisor/ai-assistant-memory'
+import { assistantIdentityContext, readAiAssistantProfile, type AiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-profile'
 import { readBudget } from '@/lib/consumer-advisor/task-contract'
-import { isUuid } from '@/lib/utils/uuid'
+import { resolveRequestUser } from '@/lib/api/request-user'
+import { requestIdentitySchema, resolveRequestIdentity } from '@/lib/consumer-advisor/request-contract'
 import { extractPdfText } from '@/lib/consumer-advisor/pdf-text'
 import { readDeepSeekKeyForUser } from '@/lib/consumer-advisor/deepseek-key-cookie'
-import { planConsumerTask, retrieveConsumerSearchCandidates, routeConsumerEntry, selectRelevantConsumerMemoryIds, validateConsumerMemoryUpdate } from '@/lib/consumer-advisor/consumer-entry-workflow'
+import { planConsumerTask, retrieveConsumerSearchCandidates, selectRelevantConsumerMemoryIds, validateConsumerMemoryUpdate } from '@/lib/consumer-advisor/consumer-entry-workflow'
 import { lookupIngredientInfo } from '@/lib/consumer-advisor/ingredient-search'
+import { classifyConsumerIntent } from '@/lib/consumer-advisor/intent-classifier'
+import { loadPersonalContext } from '@/lib/consumer-advisor/personal-context'
+import { attachDiscoveryActor,discoveryActor,startDiscovery,resumeDiscovery,type DiscoveryActor } from '@/lib/consumer-advisor/discovery-engine'
+import { DiscoveryError,readDiscoveryReference } from '@/lib/consumer-advisor/discovery-contract'
+import { discoveryResponse } from '@/lib/consumer-advisor/discovery-response'
+import { requestStore,requestFingerprint,searchInformation,type RequestRecord } from '@/lib/consumer-advisor/execution-store'
+import { runConversation } from '@/lib/consumer-advisor/conversation-service'
+import { createComparisonTask } from '@/lib/consumer-advisor/comparison-workflow'
+import { responseEnvelope,readExecutionBlocks,readSourceIds,type ConsumerResponse } from '@/lib/consumer-advisor/response-contract'
+import { isUuid } from '@/lib/utils/uuid'
+import type { ConsumerTaskIntent } from '@/components/consumer-market/types'
 
 export const runtime = 'nodejs'
 
@@ -22,7 +32,7 @@ const requestsByAddress = new Map<string, number[]>()
 const systemPrompt = [
   '你是 Omnilink 的AI assistant。用户需要购物、穿搭、空间搭配或个人护理建议时，先识别本轮目标，再利用用户自述档案、已确认记忆和本轮输入，直接给出当前资料支持的建议。普通问答直接回答，不强制推荐商品或启动问卷。',
   '如果用户资料里有助手称呼和用户称呼，在自然对话中沿用这些称呼，不必每次重复自我介绍。',
-  '用户明确说希望被如何称呼时，把该称呼作为长期沟通偏好保存到记忆；后续称呼记忆优先于注册用户名，不要仅凭注册用户名推断偏好称呼。',
+  '用户明确说希望被如何称呼时，生成待确认的长期沟通偏好提案；用户确认后的称呼记忆优先于注册用户名，不要仅凭注册用户名推断偏好称呼。记忆候选尚未确认时，不得声称已经长期保存或替换了原有记忆。',
   '购物偏好是跨品类的软参考，不是固定标签；当前需求和用户的明确修正优先。缺少关键条件时一次只问一个问题，并允许跳过。',
   '购物偏好测量档案可能处于进行中或暂停状态。只使用档案里已回答并存在的字段；跳过、缺失或价格区间不一致的字段一律视为未知，不补全、不强行给用户贴标签。',
   '商品搜索先满足本轮明确的品类、用途和预算，再把已确认记忆与偏好作为排序参考；历史记忆不能推翻本轮条件。结果只从当前商品目录中选择。',
@@ -44,17 +54,6 @@ const intentGuidance: Record<string, string> = {
   'cart-request': '本轮任务是购物车请求。只筛选目录中符合条件的商品。不得声称已替用户加入购物车；仅当商品卡片显示加入购物车按钮时，才引导用户点击该按钮。',
   assistant: '本轮任务是普通助手问答。直接回答问题，不强行推荐商品。',
 }
-
-const persistentIntentByStyleTag = {
-  '穿搭建议': 'outfit-styling',
-  '商品检索': 'product-search',
-  '商品问答': 'product-question',
-  '商品对比': 'comparison',
-  '个性化推荐': 'personalized-recommendation',
-  '购物请求': 'cart-request',
-} as const
-type PersistentConsumerIntent = typeof persistentIntentByStyleTag[keyof typeof persistentIntentByStyleTag]
-const validPersistentIntents = new Set<PersistentConsumerIntent>(Object.values(persistentIntentByStyleTag))
 
 function styleTagForIntent(intent: string, suggested: string) {
   if (intent === 'outfit-styling') return '穿搭建议'
@@ -132,7 +131,8 @@ function parseModelAnswer(content: string, allowedIds: Set<string>, allowedMemor
   }
 }
 
-export async function POST(request: NextRequest) {
+type Lifecycle={actor?:DiscoveryActor;record?:RequestRecord;requestId?:string;finished?:boolean;writeHistory?:boolean;modelCalls:number;modelCallsKnown?:boolean}
+async function runAssistant(request: NextRequest,lifecycle:Lifecycle) {
   const contentLength = Number(request.headers.get('content-length') || 0)
   if (contentLength > 4 * 1024 * 1024) return NextResponse.json({ error: '请求内容过大。' }, { status: 413 })
   if (!checkRateLimit(request)) return NextResponse.json({ error: '请求过于频繁，请稍后再试。' }, { status: 429 })
@@ -140,7 +140,11 @@ export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.text()
     if (Buffer.byteLength(rawBody, 'utf8') > 4 * 1024 * 1024) return NextResponse.json({ error: '请求内容过大。' }, { status: 413 })
-    const body = JSON.parse(rawBody) as Record<string, unknown>
+    const parsedBody = JSON.parse(rawBody)
+    if (!parsedBody || typeof parsedBody !== 'object' || Array.isArray(parsedBody)) {
+      return NextResponse.json({ error: '请求无效。' }, { status: 400 })
+    }
+    const body = parsedBody as Record<string, unknown>
     const model = typeof body.model === 'string' && models.has(body.model as WorkspaceModel) ? body.model as WorkspaceModel : null
     const prompt = typeof body.prompt === 'string' ? body.prompt.trim().slice(0, 2000) : ''
     const imageSource = typeof body.image === 'string' ? body.image : ''
@@ -150,27 +154,47 @@ export async function POST(request: NextRequest) {
     if (!model || (!prompt && !imageSource && !documentSource) || (imageSource && documentSource)) return NextResponse.json({ error: '请输入问题并选择模型。' }, { status: 400 })
     const document = documentSource ? readDocument(documentSource) : null
 
-    const client = await createClientServer()
-    const { data: authData } = await client.auth.getUser()
-    const user = authData.user
+    const auth = await resolveRequestUser(request)
+    if (!auth.ok) return auth.response
+    const { supabase: client, user } = auth
+    const identityInput = requestIdentitySchema.safeParse(body)
+    if (!identityInput.success) return NextResponse.json({ error: '请求或会话标识无效。', code: 'INVALID_REQUEST_IDENTITY' }, { status: 400 })
+    const identity = resolveRequestIdentity(identityInput.data, user?.id ?? null)
+    const conversationId = identity.session.id
+    const messageId = identity.requestId
+    const actor=discoveryActor(request,user?.id??null,conversationId)
+    lifecycle.actor=actor;lifecycle.requestId=messageId
+    if(actor.newGuestToken)return attachDiscoveryActor(NextResponse.json({error:'正在建立访客会话，请重试。',code:'GUEST_SESSION_REQUIRED'},{status:428}),actor)
+    const record=await requestStore('begin',actor,{requestId:messageId,inputHash:requestFingerprint(body)})
+    if(!record.created) {
+      if(record.status==='running')return NextResponse.json({error:'这条请求仍在处理，请稍后读取记录。',code:'REQUEST_IN_PROGRESS',requestId:messageId,sessionId:conversationId},{status:409})
+      let result=record.result!
+      const reference=readDiscoveryReference(result.historyBlocks)
+      if(reference)result=responseEnvelope(messageId,conversationId,discoveryResponse(await resumeDiscovery(actor,reference.searchRunId,reference.contextVersion)))
+      if(typeof result.informationQuery==='string')result=responseEnvelope(messageId,conversationId,{...result,
+        blocks:[{type:'information_feed',id:messageId,version:1,data:{query:result.informationQuery,items:await searchInformation(actor,result.informationQuery)}}]})
+      return NextResponse.json({...result,replayed:true,metrics:{...result.metrics as object,originalModelCalls:(result.metrics as {modelCalls?:number}|undefined)?.modelCalls??null,modelCalls:0}},{status:record.http_status})
+    }
+    lifecycle.record=record
+    const reply = (data: Record<string, unknown>) => NextResponse.json({
+      ...data, requestId: messageId, sessionId: conversationId, conversationId, contractVersion: 1,
+    })
     const isDemoPreview = !user && process.env.NODE_ENV !== 'production'
     const demoProfile = isDemoPreview && body.profile && typeof body.profile === 'object' && !Array.isArray(body.profile)
       ? readAiAssistantProfile(body.profile)
       : null
-    const conversationId = typeof body.conversationId === 'string' && isUuid(body.conversationId) ? body.conversationId : crypto.randomUUID()
-    const messageId = typeof body.messageId === 'string' && /^[a-zA-Z0-9_-]{1,100}$/.test(body.messageId) ? body.messageId : crypto.randomUUID()
     const db = client as any
     const demoMemories: AiAssistantMemory[] = (demoProfile?.memories ?? []).map((memory) => ({
       id: memory.id.slice(0, 100),
       domain: memory.domain,
       text: memory.text.trim().slice(0, 120),
       origin: memory.origin === 'inferred' ? 'inferred' as const : 'user' as const,
-      status: memory.status === 'rejected' ? 'rejected' as const : 'active' as const,
+      status: memory.status === 'active' && memory.confirmedAt ? 'active' as const : memory.status === 'rejected' ? 'rejected' as const : 'proposed' as const,
       evidence: typeof memory.evidence === 'string' ? memory.evidence.slice(0, 120) : null,
       sourceMessageId: typeof memory.sourceMessageId === 'string' ? memory.sourceMessageId.slice(0, 100) : null,
       supportIds: Array.isArray(memory.supportIds) ? [...new Set(memory.supportIds.filter((id): id is string => typeof id === 'string'))].slice(0, 10) : [],
+      confirmedAt: memory.confirmedAt ?? null, revision: memory.revision ?? 1, supersedeIds: memory.supersedeIds ?? [],
     })).filter((memory) => memory.id && memory.text).slice(0, 50)
-    const memories = user ? await loadAiAssistantMemories(client, user.id, user.user_metadata?.ai_assistant_profile) : demoMemories
     if (user) {
       const { error } = await db.from('consumer_AI assistant_messages').upsert({
         id: messageId, user_id: user.id, conversation_id: conversationId,
@@ -179,19 +203,19 @@ export async function POST(request: NextRequest) {
       if (error) throw new Error(error.message)
     }
 
-    const storedHistory = user ? await db.from('consumer_AI assistant_messages').select('role, content, style_tag, matched_product_ids').eq('user_id', user.id)
+    const storedHistory = user ? await db.from('consumer_AI assistant_messages').select('id, role, content, style_tag, matched_product_ids, response_blocks').eq('user_id', user.id)
       .eq('conversation_id', conversationId).order('created_at', { ascending: false }).limit(7) : null
     if (storedHistory?.error) throw new Error(storedHistory.error.message)
-    const historyInput = user ? (storedHistory?.data ?? []).reverse().slice(0, -1).map((entry: { role: string; content: string }) => entry) : body.history
-    const previousAssistantTag = (storedHistory?.data ?? []).find((entry: { role: string; style_tag?: string | null }) => entry.role === 'assistant')?.style_tag
-    const previousAssistantProductIds = (storedHistory?.data ?? []).find((entry: { role: string }) => entry.role === 'assistant')?.matched_product_ids
-    const previousIntentFromHistory = previousAssistantTag
-      ? persistentIntentByStyleTag[previousAssistantTag as keyof typeof persistentIntentByStyleTag]
-      : undefined
-    const previousIntentFromClient = typeof body.previousIntent === 'string' && validPersistentIntents.has(body.previousIntent as PersistentConsumerIntent)
-      ? body.previousIntent as PersistentConsumerIntent
-      : undefined
-    const previousIntent = previousIntentFromHistory ?? previousIntentFromClient
+    const historyInput = user ? [...(storedHistory?.data ?? [])].reverse().filter((entry:{id:string})=>entry.id!==messageId) : body.history
+    const previousAssistant = (storedHistory?.data ?? []).find((entry: { role: string }) => entry.role === 'assistant')
+    const previousBlocks=readExecutionBlocks(previousAssistant?.response_blocks)
+    const taskReference=previousBlocks.find((block)=>block.type==='task_progress')
+    const previousTaskId=user?(taskReference?.type==='task_progress'?taskReference.data.id:undefined):typeof body.previousTaskId==='string'&&isUuid(body.previousTaskId)?body.previousTaskId:undefined
+    const previousSourceIds=user?[...readSourceIds(previousAssistant?.response_blocks),...previousBlocks.flatMap((block)=>block.type==='information_feed'?block.data.items.filter((item)=>item.entityType==='source').map((item)=>item.id):[])].slice(0,6):
+      Array.isArray(body.previousSourceIds)?body.previousSourceIds.filter((id):id is string=>typeof id==='string'&&isUuid(id)).slice(0,6):[]
+    const previousSearch = user?readDiscoveryReference(previousAssistant?.response_blocks)?.spec.query:typeof body.previousSearch==='string'?body.previousSearch:undefined
+    const previousAssistantProductIds = user?previousAssistant?.matched_product_ids:
+      Array.isArray(body.previousProductIds)?body.previousProductIds.filter((id):id is string=>typeof id==='string'&&isUuid(id)).slice(0,6):[]
     const history = Array.isArray(historyInput) ? historyInput.slice(-6).flatMap((item) => {
       if (!item || typeof item !== 'object') return []
       const entry = item as Record<string, unknown>
@@ -200,14 +224,63 @@ export async function POST(request: NextRequest) {
         : []
     }) : []
 
-    const route = await routeConsumerEntry({
-      prompt,
-      hasImage: Boolean(imageSource),
-      hasDocument: Boolean(documentSource),
-      hasActiveSkill: body.hasActiveSkill === true,
-      hasSelectedProducts: Array.isArray(body.selectedProductIds) && body.selectedProductIds.length > 0,
-      previousIntent,
-    })
+    const userDeepSeekApiKey = user ? await readDeepSeekKeyForUser(user.id) ?? undefined : undefined
+    if(!document&&!imageSource)lifecycle.modelCalls=1
+    const classified=await (document ? Promise.resolve({intent:'document-analysis' as const,search:null,needsPersonalContext:false,needsSourceContext:false})
+        : imageSource ? Promise.resolve({intent:'image-analysis' as const,search:null,needsPersonalContext:true,needsSourceContext:false})
+        : classifyConsumerIntent({prompt,model,apiKey:userDeepSeekApiKey,signal:request.signal,
+          hasImage:false,hasDocument:false,hasSelectedProducts:Boolean(Array.isArray(body.selectedProductIds)&&body.selectedProductIds.length>0||previousAssistantProductIds?.length),
+          history:history.map((content) => ({role:content.startsWith('用户：')?'user':'assistant',content})),
+          previousSearch,hasSources:Boolean(previousTaskId||previousSourceIds.length)}))
+    if(classified.intent==='assistant'||classified.intent==='product-question') {
+      return await runConversation({requestId:messageId,sessionId:conversationId,userId:user?.id??null,prompt,model,apiKey:userDeepSeekApiKey,
+        history,selectedProductIds:[...new Set([...(Array.isArray(body.selectedProductIds)?body.selectedProductIds.filter((id:unknown):id is string=>typeof id==='string'&&isUuid(id)):[]),
+          ...(Array.isArray(previousAssistantProductIds)&&classified.intent==='product-question'?previousAssistantProductIds:[])])].slice(0,6),
+        needsPersonalContext:classified.needsPersonalContext,needsSourceContext:classified.needsSourceContext,actor,previousTaskId,previousSourceIds,
+        signal:request.signal,stream:request.headers.get('accept')?.includes('text/event-stream')??false,
+        commit:async(value,status=200)=>{
+          value.metrics={...value.metrics as object,modelCalls:lifecycle.modelCalls+1}
+          await requestStore('finish',actor,{requestId:messageId,token:record.token,status:value.status,result:value,httpStatus:status,writeHistory:true})
+          lifecycle.finished=true
+        }})
+    }
+    if(classified.intent==='comparison') {
+      const productIds=[...new Set([...(Array.isArray(body.selectedProductIds)?body.selectedProductIds:[]),...(Array.isArray(previousAssistantProductIds)?previousAssistantProductIds:[])])]
+        .filter((id):id is string=>typeof id==='string'&&isUuid(id)).slice(0,6)
+      const urls=[...prompt.matchAll(/https:\/\/[^\s<>"）)]+/g)].map((m)=>m[0]).slice(0,2)
+      if(!productIds.length&&!urls.length)return reply({text:'请选择要比较的商品，或添加资料网址。',intent:'comparison',model:null})
+      const task=await createComparisonTask(actor,messageId,{productIds,urls})
+      return reply({text:'已创建对比任务。',intent:'comparison',model:null,task,blocks:[{type:'task_progress',id:task.id,version:1,data:task}]})
+    }
+    if(classified.intent==='information-search') {
+      const query=classified.search?.query??prompt
+      const items=await searchInformation(actor,query)
+      lifecycle.writeHistory=true
+      return reply({text:items.length?`找到 ${items.length} 条信息。`:'没有找到相关公开信息或本会话资料。',model:null,informationQuery:query,
+        blocks:[{type:'information_feed',id:messageId,version:1,data:{query,items}}]})
+    }
+    const needsContext=classified.needsPersonalContext||['product-search','personalized-recommendation','product-question','comparison','outfit-styling','cart-request'].includes(classified.intent)
+    const personalContext=needsContext?await loadPersonalContext(user?.id??null):{userId:user?.id??null,version:0,memories:[]}
+    const memories=user?personalContext.memories:needsContext?demoMemories:[]
+    const route:{intent:Exclude<ConsumerTaskIntent,'information-search'>}={intent:classified.intent}
+    if(classified.search && (route.intent==='product-search'||route.intent==='personalized-recommendation')) {
+      const actor=discoveryActor(request,user?.id??null,conversationId)
+      try {
+        const page=await startDiscovery(actor,classified.search,personalContext)
+        const payload=discoveryResponse(page)
+        if(user) {
+          const {error}=await db.from('consumer_AI assistant_messages').insert({id:crypto.randomUUID(),user_id:user.id,conversation_id:conversationId,
+            role:'assistant',content:payload.text,style_tag:'商品检索',matched_product_ids:payload.matchedProductIds,model:null,
+            response_blocks:[{type:'discovery_feed',id:page.searchRunId,version:1,data:{searchRunId:page.searchRunId,contextVersion:page.contextVersion,spec:page.spec}}]})
+          if(error) return attachDiscoveryActor(reply({...payload,historyWarning:'搜索已完成，对话记录暂时未保存。'}),actor)
+        }
+        return attachDiscoveryActor(reply(payload),actor)
+      }catch(error){
+        const known=error instanceof DiscoveryError?error:new DiscoveryError('CATALOG_UNAVAILABLE',503,'商品暂时无法读取，请重试。')
+        return attachDiscoveryActor(NextResponse.json({error:known.message,code:known.code,status:'failed',blocks:[],retrySpec:classified.search,
+          requestId:messageId,sessionId:conversationId,conversationId},{status:known.status}),actor)
+      }
+    }
     if (route.intent === 'ingredient-lookup') {
       const answer = lookupIngredientInfo(prompt)
       if (user) {
@@ -218,7 +291,7 @@ export async function POST(request: NextRequest) {
         })
         if (error) throw new Error(error.message)
       }
-      return NextResponse.json({
+      return reply({
         text: answer.text,
         styleTag: answer.styleTag,
         matchedProductIds: [],
@@ -231,7 +304,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const userDeepSeekApiKey = user ? await readDeepSeekKeyForUser(user.id) ?? undefined : undefined
+    lifecycle.modelCallsKnown=false
     const searchesCatalog = ['product-search', 'product-question', 'comparison', 'personalized-recommendation', 'cart-request', 'outfit-styling'].includes(route.intent)
     const budget = readBudget(prompt)
     const searchMemoryIds = selectRelevantConsumerMemoryIds(prompt, history, memories, route.intent)
@@ -242,7 +315,7 @@ export async function POST(request: NextRequest) {
       history.filter((entry) => entry.startsWith('用户：')).slice(-2).join('\n'),
       searchMemoryContext ? `用户相关偏好：${searchMemoryContext}` : '',
     ].filter(Boolean).join('\n').slice(0, 2400)
-    const searchCandidates = isDemoPreview ? {
+    const searchCandidates = isDemoPreview || !searchesCatalog ? {
       recentProductIds: [], keywordProductIds: [], semanticProductIds: [], rankedProductIds: [],
     } : await retrieveConsumerSearchCandidates({
       query: retrievalQuery,
@@ -266,7 +339,7 @@ export async function POST(request: NextRequest) {
       storeName: store.name,
     }))
     const liveIds = new Set(liveCatalog.map((product) => product.id))
-    const demoProducts = (user || process.env.NODE_ENV === 'production' ? [] : productsList.filter((product) => !liveIds.has(product.id))).map((product) => ({
+    const demoProducts = (user || !searchesCatalog || process.env.NODE_ENV === 'production' ? [] : productsList.filter((product) => !liveIds.has(product.id))).map((product) => ({
       id: product.id,
       name: product.name,
       category: product.category,
@@ -281,8 +354,9 @@ export async function POST(request: NextRequest) {
       ...(Array.isArray(previousAssistantProductIds) ? previousAssistantProductIds.filter((id: unknown): id is string => typeof id === 'string') : []),
       ...clientPreviousProductIds,
     ])].slice(0, 6)
+    const referencedIds=[...new Set([...previousProductIds,...(Array.isArray(body.selectedProductIds)?body.selectedProductIds.filter((id:unknown):id is string=>typeof id==='string'):[])])].slice(0,12)
     const historicalItems = isDemoPreview
-      ? productsList.filter((product) => previousProductIds.includes(product.id)).map((product) => ({
+      ? productsList.filter((product) => searchesCatalog&&referencedIds.includes(product.id)).map((product) => ({
           id: product.id,
           name: product.name,
           category: product.category,
@@ -290,7 +364,7 @@ export async function POST(request: NextRequest) {
           price: product.price,
           storeName: product.storeName,
         }))
-      : await getStorefrontDiscoveryItemsByIds(previousProductIds).catch(() => []).then((items) => items.map(({ product, store }) => ({
+      : await getStorefrontDiscoveryItemsByIds(searchesCatalog?referencedIds:[]).then((items) => items.map(({ product, store }) => ({
           id: product.id,
           name: product.name,
           category: product.category || '商品',
@@ -323,15 +397,9 @@ export async function POST(request: NextRequest) {
       semanticProductIds: semanticItemIds.filter((id: string) => allowedIds.has(id)),
       keywordProductIds: keywordItemIds.filter((id: string) => allowedIds.has(id)),
     })
-    const relevantMemories = memories.filter((memory) => taskPlan.relevantMemoryIds.includes(memory.id))
+    const relevantMemories = route.intent==='assistant'&&classified.needsPersonalContext?memories.slice(0,6):memories.filter((memory) => taskPlan.relevantMemoryIds.includes(memory.id))
     const assistantProfile = user ? readAiAssistantProfile(user.user_metadata?.ai_assistant_profile) : demoProfile
-    const profileHasShoppingContext = Boolean(assistantProfile && (
-      assistantProfile.preferences.clothing.trim() ||
-      assistantProfile.preferences.other.trim() ||
-      Object.values(assistantProfile.shoppingPreferences).some((answer) => answer !== '跳过') ||
-      assistantProfile.shoppingPreferenceProfile
-    ))
-    const hasPersonalContext = history.length > 0 || relevantMemories.some((memory) => memory.status === 'active') || savedIds.length > 0 || profileHasShoppingContext
+    const hasPersonalContext = history.length > 0 || relevantMemories.some((memory) => memory.status === 'active' && memory.confirmedAt) || savedIds.length > 0
     let routedIntent = taskPlan.intent
     if (route.intent === 'product-search' || route.intent === 'cart-request' || route.intent === 'assistant') {
       const searchResult = taskPlan.searchResult
@@ -351,7 +419,7 @@ export async function POST(request: NextRequest) {
             })
             if (error) throw new Error(error.message)
           }
-          return NextResponse.json({
+          return reply({
             text: resultText,
             styleTag: '商品检索',
             matchedProductIds: searchResult.matchedProductIds,
@@ -371,24 +439,7 @@ export async function POST(request: NextRequest) {
     const rejectedProducts = catalog.filter((product) => rejectedIds.includes(product.id))
     const comparisonProducts = catalog.filter((product) => taskPlan.comparisonProductIds.includes(product.id))
     const previousProducts = catalog.filter((product) => previousProductIds.includes(product.id))
-    const profileAnswers = assistantProfile
-      ? Object.fromEntries(PROFILE_QUESTIONS.flatMap((question) => {
-          const answer = assistantProfile.answers[question.key]
-          return typeof answer === 'string' && question.options.includes(answer) ? [[question.key, answer]] : []
-        }))
-      : {}
-    const profileSummary = assistantProfile ? JSON.stringify({
-      name: assistantProfile.name.trim().slice(0, 40),
-      assistantName: assistantProfile.assistantName,
-      answers: profileAnswers,
-      preferences: {
-        clothing: assistantProfile.preferences.clothing.slice(0, 500),
-        other: assistantProfile.preferences.other.slice(0, 500),
-      },
-      shoppingPreferences: assistantProfile.shoppingPreferences,
-      shoppingPreferenceProfile: assistantProfile.shoppingPreferenceProfile,
-      shoppingPreferenceSurveyStatus: assistantProfile.shoppingPreferenceSurvey.status,
-    }) : '无'
+    const profileSummary = assistantProfile ? JSON.stringify(assistantIdentityContext(assistantProfile)) : '无'
     const context = [
       `最近对话：\n${history.join('\n') || '无'}`,
       `与本轮相关的用户记忆（推测不是事实；用户本轮纠正优先）：\n${memoryContext(relevantMemories)}`,
@@ -431,7 +482,7 @@ export async function POST(request: NextRequest) {
         content = await generateWorkspaceText(model, `${context}\n\nPDF《${documentName}》内容：${extracted}\n\n用户问题：${prompt || '请简要概括这份文件。'}`, routedSystemPrompt, { jsonOutput: true, apiKey: userDeepSeekApiKey, allowEnvironmentKey: false })
       }
     } else {
-      content = await generateWorkspaceText(model, `${context}${documentContext}\n\n用户问题：${prompt || (document ? '请简要概括这份文件。' : '')}`, routedSystemPrompt, { jsonOutput: true, apiKey: userDeepSeekApiKey, allowEnvironmentKey: false })
+      content = await generateWorkspaceText(model, `${context}${documentContext}\n\n用户问题：${prompt || (document ? '请简要概括这份文件。' : '')}`, routedSystemPrompt, { jsonOutput: true, apiKey: userDeepSeekApiKey, allowEnvironmentKey: false,maxOutputTokens:route.intent==='assistant'?1024:1600,totalBudgetMs:30_000,maxAttempts:1,signal:request.signal })
     }
 
     const parsedAnswer = parseModelAnswer(
@@ -454,7 +505,7 @@ export async function POST(request: NextRequest) {
       parsedAnswer.matchReasons[id] ? [[id, parsedAnswer.matchReasons[id]]] : []))
     const styleTag = styleTagForIntent(routedIntent, answer.styleTag)
     const candidate = await validateConsumerMemoryUpdate({ prompt, memoryUpdate: answer.memoryUpdate, memories })
-    let memorySaved = false
+    let memoryProposed = false
     let demoMemoryUpdate: { memory: AiAssistantProfile['memories'][number]; supersedeIds: string[] } | null = null
     if (user) {
       const { error } = await db.from('consumer_AI assistant_messages').insert({
@@ -464,34 +515,18 @@ export async function POST(request: NextRequest) {
       })
       if (error) throw new Error(error.message)
       if (candidate) {
-        if (candidate.supersedeIds.length) {
-          const { error: supersedeError } = await db.from('consumer_AI assistant_memories').update({ status: 'rejected', updated_at: new Date().toISOString() })
-            .eq('user_id', user.id).in('id', candidate.supersedeIds)
-          if (supersedeError) throw new Error(supersedeError.message)
-          for (const id of candidate.supersedeIds) {
-            const { error: dependentError } = await db.from('consumer_AI assistant_memories').update({ status: 'rejected', updated_at: new Date().toISOString() })
-              .eq('user_id', user.id).eq('origin', 'inferred').contains('support_ids', [id])
-            if (dependentError) throw new Error(dependentError.message)
-          }
-        }
-        if (!memories.some((item) => item.status === 'active' && item.domain === candidate.domain && item.text === candidate.text) && memories.length < 50) {
-          const { error: memoryError } = await db.from('consumer_AI assistant_memories').insert({
-            user_id: user.id, domain: candidate.domain, text: candidate.text,
-            origin: candidate.origin,
-            evidence: candidate.origin === 'inferred'
-              ? `根据 ${candidate.supports.map((id) => memories.find((item) => item.id === id)?.text).filter(Boolean).map((text) => `“${text}”`).join('和')} 推测`
-              : candidate.evidence,
-            support_ids: candidate.supports, source_message_id: messageId,
-          })
-          if (memoryError) throw new Error(memoryError.message)
-          memorySaved = true
-        }
+        const proposal = await manageAiAssistantMemory(user.id, 'propose', {
+          text: candidate.text, domain: candidate.domain, origin: candidate.origin, sourceKind: 'chat',
+          evidence: candidate.evidence, supportIds: candidate.supports,
+          supersedeIds: candidate.supersedeIds, sourceMessageId: messageId,
+        })
+        memoryProposed = proposal.status === 'proposed'
       }
     } else if (demoProfile && candidate && !memories.some((item) => item.status === 'active' && item.domain === candidate.domain && item.text === candidate.text) && memories.length < 50) {
       demoMemoryUpdate = {
         memory: {
           id: crypto.randomUUID(), domain: candidate.domain, text: candidate.text,
-          origin: candidate.origin, status: 'active',
+          origin: candidate.origin, status: 'proposed', confirmedAt: null, revision: 1, supersedeIds: candidate.supersedeIds,
           evidence: candidate.origin === 'inferred'
             ? `根据 ${candidate.supports.map((id) => memories.find((item) => item.id === id)?.text).filter(Boolean).map((text) => `“${text}”`).join('和')} 推测`
             : candidate.evidence,
@@ -499,19 +534,20 @@ export async function POST(request: NextRequest) {
         },
         supersedeIds: candidate.supersedeIds,
       }
-      memorySaved = true
+      memoryProposed = true
     }
-    return NextResponse.json({
+    return reply({
       text: answer.text,
       styleTag,
       matchedProductIds: answer.matchedProductIds,
       matchReasons: answer.matchReasons,
       usedPreferences: answer.usedMemoryIds.flatMap((id) => {
-        const memory = relevantMemories.find((item) => item.id === id && item.status === 'active')
+        const memory = relevantMemories.find((item) => item.id === id && item.status === 'active' && item.confirmedAt)
         return memory ? [memory.text] : []
       }),
-      memorySaved,
-      memoryOrigin: memorySaved ? candidate?.origin ?? null : null,
+      memorySaved: false,
+      memoryProposed,
+      memoryOrigin: memoryProposed ? candidate?.origin ?? null : null,
       ...(demoMemoryUpdate ? { demoMemoryUpdate } : {}),
       model,
       fallback: false,
@@ -519,6 +555,7 @@ export async function POST(request: NextRequest) {
       visionModel: imageSource ? (model === 'deepseek-flash' || model === 'deepseek-v4-pro' ? 'deepseek-flash' : 'gemini') : null,
     })
   } catch (error) {
+    if(error instanceof DiscoveryError) return NextResponse.json({status:'failed',blocks:[],code:error.code,error:error.message},{status:error.status})
     const message = error instanceof Error ? error.message : '模型请求失败。'
     // A missing BYOK key is the caller's to fix (400), not an upstream outage.
     // Everything else keeps the existing 400/502 split.
@@ -527,7 +564,39 @@ export async function POST(request: NextRequest) {
       : (error instanceof SyntaxError || /图片.*(格式|3 MB)|PDF (中没有可提取的文字|文件无效或无法读取)/.test(message) ? 400 : 502)
     const publicMessage = /Invalid API-key/i.test(message) ? '千问 API Key 无效，请检查项目模型配置或切换模型。'
       : /Insufficient Balance/i.test(message) ? 'DeepSeek 账户余额不足。'
-      : message
-    return NextResponse.json({ error: publicMessage }, { status })
+      : status === 502 ? '助手暂时不可用，请稍后重试。' : message
+    return NextResponse.json({ error: publicMessage,...(error instanceof ModelConfigurationError?{code:error.code}:{}) }, { status })
+  }
+}
+
+export async function POST(request:NextRequest):Promise<Response> {
+  const lifecycle:Lifecycle={modelCalls:0}
+  try {
+    const response=await runAssistant(request,lifecycle)
+    if(response.headers.get('Content-Type')?.includes('text/event-stream'))return lifecycle.actor?attachDiscoveryActor(response as NextResponse,lifecycle.actor):response
+    const data=await response.json() as Record<string,unknown>
+    const payload=response.ok?data:{...data,status:data.status??'failed',blocks:data.blocks??[]}
+    const result=lifecycle.requestId&&lifecycle.actor?responseEnvelope(lifecycle.requestId,lifecycle.actor.sessionId,payload):payload
+    if(lifecycle.record&&!lifecycle.finished&&lifecycle.actor&&lifecycle.requestId) {
+      const value=result as ConsumerResponse
+      value.metrics={...value.metrics as object,modelCalls:lifecycle.modelCallsKnown===false?null:lifecycle.modelCalls,
+        ...(lifecycle.modelCallsKnown===false?{modelCallsLowerBound:lifecycle.modelCalls}:{})}
+      let saved:ConsumerResponse=value
+      if(value.discovery) {
+        const page=value.discovery as import('@/lib/consumer-advisor/discovery-contract').DiscoveryPage
+        saved={...value,discovery:undefined,blocks:[],historyBlocks:[{type:'discovery_feed',id:page.searchRunId,version:1,data:{searchRunId:page.searchRunId,contextVersion:page.contextVersion,spec:page.spec}}]}
+      }
+      if(value.informationQuery)saved={...value,blocks:[],historyBlocks:value.blocks.map((block)=>block.type==='information_feed'?{...block,
+        data:{...block.data,items:block.data.items.slice(0,6).map((item)=>({...item,excerpt:item.excerpt.slice(0,160)}))}}:block)}
+      await requestStore('finish',lifecycle.actor,{requestId:lifecycle.requestId,token:lifecycle.record.token,status:response.ok?'completed':'failed',
+        result:saved,httpStatus:response.status,writeHistory:lifecycle.writeHistory??false})
+    }
+    const output=NextResponse.json(result,{status:response.status})
+    for(const cookie of (response as NextResponse).cookies?.getAll?.()??[])output.cookies.set(cookie)
+    return lifecycle.actor?attachDiscoveryActor(output,lifecycle.actor):output
+  } catch(error) {
+    const known=error instanceof DiscoveryError?error:new DiscoveryError('EXECUTION_UNAVAILABLE',503,'请求记录暂时无法保存，请重新读取。')
+    const response=NextResponse.json({error:known.message,code:known.code,requestId:lifecycle.requestId,sessionId:lifecycle.actor?.sessionId},{status:known.status})
+    return lifecycle.actor?attachDiscoveryActor(response,lifecycle.actor):response
   }
 }

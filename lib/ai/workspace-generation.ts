@@ -109,20 +109,29 @@ type ModelFetchOptions = {
   timeoutMs: number
   headers: Record<string, string>
   body: unknown
+  totalBudgetMs?: number
+  maxAttempts?: number
+  signal?: AbortSignal
+}
+
+export type TextGenerationOptions = {
+  jsonOutput?: boolean; apiKey?: string; allowEnvironmentKey?: boolean
+  maxOutputTokens?: number; totalBudgetMs?: number; maxAttempts?: number; signal?: AbortSignal
 }
 
 async function fetchWithRetry(url: string, options: ModelFetchOptions): Promise<Response> {
-  const deadline = Date.now() + TOTAL_BUDGET_MS
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+  const deadline = Date.now() + (options.totalBudgetMs ?? TOTAL_BUDGET_MS)
+  const attempts = Math.min(MAX_ATTEMPTS, Math.max(1, options.maxAttempts ?? MAX_ATTEMPTS))
+  for (let attempt = 1; attempt <= attempts; attempt++) {
     const remaining = deadline - Date.now()
     const timeout = Math.min(options.timeoutMs, Math.max(remaining, 1))
     const response = await fetch(url, {
       method: 'POST',
       headers: options.headers,
-      signal: AbortSignal.timeout(timeout),
+      signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(timeout)]) : AbortSignal.timeout(timeout),
       body: JSON.stringify(options.body),
     })
-    if (!RETRYABLE_STATUS.has(response.status) || attempt === MAX_ATTEMPTS) {
+    if (!RETRYABLE_STATUS.has(response.status) || attempt === attempts) {
       return response
     }
     const wait = backoffMs(attempt)
@@ -142,7 +151,7 @@ async function generateDeepSeekContent(
   model: 'deepseek-flash' | 'deepseek-v4-pro',
   prompt: string,
   systemPrompt: string,
-  options: { image?: { mimeType: string; base64: string }; jsonOutput?: boolean; apiKey?: string; allowEnvironmentKey?: boolean } = {},
+  options: TextGenerationOptions & { image?: { mimeType: string; base64: string } } = {},
 ) {
   const allowEnvironmentKey = options.allowEnvironmentKey !== false
   const apiKey = options.apiKey || (allowEnvironmentKey ? process.env.DEEPSEEK_API_KEY : undefined)
@@ -160,12 +169,14 @@ async function generateDeepSeekContent(
     response = await fetchWithRetry('https://api.deepseek.com/chat/completions', {
       provider: 'deepseek',
       timeoutMs: TIMEOUT_MS.deepseek,
+      totalBudgetMs: options.totalBudgetMs, maxAttempts: options.maxAttempts, signal: options.signal,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: {
         model: options.image ? 'deepseek-flash' : model,
         temperature: 0.2,
         thinking: { type: model === 'deepseek-v4-pro' && !options.image ? 'enabled' : 'disabled' },
         ...(options.jsonOutput ? { response_format: { type: 'json_object' } } : {}),
+        ...(options.maxOutputTokens ? { max_tokens: options.maxOutputTokens } : {}),
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: options.image ? [
@@ -176,10 +187,13 @@ async function generateDeepSeekContent(
       },
     })
   } catch (error) {
+    if(options.signal?.aborted)throw options.signal.reason
     if (isTimeoutError(error)) throw new Error(timeoutMessage('deepseek'))
     throw new Error('无法连接 DeepSeek，请检查网络或 API Key 的访问权限。')
   }
   const data = await response.json() as { choices?: Array<{ message?: { content?: string | null } }>; error?: { message?: string } }
+  if(response.status===401||response.status===403)throw new ModelConfigurationError('DeepSeek API Key 无效或没有模型权限，请更新连接。',
+    {status:options.apiKey?400:500,code:options.apiKey?'MODEL_KEY_INVALID':'MODEL_PROVIDER_UNAVAILABLE'})
   if (!response.ok) throw new Error(data.error?.message || 'DeepSeek 请求失败。')
   const content = data.choices?.[0]?.message?.content?.trim()
   if (!content) throw new Error('DeepSeek 未返回内容。')
@@ -190,7 +204,7 @@ export async function generateWorkspaceDeepSeekVisionText(prompt: string, image:
   return generateDeepSeekContent('deepseek-flash', prompt, systemPrompt, { image, jsonOutput, apiKey, allowEnvironmentKey })
 }
 
-export async function generateWorkspaceText(model: WorkspaceModel, prompt: string, systemPrompt = merchantSystemPrompt, options: { jsonOutput?: boolean; apiKey?: string; allowEnvironmentKey?: boolean } = {}) {
+export async function generateWorkspaceText(model: WorkspaceModel, prompt: string, systemPrompt = merchantSystemPrompt, options: TextGenerationOptions = {}) {
   if (model === 'qwen-plus') {
     const apiKey = process.env.DASHSCOPE_API_KEY
     if (!apiKey) throw new ModelConfigurationError('千问 API 尚未配置。', { status: 500, code: 'MODEL_PROVIDER_UNAVAILABLE' })
@@ -203,10 +217,13 @@ export async function generateWorkspaceText(model: WorkspaceModel, prompt: strin
       response = await fetchWithRetry(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
         provider: 'qwen',
         timeoutMs: TIMEOUT_MS.qwen,
+        totalBudgetMs: options.totalBudgetMs, maxAttempts: options.maxAttempts, signal: options.signal,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
         body: {
           model: 'qwen-plus',
           temperature: 0.2,
+          ...(options.maxOutputTokens ? { max_tokens: options.maxOutputTokens } : {}),
+          ...(options.jsonOutput ? { response_format: { type: 'json_object' } } : {}),
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: prompt },
@@ -214,10 +231,13 @@ export async function generateWorkspaceText(model: WorkspaceModel, prompt: strin
         },
       })
     } catch (error) {
+      if(options.signal?.aborted)throw options.signal.reason
       if (isTimeoutError(error)) throw new Error(timeoutMessage('qwen'))
       throw new Error('无法连接千问，请检查网络或 API Key 的访问权限。')
     }
     const data = await response.json() as { choices?: Array<{ message?: { content?: string } }>; error?: { message?: string } }
+    if(response.status===401||response.status===403)throw new ModelConfigurationError('千问 API Key 无效，请更新模型配置或切换模型。',
+      {status:500,code:'MODEL_PROVIDER_UNAVAILABLE'})
     if (!response.ok) throw new Error(data.error?.message || '千问请求失败。')
     return data.choices?.[0]?.message?.content?.trim() || '模型没有返回可用内容。'
   }
@@ -243,21 +263,26 @@ export async function generateWorkspaceText(model: WorkspaceModel, prompt: strin
       {
         provider: 'gemini',
         timeoutMs: TIMEOUT_MS.gemini,
+        totalBudgetMs: options.totalBudgetMs, maxAttempts: options.maxAttempts, signal: options.signal,
         headers: { 'Content-Type': 'application/json' },
         body: {
           systemInstruction: { parts: [{ text: systemPrompt }] },
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.2 },
+          generationConfig: { temperature: 0.2, ...(options.maxOutputTokens ? { maxOutputTokens: options.maxOutputTokens } : {}),
+            ...(options.jsonOutput ? { responseMimeType: 'application/json' } : {}) },
         },
       },
     )
   } catch (error) {
+    if(options.signal?.aborted)throw options.signal.reason
     if (isTimeoutError(error)) {
       throw new Error(timeoutMessage('gemini'))
     }
     throw new Error('无法连接 Gemini，请检查网络或 API Key 的访问权限。')
   }
   const data = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; error?: { message?: string } }
+  if(response.status===401||response.status===403)throw new ModelConfigurationError('Gemini API Key 无效或没有模型权限，请更新模型配置。',
+    {status:500,code:'MODEL_PROVIDER_UNAVAILABLE'})
   if (!response.ok) throw new Error(data.error?.message || 'Gemini 请求失败。')
   return data.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('').trim() || '模型没有返回可用内容。'
 }

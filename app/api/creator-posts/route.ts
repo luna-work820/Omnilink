@@ -37,8 +37,7 @@ export async function GET() {
   const store = await context(auth.supabase, auth.user)
   if (!store) return NextResponse.json({ error: '请先完成发布者设置' }, { status: 404 })
   const [postsResult, productsResult] = await Promise.all([
-    auth.supabase.from('creator_posts').select('id, title, cover_url, body, product_ids, blocks, draft_version, status, published_at, updated_at')
-      .eq('store_id', store.id).order('updated_at', { ascending: false }).limit(100),
+    auth.supabase.rpc('get_creator_posts_for_editor', { p_store_id: store.id }),
     auth.supabase.from('catalog_items').select('id, title, cover_image, details, status, catalog_media(storage_path, media_role)')
       .eq('organization_id', store.organization_id).neq('status', 'archived').order('created_at', { ascending: false }).limit(100),
   ])

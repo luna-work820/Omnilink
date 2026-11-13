@@ -18,6 +18,7 @@
 import { NextResponse } from 'next/server'
 import { createClientServer } from '@/lib/supabase/server'
 import type { User } from '@supabase/supabase-js'
+import { resolveRequestUser } from './request-user'
 
 type SbClient = Awaited<ReturnType<typeof createClientServer>>
 
@@ -27,45 +28,9 @@ export type AuthResult =
 
 /** Require an authenticated user; return the SSR client + user, or a 401. */
 export async function requireUser(): Promise<AuthResult> {
-  // Create the SSR client up-front so a misconfigured env surfaces as a
-  // diagnosable error instead of a silent 401.
-  let supabase: SbClient
-  try {
-    supabase = await createClientServer()
-  } catch (initErr) {
-    console.error('[requireUser] Failed to initialise server Supabase client', {
-      error: initErr instanceof Error ? initErr.message : String(initErr),
-    })
-    return {
-      ok: false,
-      response: NextResponse.json(
-        { error: 'Unauthorized', code: 'AUTH_CLIENT_INIT_FAILED' },
-        { status: 401 },
-      ),
-    }
-  }
-
-  try {
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser()
-    if (!error && user) {
-      return { ok: true, supabase, user }
-    }
-    // Previously this branch was a black hole. Log the real reason so a 401
-    // becomes actionable: usually `error` is null because the auth cookie is
-    // simply absent / not sent by the browser.
-    console.error('[requireUser] No authenticated user', {
-      hasUser: Boolean(user),
-      authError: error ? error.message : null,
-    })
-  } catch (getUserErr) {
-    console.error('[requireUser] getUser() threw', {
-      error: getUserErr instanceof Error ? getUserErr.message : String(getUserErr),
-    })
-  }
-
+  const auth = await resolveRequestUser()
+  if (!auth.ok) return auth
+  if (auth.user) return { ok: true, supabase: auth.supabase, user: auth.user }
   return {
     ok: false,
     response: NextResponse.json(

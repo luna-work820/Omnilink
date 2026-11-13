@@ -24,7 +24,7 @@ function contentHash(text: string) {
   return createHash('sha256').update(text).digest('hex')
 }
 
-async function indexPendingConsumerProducts() {
+export async function indexPendingConsumerProducts() {
   const service = createServiceRoleClient() as unknown as SupabaseClient
   const { data: jobs, error: claimError } = await service.rpc('claim_consumer_catalog_embedding_jobs', {
     p_limit: INDEX_BATCH_SIZE,
@@ -82,11 +82,6 @@ async function indexPendingConsumerProducts() {
 }
 
 export async function searchConsumerCatalogByVector(query: string, limit = 24, maxPrice: number | null = null) {
-  try {
-    await indexPendingConsumerProducts()
-  } catch (error) {
-    console.warn('[consumer catalog vector] index batch unavailable; continuing with existing vectors', error)
-  }
   const [queryVector] = await embedLocalBge([query], 'query')
   const service = createServiceRoleClient() as unknown as SupabaseClient
   const { data, error } = await service.rpc('match_consumer_catalog_embeddings', {

@@ -1,16 +1,15 @@
 'use client'
 
 import { useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react'
-import { useRouter } from 'next/navigation'
 import { useOmnilink } from '../context/OmnilinkContext'
 import { LiquidGlass } from '@/components/ui/liquid-glass'
 import { Microphone as Mic, PaperPlaneRight as Send, CaretDown as ChevronDown } from '@phosphor-icons/react'
-import { Camera, ChevronDown as HistoryChevron, Expand, FileText, Heart, Image as ImageIcon, LockKeyhole, LockKeyholeOpen, MessageCircle, Minus, Plus, Check, X } from 'lucide-react'
+import { Camera, ChevronDown as HistoryChevron, Expand, FileText, Heart, Image as ImageIcon, Link as LinkIcon, Square, LockKeyhole, LockKeyholeOpen, MessageCircle, Minus, Plus, Check, X } from 'lucide-react'
 import { AI_ASSISTANT_SKILLS, AI_ASSISTANT_SKILLS_STORAGE_KEY, readInstalledSkillIds, type AiAssistantSkillId } from './CapabilityLibrary'
 import type { AiChatMessage, ConsumerAiModel, DiscoveryType } from '../types'
 
 export const FEED_CHAT_SCROLL_KEY = 'omnilink-feed-chat-preview-scroll'
-export type FeedAttachment = { name: string; kind: 'image' | 'document'; data: string }
+export type FeedAttachment = { name: string; kind: 'image' | 'document' | 'url'; data: string }
 export type FeedDroppedReference = { key: string; title: string; url?: string; productId?: string; detail?: string }
 type VoiceResult = { results: ArrayLike<ArrayLike<{ transcript: string }>> }
 type VoiceRecognition = { lang: string; onresult: ((event: VoiceResult) => void) | null; onend: (() => void) | null; onerror: (() => void) | null; start: () => void; stop: () => void }
@@ -66,7 +65,6 @@ export function FeedChatDock({
   initialInstalledSkillIds?: AiAssistantSkillId[]
   navigationOpen?: boolean
 }) {
-  const router = useRouter()
   const [message, setMessage] = useState('')
   const messageInputRef = useRef<HTMLTextAreaElement>(null)
   const referenceRowRef = useRef<HTMLDivElement>(null)
@@ -78,13 +76,14 @@ export function FeedChatDock({
   const [attachment, setAttachment] = useState<FeedAttachment | null>(null)
   const [selectedFavoriteIds, setSelectedFavoriteIds] = useState<string[]>([])
   const [isRecording, setIsRecording] = useState(false)
+  const [urlEntry,setUrlEntry]=useState(false),[urlValue,setUrlValue]=useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const recognitionRef = useRef<VoiceRecognition | null>(null)
   const cardHistoryRef = useRef<HTMLDivElement>(null)
   const typePickerRef = useRef<HTMLDivElement>(null)
-  const { openAiPage, aiModel, setAiModel, showToast, isAiThinking, products, savedProductIds } = useOmnilink()
+  const { openAiPage, aiModel, setAiModel, showToast, isAiThinking, products, savedProductIds,openPersonalView,stopAiResponse } = useOmnilink()
   const canSend = Boolean(message.trim() || attachment || selectedFavoriteIds.length || droppedReferences.length)
   const activeSkill = AI_ASSISTANT_SKILLS.find((skill) => skill.id === activeSkillId)
   const availableSkills = AI_ASSISTANT_SKILLS.filter((skill) => installedSkillIds.includes(skill.id))
@@ -148,7 +147,7 @@ export function FeedChatDock({
   }
 
   function activateSkill(id: AiAssistantSkillId) {
-    if (id === 'shopping-preferences') { router.push('/discover?shoppingPreferences=1'); return }
+    if (id === 'shopping-preferences') { setPanel(null);openPersonalView('assessment'); return }
     setActiveSkillId(id)
     setMessage((current) => current.endsWith('@') ? current.slice(0, -1) : current)
     setPanel(null)
@@ -269,7 +268,9 @@ export function FeedChatDock({
               <button type="button" onClick={() => { setPanel(null); imageInputRef.current?.click() }} className="feed-chat-attachment-option flex min-h-11 items-center gap-2 rounded-full px-3 text-xs"><ImageIcon size={17} aria-hidden="true" />图片</button>
               <button type="button" onClick={() => { setPanel(null); cameraInputRef.current?.click() }} className="feed-chat-attachment-option flex min-h-11 items-center gap-2 rounded-full px-3 text-xs"><Camera size={17} aria-hidden="true" />拍摄</button>
               <button type="button" onClick={() => setPanel('favorites')} className="feed-chat-attachment-option flex min-h-11 items-center gap-2 rounded-full px-3 text-xs"><Heart size={17} aria-hidden="true" />收藏</button>
+              <button type="button" onClick={()=>setUrlEntry((open)=>!open)} className="feed-chat-attachment-option flex min-h-11 items-center gap-2 rounded-full px-3 text-xs"><LinkIcon size={17} aria-hidden="true"/>网址</button>
             </div>
+            {urlEntry&&<div className="mt-2 flex flex-wrap items-center gap-2 px-2"><label className="min-w-0 flex-1 text-xs">网址<input type="url" autoFocus placeholder="https://" value={urlValue} onChange={(event)=>setUrlValue(event.target.value)} onKeyDown={(event)=>{if(event.key==='Enter')event.preventDefault()}} className="mt-1 min-h-11 w-full rounded-full border-[0.5px] border-[var(--market-border)] bg-transparent px-3 text-sm focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"/></label><button type="button" onClick={()=>{try{const url=new URL(urlValue);if(url.protocol!=='https:')throw new Error();setAttachment({kind:'url',name:url.hostname,data:url.href});setPanel(null);setUrlEntry(false);setUrlValue('')}catch{showToast('请填写 HTTPS 网址。')}}} className="min-h-11 rounded-full px-3 text-xs hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">添加网址</button></div>}
             <h2 className="px-2 pb-1.5 pt-3 text-xs font-medium text-[var(--market-text-secondary)]">技能</h2>
             {availableSkills.length ? availableSkills.map((skill) => {
               const pinned = pinnedSkillIds.includes(skill.id)
@@ -317,7 +318,7 @@ export function FeedChatDock({
           </div>
           <button type="button" disabled={disabled || isAiThinking} onClick={() => setPanel((current) => current === 'models' ? null : 'models')} aria-label={`选择模型，当前为 ${currentModel}`} aria-expanded={panel === 'models'} className="feed-chat-control feed-chat-model-trigger flex h-11 shrink-0 items-center gap-1 rounded-full px-1.5 text-[11.5px] font-medium text-[var(--market-text-secondary)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40"><span className="hidden sm:inline">{currentModel}</span><span className="sm:hidden">{aiModel === 'deepseek-v4-pro' ? 'V4 Pro' : aiModel === 'deepseek-flash' ? 'Flash' : aiModel === 'qwen-plus' ? 'Qwen' : 'Gemini'}</span><ChevronDown size={10} aria-hidden="true" /></button>
           <button type="button" disabled={disabled || isAiThinking} onClick={toggleVoice} aria-label={isRecording ? '停止语音输入' : '语音输入'} aria-pressed={isRecording} className="feed-chat-control feed-chat-voice-trigger flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40"><Mic size={15} aria-hidden="true" /></button>
-          <button type="submit" disabled={!canSend || isAiThinking || disabled} aria-label="发送" className="feed-chat-control ai-assistant-composer-send relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)]"><Send size={16} weight="bold" aria-hidden="true" /></button>
+          {isAiThinking?<button type="button" onClick={stopAiResponse} aria-label="停止回答" className="feed-chat-control relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><Square size={14} aria-hidden="true"/></button>:<button type="submit" disabled={!canSend || disabled} aria-label="发送" className="feed-chat-control ai-assistant-composer-send relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)]"><Send size={16} weight="bold" aria-hidden="true" /></button>}
           </LiquidGlass>
         </div>
         </div>

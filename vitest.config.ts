@@ -10,12 +10,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: [
-      'lib/creator-content.test.ts',
-      'lib/ai/**/*.test.ts',
-      'lib/products/**/__tests__/**/*.test.ts',
-      'lib/storefront/**/*.test.ts',
-      'lib/consumer-advisor/**/*.test.ts',
-      'lib/product/**/*.test.ts',
+      'lib/**/*.test.ts',
+      'app/api/**/*.test.ts',
     ],
     globals: false,
   },

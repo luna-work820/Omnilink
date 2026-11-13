@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
+import { safeInternalRedirectPath } from '@/lib/auth/redirect-path'
 import { createClientServer } from '@/lib/supabase/server'
 
 /**
@@ -64,6 +65,7 @@ export async function loginAction(
 ): Promise<AuthState> {
   const email = String(formData.get('email') ?? '').trim()
   const password = String(formData.get('password') ?? '')
+  const redirectTo = safeInternalRedirectPath(formData.get('redirectTo'), '/discover')
 
   if (!email || !password) {
     return { error: '请填写电子邮箱和密码' }
@@ -92,7 +94,7 @@ export async function loginAction(
   }
 
   // signInWithPassword sets the sb-*-auth-token cookie via the SSR adapter.
-  return { redirectUrl: '/discover' }
+  return { redirectUrl: redirectTo }
 }
 
 export async function signupAction(
@@ -102,6 +104,10 @@ export async function signupAction(
   const name = String(formData.get('name') ?? '').trim()
   const email = String(formData.get('email') ?? '').trim()
   const password = String(formData.get('password') ?? '')
+  const redirectTo = safeInternalRedirectPath(
+    formData.get('redirectTo'),
+    '/discover?openAssistant=1&newUser=1'
+  )
 
   if (!email || !password) {
     return { error: '请填写电子邮箱和密码' }
@@ -118,7 +124,7 @@ export async function signupAction(
     password,
     options: {
       data: { ai_assistant_onboarding_started: true, enabled_skills: ['personal-advisor', 'shopping-preferences'], ...(name ? { full_name: name } : {}) },
-      ...(origin ? { emailRedirectTo: `${origin}/auth/callback` } : {}),
+      ...(origin ? { emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(redirectTo)}` } : {}),
     },
   })
 
@@ -141,7 +147,7 @@ export async function signupAction(
   }
 
   // Email confirmation OFF: session is established immediately.
-  return { redirectUrl: '/discover?openAssistant=1&newUser=1' }
+  return { redirectUrl: redirectTo }
 }
 
 export async function logoutAction(formData: FormData): Promise<void> {

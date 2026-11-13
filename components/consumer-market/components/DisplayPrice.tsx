@@ -37,7 +37,7 @@ export function DisplayPrice({ product, amount, currency }: { product: ProductIt
   const sourceCurrency = currency || product.currency || 'CNY'
   const sourceAmount = amount ?? product.price
   const sourcePrice = amount == null ? product.formattedPrice : formatConsumerPrice(sourceAmount, sourceCurrency)
-  if (amount == null && (product.priceMode === 'inquiry' || product.priceMode === 'free' || sourceAmount === 0)) {
+  if (amount == null && (product.priceMode === 'inquiry' || product.priceMode === 'free' || product.priceMode === 'unknown' || sourceAmount === 0)) {
     return <span>{sourcePrice}</span>
   }
   const targetCurrency = displayRates?.currency

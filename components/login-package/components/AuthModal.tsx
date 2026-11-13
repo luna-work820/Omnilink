@@ -10,9 +10,10 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   theme?: PageTheme;
+  redirectTo?: string;
 }
 
-export function AuthModal({ isOpen, onClose, theme = "light" }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, theme = "light", redirectTo }: AuthModalProps) {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const isDark = theme === "dark";
 
@@ -95,12 +96,14 @@ export function AuthModal({ isOpen, onClose, theme = "light" }: AuthModalProps) 
                   variant={theme}
                   hideTitle={false}
                   onSwitchToSignup={() => setMode("signup")}
+                  redirectTo={redirectTo}
                 />
               ) : (
                 <SignupForm
                   variant={theme}
                   hideTitle={false}
                   onSwitchToLogin={() => setMode("login")}
+                  redirectTo={redirectTo}
                 />
               )}
             </div>

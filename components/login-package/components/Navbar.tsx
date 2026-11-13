@@ -5,9 +5,10 @@ import { PageTheme } from "@/components/login-package/hooks/usePageTheme";
 interface NavbarProps {
   onOpenAuth?: () => void;
   theme?: PageTheme;
+  redirectTo?: string;
 }
 
-export function Navbar({ onOpenAuth, theme }: NavbarProps) {
+export function Navbar({ onOpenAuth, theme, redirectTo }: NavbarProps) {
   return (
     <div className="fixed top-0 inset-x-0 z-50 pointer-events-none">
       <StaggeredMenu
@@ -18,6 +19,7 @@ export function Navbar({ onOpenAuth, theme }: NavbarProps) {
         colors={["#FF6B00", "#315BFF"]}
         accentColor="#315BFF"
         onLoginClick={onOpenAuth}
+        redirectTo={redirectTo}
       />
     </div>
   );

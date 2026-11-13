@@ -5,7 +5,8 @@ import { DEMO_BRAND_PROJECT, DEMO_PROFILE } from '@/lib/preview/demo-workspace'
 import { redirect } from 'next/navigation'
 import { getStoreByOwnerId } from '@/lib/stores/service'
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ workspace?: string }> }) {
+  const params = await searchParams
   const supabase = await createClientServer()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -15,7 +16,8 @@ export default async function DashboardPage() {
 
   const creatorEnabled = user.app_metadata?.creator_enabled === true
   const store = creatorEnabled ? await getStoreByOwnerId(user.id) : null
-  if (creatorEnabled && (user.app_metadata?.workspace_mode === 'creator' || !store)) {
+  const merchantWorkspaceRequested = params.workspace === 'merchant' && Boolean(store)
+  if (creatorEnabled && !merchantWorkspaceRequested && (user.app_metadata?.workspace_mode === 'creator' || !store)) {
     redirect('/dashboard/content')
   }
 

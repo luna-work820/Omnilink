@@ -13,7 +13,7 @@ const WarpText = dynamic(
   { ssr: false }
 );
 
-export const Skiper30 = () => {
+export const Skiper30 = ({ redirectTo }: { redirectTo?: string }) => {
   const sectionRef = useRef<HTMLElement>(null);
   const barrageContainerRef = useRef<HTMLDivElement>(null);
   const cardStageRef = useRef<HTMLDivElement>(null);
@@ -351,6 +351,7 @@ export const Skiper30 = () => {
                     className="w-full h-full flex flex-col justify-between"
                     hideTitle={false}
                     onSwitchToSignup={() => setAuthMode("signup")}
+                  redirectTo={redirectTo}
                   />
                 ) : (
                   <SignupForm
@@ -358,6 +359,7 @@ export const Skiper30 = () => {
                     className="w-full h-full flex flex-col justify-between"
                     hideTitle={false}
                     onSwitchToLogin={() => setAuthMode("login")}
+                  redirectTo={redirectTo}
                   />
                 )}
               </div>

@@ -14,12 +14,15 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { AiChatMessage } from '../types';
 import { InitialAssistantSetup } from './InitialAssistantSetup';
+import { MemoryPanel } from './MemoryPanel';
+import { ShoppingPreferenceSurveyFlow } from './ShoppingPreferenceSurveyFlow';
+import { ExecutionResults } from '../components/ExecutionResults';
 import { emptyAiAssistantProfile, type AiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-profile';
 import { DEFAULT_INSTALLED_SKILL_IDS, AI_ASSISTANT_SKILLS, AI_ASSISTANT_SKILLS_STORAGE_KEY, readInstalledSkillIds, type AiAssistantSkillId } from '../components/CapabilityLibrary';
 
 const excludedDiscoveryProductIds = new Set(['P0006', 'ssd-cat-paw-slippers']);
 
-export const HomeScreen: React.FC<{ selectedType: DiscoveryType; onTypeSelect: (type: DiscoveryType) => void; navigationOpen?: boolean; feedBeforeRects?: Map<string, DOMRect>; chatDockPreview?: boolean; initialOnboarding?: boolean; initialAiAssistantProfile?: AiAssistantProfile; profileName?: string | null; deepSeekKeyConfigured?: boolean; onboardingPreview?: boolean; initialInstalledSkillIds?: AiAssistantSkillId[]; persistSkillChanges?: boolean }> = ({ selectedType, onTypeSelect, navigationOpen = false, feedBeforeRects, chatDockPreview = false, initialOnboarding = false, initialAiAssistantProfile, profileName, deepSeekKeyConfigured = false, onboardingPreview = false, initialInstalledSkillIds, persistSkillChanges = false }) => {
+export const HomeScreen: React.FC<{ selectedType: DiscoveryType; onTypeSelect: (type: DiscoveryType) => void; navigationOpen?: boolean; feedBeforeRects?: Map<string, DOMRect>; chatDockPreview?: boolean; initialOnboarding?: boolean; initialAiAssistantProfile?: AiAssistantProfile; profileName?: string | null; deepSeekKeyConfigured?: boolean; onboardingPreview?: boolean; initialInstalledSkillIds?: AiAssistantSkillId[]; persistSkillChanges?: boolean;personalPreview?:boolean }> = ({ selectedType, onTypeSelect, navigationOpen = false, feedBeforeRects, chatDockPreview = false, initialOnboarding = false, initialAiAssistantProfile, profileName, deepSeekKeyConfigured = false, onboardingPreview = false, initialInstalledSkillIds, persistSkillChanges = false,personalPreview=false }) => {
   const {
     feedItems,
     products,
@@ -37,10 +40,15 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; onTypeSelect: (
     sendAiMessage,
     sendAiImageMessage,
     sendAiFileMessage,
+    sendAiUrlMessage,
     homeChatOpen,
     setHomeChatOpen,
+    discovery,discoveryBusy,discoveryError,loadMoreDiscovery,refreshDiscovery,clearDiscovery,refineDiscovery,skipDiscoveryQuestion,
+    personalView,openPersonalView,resumeDiscovery,
   } = useOmnilink();
   const visibleFeedItems = useMemo(() => {
+    if(discovery)return discovery.products.map((product)=>({type:'product' as const,product}));
+    if(discoveryError?.retrySpec||discoveryBusy)return [];
     const rankedFeedItems = rankDiscoveryFeed(feedItems.filter((item) => item.type === 'product'
       ? !excludedDiscoveryProductIds.has(item.product.id) && getDiscoveryType(item.product) === selectedType
       : item.scenePost.linkedProducts.some((product) => getDiscoveryType(product) === selectedType)), products, savedProductIds, rejectedProductIds);
@@ -49,7 +57,7 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; onTypeSelect: (
       item,
       ...(index % 4 === 2 && scenes.length ? [scenes[Math.floor(index / 4) % scenes.length]] : []),
     ]);
-  }, [feedItems, products, rejectedProductIds, savedProductIds, selectedType]);
+  }, [feedItems, products, rejectedProductIds, savedProductIds, selectedType,discovery,discoveryError?.retrySpec,discoveryBusy]);
   const feedScrollerRef = useRef<HTMLDivElement>(null);
   const feedMasonryRef = useRef<HTMLDivElement>(null);
   const feedEnteredRef = useRef(false);
@@ -60,6 +68,9 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; onTypeSelect: (
   const shockwaveActiveRef = useRef(false);
   const [previewMessages, setPreviewMessages] = useState<AiChatMessage[]>([]);
   const [cardHistoryOpen, setCardHistoryOpen] = useState(false);
+  const pageEndRef=useRef<HTMLDivElement>(null);
+  const personalPaneRef=useRef<HTMLElement>(null);
+  const previousRunRef=useRef<string|null>(null);
   const [droppedReferences, setDroppedReferences] = useState<FeedDroppedReference[]>([]);
   const holdCleanupRef = useRef<(() => void) | null>(null);
   const suppressCardClickRef = useRef(false);
@@ -74,6 +85,29 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; onTypeSelect: (
   const conversationMessages = chatDockPreview ? previewMessages : aiMessages.filter((message) => message.conversationId === activeAiConversationId);
   const knowYourselfSkill = AI_ASSISTANT_SKILLS.find((skill) => skill.id === 'know-yourself')!;
   const knowYourselfInstalled = installedSkillIds.includes(knowYourselfSkill.id);
+
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search);
+    if(params.get('memories')==='1')openPersonalView('memories');
+    else if(params.get('shoppingPreferences')==='1'||params.get('shoppingPreferencesPreview')==='1')openPersonalView('assessment');
+  },[openPersonalView]);
+  useEffect(()=>{
+    if(!personalView)return;
+    const frame=requestAnimationFrame(()=>personalPaneRef.current?.querySelector<HTMLButtonElement>('button')?.focus());
+    return()=>cancelAnimationFrame(frame);
+  },[personalView]);
+  useEffect(()=>{
+    if(!discovery||discovery.searchRunId===previousRunRef.current)return;
+    previousRunRef.current=discovery.searchRunId;onTypeSelect(discovery.spec.type);
+    setFeedView('feed');setCardHistoryOpen(false);setHomeChatOpen(false);
+    if(feedScrollerRef.current)feedScrollerRef.current.scrollTop=0;
+  },[discovery,onTypeSelect,setHomeChatOpen]);
+  useEffect(()=>{
+    if(!discovery?.nextCursor||discoveryBusy||discoveryError?.message||personalView||feedView!=='feed'||!pageEndRef.current)return;
+    const observer=new IntersectionObserver((entries)=>{if(entries.some((entry)=>entry.isIntersecting))loadMoreDiscovery()},
+      {root:feedScrollerRef.current,rootMargin:'400px'});
+    observer.observe(pageEndRef.current);return()=>observer.disconnect();
+  },[discovery?.nextCursor,discoveryBusy,discoveryError?.message,personalView,feedView,loadMoreDiscovery]);
 
   useLayoutEffect(() => {
     const masonry = feedMasonryRef.current;
@@ -198,6 +232,7 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; onTypeSelect: (
 
   const submitFeedMessage = (message: string, selectedProductIds: string[], hasActiveSkill: boolean) => {
     if (onboardingActive) return;
+    openPersonalView(null);
     if (chatDockPreview) setPreviewMessages((current) => [...current, { id: `preview-${Date.now()}`, conversationId: activeAiConversationId, text: message, isUser: true }]);
     else sendAiMessage(message, selectedProductIds, hasActiveSkill);
     setFeedView((current) => current === 'chat' ? current : 'card');
@@ -205,6 +240,7 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; onTypeSelect: (
 
   const submitFeedAttachment = (attachment: FeedAttachment, message: string, selectedProductIds: string[], hasActiveSkill: boolean) => {
     if (onboardingActive) return;
+    openPersonalView(null);
     if (chatDockPreview) {
       setPreviewMessages((current) => [...current, {
         id: `preview-${Date.now()}`,
@@ -213,6 +249,8 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; onTypeSelect: (
         isUser: true,
         ...(attachment.kind === 'image' ? { image: attachment.data } : { fileName: attachment.name }),
       }]);
+    } else if(attachment.kind==='url') {
+      sendAiUrlMessage(attachment.data,message,selectedProductIds);setHomeChatOpen(true);
     } else if (attachment.kind === 'image') {
       sendAiImageMessage(attachment.data, message, selectedProductIds, hasActiveSkill);
     } else {
@@ -329,12 +367,13 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; onTypeSelect: (
     </div>;
 
   const feedColumnClasses = navigationOpen ? 'columns-2' : 'columns-2 lg:columns-3';
-  const feedInteractive = feedView === 'feed' || feedView === 'card';
+  const feedInteractive = !personalView&&(feedView === 'feed' || feedView === 'card');
 
   const feedContent = <section id="discovery-feed-panel" aria-label="探索内容" className="px-2 sm:px-2.5">
-      {visibleFeedItems.length === 0 && <p className="mx-auto max-w-md py-16 text-center text-sm text-[var(--market-text-secondary)]">{selectedType === '数字' ? '信息' : selectedType}暂无内容。</p>}
+      {discovery&&<header className="flex min-h-12 items-center gap-3 px-3 pb-3"><h1 className="min-w-0 flex-1 break-words text-base font-medium">{discovery.query}</h1><span className="text-xs text-[var(--market-text-secondary)]">已加载 {discovery.products.length} 件</span><button type="button" onClick={clearDiscovery} className="min-h-11 rounded-full px-3 text-sm hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">清除</button></header>}
+      {visibleFeedItems.length === 0 && !discoveryError?.message&&!discoveryBusy&&<p className="mx-auto max-w-md py-16 text-center text-sm text-[var(--market-text-secondary)]">{discovery?'没有找到符合条件的公开商品，可修改关键词。':`${selectedType === '数字' ? '信息' : selectedType}暂无内容。`}</p>}
       <div ref={feedMasonryRef} className={`${feedColumnClasses} gap-1.5`}>
-        <div data-feed-key="know-yourself" className="feed-masonry-card mb-1.5 break-inside-avoid">
+        {!discovery&&!discoveryBusy&&!discoveryError?.retrySpec&&<div data-feed-key="know-yourself" className="feed-masonry-card mb-1.5 break-inside-avoid">
           <article className="product-feed-card group w-full select-none rounded-[var(--radius-card)] bg-[var(--market-canvas)] p-1 transition-colors duration-200 hover:bg-[var(--market-hover)]">
             <div className="px-2">
               <div className="flex min-h-16 w-full min-w-0 flex-col justify-center gap-0.5 py-2.5">
@@ -349,8 +388,13 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; onTypeSelect: (
               </span>
             </button>
           </article>
-        </div>
+        </div>}
         {visibleFeedItems.map(renderFeedItem)}
+      </div>
+      {discovery?.question&&<section aria-label="细化本次搜索" className="mx-auto mt-6 max-w-xl px-3 py-4"><h2 className="text-sm font-medium">{discovery.question.prompt}</h2><div className="mt-3 flex flex-wrap gap-2">{discovery.question.options.map((option)=><button type="button" key={option.value} disabled={discoveryBusy} onClick={()=>refineDiscovery(option.value)} className="min-h-11 rounded-full px-4 text-sm hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40">{option.label}</button>)}<button type="button" onClick={skipDiscoveryQuestion} disabled={discoveryBusy} className="min-h-11 rounded-full px-3 text-sm text-[var(--market-text-secondary)] hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">跳过</button></div></section>}
+      {discoveryError?.message&&<div role="alert" className="mx-auto max-w-xl px-3 py-4 text-sm"><p>{discoveryError.message}</p><button type="button" disabled={discoveryBusy} onClick={()=>discovery?.nextCursor&&!['CONTEXT_CHANGED','SEARCH_EXPIRED','CURSOR_INVALID'].includes(discoveryError.code??'')?loadMoreDiscovery():refreshDiscovery(discoveryError.retrySpec)} className="mt-2 min-h-11 rounded-full px-4 hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">{discoveryError.code==='CONTEXT_CHANGED'||discoveryError.code==='SEARCH_EXPIRED'?'刷新结果':'重试'}</button></div>}
+      <div ref={pageEndRef} className="flex min-h-16 items-center justify-center px-3 py-4">
+        {discoveryBusy?<p role="status" className="text-sm">正在读取商品…</p>:discovery?.nextCursor?<button type="button" onClick={loadMoreDiscovery} className="min-h-11 rounded-full px-5 text-sm hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">加载更多</button>:discovery&&discovery.products.length>0?<p className="text-xs text-[var(--market-text-secondary)]">已显示本次搜索结果</p>:null}
       </div>
     </section>;
 
@@ -370,17 +414,17 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; onTypeSelect: (
           ref={chatScrollerRef}
           aria-label="对话"
           aria-live="polite"
-          aria-hidden={feedView !== 'chat'}
-          inert={feedView !== 'chat'}
-          className={`home-chat-scroller absolute inset-x-0 bottom-0 top-0 overflow-y-auto bg-[var(--market-canvas)] px-4 pb-36 pt-[72px] transition-transform duration-500 ease-out motion-reduce:transition-none sm:px-6 sm:pb-28 ${feedView === 'chat' ? 'translate-y-0' : feedView === 'returning' ? '-translate-y-full' : 'translate-y-full'}`}
+          aria-hidden={feedView !== 'chat'||Boolean(personalView)}
+          inert={feedView !== 'chat'||Boolean(personalView)}
+          className={`home-chat-scroller absolute inset-x-0 bottom-0 top-14 overflow-y-auto bg-[var(--market-canvas)] px-4 pb-36 pt-4 transition-transform duration-500 ease-out motion-reduce:transition-none sm:top-0 sm:px-6 sm:pb-28 sm:pt-[72px] ${feedView === 'chat' ? 'translate-y-0' : feedView === 'returning' ? '-translate-y-full' : 'translate-y-full'}`}
         >
           <div className="mx-auto w-full max-w-3xl space-y-6">
-            {initialOnboarding && <InitialAssistantSetup initialProfile={initialAiAssistantProfile ?? emptyAiAssistantProfile} defaultName={profileName ?? ''} deepSeekConfigured={deepSeekConnected} preview={onboardingPreview} onDeepSeekConfigured={() => setDeepSeekConnected(true)} onComplete={() => setOnboardingCompleted(true)} />}
+            {onboardingActive && <InitialAssistantSetup initialProfile={initialAiAssistantProfile ?? emptyAiAssistantProfile} defaultName={profileName ?? ''} deepSeekConfigured={deepSeekConnected} preview={onboardingPreview} onDeepSeekConfigured={() => setDeepSeekConnected(true)} onComplete={() => {setOnboardingCompleted(true);openPersonalView('assessment');}} />}
             {conversationMessages.map((message) => <div key={message.id} className={message.isUser ? 'flex justify-end' : 'text-[var(--market-ink)]'}>
               {message.isUser ? <div className="max-w-[88%] rounded-2xl bg-[var(--market-surface-muted)] px-4 py-3 text-sm leading-6 sm:text-base">{message.image && <img src={message.image} alt="已发送的图片" className="mb-2 max-h-64 max-w-full rounded-lg object-contain" />}{message.fileName && <p className="mb-1 text-xs">{message.fileName}</p>}<p className="whitespace-pre-wrap break-words">{message.text}</p></div> : <div className="max-w-full break-words text-sm leading-7 sm:text-base [&_p]:mb-3 [&_table]:my-3 [&_table]:w-full [&_table]:border-collapse [&_td]:border-b-[0.5px] [&_td]:border-[var(--market-border)] [&_td]:p-2 [&_th]:border-b-[0.5px] [&_th]:border-[var(--market-border)] [&_th]:p-2 [&_th]:text-left">{message.intent === 'outfit-styling' && <p className="mb-1 text-xs font-medium text-[var(--market-text-muted)]">穿搭建议</p>}<ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: ({ src, alt }) => typeof src === 'string' && src.startsWith('/consumer-market/') ? <img src={src} alt={alt ?? ''} className="mr-2 inline-block h-11 w-11 rounded-md object-cover align-middle" /> : null }}>{message.text}</ReactMarkdown>{message.matchedProducts?.length ? <div className="mt-3 flex gap-2 overflow-x-auto pb-2">{message.matchedProducts.map((product) => {
                 const defaultVariant = product.variants?.find((variant) => variant.id === product.defaultVariantId);
                 const needsVariant = Boolean(product.options?.length);
-                const canQuickAdd = getDiscoveryType(product) === '商品' && product.priceMode !== 'inquiry' && (!needsVariant || Boolean(defaultVariant));
+                const canQuickAdd = getDiscoveryType(product) === '商品' && product.priceMode !== 'inquiry' && product.priceMode !== 'unknown' && (!needsVariant || Boolean(defaultVariant));
                 const defaultVariantLabel = defaultVariant ? Object.values(defaultVariant.optionValues).filter(Boolean).join(' / ') || '标准' : '标准';
 
                 return <div key={product.id} className="w-44 shrink-0 rounded-xl border-[0.5px] border-[var(--market-border)] p-2 text-xs">
@@ -398,18 +442,23 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; onTypeSelect: (
                     <button type="button" onClick={() => toggleRejectProduct(product.id)} aria-pressed={rejectedProductIds.includes(product.id)} className="min-h-8 text-[var(--market-text-muted)]">{rejectedProductIds.includes(product.id) ? '撤销' : '不合适'}</button>
                   </div>
                 </div>;
-              })}</div> : null}{message.usedPreferences?.length ? <p className="mt-2 text-xs text-[var(--market-text-muted)]">参考偏好：{message.usedPreferences.join('、')}</p> : null}</div>}
+              })}</div> : null}{message.searchRef&&<button type="button" onClick={()=>{const ref=message.searchRef!;openPersonalView(null);setFeedView('feed');setHomeChatOpen(false);resumeDiscovery(ref.searchRunId,ref.contextVersion,ref.spec)}} className="min-h-11 rounded-full px-4 text-sm hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">查看结果</button>}{message.retrySpec&&<button type="button" disabled={discoveryBusy} onClick={()=>{openPersonalView(null);setFeedView('feed');setHomeChatOpen(false);refreshDiscovery(message.retrySpec)}} className="min-h-11 rounded-full px-4 text-sm hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">重试搜索</button>}{message.usedPreferences?.length ? <p className="mt-2 text-xs text-[var(--market-text-muted)]">参考偏好：{message.usedPreferences.join('、')}</p> : null}</div>}
+              {!message.isUser&&message.blocks&&<ExecutionResults blocks={message.blocks} sessionId={activeAiConversationId}/>}
+              {!message.isUser&&message.state==='cancelled'&&<p className="mt-2 text-xs text-[var(--market-text-secondary)]">已停止</p>}
             </div>)}
             {isAiThinking && !chatDockPreview && <p className="text-sm text-[var(--market-text-muted)]" role="status">正在分析</p>}
           </div>
         </section>
+        {personalView&&<section ref={personalPaneRef} aria-label={personalView==='memories'?'个人记忆':'购物偏好'} className="absolute inset-0 z-20 overflow-y-auto bg-[var(--market-canvas)] pb-36 pt-14 sm:pb-28 sm:pt-6">
+          {personalView==='memories'?<MemoryPanel preview={personalPreview}/>:<div className="mx-auto max-w-2xl px-4"><header className="mb-4 flex items-center gap-3"><button type="button" onClick={()=>openPersonalView(null)} className="min-h-11 rounded-full px-3 text-sm hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">返回</button><h1 className="text-base font-medium">购物偏好</h1></header><ShoppingPreferenceSurveyFlow embedded preview={personalPreview} initialProfile={initialAiAssistantProfile??emptyAiAssistantProfile} onComplete={()=>openPersonalView(null)} onReview={()=>openPersonalView('memories')}/></div>}
+        </section>}
         {shockwaveRun !== null && <SparkShockwave key={shockwaveRun} navigationOpen={navigationOpen} onComplete={() => {
           shockwaveActiveRef.current = false;
           setShockwaveRun(null);
         }} />}
         <FeedChatDock
           selectedType={selectedType}
-          onTypeSelect={onTypeSelect}
+          onTypeSelect={(type)=>{onTypeSelect(type);if(discovery)refreshDiscovery({...discovery.spec,type});}}
           chatOpen={feedView === 'card' || feedView === 'chat'}
           chatCardOpen={feedView === 'card'}
           cardHistoryOpen={cardHistoryOpen}
@@ -422,7 +471,7 @@ export const HomeScreen: React.FC<{ selectedType: DiscoveryType; onTypeSelect: (
           onSubmitMessage={submitFeedMessage}
           onSubmitAttachment={submitFeedAttachment}
           onBrowse={returnToFeed}
-          onActivate={activateChat}
+          onActivate={()=>{if(!personalView)activateChat();}}
           droppedReferences={droppedReferences}
           onRemoveDroppedReference={(key) => setDroppedReferences((current) => current.filter((reference) => reference.key !== key))}
           onClearDroppedReferences={() => setDroppedReferences([])}

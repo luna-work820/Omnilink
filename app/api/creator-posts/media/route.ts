@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
 import { getOwnedStore, requireUser } from '@/lib/api/auth'
 import { createServiceRoleClient } from '@/lib/supabase/service-role'
-
-const VIDEO_BUCKET = 'creator-content-videos'
+import { CREATOR_VIDEO_BUCKET, creatorVideoUrl } from '@/lib/creator-video'
 
 export async function POST(request: NextRequest) {
   const auth = await requireUser()
@@ -28,9 +27,8 @@ export async function POST(request: NextRequest) {
   const extension = contentType === 'video/mp4' ? 'mp4' : 'webm'
   const path = `${store.organization_id}/${auth.user.id}/${randomUUID()}.${extension}`
   const service = createServiceRoleClient()
-  const { data, error } = await service.storage.from(VIDEO_BUCKET).createSignedUploadUrl(path, { upsert: false })
+  const { data, error } = await service.storage.from(CREATOR_VIDEO_BUCKET).createSignedUploadUrl(path, { upsert: false })
   if (error || !data) return NextResponse.json({ error: '无法创建视频上传地址' }, { status: 502 })
 
-  const { data: publicData } = service.storage.from(VIDEO_BUCKET).getPublicUrl(path)
-  return NextResponse.json({ path: data.path, token: data.token, publicUrl: publicData.publicUrl })
+  return NextResponse.json({ path: data.path, token: data.token, url: creatorVideoUrl(data.path) })
 }

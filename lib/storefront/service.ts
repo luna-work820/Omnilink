@@ -569,11 +569,13 @@ export async function getStorefrontDiscoveryItemsByIds(productIds: string[], lim
   return mapStorefrontDiscoveryRows(data ?? [])
 }
 
-function mapStorefrontDiscoveryRows(rows: Database['public']['Views']['discovery_products']['Row'][]) {
+export function mapStorefrontDiscoveryRows(rows: Database['public']['Views']['discovery_products']['Row'][]) {
   return rows.flatMap((row) => {
     const outboundLinks = readOutboundLinks({ xiaohongshu: row.xiaohongshu_url, douyin: row.douyin_url })
     if (!Object.keys(outboundLinks).length) return []
-    const price = Number(row.price ?? 0)
+    const price = row.price == null ? null : Number(row.price)
+    const priceMode = row.price_mode === 'inquiry' ? 'inquiry' : row.price_mode === 'free' ? 'free'
+      : price === null || !Number.isFinite(price) ? 'unknown' : price === 0 ? 'free' : 'amount'
     const product: StorefrontProduct = {
       id: row.id,
       slug: row.id,
@@ -585,9 +587,9 @@ function mapStorefrontDiscoveryRows(rows: Database['public']['Views']['discovery
         ? row.capability_kind
         : undefined,
       description: row.description,
-      price: Number.isFinite(price) ? price : 0,
+      price: priceMode === 'free' ? 0 : price !== null && Number.isFinite(price) ? price : 0,
       currency: row.currency_code ?? 'CNY',
-      priceMode: row.price_mode === 'inquiry' ? 'inquiry' : price === 0 ? 'free' : 'amount',
+      priceMode,
       outboundLinks,
       imageUrl: row.cover_image,
       images: row.cover_image ? [row.cover_image] : [],
