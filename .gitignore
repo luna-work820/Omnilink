@@ -3,6 +3,7 @@ node_modules/
 
 # Next.js
 .next/
+.next-preview/
 out/
 
 # Environment variables
@@ -40,7 +41,7 @@ coverage/
 .diag-test-user.json
 
 # TypeScript build cache
-tsconfig.tsbuildinfo
+*.tsbuildinfo
 
 # Redundant lockfile (this project uses npm + package-lock.json)
 bun.lock
@@ -54,3 +55,5 @@ docs/open-source-schema/
 
 # Supabase CLI local state (project ref / org ids, machine-specific)
 supabase/.temp/
+.cloudflare/
+.vinext/

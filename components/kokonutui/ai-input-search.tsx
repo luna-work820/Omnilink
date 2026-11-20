@@ -687,7 +687,11 @@ function ToolPill({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="start"
-            className={cn(menuPanel, "w-72")}
+            data-glasswork=""
+            data-glasswork-radius="18"
+            data-glasswork-rim="12"
+            data-glasswork-dispersion="0.18"
+            className={cn(menuPanel, "ai-input-menu-glass w-72")}
             onCloseAutoFocus={onCloseAutoFocus}
             onKeyDown={onMenuKeyDown}
             // Below the box by default; Radix flips it up when there is no
@@ -708,7 +712,7 @@ function ToolPill({
                 <DropdownMenuCheckboxItem
                   checked={isSelected}
                   className={cn(
-                    "group/item flex items-center gap-2.5 rounded-lg px-2 py-1.5 [&>span:first-child]:hidden",
+                    "group/item flex items-center gap-2.5 rounded-full px-2 py-1.5 [&>span:first-child]:hidden",
                     "focus:bg-black/[0.04] dark:focus:bg-white/[0.06]"
                   )}
                   disabled={spent}
@@ -842,7 +846,11 @@ function ModelMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className={cn(menuPanel, "w-44")}
+        data-glasswork=""
+        data-glasswork-radius="18"
+        data-glasswork-rim="12"
+        data-glasswork-dispersion="0.18"
+        className={cn(menuPanel, "ai-input-menu-glass w-56")}
         onCloseAutoFocus={onCloseAutoFocus}
         side="bottom"
         sideOffset={8}
@@ -850,7 +858,7 @@ function ModelMenu({
         {models.map((model) => (
           <DropdownMenuItem
             className={cn(
-              "flex h-8 items-center gap-2 rounded-lg px-2 text-xs",
+              "flex h-8 items-center gap-2 rounded-full px-2 text-xs normal-case tracking-normal",
               model === selected
                 ? "text-black dark:text-white"
                 : "text-black/55 dark:text-white/55"

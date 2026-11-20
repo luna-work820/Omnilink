@@ -6,7 +6,7 @@ import { LiquidGlass } from '@/components/ui/liquid-glass'
 import { Microphone as Mic, PaperPlaneRight as Send, CaretDown as ChevronDown } from '@phosphor-icons/react'
 import { Camera, ChevronDown as HistoryChevron, Expand, FileText, Heart, Image as ImageIcon, Link as LinkIcon, Square, LockKeyhole, LockKeyholeOpen, MessageCircle, Minus, Plus, Check, X } from 'lucide-react'
 import { AI_ASSISTANT_SKILLS, AI_ASSISTANT_SKILLS_STORAGE_KEY, readInstalledSkillIds, type AiAssistantSkillId } from './CapabilityLibrary'
-import type { AiChatMessage, ConsumerAiModel, DiscoveryType } from '../types'
+import type { AiChatMessage, DiscoveryType } from '../types'
 
 export const FEED_CHAT_SCROLL_KEY = 'omnilink-feed-chat-preview-scroll'
 export type FeedAttachment = { name: string; kind: 'image' | 'document' | 'url'; data: string }
@@ -27,6 +27,8 @@ function readPinnedSkillIds(): AiAssistantSkillId[] {
 export function FeedChatDock({
   selectedType,
   onTypeSelect,
+  browseMode = 'products',
+  onBrowseModeChange,
   chatOpen = false,
   chatCardOpen = false,
   cardHistoryOpen = false,
@@ -47,12 +49,14 @@ export function FeedChatDock({
 }: {
   selectedType: DiscoveryType
   onTypeSelect: (type: DiscoveryType) => void
+  browseMode?: 'recommend' | 'content' | 'products'
+  onBrowseModeChange?: (mode: 'recommend' | 'content') => void
   chatOpen?: boolean
   chatCardOpen?: boolean
   cardHistoryOpen?: boolean
   disabled?: boolean
-  onSubmitMessage?: (message: string, selectedProductIds: string[], hasActiveSkill: boolean) => void
-  onSubmitAttachment?: (attachment: FeedAttachment, message: string, selectedProductIds: string[], hasActiveSkill: boolean) => void
+  onSubmitMessage?: (message: string, selectedProductIds: string[], hasActiveSkill: boolean, skillId?: AiAssistantSkillId) => void
+  onSubmitAttachment?: (attachment: FeedAttachment, message: string, selectedProductIds: string[], hasActiveSkill: boolean, skillId?: AiAssistantSkillId) => void
   onBrowse?: () => void
   onActivate?: () => void
   onToggleCardHistory?: () => void
@@ -69,10 +73,9 @@ export function FeedChatDock({
   const messageInputRef = useRef<HTMLTextAreaElement>(null)
   const referenceRowRef = useRef<HTMLDivElement>(null)
   const seenReferenceKeysRef = useRef<Set<string>>(new Set())
-  const [panel, setPanel] = useState<'attachments' | 'models' | 'favorites' | 'types' | null>(null)
+  const [panel, setPanel] = useState<'attachments' | 'favorites' | 'types' | null>(null)
   const [installedSkillIds, setInstalledSkillIds] = useState<AiAssistantSkillId[]>([])
   const [pinnedSkillIds, setPinnedSkillIds] = useState<AiAssistantSkillId[]>([])
-  const [activeSkillId, setActiveSkillId] = useState<AiAssistantSkillId | null>(null)
   const [attachment, setAttachment] = useState<FeedAttachment | null>(null)
   const [selectedFavoriteIds, setSelectedFavoriteIds] = useState<string[]>([])
   const [isRecording, setIsRecording] = useState(false)
@@ -83,21 +86,14 @@ export function FeedChatDock({
   const recognitionRef = useRef<VoiceRecognition | null>(null)
   const cardHistoryRef = useRef<HTMLDivElement>(null)
   const typePickerRef = useRef<HTMLDivElement>(null)
-  const { openAiPage, aiModel, setAiModel, showToast, isAiThinking, products, savedProductIds,openPersonalView,stopAiResponse } = useOmnilink()
+  const { openAiPage, showToast, isAiThinking, products, savedProductIds,activeAssistantSkillId: activeSkillId,setActiveAssistantSkillId: setActiveSkillId,openPersonalView,stopAiResponse } = useOmnilink()
   const canSend = Boolean(message.trim() || attachment || selectedFavoriteIds.length || droppedReferences.length)
   const activeSkill = AI_ASSISTANT_SKILLS.find((skill) => skill.id === activeSkillId)
   const availableSkills = AI_ASSISTANT_SKILLS.filter((skill) => installedSkillIds.includes(skill.id))
   const pinnedSkills = availableSkills.filter((skill) => pinnedSkillIds.includes(skill.id))
   const favoriteProducts = products.filter((product) => savedProductIds.includes(product.id))
-  const models: { id: ConsumerAiModel; label: string }[] = [
-    { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro' },
-    { id: 'deepseek-flash', label: 'DeepSeek Flash' },
-    { id: 'gemini', label: 'Gemini' },
-    { id: 'qwen-plus', label: 'Qwen Plus' },
-  ]
-  const currentModel = models.find((model) => model.id === aiModel)?.label ?? 'DeepSeek V4 Pro'
   const conversationTitle = conversationMessages.find((item) => item.isUser)?.text.trim() || '新对话'
-  const selectedTypeLabel = discoveryTypes.find((type) => type.value === selectedType)?.label ?? '商品'
+  const selectedTypeLabel = browseMode === 'recommend' ? '推荐' : browseMode === 'content' ? '内容' : discoveryTypes.find((type) => type.value === selectedType)?.label ?? '商品'
 
   useEffect(() => {
     if (panel !== 'types') return
@@ -169,20 +165,21 @@ export function FeedChatDock({
       reference.detail ? `信息：${reference.detail}` : '',
     ].filter(Boolean).join('\n')).join('\n')
     const content = [typedMessage, referenceText].filter(Boolean).join('\n')
-    const prompt = activeSkill ? `${activeSkill.prompt}${content ? `\n${content}` : ''}` : content
+    const prompt = activeSkill && activeSkill.id !== 'personal-advisor' ? `${activeSkill.prompt}${content ? `\n${content}` : ''}` : content
     const productIds = [...new Set([...selectedFavoriteIds, ...activeReferences.map((reference) => reference.productId).filter((id): id is string => Boolean(id))])]
-    if (attachment && onSubmitAttachment) onSubmitAttachment(attachment, prompt, productIds, Boolean(activeSkill))
-    else if (onSubmitMessage) onSubmitMessage(prompt, productIds, Boolean(activeSkill))
+    if (attachment && onSubmitAttachment) onSubmitAttachment(attachment, prompt, productIds, Boolean(activeSkill), activeSkill?.id)
+    else if (onSubmitMessage) onSubmitMessage(prompt, productIds, Boolean(activeSkill), activeSkill?.id)
     else openAssistant(prompt)
     setMessage('')
     setAttachment(null)
     setSelectedFavoriteIds([])
-    setActiveSkillId(null)
+    if (activeSkillId !== 'personal-advisor') setActiveSkillId(null)
     onClearDroppedReferences?.()
     setPanel(null)
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if(event.nativeEvent.isComposing||event.nativeEvent.keyCode===229)return
     if (event.key === 'Escape') setPanel(null)
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
@@ -249,7 +246,8 @@ export function FeedChatDock({
       <input ref={cameraInputRef} type="file" accept="image/png,image/jpeg,image/webp" capture="environment" onChange={handleFile} aria-label="拍摄图片" className="hidden" />
       <div ref={typePickerRef} data-picker-open={pickerOpen} className="feed-discovery-types relative mb-0.5 shrink-0">
         {panel === 'types' && <LiquidGlass id="discovery-type-menu" role="group" aria-label="浏览类型" radius={20} bevelDepth={8} aberration={0.12} tint={1} className="feed-discovery-popup absolute bottom-[calc(100%+8px)] left-0 z-30 w-28 p-1">
-          {discoveryTypes.map(({ value, label }) => <button key={value} type="button" aria-pressed={selectedType === value} onClick={() => { onTypeSelect(value); setPanel(null) }} className="feed-discovery-option flex min-h-10 w-full items-center justify-between rounded-full px-3 text-left text-xs text-[var(--market-ink)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><span>{label}</span>{selectedType === value && <Check size={15} aria-hidden="true" />}</button>)}
+          {onBrowseModeChange && (['recommend', 'content'] as const).map((mode) => <button key={mode} type="button" aria-pressed={browseMode === mode} onClick={() => { onBrowseModeChange(mode); setPanel(null) }} className="feed-discovery-option flex min-h-10 w-full items-center justify-between rounded-full px-3 text-left text-xs text-[var(--market-ink)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><span>{mode === 'recommend' ? '推荐' : '内容'}</span>{browseMode === mode && <Check size={15} aria-hidden="true" />}</button>)}
+          {discoveryTypes.map(({ value, label }) => <button key={value} type="button" aria-pressed={browseMode === 'products' && selectedType === value} onClick={() => { onTypeSelect(value); setPanel(null) }} className="feed-discovery-option flex min-h-10 w-full items-center justify-between rounded-full px-3 text-left text-xs text-[var(--market-ink)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><span>{label}</span>{browseMode === 'products' && selectedType === value && <Check size={15} aria-hidden="true" />}</button>)}
         </LiquidGlass>}
         <LiquidGlass radius={999} bevelDepth={8} aberration={0.12} tint={1} interactive className="feed-discovery-trigger-surface">
           <button id="discovery-type-trigger" type="button" disabled={disabled} aria-label={`浏览类型，当前为${selectedTypeLabel}`} aria-haspopup="true" aria-expanded={panel === 'types'} aria-controls="discovery-type-menu" onClick={() => setPanel((current) => current === 'types' ? null : 'types')} className="feed-discovery-trigger flex h-11 min-w-[88px] items-center justify-center gap-1 rounded-full px-3 text-xs font-medium text-[var(--market-support)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40"><span>{selectedTypeLabel}</span><ChevronDown size={13} className={`transition-transform duration-[250ms] ease-out ${panel === 'types' ? 'rotate-180' : ''}`} aria-hidden="true" /></button>
@@ -286,10 +284,6 @@ export function FeedChatDock({
             {pinnedSkills.map((skill) => <LiquidGlass key={skill.id} radius={999} bevelDepth={12} aberration={0.18} tint={1} interactive className="ai-assistant-composer-surface shrink-0 rounded-full"><button type="button" disabled={disabled} onClick={() => activateSkill(skill.id)} aria-pressed={activeSkillId === skill.id} className="relative flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[11px] text-[var(--market-ink)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40"><skill.icon size={13} aria-hidden="true" />{skill.title}</button></LiquidGlass>)}
           </div>
         </div>}
-        {panel === 'models' && <div role="group" aria-label="选择模型" className="feed-chat-secondary-panel absolute bottom-[calc(100%+10px)] right-0 z-20 max-h-[55dvh] w-48 max-w-[calc(100vw-24px)] overflow-y-auto rounded-xl border-[0.5px] border-[var(--market-border)] p-1 text-[var(--market-ink)]">
-          <h2 className="px-2 py-1 text-xs font-medium text-[var(--market-text-secondary)]">选择模型</h2>
-          {models.map((model) => <button key={model.id} type="button" onClick={() => { setAiModel(model.id); setPanel(null) }} aria-pressed={aiModel === model.id} className="feed-chat-control feed-chat-model-option flex min-h-8 w-full items-center justify-between rounded-full px-2.5 text-left text-xs focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><span>{model.label}</span>{aiModel === model.id && <span aria-hidden="true">✓</span>}</button>)}
-        </div>}
         <div className={`feed-chat-fluid-card ${chatCardOpen ? 'is-expanded' : ''}`}>
         <div className="feed-chat-card-reveal">
         <section aria-label="当前对话" aria-hidden={!chatCardOpen} inert={!chatCardOpen} className={`feed-chat-conversation-card ${cardHistoryOpen ? 'is-expanded' : ''}`}>
@@ -310,13 +304,12 @@ export function FeedChatDock({
           <LiquidGlass radius={chatOpen && !chatCardOpen ? 24 : 999} bevelDepth={12} aberration={0.18} tint={1} interactive className={`ai-assistant-composer-surface relative flex min-h-12 items-center rounded-full border-[0.5px] px-1.5 py-0.5 text-[var(--market-ink)] ${chatOpen ? 'is-chat-open' : ''} ${chatCardOpen ? 'is-chat-card' : ''}`} style={{ overflow: 'visible' }}>
           <button type="button" disabled={disabled || isAiThinking} onClick={() => { setInstalledSkillIds(readInstalledSkillIds()); setPanel((current) => current === 'attachments' ? null : 'attachments') }} aria-label={attachmentPanelOpen ? '关闭附件菜单' : '添加附件'} aria-expanded={attachmentPanelOpen} aria-controls="feed-chat-picker-panel" className="feed-chat-control feed-chat-attachment-trigger relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40">{attachmentPanelOpen ? <X size={17} aria-hidden="true" /> : <Plus size={17} aria-hidden="true" />}</button>
           <div className="feed-chat-message-field flex min-h-11 min-w-0 flex-1 flex-col justify-center">
-            {(activeSkill || attachment || selectedFavoriteIds.length > 0) && <div className="flex gap-1">{activeSkill && <button type="button" onClick={() => setActiveSkillId(null)} className="max-w-24 truncate rounded-full bg-[var(--market-surface-muted)] px-2 py-0.5 text-xs">@{activeSkill.title} ×</button>}{attachment && <button type="button" onClick={() => setAttachment(null)} className="max-w-24 truncate rounded-full bg-[var(--market-surface-muted)] px-2 py-0.5 text-xs">{attachment.name} ×</button>}{selectedFavoriteIds.length > 0 && <button type="button" onClick={() => setPanel('favorites')} className="rounded-full bg-[var(--market-surface-muted)] px-2 py-0.5 text-xs">收藏 {selectedFavoriteIds.length}</button>}</div>}
             <div ref={referenceRowRef} className="feed-chat-inline-input flex min-w-0 items-center gap-1 overflow-x-auto">
+              {(activeSkill || attachment || selectedFavoriteIds.length > 0) && <div className="flex shrink-0 items-center gap-1">{activeSkill && <button type="button" onClick={() => setActiveSkillId(null)} className="max-w-24 truncate rounded-full bg-[var(--market-surface-muted)] px-2 py-0.5 text-xs">@{activeSkill.title} ×</button>}{attachment && <button type="button" onClick={() => setAttachment(null)} className="max-w-24 truncate rounded-full bg-[var(--market-surface-muted)] px-2 py-0.5 text-xs">{attachment.name} ×</button>}{selectedFavoriteIds.length > 0 && <button type="button" onClick={() => setPanel('favorites')} className="rounded-full bg-[var(--market-surface-muted)] px-2 py-0.5 text-xs">收藏 {selectedFavoriteIds.length}</button>}</div>}
               {droppedReferences.map((reference) => <button key={reference.key} type="button" onClick={() => onRemoveDroppedReference?.(reference.key)} title={reference.url ?? reference.title} aria-label={`移除引用 ${reference.title}`} className="feed-chat-reference-chip flex h-7 max-w-40 shrink-0 items-center gap-1 rounded-full bg-[var(--market-surface-muted)] px-2 text-xs text-[var(--market-ink)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><span className="truncate">@{reference.title}</span><X size={12} className="shrink-0" aria-hidden="true" /></button>)}
               <textarea ref={messageInputRef} value={message} disabled={disabled} placeholder={droppedReferences.length ? '' : '说说你想找什么，或直接提问'} onClick={onActivate} onFocus={onActivate} onChange={(event) => { const next = event.target.value; setMessage(next); if (next.endsWith('@')) { setInstalledSkillIds(readInstalledSkillIds()); setPanel('attachments') } }} onKeyDown={handleKeyDown} rows={1} wrap="off" aria-label="搜索或询问 AI assistant" className="ai-assistant-composer-input block min-w-20 flex-1 bg-transparent px-1 text-xs text-[var(--market-ink)] outline-none" />
             </div>
           </div>
-          <button type="button" disabled={disabled || isAiThinking} onClick={() => setPanel((current) => current === 'models' ? null : 'models')} aria-label={`选择模型，当前为 ${currentModel}`} aria-expanded={panel === 'models'} className="feed-chat-control feed-chat-model-trigger flex h-11 shrink-0 items-center gap-1 rounded-full px-1.5 text-[11.5px] font-medium text-[var(--market-text-secondary)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40"><span className="hidden sm:inline">{currentModel}</span><span className="sm:hidden">{aiModel === 'deepseek-v4-pro' ? 'V4 Pro' : aiModel === 'deepseek-flash' ? 'Flash' : aiModel === 'qwen-plus' ? 'Qwen' : 'Gemini'}</span><ChevronDown size={10} aria-hidden="true" /></button>
           <button type="button" disabled={disabled || isAiThinking} onClick={toggleVoice} aria-label={isRecording ? '停止语音输入' : '语音输入'} aria-pressed={isRecording} className="feed-chat-control feed-chat-voice-trigger flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40"><Mic size={15} aria-hidden="true" /></button>
           {isAiThinking?<button type="button" onClick={stopAiResponse} aria-label="停止回答" className="feed-chat-control relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><Square size={14} aria-hidden="true"/></button>:<button type="submit" disabled={!canSend || disabled} aria-label="发送" className="feed-chat-control ai-assistant-composer-send relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)]"><Send size={16} weight="bold" aria-hidden="true" /></button>}
           </LiquidGlass>

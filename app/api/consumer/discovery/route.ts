@@ -2,7 +2,7 @@ import { NextRequest,NextResponse } from 'next/server'
 import { z } from 'zod'
 import { resolveRequestUser } from '@/lib/api/request-user'
 import { requestIdentitySchema,resolveRequestIdentity } from '@/lib/consumer-advisor/request-contract'
-import { attachDiscoveryActor,continueDiscovery,discoveryActor,ownedDiscoveryRun,resumeDiscovery,startDiscovery } from '@/lib/consumer-advisor/discovery-engine'
+import { attachDiscoveryActor,continueDiscovery,discoveryActor,ownedDiscoveryRun,resumeDiscovery,startDiscovery,refineDiscovery } from '@/lib/consumer-advisor/discovery-engine'
 import { DiscoveryError,discoveryQuestion,discoverySpecSchema } from '@/lib/consumer-advisor/discovery-contract'
 import { discoveryResponse } from '@/lib/consumer-advisor/discovery-response'
 import { manageAiAssistantMemory } from '@/lib/consumer-advisor/ai-assistant-memory'
@@ -31,7 +31,7 @@ export async function POST(request:NextRequest) {
     sessionId:actor.sessionId,conversationId:actor.sessionId,contractVersion:1},{status}),actor)
   try{
     const input=action.data
-    if(input.action==='start') return reply(discoveryResponse(await startDiscovery(actor,input.spec)))
+    if(input.action==='start') return reply(discoveryResponse(await startDiscovery(actor,input.spec,undefined,request.signal)))
     if(input.action==='page') return reply(discoveryResponse(await continueDiscovery(actor,input.cursor,input.searchRunId)))
     if(input.action==='resume') return reply(discoveryResponse(await resumeDiscovery(actor,input.searchRunId,input.contextVersion)))
     const run=await ownedDiscoveryRun(actor,input.searchRunId)
@@ -43,7 +43,7 @@ export async function POST(request:NextRequest) {
     }
     const option=discoveryQuestion(run.spec)?.options.find((o) => o.value===input.answer)
     if(!option) throw new DiscoveryError('QUESTION_CHANGED',409,'问题已更新，请刷新结果。')
-    const page=await startDiscovery(actor,{...run.spec,sessionTerms:option.terms,questionDismissed:true})
+    const page=await refineDiscovery(actor,run,option.terms)
     let memoryProposed=false
     let memoryWarning:string|undefined
     if(auth.user && option.terms.length) {

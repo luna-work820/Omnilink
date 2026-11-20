@@ -1,4 +1,5 @@
 import 'server-only'
+import { readModelUsage } from './model-usage'
 
 export type WorkspaceModel = 'gemini' | 'qwen-plus' | 'deepseek-flash' | 'deepseek-v4-pro'
 
@@ -112,11 +113,14 @@ type ModelFetchOptions = {
   totalBudgetMs?: number
   maxAttempts?: number
   signal?: AbortSignal
+  onCall?:()=>void
 }
 
 export type TextGenerationOptions = {
   jsonOutput?: boolean; apiKey?: string; allowEnvironmentKey?: boolean
   maxOutputTokens?: number; totalBudgetMs?: number; maxAttempts?: number; signal?: AbortSignal
+  onUsage?:(usage:import('./model-usage').ModelUsage)=>void
+  onCall?:()=>void
 }
 
 async function fetchWithRetry(url: string, options: ModelFetchOptions): Promise<Response> {
@@ -125,6 +129,8 @@ async function fetchWithRetry(url: string, options: ModelFetchOptions): Promise<
   for (let attempt = 1; attempt <= attempts; attempt++) {
     const remaining = deadline - Date.now()
     const timeout = Math.min(options.timeoutMs, Math.max(remaining, 1))
+    options.signal?.throwIfAborted()
+    options.onCall?.()
     const response = await fetch(url, {
       method: 'POST',
       headers: options.headers,
@@ -169,7 +175,7 @@ async function generateDeepSeekContent(
     response = await fetchWithRetry('https://api.deepseek.com/chat/completions', {
       provider: 'deepseek',
       timeoutMs: TIMEOUT_MS.deepseek,
-      totalBudgetMs: options.totalBudgetMs, maxAttempts: options.maxAttempts, signal: options.signal,
+      totalBudgetMs: options.totalBudgetMs, maxAttempts: options.maxAttempts, signal: options.signal,onCall:options.onCall,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: {
         model: options.image ? 'deepseek-flash' : model,
@@ -191,17 +197,18 @@ async function generateDeepSeekContent(
     if (isTimeoutError(error)) throw new Error(timeoutMessage('deepseek'))
     throw new Error('无法连接 DeepSeek，请检查网络或 API Key 的访问权限。')
   }
-  const data = await response.json() as { choices?: Array<{ message?: { content?: string | null } }>; error?: { message?: string } }
+  const data = await response.json() as { choices?: Array<{ message?: { content?: string | null } }>; error?: { message?: string }; usage?:unknown }
   if(response.status===401||response.status===403)throw new ModelConfigurationError('DeepSeek API Key 无效或没有模型权限，请更新连接。',
     {status:options.apiKey?400:500,code:options.apiKey?'MODEL_KEY_INVALID':'MODEL_PROVIDER_UNAVAILABLE'})
   if (!response.ok) throw new Error(data.error?.message || 'DeepSeek 请求失败。')
+  options.onUsage?.(readModelUsage(data.usage))
   const content = data.choices?.[0]?.message?.content?.trim()
   if (!content) throw new Error('DeepSeek 未返回内容。')
   return content
 }
 
-export async function generateWorkspaceDeepSeekVisionText(prompt: string, image: { mimeType: string; base64: string }, systemPrompt: string, jsonOutput = false, apiKey?: string, allowEnvironmentKey = true) {
-  return generateDeepSeekContent('deepseek-flash', prompt, systemPrompt, { image, jsonOutput, apiKey, allowEnvironmentKey })
+export async function generateWorkspaceDeepSeekVisionText(prompt: string, image: { mimeType: string; base64: string }, systemPrompt: string, jsonOutput = false, apiKey?: string, allowEnvironmentKey = true, options:TextGenerationOptions={}) {
+  return generateDeepSeekContent('deepseek-flash', prompt, systemPrompt, { ...options, image, jsonOutput, apiKey, allowEnvironmentKey })
 }
 
 export async function generateWorkspaceText(model: WorkspaceModel, prompt: string, systemPrompt = merchantSystemPrompt, options: TextGenerationOptions = {}) {
@@ -217,7 +224,7 @@ export async function generateWorkspaceText(model: WorkspaceModel, prompt: strin
       response = await fetchWithRetry(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
         provider: 'qwen',
         timeoutMs: TIMEOUT_MS.qwen,
-        totalBudgetMs: options.totalBudgetMs, maxAttempts: options.maxAttempts, signal: options.signal,
+        totalBudgetMs: options.totalBudgetMs, maxAttempts: options.maxAttempts, signal: options.signal,onCall:options.onCall,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
         body: {
           model: 'qwen-plus',
@@ -235,10 +242,11 @@ export async function generateWorkspaceText(model: WorkspaceModel, prompt: strin
       if (isTimeoutError(error)) throw new Error(timeoutMessage('qwen'))
       throw new Error('无法连接千问，请检查网络或 API Key 的访问权限。')
     }
-    const data = await response.json() as { choices?: Array<{ message?: { content?: string } }>; error?: { message?: string } }
+    const data = await response.json() as { choices?: Array<{ message?: { content?: string } }>; error?: { message?: string }; usage?:unknown }
     if(response.status===401||response.status===403)throw new ModelConfigurationError('千问 API Key 无效，请更新模型配置或切换模型。',
       {status:500,code:'MODEL_PROVIDER_UNAVAILABLE'})
     if (!response.ok) throw new Error(data.error?.message || '千问请求失败。')
+    options.onUsage?.(readModelUsage(data.usage))
     return data.choices?.[0]?.message?.content?.trim() || '模型没有返回可用内容。'
   }
 
@@ -263,7 +271,7 @@ export async function generateWorkspaceText(model: WorkspaceModel, prompt: strin
       {
         provider: 'gemini',
         timeoutMs: TIMEOUT_MS.gemini,
-        totalBudgetMs: options.totalBudgetMs, maxAttempts: options.maxAttempts, signal: options.signal,
+        totalBudgetMs: options.totalBudgetMs, maxAttempts: options.maxAttempts, signal: options.signal,onCall:options.onCall,
         headers: { 'Content-Type': 'application/json' },
         body: {
           systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -280,14 +288,15 @@ export async function generateWorkspaceText(model: WorkspaceModel, prompt: strin
     }
     throw new Error('无法连接 Gemini，请检查网络或 API Key 的访问权限。')
   }
-  const data = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; error?: { message?: string } }
+  const data = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; error?: { message?: string }; usageMetadata?:unknown }
   if(response.status===401||response.status===403)throw new ModelConfigurationError('Gemini API Key 无效或没有模型权限，请更新模型配置。',
     {status:500,code:'MODEL_PROVIDER_UNAVAILABLE'})
   if (!response.ok) throw new Error(data.error?.message || 'Gemini 请求失败。')
+  options.onUsage?.(readModelUsage(data.usageMetadata))
   return data.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('').trim() || '模型没有返回可用内容。'
 }
 
-export async function generateWorkspaceVisionText(prompt: string, images: { mimeType: string; base64: string } | Array<{ mimeType: string; base64: string }>, systemPrompt: string) {
+export async function generateWorkspaceVisionText(prompt: string, images: { mimeType: string; base64: string } | Array<{ mimeType: string; base64: string }>, systemPrompt: string, options:TextGenerationOptions={}) {
   const apiKey = process.env.GEMINI_API_KEY
   const geminiModel = process.env.GEMINI_MODEL?.trim()
   if (!apiKey) throw new ModelConfigurationError('Gemini API 尚未配置。', { status: 500, code: 'MODEL_PROVIDER_UNAVAILABLE' })
@@ -299,6 +308,7 @@ export async function generateWorkspaceVisionText(prompt: string, images: { mime
       {
         provider: 'gemini',
         timeoutMs: TIMEOUT_MS.gemini,
+        totalBudgetMs:options.totalBudgetMs, maxAttempts:options.maxAttempts, signal:options.signal,onCall:options.onCall,
         headers: { 'Content-Type': 'application/json' },
         body: {
           systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -316,7 +326,8 @@ export async function generateWorkspaceVisionText(prompt: string, images: { mime
     if (isTimeoutError(error)) throw new Error(timeoutMessage('gemini'))
     throw new Error('无法连接 Gemini，请检查网络或 API Key 的访问权限。')
   }
-  const data = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; error?: { message?: string } }
+  const data = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; error?: { message?: string }; usageMetadata?:unknown }
   if (!response.ok) throw new Error(data.error?.message || 'Gemini 图片识别失败。')
+  options.onUsage?.(readModelUsage(data.usageMetadata))
   return data.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('').trim() || '模型没有返回可用内容。'
 }

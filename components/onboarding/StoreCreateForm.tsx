@@ -1,149 +1,56 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { createStoreAction } from '@/app/actions/onboarding'
 import { StoreAvatarUpload } from './StoreAvatarUpload'
 import { ProductCategorySelector } from './ProductCategorySelector'
-import { ArrowRight, Loader2, Store } from 'lucide-react'
 
-export function StoreCreateForm() {
-  const [storeName, setStoreName] = useState('')
-  const [logoUrl, setLogoUrl] = useState('')
-  const [productCategory, setProductCategory] = useState('3C数码 & 消费电子')
-  const [concept, setConcept] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+export function StoreCreateForm({ capability = 'merchant', initialName = '' }: { capability?: 'creator' | 'merchant'; initialName?: string }) {
+  const [name, setName] = useState(initialName)
+  const [logo, setLogo] = useState('')
+  const [category, setCategory] = useState('')
+  const [description, setDescription] = useState('')
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const creator = capability === 'creator'
+  const field = 'w-full rounded-xl border-[0.5px] border-[var(--border)] bg-transparent px-4 py-3 text-sm outline-none focus-visible:border-[var(--accent-secondary)]'
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!storeName.trim()) {
-      setError('请填写发布者名称')
-      return
-    }
-
-    setIsSubmitting(true)
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (busy || !name.trim()) return
+    setBusy(true)
     setError('')
-
-    const formData = new FormData()
-    formData.set('store_name', storeName.trim())
-    formData.set('industry_category', productCategory)
-    formData.set('logo_url', logoUrl)
-    formData.set('description', concept.trim())
-    formData.set('currency', 'CNY')
-
+    const form = new FormData()
+    form.set('capability', capability)
+    form.set('store_name', name.trim())
+    form.set('logo_url', logo)
+    form.set('industry_category', creator ? '' : category)
+    form.set('description', description.trim())
     try {
-      const res = await createStoreAction(formData)
-      if (res?.success && res?.redirectUrl) {
-        window.location.href = res.redirectUrl
-        return
-      }
-      if (res?.error) {
-        setError(res.error)
-        setIsSubmitting(false)
-      }
-    } catch (err: any) {
-      if (
-        err?.message === 'NEXT_REDIRECT' ||
-        err?.message?.includes('NEXT_REDIRECT') ||
-        err?.digest?.startsWith('NEXT_REDIRECT')
-      ) {
-        window.location.href = '/dashboard/products'
-        return
-      }
-      setError(err instanceof Error ? err.message : '开通发布者失败，请重试')
-      setIsSubmitting(false)
+      const result = await createStoreAction(form)
+      if (result.success && result.redirectUrl) { window.location.assign(result.redirectUrl); return }
+      setError(result.error || '开通失败，请重试')
+    } catch {
+      setError('开通失败，请重试')
     }
+    setBusy(false)
   }
 
-  return (
-    <div className="w-full max-w-2xl mx-auto">
-      <div className="bg-[var(--surface)] rounded-3xl p-6 sm:p-10 border border-[var(--surface-muted)]/90 shadow-[0_12px_36px_var(--ink)]">
-        <div className="mb-8 text-center">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--ink)] tracking-tight">
-            成为发布者
-          </h2>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* 1. 上传店铺头像 / Logo */}
-          <StoreAvatarUpload value={logoUrl} onChange={setLogoUrl} />
-
-          {/* 2. 店铺名称 */}
-          <div className="space-y-1.5">
-            <label htmlFor="store_name" className="text-xs font-bold text-[var(--ink)] flex items-center justify-between">
-              <span className="flex items-center gap-1">
-                <Store size={13} className="text-[var(--plum)]" />
-                <span>发布者名称</span>
-                <span className="text-[var(--plum)]">*</span>
-              </span>
-              <span className="text-[10px] font-normal text-[var(--lavender)]">
-                {storeName.length}/40
-              </span>
-            </label>
-            <input
-              type="text"
-              id="store_name"
-              name="store_name"
-              value={storeName}
-              onChange={(e) => setStoreName(e.target.value)}
-              required
-              maxLength={40}
-              placeholder="例如：你的品牌或创作者名称"
-              className="w-full px-4 py-3 rounded-xl border border-[var(--surface-muted)] focus:border-[var(--plum)] focus:ring-4 focus:ring-[var(--plum)]/15 outline-none text-sm text-[var(--ink)] placeholder-gray-400 bg-[var(--surface-muted)] focus:bg-[var(--surface)] transition-all font-medium"
-            />
-          </div>
-
-          {/* 3. 店铺主营行业 (Primary Industry) */}
-          <ProductCategorySelector
-            value={productCategory}
-            onChange={setProductCategory}
-          />
-
-          <div className="space-y-1.5">
-            <label htmlFor="brand_concept" className="text-xs font-bold text-[var(--ink)]">
-              品牌概念 <span className="text-[10px] font-normal text-[var(--lavender)]">可选</span>
-            </label>
-            <textarea
-              id="brand_concept"
-              value={concept}
-              onChange={(e) => setConcept(e.target.value)}
-              maxLength={240}
-              rows={3}
-              placeholder="例如：高对比霓虹、液态金属质感、赛博潮流视觉"
-              className="w-full px-4 py-3 rounded-xl border border-[var(--surface-muted)] focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 outline-none text-sm text-[var(--ink)] placeholder-gray-400 bg-[var(--surface-muted)] focus:bg-[var(--surface)] transition-all font-medium resize-none"
-            />
-          </div>
-
-          {/* 错误提示 */}
-          {error && (
-              <div role="alert" className="border border-red-200 bg-red-50 text-red-700 text-xs px-4 py-3 rounded-xl animate-in fade-in flex items-center gap-2">
-              <span className="font-bold">⚠️</span>
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* 提交按钮 */}
-          <div className="pt-4">
-            <button
-              type="submit"
-              disabled={isSubmitting || !storeName.trim()}
-              className="w-full py-3.5 px-6  bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] text-sm font-medium transition-all flex items-center justify-center gap-2 cursor-pointer disabled:bg-[var(--surface-muted)] disabled:text-[var(--lavender)] disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  <span>正在开通发布工作台…</span>
-                </>
-              ) : (
-                <>
-                  <span>进入发布工作台</span>
-                  <ArrowRight size={16} />
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+  return <section className="mx-auto w-full max-w-lg">
+    <h1 className="mb-8 text-2xl font-semibold">{creator ? '成为内容创作者' : '成为商家'}</h1>
+    <form onSubmit={submit} className="space-y-6" aria-busy={busy}>
+      <StoreAvatarUpload value={logo} onChange={setLogo} />
+      <div className="space-y-2">
+        <label htmlFor="workspace-name" className="block text-sm font-medium">{creator ? '创作者名称' : '店铺名称'}</label>
+        <input id="workspace-name" required maxLength={40} value={name} onChange={(event) => setName(event.target.value)} className={field} />
       </div>
-    </div>
-  )
+      {!creator && <ProductCategorySelector value={category} onChange={setCategory} />}
+      <div className="space-y-2">
+        <label htmlFor="workspace-description" className="block text-sm font-medium">简介<span className="ml-2 text-xs text-[var(--text-secondary)]">可选</span></label>
+        <textarea id="workspace-description" rows={3} maxLength={240} value={description} onChange={(event) => setDescription(event.target.value)} className={`${field} resize-none`} />
+      </div>
+      {error && <p role="alert" className="text-sm text-[var(--text-secondary)]">{error}</p>}
+      <button type="submit" disabled={busy || !name.trim()} className="min-h-11 w-full rounded-full bg-[var(--text-primary)] px-5 text-sm font-medium text-[var(--surface)] disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-secondary)]">{busy ? '正在开通…' : `开通并进入${creator ? '创作者中心' : '商家中心'}`}</button>
+    </form>
+  </section>
 }

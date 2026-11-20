@@ -1,4 +1,5 @@
-import { DEMO_PRODUCTS, getDemoProductById, type DemoProduct } from '@/lib/products/demo-data'
+import { notFound } from 'next/navigation'
+import { DEMO_PRODUCTS, type DemoProduct } from '@/lib/products/demo-data'
 import { ProductNodeVisualizer } from '@/components/product/node/ProductNodeVisualizer'
 import { createClientServer } from '@/lib/supabase/server'
 
@@ -9,7 +10,6 @@ export default async function NodePage({
 }) {
   const { id } = await params
 
-  // Check demo products first
   let product: DemoProduct | undefined = DEMO_PRODUCTS.find(
     (p) => p.id === id || p.sku.toLowerCase() === id.toLowerCase()
   )
@@ -89,7 +89,7 @@ export default async function NodePage({
   }
 
   if (!product) {
-    product = getDemoProductById(id) || DEMO_PRODUCTS[0]
+    notFound()
   }
 
   return <ProductNodeVisualizer product={product} />

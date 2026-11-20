@@ -189,6 +189,7 @@ export function ShoppingPreferenceSurveyFlow({ initialProfile, preview = false, 
         <p className="mt-2 text-sm leading-6 text-[var(--market-text-secondary)]">确认提案后，才会用于长期推荐。</p>
         <div className="mt-6 flex flex-wrap gap-3">
           <button type="button" disabled={busy} onClick={() => void save({ action: 'shopping-preference-reset' })} className="min-h-11 rounded-full border-[0.5px] border-[var(--market-border)] px-5 text-sm hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">重新测量</button>
+          {embedded&&<button type="button" onClick={onComplete} className="min-h-11 rounded-full px-5 text-sm hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">先逛逛</button>}
           {onReview?<button type="button" onClick={onReview} className="min-h-11 rounded-full bg-[var(--market-accent)] px-5 text-sm font-medium text-white">查看提案</button>:<a href="/discover?memories=1" className="inline-flex min-h-11 items-center rounded-full bg-[var(--market-accent)] px-5 text-sm font-semibold text-white">查看提案</a>}
         </div>
         {error && <p role="alert" className="mt-4 text-sm text-[var(--market-accent)]">{error}</p>}

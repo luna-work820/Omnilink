@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
+import { SIGNUP_DESTINATION, SIGNUP_INVITATION_VERSION } from '@/lib/auth/signup-entry'
 import { safeInternalRedirectPath } from '@/lib/auth/redirect-path'
 import { createClientServer } from '@/lib/supabase/server'
 
@@ -71,8 +72,14 @@ export async function loginAction(
     return { error: '请填写电子邮箱和密码' }
   }
 
-  const supabase = await createClientServer()
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  let error: { message: string } | null
+  try {
+    const supabase = await createClientServer()
+    const result = await supabase.auth.signInWithPassword({ email, password })
+    error = result.error
+  } catch {
+    return { error: '暂时无法登录，请稍后重试。' }
+  }
 
   if (error) {
     if (isNetworkError(error)) {
@@ -104,10 +111,7 @@ export async function signupAction(
   const name = String(formData.get('name') ?? '').trim()
   const email = String(formData.get('email') ?? '').trim()
   const password = String(formData.get('password') ?? '')
-  const redirectTo = safeInternalRedirectPath(
-    formData.get('redirectTo'),
-    '/discover?openAssistant=1&newUser=1'
-  )
+  const redirectTo = SIGNUP_DESTINATION
 
   if (!email || !password) {
     return { error: '请填写电子邮箱和密码' }
@@ -117,37 +121,41 @@ export async function signupAction(
     return { error: '密码长度不能少于 6 个字符' }
   }
 
-  const supabase = await createClientServer()
-  const origin = await getRequestOrigin()
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { ai_assistant_onboarding_started: true, enabled_skills: ['personal-advisor', 'shopping-preferences'], ...(name ? { full_name: name } : {}) },
-      ...(origin ? { emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(redirectTo)}` } : {}),
-    },
-  })
+  try {
+    const supabase = await createClientServer()
+    const origin = await getRequestOrigin()
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { signup_invitation_version: SIGNUP_INVITATION_VERSION, signup_invitation_seen: false, ai_assistant_onboarding_started: true, enabled_skills: ['personal-advisor', 'shopping-preferences'], ...(name ? { full_name: name } : {}) },
+        ...(origin ? { emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(redirectTo)}` } : {}),
+      },
+    })
 
-  if (error) {
-    if (isNetworkError(error)) {
-      return { error: '当前环境无法连接 Supabase，注册请求未提交，请检查网络或代理后重试。' }
+    if (error) {
+      if (isNetworkError(error)) {
+        return { error: '当前环境无法连接 Supabase，注册请求未提交，请检查网络或代理后重试。' }
+      }
+      if (error.message.includes('already registered')) {
+        return { error: '该邮箱已被注册，请直接切换至「登录」模式。' }
+      }
+      return { error: error.message }
     }
-    if (error.message.includes('already registered')) {
-      return { error: '该邮箱已被注册，请直接切换至「登录」模式。' }
+
+    // Email confirmation ON: Supabase returns a user but no session.
+    // User must click the confirmation link (handled by /auth/callback).
+    if (!data.session) {
+      return {
+        message: '账号创建成功。请点击邮箱中的激活链接',
+      }
     }
-    return { error: error.message }
+
+    // Email confirmation OFF: session is established immediately.
+    return { redirectUrl: redirectTo }
+  } catch {
+    return { error: '暂时无法注册，请稍后重试。' }
   }
-
-  // Email confirmation ON: Supabase returns a user but no session.
-  // User must click the confirmation link (handled by /auth/callback).
-  if (!data.session) {
-    return {
-      message: '账号创建成功。请点击邮箱中的激活链接',
-    }
-  }
-
-  // Email confirmation OFF: session is established immediately.
-  return { redirectUrl: redirectTo }
 }
 
 export async function logoutAction(formData: FormData): Promise<void> {

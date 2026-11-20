@@ -11,9 +11,10 @@ interface AuthModalProps {
   onClose: () => void;
   theme?: PageTheme;
   redirectTo?: string;
+  confirmationError?: boolean;
 }
 
-export function AuthModal({ isOpen, onClose, theme = "light", redirectTo }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, theme = "light", redirectTo, confirmationError = false }: AuthModalProps) {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const isDark = theme === "dark";
 
@@ -91,6 +92,11 @@ export function AuthModal({ isOpen, onClose, theme = "light", redirectTo }: Auth
 
             {/* Form Container with Bottom-Only Switcher */}
             <div className="relative z-10 flex-1 flex flex-col justify-center max-w-sm mx-auto w-full py-6">
+              {confirmationError && (
+                <p role="alert" className="mb-4 text-sm">
+                  验证链接无效或已过期，请打开邮件中的最新链接，或尝试登录。
+                </p>
+              )}
               {mode === "login" ? (
                 <LoginForm
                   variant={theme}

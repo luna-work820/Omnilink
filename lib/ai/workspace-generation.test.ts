@@ -31,6 +31,18 @@ afterEach(() => {
 })
 
 describe('model gateway upstream resilience', () => {
+  it.each(['qwen-plus','deepseek-flash','gemini'] as const)('captures returned %s usage without another request',async(model)=>{
+    process.env.DASHSCOPE_API_KEY='test-key'
+    process.env.GEMINI_API_KEY='test-key';process.env.GEMINI_MODEL='test-model'
+    const onUsage=vi.fn(),onCall=vi.fn(),fetchMock=vi.fn().mockResolvedValue(jsonResponse(model==='gemini'
+      ?{candidates:[{content:{parts:[{text:'ok'}]}}],usageMetadata:{promptTokenCount:12,candidatesTokenCount:4}}
+      :{choices:[{message:{content:'ok'}}],usage:{prompt_tokens:12,completion_tokens:4}}))
+    vi.stubGlobal('fetch',fetchMock)
+    expect(await generateWorkspaceText(model,'hi',undefined,{maxAttempts:1,onUsage,onCall})).toBe('ok')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(onCall).toHaveBeenCalledTimes(1)
+    expect(onUsage).toHaveBeenCalledWith({inputTokens:12,outputTokens:4,cachedInputTokens:null})
+  })
   it('honors a smaller classification budget instead of retrying a paid call',async()=>{
     const fetchMock=vi.fn().mockImplementation(async()=>jsonResponse({error:{message:'busy'}},503))
     vi.stubGlobal('fetch',fetchMock)

@@ -1,10 +1,11 @@
 import 'server-only'
 import { ModelConfigurationError,type WorkspaceModel } from './workspace-generation'
 import { readEventData } from '@/lib/consumer-advisor/event-stream'
+import { readModelUsage, type ModelUsage } from './model-usage'
 
-export type ModelUsage={inputTokens:number|null;outputTokens:number|null;cachedInputTokens:number|null}
+export type { ModelUsage } from './model-usage'
 export type ModelChunk={type:'delta';text:string}|{type:'usage';usage:ModelUsage}
-export async function* streamWorkspaceText(model:WorkspaceModel,prompt:string,system:string,options:{apiKey?:string;signal?:AbortSignal}={}):AsyncGenerator<ModelChunk> {
+export async function* streamWorkspaceText(model:WorkspaceModel,prompt:string,system:string,options:{apiKey?:string;signal?:AbortSignal;onCall?:()=>void}={}):AsyncGenerator<ModelChunk> {
   const abort=new AbortController(),signal=AbortSignal.any([abort.signal,AbortSignal.timeout(30_000),...(options.signal?[options.signal]:[])])
   let url:string,headers:Record<string,string>,body:Record<string,unknown>
   if(model==='gemini') {
@@ -25,6 +26,8 @@ export async function* streamWorkspaceText(model:WorkspaceModel,prompt:string,sy
       ...(deep?{thinking:{type:'disabled'}}:{}),messages:[{role:'system',content:system},{role:'user',content:prompt}]}
   }
   let response:Response
+  signal.throwIfAborted()
+  options.onCall?.()
   try{response=await fetch(url,{method:'POST',headers,body:JSON.stringify(body),signal})}catch(error){if(signal.aborted)throw signal.reason;throw error}
   if(response.status===401||response.status===403) {
     await response.body?.cancel()
@@ -42,8 +45,7 @@ export async function* streamWorkspaceText(model:WorkspaceModel,prompt:string,sy
       if(typeof text==='string'&&text){length+=text.length;if(length>8000)throw new Error('回答超过长度限制。');yield{type:'delta',text}}
       if(model==='gemini'&&data.candidates?.[0]?.finishReason)ended=true
       const usage=model==='gemini'?data.usageMetadata:data.usage
-      if(usage)yield{type:'usage',usage:{inputTokens:usage.prompt_tokens??usage.promptTokenCount??null,outputTokens:usage.completion_tokens??usage.candidatesTokenCount??null,
-        cachedInputTokens:usage.prompt_tokens_details?.cached_tokens??usage.cachedContentTokenCount??null}}
+      if(usage)yield{type:'usage',usage:readModelUsage(usage)}
     }
     if(!ended||!length)throw new Error('模型响应中断，请重新发起。')
   } finally {abort.abort()}

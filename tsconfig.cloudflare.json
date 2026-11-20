@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["lib/image-processing-cloudflare.ts", ".cloudflare/types/index.d.ts"],
+  "exclude": ["node_modules"]
+}

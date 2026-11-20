@@ -265,7 +265,8 @@ export function normalizeProduct(
     // DB 无 slug 列：公开路由使用 /products/[id]，slug 即 id。
     slug: id,
     price: toFiniteNumber(row.price),
-    priceMode: details.price_mode === 'inquiry' ? 'inquiry' : details.price_mode === 'free' ? 'free' : 'amount',
+    priceMode: details.price_mode === 'inquiry' ? 'inquiry' : details.price_mode === 'free' ? 'free'
+      : details.price_mode === 'unknown' || !((typeof row.price === 'number' || (typeof row.price === 'string' && row.price.trim() !== '')) && Number.isFinite(Number(row.price)) && Number(row.price) >= 0) ? 'unknown' : 'amount',
     outboundLinks: readOutboundLinks(details.outbound_links),
     currency: row.currency ?? opts.storeCurrency ?? 'USD',
     imageUrl: gallery.primary ?? row.cover_image ?? null,

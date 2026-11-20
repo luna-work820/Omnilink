@@ -8,14 +8,15 @@ export const LOCAL_BGE_DIMENSIONS = 512
 
 const defaultModelDirectory = '/Volumes/luna ssd/商品素材库/outputs/检索实验/models/bge-small-zh-v1.5-onnx'
 
-export async function embedLocalBge(texts: string[], mode: 'query' | 'document') {
+export async function embedLocalBge(texts: string[], mode: 'query' | 'document', signal?: AbortSignal) {
+  signal?.throwIfAborted()
   if (!texts.length) return [] as number[][]
   if (texts.length > 64) throw new Error('单次本地向量请求最多处理 64 条文本。')
 
   const modelDirectory = process.env.CONSUMER_BGE_MODEL_DIR?.trim() || defaultModelDirectory
   const python = process.env.CONSUMER_BGE_PYTHON?.trim() || 'python3'
   const script = path.join(process.cwd(), 'scripts', 'bge_embed.py')
-  const child = spawn(python, [script, modelDirectory, mode], { stdio: ['pipe', 'pipe', 'pipe'] })
+  const child = spawn(python, [script, modelDirectory, mode], { stdio: ['pipe', 'pipe', 'pipe'], signal })
   const stdout: Buffer[] = []
   const stderr: Buffer[] = []
 

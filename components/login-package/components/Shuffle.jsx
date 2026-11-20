@@ -7,7 +7,9 @@ import { SplitText as GSAPSplitText } from 'gsap/SplitText';
 import { useGSAP } from '@gsap/react';
 import './Shuffle.css';
 
-gsap.registerPlugin(ScrollTrigger, GSAPSplitText, useGSAP);
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger, GSAPSplitText, useGSAP);
+}
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const BLUR_STEPS = 12;

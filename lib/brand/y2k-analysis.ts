@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from '@google/genai'
 import { DEMO_PRODUCTS } from '@/lib/products/demo-data'
-import sharp from 'sharp'
+import { sampleImage } from '@/lib/image-processing'
 
 export type Y2KTemplateId = 'tpl-y2k-neon' | 'tpl-y2k-soft' | 'tpl-minimal' | 'tpl-liquid-glass'
 
@@ -199,12 +199,7 @@ async function analyzeLocalY2KVisual(input: {
   try {
     const samples = await Promise.all(
       input.images.map(async ({ bytes }) => {
-        const { data, info } = await sharp(bytes)
-          .resize({ width: 48, height: 48, fit: 'inside' })
-          .removeAlpha()
-          .raw()
-          .toBuffer({ resolveWithObject: true })
-        return { data, channels: info.channels }
+        return sampleImage(bytes)
       })
     )
 

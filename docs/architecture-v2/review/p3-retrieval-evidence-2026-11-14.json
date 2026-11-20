@@ -1,0 +1,584 @@
+{
+  "catalogSize": 35,
+  "paidModelCalls": 0,
+  "keyword": [
+    {
+      "queries": [
+        "耳环",
+        "earrings"
+      ],
+      "counts": [
+        19,
+        19
+      ],
+      "sameOrder": true,
+      "embeddingCalls": 0
+    },
+    {
+      "queries": [
+        "项链",
+        "necklace"
+      ],
+      "counts": [
+        7,
+        7
+      ],
+      "sameOrder": true,
+      "embeddingCalls": 0
+    },
+    {
+      "queries": [
+        "戒指",
+        "rings"
+      ],
+      "counts": [
+        8,
+        8
+      ],
+      "sameOrder": true,
+      "embeddingCalls": 0
+    }
+  ],
+  "hardConstraints": {
+    "evidence": "Explicit golden Search Spec, not a live language-parser call",
+    "expected": [
+      "external-amano-2-silver-hoop-earrings",
+      "external-amano-1-5-classic-hoops",
+      "external-amano-honey-bee-studs-1",
+      "external-amano-star-cluster-studs",
+      "external-cled-petal-icon-stud-earrings",
+      "external-amano-1-5-hammered-hoop-earrings"
+    ],
+    "actual": [
+      "external-amano-2-silver-hoop-earrings",
+      "external-cled-petal-icon-stud-earrings",
+      "external-amano-1-5-hammered-hoop-earrings",
+      "external-amano-1-5-classic-hoops",
+      "external-amano-honey-bee-studs-1",
+      "external-amano-star-cluster-studs"
+    ],
+    "exactMatch": true,
+    "verifiedChinaDeliveryCount": 0,
+    "embeddingCalls": 0
+  },
+  "localBge": {
+    "profile": {
+      "id": "bge-small-zh-v1.5-512-v1",
+      "provider": "local-bge",
+      "model": "BAAI/bge-small-zh-v1.5-onnx-quantized",
+      "revision": "v1.5-onnx-quantized",
+      "dimensions": 512,
+      "preprocessing": "product-facts-v1",
+      "indexVersion": 1
+    },
+    "calls": 3,
+    "timings": [
+      {
+        "stage": "documents",
+        "count": 24,
+        "ms": 591
+      },
+      {
+        "stage": "documents",
+        "count": 11,
+        "ms": 287
+      },
+      {
+        "stage": "queries",
+        "count": 12,
+        "ms": 135
+      }
+    ],
+    "results": [
+      {
+        "query": "小蜜蜂耳钉",
+        "language": "zh",
+        "candidateCount": 19,
+        "expectedRanks": [
+          {
+            "id": "external-amano-honey-bee-studs-1",
+            "rank": 1
+          }
+        ],
+        "hitAt3": true,
+        "top5": [
+          {
+            "id": "external-amano-honey-bee-studs-1",
+            "name": "Gold Tiny Honey Bee Studs",
+            "score": 0.6088067021928127
+          },
+          {
+            "id": "external-cled-petal-icon-stud-earrings",
+            "name": "Petal Icon Stud Earrings",
+            "score": 0.4557161487590668
+          },
+          {
+            "id": "external-amano-star-cluster-studs",
+            "name": "Star Cluster Studs",
+            "score": 0.44457945733240395
+          },
+          {
+            "id": "external-leap-a-familiar-embrace-earrings",
+            "name": "A Familiar Embrace Earring (Made To Order)",
+            "score": 0.4189591601707826
+          },
+          {
+            "id": "external-hooks-oval-hook-earrings",
+            "name": "Oval Hook Earrings",
+            "score": 0.4165506704801948
+          }
+        ]
+      },
+      {
+        "query": "tiny honey bee stud earrings",
+        "language": "en",
+        "candidateCount": 19,
+        "expectedRanks": [
+          {
+            "id": "external-amano-honey-bee-studs-1",
+            "rank": 1
+          }
+        ],
+        "hitAt3": true,
+        "top5": [
+          {
+            "id": "external-amano-honey-bee-studs-1",
+            "name": "Gold Tiny Honey Bee Studs",
+            "score": 0.37633020046230103
+          },
+          {
+            "id": "external-hooks-heart-hoop-earrings",
+            "name": "Heart Hoop Earrings",
+            "score": 0.3646589583543348
+          },
+          {
+            "id": "external-hooks-long-bar-pearl-hoop-earrings",
+            "name": "Long Bar Pearl Hoop Earrings",
+            "score": 0.3517491153965477
+          },
+          {
+            "id": "external-leap-a-familiar-embrace-earrings",
+            "name": "A Familiar Embrace Earring (Made To Order)",
+            "score": 0.3475216732478306
+          },
+          {
+            "id": "external-hooks-oval-hook-earrings",
+            "name": "Oval Hook Earrings",
+            "score": 0.3452642544867919
+          }
+        ]
+      },
+      {
+        "query": "回收玻璃花瓣耳钉",
+        "language": "zh",
+        "candidateCount": 19,
+        "expectedRanks": [
+          {
+            "id": "external-cled-petal-icon-stud-earrings",
+            "rank": 1
+          }
+        ],
+        "hitAt3": true,
+        "top5": [
+          {
+            "id": "external-cled-petal-icon-stud-earrings",
+            "name": "Petal Icon Stud Earrings",
+            "score": 0.5984043843572502
+          },
+          {
+            "id": "external-amano-honey-bee-studs-1",
+            "name": "Gold Tiny Honey Bee Studs",
+            "score": 0.5006114337317691
+          },
+          {
+            "id": "external-amano-star-cluster-studs",
+            "name": "Star Cluster Studs",
+            "score": 0.4887829454504809
+          },
+          {
+            "id": "external-hooks-circle-hoop-earrings",
+            "name": "Hoop Earrings - Circle",
+            "score": 0.46720056489857925
+          },
+          {
+            "id": "external-hooks-long-arc-earrings",
+            "name": "Arc Earrings - Long",
+            "score": 0.4660757556250708
+          }
+        ]
+      },
+      {
+        "query": "recycled glass petal stud earrings",
+        "language": "en",
+        "candidateCount": 19,
+        "expectedRanks": [
+          {
+            "id": "external-cled-petal-icon-stud-earrings",
+            "rank": 2
+          }
+        ],
+        "hitAt3": true,
+        "top5": [
+          {
+            "id": "external-leap-between-stillness-earrings",
+            "name": "Between Stillness Earrings",
+            "score": 0.3793949067337926
+          },
+          {
+            "id": "external-cled-petal-icon-stud-earrings",
+            "name": "Petal Icon Stud Earrings",
+            "score": 0.3738857036462185
+          },
+          {
+            "id": "external-hooks-heart-hoop-earrings",
+            "name": "Heart Hoop Earrings",
+            "score": 0.35054709984065896
+          },
+          {
+            "id": "external-leap-quiet-grace-onyx-earrings",
+            "name": "Quiet Grace Earrings",
+            "score": 0.3464092451009546
+          },
+          {
+            "id": "external-hooks-oval-hook-earrings",
+            "name": "Oval Hook Earrings",
+            "score": 0.3291079451284383
+          }
+        ]
+      },
+      {
+        "query": "黑玛瑙银耳饰",
+        "language": "zh",
+        "candidateCount": 19,
+        "expectedRanks": [
+          {
+            "id": "external-leap-quiet-grace-onyx-earrings",
+            "rank": 1
+          },
+          {
+            "id": "external-leap-between-stillness-earrings",
+            "rank": 2
+          }
+        ],
+        "hitAt3": true,
+        "top5": [
+          {
+            "id": "external-leap-quiet-grace-onyx-earrings",
+            "name": "Quiet Grace Earrings",
+            "score": 0.6575406799197953
+          },
+          {
+            "id": "external-leap-between-stillness-earrings",
+            "name": "Between Stillness Earrings",
+            "score": 0.6419901944980699
+          },
+          {
+            "id": "external-leap-a-familiar-embrace-earrings",
+            "name": "A Familiar Embrace Earring (Made To Order)",
+            "score": 0.5552343219433254
+          },
+          {
+            "id": "external-berhel-blue-sapphire-earrings",
+            "name": "Blue Sapphire Earrings",
+            "score": 0.5449947610697379
+          },
+          {
+            "id": "external-berhel-liquid-hoop-earrings",
+            "name": "Liquid Hoop Earrings",
+            "score": 0.526116070560392
+          }
+        ]
+      },
+      {
+        "query": "silver earrings with black onyx",
+        "language": "en",
+        "candidateCount": 19,
+        "expectedRanks": [
+          {
+            "id": "external-leap-quiet-grace-onyx-earrings",
+            "rank": 1
+          },
+          {
+            "id": "external-leap-between-stillness-earrings",
+            "rank": 2
+          }
+        ],
+        "hitAt3": true,
+        "top5": [
+          {
+            "id": "external-leap-quiet-grace-onyx-earrings",
+            "name": "Quiet Grace Earrings",
+            "score": 0.3993790932650074
+          },
+          {
+            "id": "external-leap-between-stillness-earrings",
+            "name": "Between Stillness Earrings",
+            "score": 0.38232610436697567
+          },
+          {
+            "id": "external-leap-a-familiar-embrace-earrings",
+            "name": "A Familiar Embrace Earring (Made To Order)",
+            "score": 0.37305148282996425
+          },
+          {
+            "id": "external-amano-star-cluster-studs",
+            "name": "Star Cluster Studs",
+            "score": 0.371852896947739
+          },
+          {
+            "id": "external-hooks-heart-hoop-earrings",
+            "name": "Heart Hoop Earrings",
+            "score": 0.36679570039191767
+          }
+        ]
+      },
+      {
+        "query": "镶宝石的再生银戒指",
+        "language": "zh",
+        "candidateCount": 8,
+        "expectedRanks": [
+          {
+            "id": "external-berhel-liquid-band-ring-with-gemstones",
+            "rank": 1
+          }
+        ],
+        "hitAt3": true,
+        "top5": [
+          {
+            "id": "external-berhel-liquid-band-ring-with-gemstones",
+            "name": "Liquid Band Gemstone Ring",
+            "score": 0.5851254366790233
+          },
+          {
+            "id": "external-berhel-happy-accident-family",
+            "name": "Happy Accident Ring Set",
+            "score": 0.5698685721377152
+          },
+          {
+            "id": "external-berhel-liquid-band",
+            "name": "Liquid Band Ring",
+            "score": 0.5663125838122904
+          },
+          {
+            "id": "external-leap-ebb-and-flow-ring",
+            "name": "Ebb And Flow Ring (Made To Order)",
+            "score": 0.5374935322091245
+          },
+          {
+            "id": "external-leap-silverlining-ring",
+            "name": "Silver Lining Ring",
+            "score": 0.5264277754226057
+          }
+        ]
+      },
+      {
+        "query": "recycled silver gemstone ring",
+        "language": "en",
+        "candidateCount": 8,
+        "expectedRanks": [
+          {
+            "id": "external-berhel-liquid-band-ring-with-gemstones",
+            "rank": 5
+          }
+        ],
+        "hitAt3": false,
+        "top5": [
+          {
+            "id": "external-berhel-liquid-band",
+            "name": "Liquid Band Ring",
+            "score": 0.3901966835105812
+          },
+          {
+            "id": "external-leap-ebb-and-flow-ring",
+            "name": "Ebb And Flow Ring (Made To Order)",
+            "score": 0.38355217278542114
+          },
+          {
+            "id": "external-leap-silverlining-ring",
+            "name": "Silver Lining Ring",
+            "score": 0.37200946389563083
+          },
+          {
+            "id": "external-berhel-happy-accident-family",
+            "name": "Happy Accident Ring Set",
+            "score": 0.36087260383362973
+          },
+          {
+            "id": "external-berhel-liquid-band-ring-with-gemstones",
+            "name": "Liquid Band Gemstone Ring",
+            "score": 0.35880103073202985
+          }
+        ]
+      },
+      {
+        "query": "镶淡水珍珠的戒指",
+        "language": "zh",
+        "candidateCount": 8,
+        "expectedRanks": [
+          {
+            "id": "external-leap-ebb-and-flow-ring",
+            "rank": 1
+          }
+        ],
+        "hitAt3": true,
+        "top5": [
+          {
+            "id": "external-leap-ebb-and-flow-ring",
+            "name": "Ebb And Flow Ring (Made To Order)",
+            "score": 0.6094054565906435
+          },
+          {
+            "id": "external-cled-in-the-loop-ring",
+            "name": "In The Loop Ring",
+            "score": 0.5219041896130195
+          },
+          {
+            "id": "external-leap-silverlining-ring",
+            "name": "Silver Lining Ring",
+            "score": 0.5168110951110655
+          },
+          {
+            "id": "external-cled-heart-dangling-ring",
+            "name": "Heart Dangling Ring",
+            "score": 0.5076445590385554
+          },
+          {
+            "id": "external-berhel-happy-accident-family",
+            "name": "Happy Accident Ring Set",
+            "score": 0.4848992323115045
+          }
+        ]
+      },
+      {
+        "query": "ring with freshwater pearl",
+        "language": "en",
+        "candidateCount": 8,
+        "expectedRanks": [
+          {
+            "id": "external-leap-ebb-and-flow-ring",
+            "rank": 1
+          }
+        ],
+        "hitAt3": true,
+        "top5": [
+          {
+            "id": "external-leap-ebb-and-flow-ring",
+            "name": "Ebb And Flow Ring (Made To Order)",
+            "score": 0.29547180492136427
+          },
+          {
+            "id": "external-berhel-liquid-band",
+            "name": "Liquid Band Ring",
+            "score": 0.29198145920081153
+          },
+          {
+            "id": "external-leap-silverlining-ring",
+            "name": "Silver Lining Ring",
+            "score": 0.2621281101673486
+          },
+          {
+            "id": "external-berhel-happy-accident-family",
+            "name": "Happy Accident Ring Set",
+            "score": 0.26125683254683485
+          },
+          {
+            "id": "external-cled-in-the-loop-ring",
+            "name": "In The Loop Ring",
+            "score": 0.2512682477976682
+          }
+        ]
+      },
+      {
+        "query": "螺旋吊坠项链",
+        "language": "zh",
+        "candidateCount": 7,
+        "expectedRanks": [
+          {
+            "id": "external-leap-spiral-necklace",
+            "rank": 1
+          }
+        ],
+        "hitAt3": true,
+        "top5": [
+          {
+            "id": "external-leap-spiral-necklace",
+            "name": "Spiralbound Necklace",
+            "score": 0.5653816554944155
+          },
+          {
+            "id": "external-leap-on-the-horizon-torque-necklace",
+            "name": "On The Horizon Torque Necklace",
+            "score": 0.525607867995273
+          },
+          {
+            "id": "external-berhel-berhel-pendant",
+            "name": "Berhel Pendant",
+            "score": 0.509486885095852
+          },
+          {
+            "id": "external-berhel-liquid-gem-pendant",
+            "name": "Liquid Gem Pendant",
+            "score": 0.4944279800827042
+          },
+          {
+            "id": "external-amano-zodiac-medallion-aries-taurus-gemini",
+            "name": "Tiny Zodiac Medallion Necklace",
+            "score": 0.4715233813010684
+          }
+        ]
+      },
+      {
+        "query": "spiral pendant necklace",
+        "language": "en",
+        "candidateCount": 7,
+        "expectedRanks": [
+          {
+            "id": "external-leap-spiral-necklace",
+            "rank": 1
+          }
+        ],
+        "hitAt3": true,
+        "top5": [
+          {
+            "id": "external-leap-spiral-necklace",
+            "name": "Spiralbound Necklace",
+            "score": 0.32685698116778367
+          },
+          {
+            "id": "external-berhel-berhel-pendant",
+            "name": "Berhel Pendant",
+            "score": 0.3190623325109519
+          },
+          {
+            "id": "external-cled-still-necklace",
+            "name": "Still Necklace",
+            "score": 0.31741007581299246
+          },
+          {
+            "id": "external-cled-halo-necklace",
+            "name": "Halo Necklace",
+            "score": 0.30566999095451514
+          },
+          {
+            "id": "external-amano-zodiac-medallion-aries-taurus-gemini",
+            "name": "Tiny Zodiac Medallion Necklace",
+            "score": 0.30364431446159734
+          }
+        ]
+      }
+    ],
+    "budget": {
+      "count": 9,
+      "allRespectBudget": true
+    },
+    "summary": {
+      "zhHitsAt3": 6,
+      "enHitsAt3": 5,
+      "pairs": 6
+    }
+  },
+  "date": "2026-11-14",
+  "baselineHead": "31aab821739549f51f6330019e05b7b6166da5b1",
+  "catalogSha256": "275ec4953dc80fc967a27bac5606e36866ffccbf33f56542f8d5d38fc2fefc4d",
+  "modelArtifactSha256": "15b717c382bcb518ba457b93ea6850ede7f4f1cd8937454aa06972366cd19bcc"
+}

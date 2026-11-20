@@ -1,13 +1,14 @@
+import { workspaceCapabilities } from '@/lib/workspace/capabilities'
+import { needsSignupInvitation } from '@/lib/auth/signup-entry'
 import App from '@/components/consumer-market/App'
-import { fiveStoreDemoProducts, productsList, shelfProduct, cratesProduct, mobileTableProduct } from '@/components/consumer-market/data/mockData'
-import type { AiChatMessage, ProductItem, ScenePost } from '@/components/consumer-market/types'
-import { getStorefrontDiscoveryItems } from '@/lib/storefront/service'
+import { redirect } from 'next/navigation'
+import { readPublishedConsumerCatalog } from '@/lib/products/consumer-catalog-store'
 import { createClientServer } from '@/lib/supabase/server'
 import { getStoreByOwnerId } from '@/lib/stores/service'
 import { emptyAiAssistantProfile, readAiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-profile'
-import { readContentBlocks } from '@/lib/creator-content'
-import { toConsumerProduct } from '@/lib/consumer-advisor/consumer-product'
 import { readDeepSeekKeyForUser } from '@/lib/consumer-advisor/deepseek-key-cookie'
+import { readPublishedContent } from '@/lib/creator-publication-feed'
+import { CreatorDiscoveryPreview } from '@/components/creator-content/CreatorDiscoveryPreview'
 
 const DEFAULT_INSTALLED_SKILL_IDS: ('personal-advisor' | 'shopping-preferences')[] = ['personal-advisor', 'shopping-preferences']
 
@@ -16,56 +17,48 @@ export const metadata = {
   description: '浏览创作者发布的内容、商品与推荐。',
 }
 
-const aiAssistantFirstUsePreviewMessages: AiChatMessage[] = [
-  {
-    id: 'first-use-preview-user',
-    conversationId: 'first-use-preview',
-    text: '推荐适合小户型客厅的收纳方案，用表格对比',
-    isUser: true,
-    timestamp: '刚刚',
-  },
-  {
-    id: 'first-use-preview-assistant',
-    conversationId: 'first-use-preview',
-    text: '三种收纳方式对比：\n\n| 商品 | 收纳方式 | 参考价 |\n| --- | --- | ---: |\n| ![壁架](/consumer-market/img_exhibition_apartment.jpg) 极简隐形实木壁架 | 利用墙面收纳 | ¥210 |\n| ![桌面收纳箱](/consumer-market/img_crates.jpg) 三层铝合金桌面模块化收纳箱 | 桌面分类整理 | ¥125 |\n| ![移动边几](/consumer-market/img_mobile_table.jpg) 移动式建筑感亚克力边几 | 沙发旁灵活收纳 | ¥380 |',
-    isUser: false,
-    timestamp: 'AI assistant',
-    model: 'gemini',
-    matchedProducts: [shelfProduct, cratesProduct, mobileTableProduct],
-  },
-]
-
-export default async function ConsumerMarketPage({ searchParams }: { searchParams: Promise<{ aiAssistantPreview?: string; openAssistant?: string; activatePersonalAdvisor?: string; demoLogin?: string; newUserPreview?: string; feedChatPreview?: string; signupPreviewComplete?: string; shoppingPreferences?: string; shoppingPreferencesPreview?: string; post?: string }> }) {
+export default async function ConsumerMarketPage({ searchParams }: { searchParams: Promise<{ creatorPreview?: string; aiAssistantPreview?: string; newUser?: string; openAssistant?: string; activatePersonalAdvisor?: string; demoLogin?: string; newUserPreview?: string; feedChatPreview?: string; signupPreviewComplete?: string; shoppingPreferences?: string; shoppingPreferencesPreview?: string; post?: string }> }) {
   const params = await searchParams
+  if (process.env.NODE_ENV !== 'production' && params.creatorPreview === '1') return <CreatorDiscoveryPreview postId={params.post} />
+  const productsList = (await readPublishedConsumerCatalog()).products
+  const fallbackAiModel = process.env.CONSUMER_DEFAULT_ANSWER_MODEL === 'gemini' ? 'gemini' : 'qwen-plus'
   const aiAssistantPreview = process.env.NODE_ENV !== 'production' && params.aiAssistantPreview === '1'
   const demoLogin = process.env.NODE_ENV !== 'production' && params.demoLogin === '1'
   const newUserPreview = process.env.NODE_ENV !== 'production' && params.newUserPreview === '1'
   const feedChatPreview = process.env.NODE_ENV !== 'production' && params.feedChatPreview === '1'
   if (feedChatPreview) {
-    return <App initialProducts={productsList} profileName="预览用户" profilePreview feedChatHomePreview />
+    return <App initialProducts={productsList} hasLiveProducts profileName="预览用户" profilePreview feedChatHomePreview fallbackAiModel={fallbackAiModel} />
   }
   if (newUserPreview) {
-    return <App initialProducts={productsList} profileName="预览用户" initialAiAssistantChat initialAiAssistantProfile={{ ...emptyAiAssistantProfile, name: '预览用户' }} initialOnboarding deepSeekKeyConfigured={false} onboardingPreview initialInstalledSkillIds={DEFAULT_INSTALLED_SKILL_IDS} profilePreview />
+    return <App initialProducts={productsList} hasLiveProducts profileName="预览用户" initialSignupInvitation initialAiAssistantProfile={{ ...emptyAiAssistantProfile, name: '预览用户' }} deepSeekKeyConfigured={false} onboardingPreview initialInstalledSkillIds={DEFAULT_INSTALLED_SKILL_IDS} profilePreview fallbackAiModel={fallbackAiModel} />
   }
   const signupPreviewComplete = process.env.NODE_ENV !== 'production' && params.signupPreviewComplete === '1'
   if (signupPreviewComplete) {
-    return <App initialProducts={productsList} profileName="预览用户" initialAiAssistantChat initialInstalledSkillIds={['personal-advisor', 'shopping-preferences']} profilePreview />
+    return <App initialProducts={productsList} hasLiveProducts profileName="预览用户" initialAiAssistantChat initialInstalledSkillIds={['personal-advisor', 'shopping-preferences']} profilePreview fallbackAiModel={fallbackAiModel} />
   }
   const shoppingPreferencesPreview = process.env.NODE_ENV !== 'production' && params.shoppingPreferencesPreview === '1'
   if (shoppingPreferencesPreview) {
-    return <App initialProducts={productsList} profileName="预览用户" profilePreview onboardingPreview initialAiAssistantProfile={{...emptyAiAssistantProfile,name:'预览用户',stage:'done'}} />
+    return <App initialProducts={productsList} hasLiveProducts profileName="预览用户" profilePreview onboardingPreview initialAiAssistantProfile={{...emptyAiAssistantProfile,name:'预览用户',stage:'done'}} fallbackAiModel={fallbackAiModel} />
   }
   if (demoLogin || aiAssistantPreview) {
     return <App
       initialProducts={productsList}
+      hasLiveProducts
       profileName="预览用户"
       initialAiAssistantChat={aiAssistantPreview}
-      initialAiMessages={aiAssistantPreview ? aiAssistantFirstUsePreviewMessages : undefined}
       profilePreview
+      fallbackAiModel={fallbackAiModel}
     />
   }
   const supabase = await createClientServer()
-  const { data: { user } } = await supabase.auth.getUser()
+  let user = null
+  try {
+    const { data } = await supabase.auth.getUser()
+    user = data?.user ?? null
+  } catch {
+    user = null
+  }
+  if (!user) redirect('/login?next=%2Fdiscover')
   const aiAssistantProfile = readAiAssistantProfile(user?.user_metadata?.ai_assistant_profile)
   const signupName = typeof user?.user_metadata?.full_name === 'string' ? user.user_metadata.full_name.trim().slice(0, 40) : ''
   const initialAiAssistantProfile = {
@@ -79,45 +72,20 @@ export default async function ConsumerMarketPage({ searchParams }: { searchParam
   if (user && !Array.isArray(rawEnabledSkills)) {
     await supabase.auth.updateUser({ data: { enabled_skills: initialInstalledSkillIds } })
   }
-  const needsWelcome = user?.user_metadata?.ai_assistant_onboarding_started === true && user.user_metadata?.ai_assistant_onboarding_complete !== true && aiAssistantProfile.stage !== 'done'
+  const showSignupInvitation = needsSignupInvitation(user.user_metadata)
   const deepSeekKeyConfigured = user ? Boolean(await readDeepSeekKeyForUser(user.id)) : false
   const activatePersonalAdvisor = params.activatePersonalAdvisor === '1'
     && (!user || initialInstalledSkillIds.includes('personal-advisor'))
 
-  const publisherReady = user ? Boolean(await getStoreByOwnerId(user.id)) : false
-  let initialProducts: ProductItem[] = process.env.NODE_ENV === 'production' ? [] : fiveStoreDemoProducts
-  let initialPosts: ScenePost[] = []
-
+  const capabilities = workspaceCapabilities(user.app_metadata, Boolean(await getStoreByOwnerId(user.id)))
+  const publisherReady = capabilities.merchant
+  const initialProducts = productsList
+  const hasLiveContent = true
+  let initialPosts: Awaited<ReturnType<typeof readPublishedContent>> = []
+  let initialContentError = ''
   try {
-    const liveItems = await getStorefrontDiscoveryItems(100)
-    const publishedProducts = liveItems.map(toConsumerProduct)
-    initialProducts = process.env.NODE_ENV === 'production' ? publishedProducts : [...fiveStoreDemoProducts, ...publishedProducts]
-    const { data: posts, error: postsError } = await supabase.from('creator_posts')
-      .select('id, store_id, title, cover_url, body, product_ids, blocks')
-      .eq('status', 'published').order('published_at', { ascending: false }).limit(30)
-    if (postsError) throw postsError
-    const storeIds = [...new Set((posts ?? []).map((post) => post.store_id))]
-    const { data: stores } = storeIds.length
-      ? await supabase.from('stores').select('id, name').in('id', storeIds)
-      : { data: [] }
-    const storeNames = new Map((stores ?? []).map((store) => [store.id, store.name]))
-    const productById = new Map(publishedProducts.map((product) => [product.id, product]))
-    initialPosts = (posts ?? []).flatMap((post) => {
-      const productIds = Array.isArray(post.product_ids) ? post.product_ids as string[] : []
-      const linkedProducts = productIds.map((id) => productById.get(id)).filter((item): item is ProductItem => Boolean(item))
-      if (!linkedProducts.length || linkedProducts.length !== productIds.length) return []
-      return [{
-        id: post.id, kind: 'note' as const,
-        title: post.title, editorName: storeNames.get(post.store_id) || '创作者', editorAvatar: '/consumer-market/img_app_icon.jpg',
-        coverImage: post.cover_url, isVideo: false, mediaList: [post.cover_url], linkedProducts,
-        aspectRatio: 0.8, description: post.body,
-        blocks: readContentBlocks(post.blocks, post.body, productIds),
-      }]
-    })
-  } catch (error) {
-    console.warn('[ConsumerMarket] Published content unavailable.', error)
-  }
-
-  const hasLiveContent = process.env.NODE_ENV === 'production' || initialProducts.length > 0 || initialPosts.length > 0
-  return <App initialProducts={initialProducts} initialPosts={initialPosts} hasLiveProducts={hasLiveContent} userId={user?.id??null} profileName={initialAiAssistantProfile.name || user?.email || null} publisherReady={publisherReady} initialAiAssistantChat={params.openAssistant === '1' || needsWelcome} initialAiAssistantProfile={initialAiAssistantProfile} initialOnboarding={Boolean(user && needsWelcome)} deepSeekKeyConfigured={deepSeekKeyConfigured} initialInstalledSkillIds={user ? initialInstalledSkillIds : undefined} initialActiveSkillId={activatePersonalAdvisor ? 'personal-advisor' : undefined} initialPostId={params.post} />
+    initialPosts = await readPublishedContent(supabase, params.post)
+    if (params.post && !initialPosts.some((post) => post.id === params.post)) initialContentError = '作品不存在或已取消公开。'
+  } catch { initialContentError = '内容暂时无法读取，请刷新重试。' }
+  return <App initialProducts={initialProducts} initialPosts={initialPosts} livePublications initialContentError={initialContentError} hasLiveProducts={hasLiveContent} userId={user?.id??null} profileName={initialAiAssistantProfile.name || user?.email || null} publisherReady={publisherReady} creatorReady={capabilities.creator} initialSignupInvitation={showSignupInvitation} initialAiAssistantChat={!showSignupInvitation && params.openAssistant === '1'} initialAiAssistantProfile={initialAiAssistantProfile}  deepSeekKeyConfigured={deepSeekKeyConfigured} fallbackAiModel={fallbackAiModel} initialInstalledSkillIds={user ? initialInstalledSkillIds : undefined} initialActiveSkillId={activatePersonalAdvisor ? 'personal-advisor' : undefined} initialPostId={params.post} />
 }

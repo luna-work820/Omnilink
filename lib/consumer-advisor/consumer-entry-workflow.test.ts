@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('server-only', () => ({}))
-const reads = vi.hoisted(() => ({ recent:vi.fn(),keyword:vi.fn(),semantic:vi.fn() }))
+const reads = vi.hoisted(() => ({ unified:vi.fn(),recent:vi.fn(),keyword:vi.fn(),semantic:vi.fn() }))
 vi.mock('@/lib/storefront/service', () => ({getStorefrontDiscoveryItems:reads.recent,searchStorefrontDiscoveryItems:reads.keyword}))
-vi.mock('./consumer-catalog-vector', () => ({searchConsumerCatalogByVector:reads.semantic}))
+vi.mock('./discovery-retrieval', () => ({retrieveDiscoveryCandidates:reads.unified}))
+import { discoverySpecSchema } from './discovery-contract'
 import { planConsumerTask, retrieveConsumerSearchCandidates, routeConsumerEntry, validateConsumerMemoryUpdate } from './consumer-entry-workflow'
 import type { AiAssistantMemory } from './ai-assistant-memory'
 const memory = (overrides:Partial<AiAssistantMemory> = {}):AiAssistantMemory => ({
@@ -18,13 +19,14 @@ describe('existing Mastra workflows', () => {
     expect(await routeConsumerEntry({prompt:'沙发',hasImage:false,hasDocument:true,hasActiveSkill:false,hasSelectedProducts:false})).toEqual({intent:'document-analysis'})
   })
   it('does not retrieve unneeded keyword/vector candidates',async () => {
-    expect(await retrieveConsumerSearchCandidates({query:'你好',enabled:false,maxPrice:null})).toMatchObject({keywordProductIds:[],semanticProductIds:[]})
+    expect(await retrieveConsumerSearchCandidates({spec:discoverySpecSchema.parse({query:'你好',termGroups:[]}),enabled:false})).toMatchObject({keywordProductIds:[],semanticProductIds:[]})
     expect(reads.keyword).not.toHaveBeenCalled(); expect(reads.semantic).not.toHaveBeenCalled()
   })
   it('merges keyword and semantic candidates without duplicate IDs',async () => {
-    reads.keyword.mockResolvedValue([{product:{id:'a'}},{product:{id:'b'}}])
-    reads.semantic.mockResolvedValue([{id:'b',similarity:0.9},{id:'c',similarity:0.8}])
-    expect((await retrieveConsumerSearchCandidates({query:'沙发',enabled:true,maxPrice:1000})).rankedProductIds).toEqual(['b','a','c'])
+    reads.unified.mockResolvedValue({products:[{id:'b'},{id:'a'},{id:'c'}],keywordIds:['a','b'],semanticIds:['b','c']})
+    const spec=discoverySpecSchema.parse({query:'沙发',termGroups:[['沙发']],maxPrice:1000})
+    expect((await retrieveConsumerSearchCandidates({spec,enabled:true})).rankedProductIds).toEqual(['b','a','c'])
+    expect(reads.unified).toHaveBeenCalledWith(spec)
   })
   it('accepts proposed memory in Zod but excludes it and unconfirmed legacy memory from plans',async () => {
     const result = await planConsumerTask({prompt:'推荐阅读角的木质家具',intent:'product-search',history:[],

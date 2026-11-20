@@ -1,8 +1,8 @@
 import { NextRequest,NextResponse } from 'next/server'
 import { beforeEach,describe,expect,it,vi } from 'vitest'
-const m=vi.hoisted(()=>({auth:vi.fn(),start:vi.fn(),page:vi.fn(),resume:vi.fn(),owned:vi.fn(),manage:vi.fn(),generate:vi.fn()}))
+const m=vi.hoisted(()=>({auth:vi.fn(),start:vi.fn(),refine:vi.fn(),page:vi.fn(),resume:vi.fn(),owned:vi.fn(),manage:vi.fn(),generate:vi.fn()}))
 vi.mock('@/lib/api/request-user',()=>({resolveRequestUser:m.auth}))
-vi.mock('@/lib/consumer-advisor/discovery-engine',()=>({startDiscovery:m.start,continueDiscovery:m.page,resumeDiscovery:m.resume,ownedDiscoveryRun:m.owned,
+vi.mock('@/lib/consumer-advisor/discovery-engine',()=>({startDiscovery:m.start,refineDiscovery:m.refine,continueDiscovery:m.page,resumeDiscovery:m.resume,ownedDiscoveryRun:m.owned,
   discoveryActor:(_r:unknown,userId:string|null,sessionId:string)=>({userId,sessionId,guestHash:userId?null:'verified-cookie-hash'}),
   attachDiscoveryActor:(r:Response)=>r}))
 vi.mock('@/lib/consumer-advisor/ai-assistant-memory',()=>({manageAiAssistantMemory:m.manage}))
@@ -17,6 +17,7 @@ beforeEach(()=>{
   vi.clearAllMocks()
   m.auth.mockResolvedValue({ok:true,user:{id:userId},supabase:{}})
   m.start.mockResolvedValue(page);m.page.mockResolvedValue(page);m.resume.mockResolvedValue(page)
+  m.refine.mockResolvedValue(page)
   m.owned.mockResolvedValue({id:runId,spec})
   m.manage.mockResolvedValue({status:'proposed'})
 })
@@ -35,7 +36,7 @@ describe('discovery API',()=>{
   })
   it('refreshes a previous specification without reclassifying and ignores body ownership claims',async()=>{
     expect((await POST(request({action:'start',spec,sessionId,userId:crypto.randomUUID()}))).status).toBe(200)
-    expect(m.start).toHaveBeenCalledWith(expect.objectContaining({userId}),spec)
+    expect(m.start).toHaveBeenCalledWith(expect.objectContaining({userId}),spec,undefined,expect.any(AbortSignal))
     expect(m.generate).not.toHaveBeenCalled()
   })
   it('does not collapse stale contexts or database failures into successful no-matches',async()=>{
@@ -46,7 +47,8 @@ describe('discovery API',()=>{
   })
   it('treats a refinement as a session preference and creates only a pending long-term proposal',async()=>{
     expect((await POST(request({action:'refine',questionId:'style',answer:'natural',searchRunId:runId,sessionId}))).status).toBe(200)
-    expect(m.start).toHaveBeenCalledWith(expect.objectContaining({userId}),expect.objectContaining({termGroups:spec.termGroups,sessionTerms:['原木','木质','natural','wood']}))
+    expect(m.refine).toHaveBeenCalledWith(expect.objectContaining({userId}),expect.objectContaining({id:runId,spec}),['原木','木质','natural','wood'])
+    expect(m.start).not.toHaveBeenCalled()
     expect(m.manage).toHaveBeenCalledWith(userId,'propose',expect.objectContaining({sourceKind:'assessment',origin:'user'}))
     expect(m.generate).not.toHaveBeenCalled()
   })

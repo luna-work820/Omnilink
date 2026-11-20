@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { ProductItem } from '../types'
 import { formatConsumerPrice } from '../services/cartHandoff'
+import { convertCurrency, type ExchangeRates } from '@/lib/consumer-advisor/exchange-rates'
 
 type DisplayRates = { currency: string; date: string | null; rates: Record<string, number> | null }
 const DisplayRatesContext = createContext<DisplayRates | null>(null)
@@ -32,21 +33,29 @@ export function DisplayPriceProvider({ children }: { children: ReactNode }) {
   return <DisplayRatesContext.Provider value={displayRates}>{children}</DisplayRatesContext.Provider>
 }
 
+export function DiscoveryPriceProvider({ active, currency, snapshot, children }: {
+  active: boolean; currency?: string; snapshot?: ExchangeRates | null; children: ReactNode
+}) {
+  if (!active || !currency) return children
+  return <DisplayRatesContext.Provider value={{ currency, date: snapshot?.date ?? null, rates: snapshot?.rates ?? null }}>{children}</DisplayRatesContext.Provider>
+}
+
 export function DisplayPrice({ product, amount, currency }: { product: ProductItem; amount?: number; currency?: string }) {
   const displayRates = useContext(DisplayRatesContext)
   const sourceCurrency = currency || product.currency || 'CNY'
   const sourceAmount = amount ?? product.price
   const sourcePrice = amount == null ? product.formattedPrice : formatConsumerPrice(sourceAmount, sourceCurrency)
-  if (amount == null && (product.priceMode === 'inquiry' || product.priceMode === 'free' || product.priceMode === 'unknown' || sourceAmount === 0)) {
+  if (product.priceMode === 'unknown') return <span>{product.formattedPrice}</span>
+  if (amount == null && (product.priceMode === 'inquiry' || product.priceMode === 'free' || sourceAmount === 0)) {
     return <span>{sourcePrice}</span>
   }
   const targetCurrency = displayRates?.currency
   const rates = displayRates?.rates
-  if (!rates || !targetCurrency || sourceCurrency === targetCurrency || !rates[sourceCurrency] || !rates[targetCurrency]) {
+  const converted = targetCurrency ? convertCurrency(sourceAmount,sourceCurrency,targetCurrency,
+    rates && displayRates?.date ? {rates,date:displayRates.date} : null) : null
+  if (converted === null || !targetCurrency || sourceCurrency === targetCurrency) {
     return <span>{sourcePrice}</span>
   }
-
-  const converted = sourceAmount / rates[sourceCurrency] * rates[targetCurrency]
   const locale = targetCurrency === 'CNY' ? 'zh-CN' : undefined
   const formatted = new Intl.NumberFormat(locale, {
     style: 'currency', currency: targetCurrency, maximumFractionDigits: 0,

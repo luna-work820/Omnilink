@@ -1,11 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { BookOpen, Compass, Home, LayoutGrid, PanelsTopLeft, Settings, User, PenLine, ShoppingBag } from 'lucide-react'
+import Image from 'next/image'
+import { useEffect, useRef } from 'react'
+import { observeGlassworkSurfaces } from '@/components/ui/glasswork/integrate'
+import { usePathname } from 'next/navigation'
+import { BookOpen, Home, LayoutGrid, PanelsTopLeft, Settings, User, PenLine, ShoppingBag, Clapperboard } from 'lucide-react'
 import ProfileDropdown from '@/components/kokonutui/profile-dropdown'
-import { cn } from 'cn'
+import { cn } from '@/lib/utils'
 import { logoutAction } from '@/app/actions/auth'
 import type { Profile } from '@/components/dashboard/OmnilinkLayout'
 import {
@@ -24,53 +26,53 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 
-type WorkspaceMode = 'merchant' | 'creator'
+import type { WorkspaceCapabilities } from '@/lib/workspace/capabilities'
 
 const merchantNavItems = [
-  { group: '商家工作台', href: '/dashboard?workspace=merchant', label: '工作台', icon: Home, active: (path: string) => path === '/dashboard' },
-  { group: '商家工作台', href: '/dashboard/storefront', label: '设计', icon: PanelsTopLeft, active: (path: string) => path.startsWith('/dashboard/storefront') },
-  { group: '商家工作台', href: '/dashboard/products', label: '商品', icon: LayoutGrid, active: (path: string) => path.startsWith('/dashboard/products') },
-  { group: '资料库', href: '/dashboard/knowledge', label: '知识库', icon: BookOpen, active: (path: string) => path.startsWith('/dashboard/knowledge') },
-  { group: '消费者端', href: '/discover', label: 'C 端市场', icon: Compass, active: (path: string) => path.startsWith('/discover') },
+  { group: '商家中心', href: '/dashboard/storefront', label: '网站设计', icon: PanelsTopLeft, active: (path: string) => path.startsWith('/dashboard/storefront') },
+  { group: '商家中心', href: '/dashboard/products', label: '商品', icon: LayoutGrid, active: (path: string) => path.startsWith('/dashboard/products') },
+  { group: '商家中心', href: '/dashboard/knowledge', label: '知识库', icon: BookOpen, active: (path: string) => path.startsWith('/dashboard/knowledge') },
 ] as const
 
 const creatorNavItems = [
-  { group: '创作者中心', href: '/dashboard/content', label: '内容', icon: PenLine, active: (path: string) => path.startsWith('/dashboard/content') },
-  { group: '创作者中心', href: '/dashboard/creator-products', label: '选品库', icon: ShoppingBag, active: (path: string) => path.startsWith('/dashboard/creator-products') },
+  { group: '创作者中心', href: '/dashboard/content', label: '作品发布', icon: PenLine, active: (path: string) => path === '/dashboard/content' },
+  { group: '创作者中心', href: '/dashboard/content/manage', label: '内容管理', icon: Clapperboard, active: (path: string) => path.startsWith('/dashboard/content/manage') },
 ] as const
 
-export function V3DashboardShell({ children, profile, workspaceMode, canSwitchWorkspace, previewMode = false }: {
+export function V3DashboardShell({ children, profile, capabilities, demo = false,activePath }: {
   children: React.ReactNode
   profile: Profile
-  workspaceMode: WorkspaceMode
-  canSwitchWorkspace: boolean
-  previewMode?: boolean
+  capabilities: WorkspaceCapabilities
+  demo?: boolean
+  activePath?: string
 }) {
-  const pathname = usePathname()
-  const router = useRouter()
-  const creatorPath = pathname.startsWith('/dashboard/content') || pathname.startsWith('/dashboard/creator-products')
-  const [mode, setMode] = useState<WorkspaceMode>(() => workspaceMode === 'creator' || ((previewMode || canSwitchWorkspace) && creatorPath) ? 'creator' : 'merchant')
+  const glassRoot = useRef<HTMLDivElement>(null)
+  const currentPath = usePathname()
+  const pathname = activePath??currentPath
+  const workbenchPage = pathname === '/dashboard'
   useEffect(() => {
-    const merchantWorkspaceRequested = new URLSearchParams(window.location.search).get('workspace') === 'merchant'
-    if (merchantWorkspaceRequested && (canSwitchWorkspace || previewMode)) {
-      setMode('merchant')
-    } else if (workspaceMode === 'creator' || ((previewMode || canSwitchWorkspace) && creatorPath)) {
-      setMode('creator')
-    } else {
-      setMode('merchant')
-    }
-  }, [canSwitchWorkspace, creatorPath, pathname, previewMode, workspaceMode])
-  const navItems = mode === 'creator' ? creatorNavItems : merchantNavItems
-  const canChangeWorkspace = canSwitchWorkspace || previewMode
+    if (!glassRoot.current) return
+    return observeGlassworkSurfaces(workbenchPage ? document.body : glassRoot.current)
+  }, [workbenchPage])
+  const creatorArea = capabilities.creator && pathname.startsWith('/dashboard/content')
+  const navigationCapabilities = creatorArea ? { ...capabilities, merchant: false } : capabilities
+  const creatorOnlyNavigation = navigationCapabilities.creator && !navigationCapabilities.merchant
+  const creatorPreview = demo && capabilities.creator && !capabilities.merchant
+  const homeHref = creatorPreview ? '/creator?preview=1&view=content' : creatorOnlyNavigation ? '/dashboard/content' : '/dashboard'
+  const navItems = [
+    ...(!creatorOnlyNavigation ? [{ group: navigationCapabilities.merchant && !navigationCapabilities.creator ? '商家中心' : '工作台', href: '/dashboard', label: '工作台', icon: Home, active: (path: string) => path === '/dashboard' }] : []),
+    ...(navigationCapabilities.creator ? creatorNavItems.map((item) => ({ ...item, href: creatorPreview ? `/creator?preview=1&view=${item.href.endsWith('/manage') ? 'manage' : 'content'}` : item.href })) : []),
+    ...(navigationCapabilities.merchant ? merchantNavItems : []),
+  ]
   const accountName = profile.name || profile.email || '商家'
   const signOut = () => logoutAction(new FormData())
   return (
     <SidebarProvider>
-    <div className="relative isolate flex h-screen w-screen overflow-hidden bg-[var(--canvas)] text-[var(--text-primary)]">
+    <div ref={glassRoot} className={`workspace-glass-shell relative isolate flex h-screen w-screen overflow-hidden bg-[var(--canvas)] text-[var(--text-primary)] ${workbenchPage ? 'workspace-glass-shell--workbench' : ''}`}>
       <div className="dashboard-shell relative z-10 flex h-full min-h-0 w-full overflow-hidden rounded-none border-0 bg-[var(--canvas)]">
-        <Sidebar aria-label="主导航">
+        <Sidebar aria-label="主导航" data-glasswork="" data-glasswork-radius="24" data-glasswork-rim="12" data-glasswork-dispersion="0.18" data-glasswork-tint={workbenchPage ? '1.15' : undefined} className="workspace-glass-sidebar" >
           <SidebarHeader className="justify-between">
-            <SidebarBrand mode={mode} />
+            <SidebarBrand href={homeHref} useMoon={workbenchPage} />
             <SidebarTrigger />
           </SidebarHeader>
           <SidebarContent>
@@ -84,7 +86,7 @@ export function V3DashboardShell({ children, profile, workspaceMode, canSwitchWo
                       const selected = item.active(pathname)
                       return (
                         <SidebarMenuItem key={item.href}>
-                          <SidebarMenuButton asChild isActive={selected}>
+                          <SidebarMenuButton asChild isActive={selected} className={workbenchPage ? 'workbench-nav-pill' : undefined}>
                             <Link href={item.href} aria-label={item.label} aria-current={selected ? 'page' : undefined} title={item.label}>
                               <Icon aria-hidden="true" />
                               <span data-sidebar-label="" className="truncate">{item.label}</span>
@@ -104,17 +106,14 @@ export function V3DashboardShell({ children, profile, workspaceMode, canSwitchWo
               profile={profile}
               accountName={accountName}
               onSignOut={signOut}
-              workspaceLabel={canChangeWorkspace ? (mode === 'creator' ? '商家工作台' : previewMode ? '预览创作者中心' : '创作者中心') : undefined}
-              onSwitchWorkspace={canChangeWorkspace ? () => {
-                const nextMode = mode === 'creator' ? 'merchant' : 'creator'
-                setMode(nextMode)
-                router.push(nextMode === 'creator' ? '/dashboard/content' : '/dashboard?workspace=merchant')
-              } : undefined}
+              capabilities={capabilities}
+              allowActivation={!demo}
+              workbenchPage={workbenchPage}
             />
           </SidebarFooter>
         </Sidebar>
       <SidebarInset className="min-h-0">
-          <nav className="flex shrink-0 gap-1 overflow-x-auto bg-[var(--surface)] p-2 md:hidden" aria-label="移动端主导航">
+          <nav data-glasswork="" data-glasswork-radius="24" data-glasswork-rim="12" data-glasswork-dispersion="0.18" className="workspace-glass-mobile-nav relative m-2 flex shrink-0 gap-1 overflow-x-auto rounded-3xl p-2 md:hidden" aria-label="移动端主导航">
           {navItems.map((item) => { const Icon = item.icon; const selected = item.active(pathname); return <Link key={item.href} href={item.href} aria-current={selected ? 'page' : undefined} className={`flex min-h-10 shrink-0 items-center gap-2 rounded-full px-3 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--text-primary)] focus-visible:outline-offset-2 ${selected ? 'bg-[var(--surface-raised)] text-[var(--ink)]' : 'text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]'}`}><Icon className="h-4 w-4" aria-hidden="true" />{item.label}</Link> })}
         </nav>
         <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">{children}</main>
@@ -125,15 +124,15 @@ export function V3DashboardShell({ children, profile, workspaceMode, canSwitchWo
   )
 }
 
-function SidebarBrand({ mode }: { mode: WorkspaceMode }) {
+function SidebarBrand({ href, useMoon }: { href: string; useMoon: boolean }) {
   const { state } = useSidebar()
   return (
     <Link
-      href={mode === 'creator' ? '/dashboard/content' : '/dashboard?workspace=merchant'}
-      aria-label={`Omnilink ${mode === 'creator' ? '创作者中心' : '商家工作台'}`}
+      href={href}
+      aria-label="Omnilink"
       className="flex min-w-0 items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sidebar-ring)] focus-visible:outline-offset-2"
     >
-      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--text-primary)] text-sm font-light text-[var(--surface)]">N</span>
+      {useMoon ? <Image src="/omnilink-moon.svg" width={28} height={28} alt="" className="size-7 shrink-0" /> : <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--text-primary)] text-sm font-light text-[var(--surface)]">N</span>}
       {state === 'expanded' && <span className="min-w-0 truncate text-[13px] font-semibold tracking-[-0.03em]">omnilink</span>}
     </Link>
   )
@@ -143,24 +142,27 @@ function SidebarAccount({
   profile,
   accountName,
   onSignOut,
-  workspaceLabel,
-  onSwitchWorkspace,
+  capabilities,
+  allowActivation,
+  workbenchPage,
 }: {
   profile: Profile
   accountName: string
   onSignOut: () => void
-  workspaceLabel?: string
-  onSwitchWorkspace?: () => void
+  capabilities: WorkspaceCapabilities
+  allowActivation: boolean
+  workbenchPage: boolean
 }) {
   const { state } = useSidebar()
   const collapsed = state === 'collapsed'
   return (
     <ProfileDropdown
       accounts={[{ id: profile.id, name: accountName, email: profile.email }]}
-      className="w-full"
+      className={cn('w-full', workbenchPage && 'workbench-profile-dropdown')}
       defaultStatus="online"
       items={[
-        ...(workspaceLabel && onSwitchWorkspace ? [{ label: workspaceLabel, icon: <PanelsTopLeft className="size-4" />, onSelect: onSwitchWorkspace }] : []),
+        ...(allowActivation && !capabilities.creator ? [{ label: '成为内容创作者', icon: <PenLine className="size-4" />, href: '/creator',external:true }] : []),
+        ...(allowActivation && !capabilities.merchant ? [{ label: '成为商家', icon: <ShoppingBag className="size-4" />, href: '/merchant',external:true }] : []),
         { label: '个人资料', icon: <User className="size-4" />, href: '/dashboard/account' },
         { label: '设置', icon: <Settings className="size-4" />, value: '⌘,', href: '/dashboard/settings' },
       ]}
@@ -168,8 +170,10 @@ function SidebarAccount({
       placement="top-start"
       showAvatar={collapsed}
       showTheme={false}
+      glassPanel={workbenchPage}
       triggerClassName={cn(
         'w-full rounded-[var(--radius-control)] border-[var(--sidebar-border)] bg-[var(--sidebar)] p-2 text-[var(--text-secondary)] hover:border-[var(--sidebar-ring)] hover:bg-[var(--interactive-hover)] focus-visible:ring-[var(--sidebar-ring)] focus-visible:ring-offset-[var(--sidebar)]',
+        workbenchPage && 'workbench-profile-pill',
         collapsed && 'size-10 justify-center border-transparent p-1 [&>span>span>span:last-child]:sr-only [&>svg]:hidden',
       )}
     />

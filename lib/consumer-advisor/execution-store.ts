@@ -47,8 +47,9 @@ export function informationItem(row: Record<string, unknown>): InformationItem {
   return { id:String(row.id),entityType:row.entity_type as InformationItem['entityType'],title:String(row.title),excerpt:String(row.excerpt ?? ''),
     url:String(row.url),imageUrl:typeof row.image_url==='string'?row.image_url:null,source:String(row.source ?? ''),updatedAt:String(row.updated_at ?? row.fetched_at),version:Number(row.version ?? 1) }
 }
-export async function searchInformation(actor: Actor, query: string, types: InformationItem['entityType'][] = ['product','service','content','source']) {
-  const rows=await rpc<Record<string,unknown>[]>('search_consumer_information',{p_actor:actor,p_query:query.slice(0,160),p_types:types,p_limit:20})
+export async function searchInformation(actor: Actor, query: string) {
+  // Product discovery uses the shared catalog; only owned URL evidence is enabled here in the demo.
+  const rows=await rpc<Record<string,unknown>[]>('search_consumer_information',{p_actor:actor,p_query:query.slice(0,160),p_types:['source'],p_limit:20})
   return rows.map(informationItem)
 }
 export async function readOwnedSources(actor:Actor,ids:string[]) {

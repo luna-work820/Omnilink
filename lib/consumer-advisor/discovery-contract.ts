@@ -1,9 +1,13 @@
 import { z } from 'zod'
 import type { ProductItem } from '@/components/consumer-market/types'
+import { retrievalOptionsSchema, type RetrievalReport } from './embedding-profile'
+import type { ExchangeRates } from './exchange-rates'
 
 export const discoverySpecSchema = z.object({
   query: z.string().trim().min(1).max(160),
   termGroups: z.array(z.array(z.string().trim().min(1).max(48)).min(1).max(5)).max(6),
+  requiredTermGroups: z.array(z.array(z.string().trim().min(1).max(48)).min(1).max(5)).max(6).optional(),
+  categoryTerm: z.string().trim().min(1).max(48).optional(),
   excludedTerms: z.array(z.string().trim().min(1).max(48)).max(10).default([]),
   minPrice: z.number().nonnegative().max(1e9).nullable().default(null),
   maxPrice: z.number().nonnegative().max(1e9).nullable().default(null),
@@ -11,7 +15,13 @@ export const discoverySpecSchema = z.object({
   type: z.enum(['商品', '服务', '数字']).default('商品'),
   sessionTerms: z.array(z.string().trim().min(1).max(48)).max(8).default([]),
   questionDismissed: z.boolean().default(false),
+  excludedProductIds: z.array(z.string().min(1).max(100)).max(100).optional(),
+  retrieval: retrievalOptionsSchema.optional(),
+  usePersonalContext: z.boolean().optional(),
+  deliveryCountry: z.string().regex(/^[A-Z]{2}$/).optional(),
+  requireVerifiedDelivery: z.boolean().optional(),
 }).refine((s) => s.minPrice === null || s.maxPrice === null || s.minPrice <= s.maxPrice, '价格范围无效。')
+  .refine((s)=>!s.requireVerifiedDelivery||Boolean(s.deliveryCountry),'请指定配送国家。')
 
 export type DiscoverySpec = z.infer<typeof discoverySpecSchema>
 const discoveryReferenceSchema = z.object({searchRunId:z.string().uuid(),contextVersion:z.number().int().nonnegative(),spec:discoverySpecSchema})
@@ -38,6 +48,9 @@ export type DiscoveryPage = {
   candidateCount: number
   question: DiscoveryQuestion | null
   spec: DiscoverySpec
+  retrieval?: RetrievalReport
+  priceReference?: ExchangeRates | null
+  priceWarning?: boolean
 }
 export type DiscoveryFeedBlock = { type: 'discovery_feed'; id: string; version: 1; data: DiscoveryPage }
 export type QuestionnaireBlock = { type: 'questionnaire'; id: string; version: 1; data: DiscoveryQuestion; state: 'pending' }

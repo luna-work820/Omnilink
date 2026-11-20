@@ -3,7 +3,7 @@
 import * as React from "react"
 import { PanelLeft, PanelLeftClose } from "lucide-react"
 import { Slot } from "radix-ui"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 type SidebarContextValue = {
   open: boolean

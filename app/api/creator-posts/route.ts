@@ -38,7 +38,7 @@ export async function GET() {
   if (!store) return NextResponse.json({ error: '请先完成发布者设置' }, { status: 404 })
   const [postsResult, productsResult] = await Promise.all([
     auth.supabase.rpc('get_creator_posts_for_editor', { p_store_id: store.id }),
-    auth.supabase.from('catalog_items').select('id, title, cover_image, details, status, catalog_media(storage_path, media_role)')
+    auth.supabase.from('catalog_items').select('id, title, cover_image, details, status, catalog_media!catalog_media_catalog_item_id_fkey(storage_path, media_role)')
       .eq('organization_id', store.organization_id).neq('status', 'archived').order('created_at', { ascending: false }).limit(100),
   ])
   if (postsResult.error || productsResult.error) return NextResponse.json({ error: postsResult.error?.message || productsResult.error?.message }, { status: 500 })

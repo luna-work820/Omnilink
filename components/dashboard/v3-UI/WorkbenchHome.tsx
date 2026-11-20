@@ -1,6 +1,12 @@
 'use client'
 
+import type { WorkspaceCapabilities } from '@/lib/workspace/capabilities'
+
 import Link from 'next/link'
+import {useWebsiteBuilder} from '@/components/site-builder/useWebsiteBuilder'
+import {WebsiteTaskCard} from '@/components/site-builder/WebsiteTaskCard'
+import {isWebsiteInstruction} from '@/lib/site-builder/intent'
+import { setupGlassworkSurface } from '@/components/ui/glasswork/integrate'
 import NextImage from 'next/image'
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ArrowUp, Circle, History, Package, Search, X, Database as DatabaseIcon, Check, Maximize2, Minimize2, Image as ImageIcon, Plus, Sparkles, Paperclip, AtSign, Mic, Lightbulb } from 'lucide-react'
@@ -14,6 +20,8 @@ import { UiverseButton } from '@/components/ui/UiverseButton'
 import AILoadingState, { type AgentStep } from '@/components/kokonutui/ai-loading'
 import AIInputSearch, { type SearchTool } from '@/components/kokonutui/ai-input-search'
 import { ContentGenerationStudio } from './ContentGenerationStudio'
+import { CreatorQuickUpload } from '@/components/creator-content/CreatorQuickUpload'
+import { dismissCreatorUploadIntroAction } from '@/app/actions/onboarding'
 import RefineFrame from './RefineFrame'
 import SwipeRow from '@/components/react-bits/SwipeRow'
 import { Bubble, BubbleContent, Message, MessageContent, MessageScroller, MessageScrollerContent, MessageScrollerItem, MessageScrollerProvider } from '@/components/ai-elements/chat'
@@ -64,8 +72,8 @@ function createLocalId(prefix: string) {
 const skillDisplayNames: Record<string, string> = {
   'merchant-profile': '商家洞察',
   'brand-proposal': '品牌策略',
-  'store-copy': '内容撰写',
-  'multi-channel-product-content': '商品内容创作',
+  'store-copy': '店铺文案',
+  'multi-channel-product-content': '商品文案',
 }
 
 const socialChannels = ['抖音', '小红书', '商品详情页']
@@ -103,15 +111,53 @@ function createHistoryThumbnail(source: string): Promise<string | undefined> {
   })
 }
 
-export function WorkbenchHome({ displayName, merchantProject }: { displayName: string; merchantProject: BrandProject }) {
+export function WorkbenchHome({ displayName, merchantProject, capabilities = { creator: false, merchant: true }, creatorPreview = false, creatorUploadIntroPending = false }: { displayName: string; merchantProject: BrandProject; capabilities?: WorkspaceCapabilities; creatorPreview?: boolean; creatorUploadIntroPending?: boolean }) {
+  const creatorOnly=capabilities.creator&&!capabilities.merchant
+  const historyKey=creatorOnly?`omnilink-creator-history:${merchantProject.user_id}`:'omnilink-workbench-history'
+  useEffect(() => {
+    const surface = document.getElementById('workbench-command')?.closest<HTMLElement>('.workbench-ai-input')
+    if (!surface) return
+    return setupGlassworkSurface(surface, { radius: 28, rim: 12, dispersion: 0.18, tint: 1 }).destroy
+  }, [])
+  const website=useWebsiteBuilder(capabilities.merchant)
+  const [websiteMode,setWebsiteMode]=useState(false)
+  useEffect(()=>{
+    if(!capabilities.merchant)return
+    const active=new URLSearchParams(window.location.search).get('website')==='1'||localStorage.getItem(`website-mode:${merchantProject.id}`)==='1'
+    if(active)setWebsiteMode(true)
+  },[merchantProject.id,capabilities.merchant])
   const [prompt, setPrompt] = useState('')
   const [query, setQuery] = useState('')
-  const [tasks, setTasks] = useState(initialTasks)
+  const [tasks, setTasks] = useState<Task[]>(creatorOnly?[]:initialTasks)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [historyOpen, setHistoryOpen] = useState(false)
   const [workspaceMode, setWorkspaceMode] = useState<'conversation' | 'fullscreen'>('conversation')
-  const [historyReady, setHistoryReady] = useState(false)
+  const [historyReady, setHistoryReady] = useState<string|null>(null)
   const [contentStudioOpen, setContentStudioOpen] = useState(false)
+  const [showCreatorUploadTip, setShowCreatorUploadTip] = useState(false)
+  const creatorUploadDismissedKey = `omnilink:creator-upload-intro-dismissed:${merchantProject.user_id}`
+  useEffect(() => {
+    if (!creatorOnly || !creatorUploadIntroPending) return
+    const timer = window.setTimeout(() => {
+      try {
+        const dismissed = window.localStorage.getItem(creatorUploadDismissedKey) === '1'
+        setShowCreatorUploadTip(!dismissed)
+        if (dismissed && !creatorPreview) void dismissCreatorUploadIntroAction().catch(() => {})
+      } catch {
+        setShowCreatorUploadTip(true)
+      }
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [creatorOnly, creatorPreview, creatorUploadIntroPending, creatorUploadDismissedKey])
+  function dismissCreatorUploadTip() {
+    setShowCreatorUploadTip(false)
+    try {
+      window.localStorage.setItem(creatorUploadDismissedKey, '1')
+    } catch {
+      // Keep the current session closed when browser storage is unavailable.
+    }
+    if (!creatorPreview) void dismissCreatorUploadIntroAction().catch(() => {})
+  }
   const workMode: WorkMode = 'product'
   const [attachedImages, setAttachedImages] = useState<AttachedImage[]>([])
   const [uploadIntent, setUploadIntent] = useState<UploadIntent>(null)
@@ -141,7 +187,7 @@ export function WorkbenchHome({ displayName, merchantProject }: { displayName: s
   const voiceRef = useRef<VoiceRecognition | null>(null)
   const { selectedProduct, selectedProducts, products, knowledgeEntries, setSelectedProducts, addArtifact } = useDashboardWorkspace()
   const merchantName = merchantProject.name || displayName || 'Omnilink'
-  const greetingName = merchantName.includes('演示') ? '演示商家' : merchantName
+  const greetingName = creatorOnly?displayName:merchantName.includes('演示') ? '演示商家' : merchantName
   const visibleTasks = useMemo(
     () => tasks.filter((task) => `${task.title}${task.description}`.toLowerCase().includes(query.toLowerCase())),
     [query, tasks],
@@ -151,7 +197,7 @@ export function WorkbenchHome({ displayName, merchantProject }: { displayName: s
     { value: 'gemini', label: 'Gemini 3.8 Flash' },
     { value: 'qwen-plus', label: '千问 Plus' },
     { value: 'deepseek-flash', label: 'DeepSeek V4.1 Flash' },
-    { value: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro · 深度推理' },
+    { value: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro（深度推理）' },
   ] as const
   const selectedModelLabel = modelOptions.find((option) => option.value === model)?.label ?? modelOptions[0].label
   const mentionOptions = useMemo(
@@ -167,12 +213,12 @@ export function WorkbenchHome({ displayName, merchantProject }: { displayName: s
       const response = await fetch('/api/workspace/skills', { credentials: 'include' })
       const payload = await response.json() as { skills?: WorkspaceSkill[] }
       if (!response.ok) throw new Error('技能不可用')
-      setSkills((payload.skills || []).map((skill) => ({ ...skill, name: skillDisplayNames[skill.id] || skill.name })))
+      setSkills((payload.skills || []).filter(skill=>!creatorOnly||!Object.hasOwn(skillDisplayNames,skill.id)).map((skill) => ({ ...skill, name: skillDisplayNames[skill.id] || skill.name })))
       setSkillsStatus('ready')
     } catch {
       setSkillsStatus('unavailable')
     }
-  }, [])
+  }, [creatorOnly])
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadSkills(), 0)
@@ -182,20 +228,21 @@ export function WorkbenchHome({ displayName, merchantProject }: { displayName: s
   useEffect(() => {
     const timer = window.setTimeout(() => {
       try {
-        const saved = window.localStorage.getItem('omnilink-workbench-history')
-        if (saved) setTasks(JSON.parse(saved) as Task[])
+        const saved = window.localStorage.getItem(historyKey)
+        const parsed=saved?JSON.parse(saved):null
+        setTasks(Array.isArray(parsed)?parsed:creatorOnly?[]:initialTasks)
       } catch {
         // Ignore malformed local history and keep the starter tasks.
       } finally {
-        setHistoryReady(true)
+        setHistoryReady(historyKey)
       }
     }, 0)
     return () => window.clearTimeout(timer)
-  }, [])
+  }, [historyKey,creatorOnly])
 
   useEffect(() => {
-    if (historyReady) window.localStorage.setItem('omnilink-workbench-history', JSON.stringify(tasks))
-  }, [historyReady, tasks])
+    if (historyReady===historyKey) window.localStorage.setItem(historyKey, JSON.stringify(tasks))
+  }, [historyReady,historyKey,tasks])
 
   useEffect(() => () => {
     if (mentionTimerRef.current) clearTimeout(mentionTimerRef.current)
@@ -215,7 +262,7 @@ export function WorkbenchHome({ displayName, merchantProject }: { displayName: s
     ]
     attachedImagesRef.current = nextImages
     setAttachedImages(nextImages)
-    if (nextImages.length) setUploadIntent('new-product')
+    if (nextImages.length) setUploadIntent(capabilities.merchant?'new-product':null)
     setGenerationError(rejectedCount ? '仅支持 5 MB 以内的 JPG、PNG 或 WebP 图片。' : uniqueFiles.length > acceptedFiles.length ? `最多可同时选择 ${MAX_CHAT_IMAGES} 张图片。` : null)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
@@ -248,6 +295,17 @@ export function WorkbenchHome({ displayName, merchantProject }: { displayName: s
     const requestModel = request?.model ?? model
     const value = request?.prompt?.trim() || prompt.trim() || (requestFiles.length ? '请分析这些图片。' : '')
     if (!value || isGenerating) return
+    if(capabilities.merchant&&isWebsiteInstruction(value,websiteMode)){
+      if(requestFiles.length){setGenerationError('请先将网站所需图片添加到商品资料，再提交建站要求。');return}
+      setWebsiteMode(true);localStorage.setItem(`website-mode:${merchantProject.id}`,'1')
+      setGenerationError(null);setLastSubmittedPrompt(value);setIsGenerating(true)
+      try{
+        await website.generate(value,websiteMode)
+        setWebsiteMode(true);localStorage.setItem(`website-mode:${merchantProject.id}`,'1');setPrompt('')
+      }catch(error){setGenerationError(error instanceof Error?error.message:'建站请求未完成')}
+      finally{setIsGenerating(false)}
+      return
+    }
     if (requestFiles.length && requestModel !== 'gemini') {
       setGenerationError('图片识别目前使用 Gemini；请选择 Gemini 3.8 Flash 后发送。')
       return
@@ -286,9 +344,10 @@ export function WorkbenchHome({ displayName, merchantProject }: { displayName: s
           toolId: request?.toolId ?? selectedToolId,
           images: requestImages,
           context: [
+            ...(creatorOnly?[{title:'创作场景',summary:'围绕图文、视频脚本、内容选题和素材整理提供帮助。未要求商品推荐或带货时，不默认围绕购物展开。'}]:[]),
             ...knowledgeEntries.filter((entry) => !selectedKnowledgeIds.length || selectedKnowledgeIds.includes(entry.id)).map((entry) => ({ title: entry.key, summary: entry.value })),
             ...(selectedChannels.length ? [{ title: '目标渠道', summary: selectedChannels.join('、') }] : []),
-            ...(products.length ? [{
+            ...(capabilities.merchant&&products.length ? [{
               title: '可自动识别的商品目录',
               summary: products.slice(0, 100).map((product) => `${product.name}${product.sku ? `（SKU：${product.sku}）` : ''}`).join('、'),
             }] : []),
@@ -304,8 +363,8 @@ export function WorkbenchHome({ displayName, merchantProject }: { displayName: s
       setMessages((current) => current.map((message) => message.id === responseId ? { ...message, content, images: responseImages, pending: false } : message))
       const historyImage = responseImages.length ? await createHistoryThumbnail(responseImages[responseImages.length - 1]) : undefined
       const taskId = createLocalId('task')
-      const mode = workModes.find((item) => item.id === workMode) || workModes[0]
-      setTasks((current) => [{ id: taskId, title: value, description: selectedSkill ? `${selectedSkill.name} · ${mode.title}` : (selectedProduct ? `${mode.title} · ${selectedProduct.name}` : mode.title), content, time: '刚刚', href: mode.href, thumbnail: historyImage || userThumbnails[0], messages: [{ id: messageId, role: 'user', content: value, images: userThumbnails }, { id: responseId, role: 'assistant', content, model: requestModel, images: historyImage ? [historyImage] : [] }] }, ...current])
+      const mode = creatorOnly?{title:'内容创作',href:'/dashboard/content'}:workModes.find((item) => item.id === workMode) || workModes[0]
+      setTasks((current) => [{ id: taskId, title: value, description: selectedSkill ? `${selectedSkill.name}，${mode.title}` : (selectedProduct ? `${mode.title}，${selectedProduct.name}` : mode.title), content, time: '刚刚', href: mode.href, thumbnail: historyImage || userThumbnails[0], messages: [{ id: messageId, role: 'user', content: value, images: userThumbnails }, { id: responseId, role: 'assistant', content, model: requestModel, images: historyImage ? [historyImage] : [] }] }, ...current])
       addArtifact({ id: taskId, title: value, content, productId: selectedProduct?.id, productName: selectedProduct?.name, createdAt: '刚刚' })
       if (requestFiles.length) clearAttachedImage()
     } catch (error) {
@@ -448,14 +507,18 @@ export function WorkbenchHome({ displayName, merchantProject }: { displayName: s
   async function recordGeneratedImage(name: string, source: string) {
     const thumbnail = await createHistoryThumbnail(source)
     const taskId = createLocalId('task-image')
-    const title = name.trim() ? `${name.trim()} · 图片生成` : '图片生成'
-    setTasks((current) => [{ id: taskId, title, description: '商品内容创作', content: '已生成商品图片。', time: '刚刚', href: '/dashboard', thumbnail, messages: [{ id: `${taskId}-assistant`, role: 'assistant', content: '已生成商品图片。', images: thumbnail ? [thumbnail] : [] }] }, ...current])
+    const title = name.trim() ? `${name.trim()}：图片生成` : '图片生成'
+    setTasks((current) => [{ id: taskId, title, description: '商品文案', content: '已生成商品图片。', time: '刚刚', href: '/dashboard', thumbnail, messages: [{ id: `${taskId}-assistant`, role: 'assistant', content: '已生成商品图片。', images: thumbnail ? [thumbnail] : [] }] }, ...current])
   }
 
   return (
     <>
-    <div className={`workbench-ambient flex min-h-0 text-[var(--text-primary)] ${messages.length ? 'has-conversation' : ''} ${isGenerating ? 'is-generating' : ''}`}>
+    <div className={`workbench-ambient workbench-glass-theme flex min-h-0 text-[var(--text-primary)] ${messages.length ? 'has-conversation' : ''} ${isGenerating ? 'is-generating' : ''}`}>
       <section className="main-workspace relative flex min-w-0 flex-1 flex-col overflow-y-auto">
+        {(capabilities.merchant || (capabilities.creator && !creatorPreview)) && <nav aria-label="工作台常用操作" className="flex shrink-0 flex-wrap gap-3 px-5 py-4 sm:px-8">
+          {capabilities.creator && !creatorPreview && <Link href="/dashboard/content/works" className="rounded-full px-4 py-2 text-sm hover:bg-[var(--interactive-hover)] focus-visible:outline-2 focus-visible:outline-offset-2">我的作品</Link>}
+          {capabilities.merchant && <Link href="/dashboard/products/new" className="rounded-full bg-[var(--text-primary)] px-4 py-2 text-sm text-[var(--surface)] focus-visible:outline-2 focus-visible:outline-offset-2">上架商品</Link>}
+        </nav>}
         <div className={`workbench-chat-stage relative z-10 mx-auto flex w-full max-w-[960px] flex-1 flex-col items-center px-5 py-5 sm:px-8 sm:pt-7 sm:pb-4 ${messages.length ? 'has-conversation' : ''}`}>
           {messages.length ? (
             <MessageScrollerProvider autoScroll>
@@ -471,7 +534,7 @@ export function WorkbenchHome({ displayName, merchantProject }: { displayName: s
                             className={`px-1 py-3 ${message.role === 'user' ? '!px-4' : ''} ${message.failed ? 'rounded-xl bg-[var(--palette-danger-soft)] text-[var(--palette-danger)]' : ''}`}
                           >
                             <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] opacity-60">
-                              {message.role === 'user' ? '你' : `AI · ${message.model === 'qwen-plus' ? '千问 Plus' : message.model === 'deepseek-flash' ? 'DeepSeek Flash' : message.model === 'deepseek-v4-pro' ? 'DeepSeek Pro' : 'Gemini'}`}
+                              {message.role === 'user' ? '你' : `AI ${message.model === 'qwen-plus' ? '千问 Plus' : message.model === 'deepseek-flash' ? 'DeepSeek Flash' : message.model === 'deepseek-v4-pro' ? 'DeepSeek Pro' : 'Gemini'}`}
                             </div>
                             {message.pending ? <AILoadingState steps={WORKBENCH_LOADING_STEPS} className="justify-start" /> : <BubbleContent>{message.content}</BubbleContent>}
                             {message.images?.length ? (
@@ -495,22 +558,26 @@ export function WorkbenchHome({ displayName, merchantProject }: { displayName: s
                 </MessageScrollerContent>
               </MessageScroller>
             </MessageScrollerProvider>
-          ) : <div className="workbench-welcome mt-[clamp(4rem,9vh,6.5rem)] max-w-[720px] text-center"><AIAssistantOrb isThinking={isGenerating} /><h1 className="workbench-greeting">你好，{greetingName}</h1></div>}
+          ) : <div className="workbench-welcome mt-[clamp(4rem,9vh,6.5rem)] w-full max-w-[720px] text-center"><AIAssistantOrb isThinking={isGenerating} /><h1 className="workbench-greeting">你好，{greetingName}</h1>{creatorOnly && showCreatorUploadTip && <CreatorQuickUpload destination={creatorPreview ? '/creator?preview=1&view=content&from=workbench' : '/dashboard/content?from=workbench'} onDismiss={dismissCreatorUploadTip} />}</div>}
 
+          {capabilities.merchant&&website.state&&<WebsiteTaskCard state={website.state} onCancel={(buildId,expectedRevision)=>{void website.command({action:'cancel',buildId,expectedRevision}).catch(error=>setGenerationError(error.message))}}/>}
+          {websiteMode&&website.needsLogin&&<Link href="/login?next=%2Fdashboard%3Fwebsite%3D1" className="mx-auto mt-3 text-sm underline">登录后开始建站</Link>}
+          {websiteMode&&!website.needsLogin&&generationError?.includes('DeepSeek')&&<Link href="/dashboard/settings" className="mx-auto mt-3 text-sm underline">连接 DeepSeek</Link>}
+          {websiteMode&&<div className="mx-auto mt-4 flex w-full max-w-[620px] items-center gap-2 text-xs text-[var(--text-secondary)]"><span>网站设计</span><button type="button" aria-label="退出网站设计输入" onClick={()=>{setWebsiteMode(false);localStorage.removeItem(`website-mode:${merchantProject.id}`)}} className="grid h-8 w-8 place-items-center rounded-full hover:bg-[var(--interactive-hover)]">×</button></div>}
           <form onSubmit={submit} className={`relative mt-auto w-full max-w-[620px] ${voiceError || generationError ? 'pb-8' : 'pb-0'} ${messages.length ? 'pt-10' : 'pt-8'}`}>
               <input ref={fileInputRef} type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => attachImages(Array.from(event.target.files ?? []))} />
               <div onDragOver={(event) => { event.preventDefault(); setDropActive(true) }} onDragLeave={() => setDropActive(false)} onDrop={handleDrop} className="relative w-full">
                 <AIInputSearch
                   className="w-full max-w-none py-0"
-                  shellClassName={`workbench-ai-input relative rounded-xl p-0 ${dropActive ? 'is-drop-active' : ''}`}
-                  inputContainerClassName="rounded-xl bg-transparent shadow-none ring-0"
+                  shellClassName={`workbench-ai-input relative rounded-[28px] p-0 ${dropActive ? 'is-drop-active' : ''}`}
+                  inputContainerClassName="rounded-[28px] bg-transparent shadow-none ring-0"
                   inputClassName="min-h-[56px] px-4 pt-3.5 pb-1 pr-12 text-[14px] leading-6 text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] dark:text-[var(--text-primary)]"
                   inputId="workbench-command"
                   inputLabel="输入任务"
-                  placeholder="输入任务…"
+                  placeholder={creatorOnly?'说说你的创作想法…':'输入任务…'}
                   defaultTool={null}
                   showToolHeader={false}
-                  tools={WORKBENCH_TOOLS}
+                  tools={creatorOnly?WORKBENCH_TOOLS.filter(tool=>tool.id!=='product'):WORKBENCH_TOOLS}
                   models={modelOptions.map((option) => option.label)}
                   defaultModel={selectedModelLabel}
                   value={prompt}
@@ -542,21 +609,21 @@ export function WorkbenchHome({ displayName, merchantProject }: { displayName: s
                       </div>)}
                       <span className="self-center text-[11px] text-[var(--text-secondary)]">{attachedImages.length}/{MAX_CHAT_IMAGES}</span>
                     </div>}
-                  inputHeader={selectedSkill && <div className="selected-skill-pill group mx-3 mt-3 w-fit" title={selectedChannels.length ? `已选择：${selectedChannels.join('、')}` : selectedSkill.description}><Sparkles className="h-[9px] w-[9px] shrink-0" aria-hidden="true" /><span className="truncate">{selectedSkill.name}</span>{selectedSkill.id === 'multi-channel-product-content' && <button type="button" onClick={() => setContentStudioOpen(true)} className="ml-1 shrink-0 rounded-full bg-[var(--surface-muted)] px-2 py-1 text-[7.5px] font-semibold text-[var(--text-primary)] hover:bg-[var(--border-subtle)]">打开创作工作台</button>}<button type="button" onClick={removeSelectedSkill} aria-label={`移除 Skill：${selectedSkill.name}`} className="selected-skill-pill__remove"><X className="h-[9px] w-[9px]" aria-hidden="true" /></button></div>}
+                  inputHeader={selectedSkill && <div className="selected-skill-pill group mx-3 mt-3 w-fit" title={selectedChannels.length ? `已选择：${selectedChannels.join('、')}` : selectedSkill.description}><Sparkles className="h-[9px] w-[9px] shrink-0" aria-hidden="true" /><span className="truncate">{selectedSkill.name}</span>{selectedSkill.id === 'multi-channel-product-content' && <button type="button" onClick={() => setContentStudioOpen(true)} className="ml-1 shrink-0 rounded-full bg-[var(--surface-muted)] px-2 py-1 text-[7.5px] font-semibold text-[var(--text-primary)] hover:bg-[var(--border-subtle)]">打开商品文案工具</button>}<button type="button" onClick={removeSelectedSkill} aria-label={`移除 Skill：${selectedSkill.name}`} className="selected-skill-pill__remove"><X className="h-[9px] w-[9px]" aria-hidden="true" /></button></div>}
                   inputOverlay={<>
-                  <button type="button" onClick={() => setWorkspaceMode('fullscreen')} aria-label="进入全屏创作模式" className="workbench-expand absolute right-0 top-0 grid h-10 w-10 place-items-center rounded-full text-[var(--text-secondary)]"><Maximize2 className="h-[10.5px] w-[10.5px]" /></button>
-                  {mentionOpen && <div className="ui-glass mention-menu absolute bottom-[calc(100%+12px)] left-0 right-0 z-30 w-auto overflow-hidden rounded-[var(--radius-overlay)] p-1.5" role="listbox" aria-label={mentionLevel === 'skills' ? '选择 Skill' : '选择社媒渠道'}>
+                  <button type="button" onClick={() => setWorkspaceMode('fullscreen')} aria-label="进入全屏工作台" className="workbench-expand absolute right-0 top-0 grid h-10 w-10 place-items-center rounded-full text-[var(--text-secondary)]"><Maximize2 className="h-[10.5px] w-[10.5px]" /></button>
+                  {mentionOpen && <div data-glasswork="" data-glasswork-radius="16" data-glasswork-rim="12" data-glasswork-dispersion="0.18" className="ui-glass mention-menu absolute bottom-[calc(100%+12px)] left-0 right-0 z-30 w-auto overflow-hidden rounded-[var(--radius-overlay)] p-1.5" role="listbox" aria-label={mentionLevel === 'skills' ? '选择 Skill' : '选择社媒渠道'}>
                     {mentionLevel === 'skills' ? <>
                       <div className="flex items-center justify-between gap-3 px-3 py-2 text-[10px] font-semibold tracking-[0.12em] text-[var(--text-muted)]"><span className="flex items-center gap-2"><AtSign className="h-3.5 w-3.5" aria-hidden="true" />选择能力</span><span className="tracking-normal">{skills.length} 项</span></div>
                       {mentionLoading || skillsStatus === 'loading' ? <div className="mention-loading" aria-label="正在搜索 Skill"><span className="mention-loading__line w-2/5" /><span className="mention-loading__line w-4/5" /><span className="mention-loading__line w-3/5" /></div> : skillsStatus === 'unavailable' ? <div className="px-3 py-4 text-xs text-[var(--text-secondary)]"><p>Skill 加载失败，请重试。</p><button type="button" onClick={() => void loadSkills()} className="mt-2 min-h-8 rounded-md border border-[var(--border)] px-3 font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-muted)]">重试</button></div> : mentionOptions.length ? mentionOptions.map((option, index) => <button key={option.id} type="button" role="option" aria-selected={index === mentionIndex} onMouseEnter={() => setMentionIndex(index)} onClick={() => selectMention(option)} className={`mention-option ${index === mentionIndex ? 'is-active' : ''}`}><span className="mention-option__icon"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" /></span><span className="min-w-0 flex-1 text-left"><strong className="block truncate text-xs">{option.label}</strong><span className="mt-0.5 block truncate text-[10px] text-[var(--text-secondary)]">{option.meta}</span></span></button>) : <p className="px-3 py-4 text-xs text-[var(--text-secondary)]">没有匹配的 Skill。</p>}
                     </> : <>
-                      <div className="flex items-center justify-between gap-3 px-2 py-2"><button type="button" onClick={() => setMentionLevel('skills')} className="mention-back"><ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />商品内容创作</button><button type="button" onClick={toggleAllChannels} className="mention-select-all">{selectedChannels.length === socialChannels.length ? '取消全选' : '全选'}</button></div>
+                      <div className="flex items-center justify-between gap-3 px-2 py-2"><button type="button" onClick={() => setMentionLevel('skills')} className="mention-back"><ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />商品文案</button><button type="button" onClick={toggleAllChannels} className="mention-select-all">{selectedChannels.length === socialChannels.length ? '取消全选' : '全选'}</button></div>
                       <div className="grid gap-1" role="group" aria-label="选择发布渠道">{socialChannels.map((channel) => { const checked = selectedChannels.includes(channel); return <button key={channel} type="button" aria-pressed={checked} onClick={() => toggleChannel(channel)} className={`mention-option ${checked ? 'is-active' : ''}`}><span className="mention-option__icon"><Check className={`h-3.5 w-3.5 ${checked ? '' : 'opacity-0'}`} aria-hidden="true" /></span><span className="min-w-0 flex-1 text-left"><strong className="block truncate text-xs">{channel}</strong><span className="mt-0.5 block truncate text-[10px] text-[var(--text-secondary)]">用于生成对应渠道内容</span></span></button> })}</div>
-                      <button type="button" onClick={() => setMentionOpen(false)} className="mention-confirm">完成{selectedChannels.length ? ` · 已选 ${selectedChannels.length}` : ''}</button>
+                      <button type="button" onClick={() => setMentionOpen(false)} className="mention-confirm">完成{selectedChannels.length ? `（已选 ${selectedChannels.length}）` : ''}</button>
                     </>}
                   </div>}
                   </>}
-                  attachmentContent={<AddMenu modelOpen={toolMenuOpen} onOpen={() => setToolMenuOpen(false)} onPickFile={() => fileInputRef.current?.click()} products={products} selectedProducts={selectedProducts} knowledgeEntries={knowledgeEntries} selectedKnowledgeIds={selectedKnowledgeIds} onSelectProduct={(product) => setSelectedProducts([product])} onToggleKnowledge={(id) => setSelectedKnowledgeIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])} onOpenFullscreen={() => setWorkspaceMode('fullscreen')} />}
+                  attachmentContent={<AddMenu creatorOnly={creatorOnly} modelOpen={toolMenuOpen} onOpen={() => setToolMenuOpen(false)} onPickFile={() => fileInputRef.current?.click()} products={products} selectedProducts={selectedProducts} knowledgeEntries={knowledgeEntries} selectedKnowledgeIds={selectedKnowledgeIds} onSelectProduct={(product) => setSelectedProducts([product])} onToggleKnowledge={(id) => setSelectedKnowledgeIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])} onOpenFullscreen={() => setWorkspaceMode('fullscreen')} />}
                   toolbarMiddleContent={<button type="button" onClick={startVoiceInput} aria-label={voiceListening ? '停止语音输入' : '开始语音输入'} aria-pressed={voiceListening} title={voiceListening ? '停止语音输入' : '开始语音输入'} className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border shadow-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent-primary)] focus-visible:outline-offset-2 ${voiceListening ? 'border-[var(--accent-primary)] bg-white text-[var(--accent-primary)]' : 'border-black/10 bg-white text-[#737982] hover:bg-[#f8f8f8]'}`}><Mic className="h-4 w-4" aria-hidden="true" /></button>}
                 />
                 {attachedImages.length > 0 && uploadIntent === 'new-product' && <button type="button" onClick={() => setProductDialogOpen(true)} className="mt-2 inline-flex min-h-8 items-center gap-1.5 rounded-[var(--radius-control)] bg-[var(--accent-primary)] px-3 text-[8.25px] font-semibold text-[var(--surface)] transition-colors hover:bg-[var(--accent-primary-hover)] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--text-primary)] focus-visible:outline-offset-2" title="打开新建商品表单"><Package className="h-[9px] w-[9px]" aria-hidden="true" />新建商品</button>}
@@ -568,17 +635,17 @@ export function WorkbenchHome({ displayName, merchantProject }: { displayName: s
         </div>
       </section>
 
-      <button type="button" onClick={() => setHistoryOpen(true)} aria-label="打开历史记录" title="历史记录" className="fixed right-5 top-5 z-20 grid size-10 place-items-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-secondary)] shadow-sm transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--text-primary)] focus-visible:outline-offset-2"><History className="h-4 w-4" aria-hidden="true" /></button>
-      {historyOpen && <div className="fixed inset-0 z-50" role="presentation"><button type="button" onClick={() => setHistoryOpen(false)} aria-label="关闭历史记录" className="absolute inset-0 bg-black/25" /><HistoryPanel className="absolute inset-y-0 right-0 flex w-[min(88vw,380px)] border-l border-[var(--border-subtle)] bg-[var(--surface)] shadow-xl" query={query} setQuery={setQuery} tasks={visibleTasks} onSelectTask={openHistoryTask} onArchiveTask={archiveHistoryTask} onDeleteTask={deleteHistoryTask} onNewConversation={startNewConversation} onClose={() => setHistoryOpen(false)} /></div>}
+      <button type="button" data-glasswork="" data-glasswork-radius="20" data-glasswork-rim="10" data-glasswork-dispersion="0.18" data-pill="" onClick={() => setHistoryOpen(true)} aria-label="打开历史记录" title="历史记录" className="workbench-history-trigger fixed right-5 top-5 z-20 grid size-10 place-items-center rounded-full text-[var(--text-secondary)] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--text-primary)] focus-visible:outline-offset-2"><History className="h-4 w-4" aria-hidden="true" /></button>
+      {historyOpen && <div className="fixed inset-0 z-50" role="presentation"><button type="button" onClick={() => setHistoryOpen(false)} aria-label="关闭历史记录" className="absolute inset-0 bg-black/25" /><HistoryPanel className="workbench-history-panel absolute inset-y-2 right-2 flex w-[min(88vw,380px)] rounded-3xl" query={query} setQuery={setQuery} tasks={visibleTasks} onSelectTask={openHistoryTask} onArchiveTask={archiveHistoryTask} onDeleteTask={deleteHistoryTask} onNewConversation={startNewConversation} onClose={() => setHistoryOpen(false)} /></div>}
     </div>
-    <ProductCreateDialog key={productDialogOpen ? 'open' : 'closed'} open={productDialogOpen} initialImages={attachedImages.map(({ file }) => file)} onOpenChange={(open) => { setProductDialogOpen(open); if (!open) clearAttachedImage() }} />
+    {capabilities.merchant&&<ProductCreateDialog key={productDialogOpen ? 'open' : 'closed'} open={productDialogOpen} initialImages={attachedImages.map(({ file }) => file)} onOpenChange={(open) => { setProductDialogOpen(open); if (!open) clearAttachedImage() }} />}
     {workspaceMode === 'fullscreen' && <FullscreenWorkbench prompt={prompt} setPrompt={setPrompt} submit={submit} onClose={() => setWorkspaceMode('conversation')} selectedProduct={selectedProduct} />}
     {contentStudioOpen && <ContentGenerationStudio selectedProduct={selectedProduct} onClose={() => setContentStudioOpen(false)} onGenerated={(name, source) => void recordGeneratedImage(name, source)} />}
     </>
   )
 }
 
-function AddMenu({ modelOpen, onOpen, onPickFile, onOpenFullscreen, products, selectedProducts, knowledgeEntries, selectedKnowledgeIds, onSelectProduct, onToggleKnowledge }: { modelOpen: boolean; onOpen: () => void; onPickFile: () => void; onOpenFullscreen: () => void; products: Array<{ id: string; name: string; sku?: string | null }>; selectedProducts: Array<{ id: string; name: string; sku?: string | null }>; knowledgeEntries: KnowledgeEntryRecord[]; selectedKnowledgeIds: string[]; onSelectProduct: (product: { id: string; name: string; sku?: string | null }) => void; onToggleKnowledge: (id: string) => void }) {
+function AddMenu({ creatorOnly, modelOpen, onOpen, onPickFile, onOpenFullscreen, products, selectedProducts, knowledgeEntries, selectedKnowledgeIds, onSelectProduct, onToggleKnowledge }: { creatorOnly: boolean; modelOpen: boolean; onOpen: () => void; onPickFile: () => void; onOpenFullscreen: () => void; products: Array<{ id: string; name: string; sku?: string | null }>; selectedProducts: Array<{ id: string; name: string; sku?: string | null }>; knowledgeEntries: KnowledgeEntryRecord[]; selectedKnowledgeIds: string[]; onSelectProduct: (product: { id: string; name: string; sku?: string | null }) => void; onToggleKnowledge: (id: string) => void }) {
   const [open, setOpen] = useState(false)
   const [picker, setPicker] = useState<'products' | 'knowledge' | null>(null)
 
@@ -589,21 +656,21 @@ function AddMenu({ modelOpen, onOpen, onPickFile, onOpenFullscreen, products, se
 
   return (
     <div>
-      <button type="button" onClick={toggleMenu} aria-label="添加图片或资料" aria-expanded={open} aria-controls="workbench-add-menu" className="grid h-11 w-11 place-items-center rounded-full text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--text-primary)] focus-visible:outline-offset-2">
+      <button type="button" onClick={toggleMenu} aria-label={creatorOnly ? '添加图片' : '添加图片或资料'} aria-expanded={open} aria-controls="workbench-add-menu" className="grid h-11 w-11 place-items-center rounded-full text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--text-primary)] focus-visible:outline-offset-2">
         <Plus className={`h-4 w-4 transition-transform ${open ? 'rotate-45' : ''}`} />
       </button>
-      {open && <div id="workbench-add-menu" role="menu" aria-label="添加" className="add-menu absolute inset-x-0 bottom-[calc(100%+8px)] z-20 overflow-hidden p-2">
+      {open && <div data-glasswork="" data-glasswork-radius="16" data-glasswork-rim="12" data-glasswork-dispersion="0.18" id="workbench-add-menu" role="menu" aria-label="添加" className="add-menu absolute inset-x-0 bottom-[calc(100%+8px)] z-20 overflow-hidden p-2">
         {picker ? <>
           <div className="add-menu__picker-header"><button type="button" onClick={() => setPicker(null)} className="add-menu__back" aria-label="返回添加菜单">‹</button><span>{picker === 'products' ? '选择商品' : '选择知识库文件'}</span></div>
           {picker === 'products' ? <div className="add-menu__list">{products.length ? products.map((product) => { const selected = selectedProducts.some((item) => item.id === product.id); return <button key={product.id} type="button" role="menuitemradio" aria-checked={selected} onClick={() => { onSelectProduct(product); setOpen(false) }} className="add-menu__choice"><span className={`add-menu__choice-mark ${selected ? 'is-selected' : ''}`}>{selected ? '✓' : ''}</span><span className="min-w-0 flex-1 truncate">{product.name}</span>{product.sku && <span className="add-menu__choice-meta">{product.sku}</span>}</button> }) : <p className="add-menu__empty">暂无商品，请先在商品资产库中创建。</p>}</div> : <div className="add-menu__list">{knowledgeEntries.length ? knowledgeEntries.map((entry) => { const selected = selectedKnowledgeIds.includes(entry.id); return <button key={entry.id} type="button" role="menuitemcheckbox" aria-checked={selected} onClick={() => onToggleKnowledge(entry.id)} className="add-menu__choice"><span className={`add-menu__choice-mark ${selected ? 'is-selected' : ''}`}>{selected ? '✓' : ''}</span><span className="min-w-0 flex-1 truncate">{entry.key}</span><span className="add-menu__choice-meta">资料</span></button> }) : <p className="add-menu__empty">暂无知识库文件，请先上传或整理资料。</p>}</div>}
         </> : <>
           <p className="add-menu__heading">添加</p>
-          <button type="button" role="menuitem" onClick={() => { onPickFile(); setOpen(false) }} className="add-menu__item"><Paperclip className="h-3 w-3" aria-hidden="true" /><span className="add-menu__title">添加图片</span><span className="add-menu__hint">对话识别或新建商品</span></button>
-          <Link href="/dashboard/knowledge" role="menuitem" className="add-menu__item"><DatabaseIcon className="h-3 w-3" aria-hidden="true" /><span className="add-menu__title">上传资料文件</span><span className="add-menu__hint">前往资料库</span></Link>
+          <button type="button" role="menuitem" onClick={() => { onPickFile(); setOpen(false) }} className="add-menu__item"><Paperclip className="h-3 w-3" aria-hidden="true" /><span className="add-menu__title">添加图片</span><span className="add-menu__hint">{creatorOnly ? '用于创作对话' : '对话识别或新建商品'}</span></button>
+          {!creatorOnly && <><Link href="/dashboard/knowledge" role="menuitem" className="add-menu__item"><DatabaseIcon className="h-3 w-3" aria-hidden="true" /><span className="add-menu__title">上传资料文件</span><span className="add-menu__hint">前往资料库</span></Link>
           <div className="add-menu__section">工作台</div>
           <button type="button" role="menuitem" onClick={() => setPicker('products')} className="add-menu__item"><Package className="h-3 w-3" aria-hidden="true" /><span className="add-menu__title">选择商品</span><span className="add-menu__hint">关联商品上下文</span></button>
-          <button type="button" role="menuitem" onClick={() => setPicker('knowledge')} className="add-menu__item"><DatabaseIcon className="h-3 w-3" aria-hidden="true" /><span className="add-menu__title">选择知识库文件</span><span className="add-menu__hint">引用资料内容</span></button>
-          <button type="button" role="menuitem" onClick={() => { onOpenFullscreen(); setOpen(false) }} className="add-menu__item"><Maximize2 className="h-3 w-3" aria-hidden="true" /><span className="add-menu__title">全屏工作台</span><span className="add-menu__hint">打开更大的创作空间</span></button>
+          <button type="button" role="menuitem" onClick={() => setPicker('knowledge')} className="add-menu__item"><DatabaseIcon className="h-3 w-3" aria-hidden="true" /><span className="add-menu__title">选择知识库文件</span><span className="add-menu__hint">引用资料内容</span></button></>}
+          <button type="button" role="menuitem" onClick={() => { onOpenFullscreen(); setOpen(false) }} className="add-menu__item"><Maximize2 className="h-3 w-3" aria-hidden="true" /><span className="add-menu__title">全屏工作台</span><span className="add-menu__hint">打开更大的工作空间</span></button>
         </>}
       </div>}
     </div>
@@ -619,23 +686,45 @@ function AIAssistantOrb({ isThinking }: { isThinking: boolean }) {
 }
 
 function FullscreenWorkbench({ prompt, setPrompt, submit, onClose, selectedProduct }: { prompt: string; setPrompt: (value: string) => void; submit: (event: FormEvent) => void; onClose: () => void; selectedProduct: { name: string } | null }) {
-  return <div className="fixed inset-0 z-[80] flex bg-[var(--canvas)] text-[var(--text-primary)]" role="dialog" aria-modal="true" aria-label="全屏创作工作台">
-    <section className="flex w-[38%] min-w-[320px] flex-col border-r border-[var(--border-subtle)] bg-[var(--surface)] p-6">
-      <div className="flex items-center justify-between"><div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">Conversation</p><h2 className="mt-1 text-lg font-semibold">创作对话</h2></div><button type="button" onClick={onClose} aria-label="退出全屏创作模式" className="grid h-9 w-9 place-items-center rounded-full hover:bg-[var(--surface-subtle)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--text-primary)] focus-visible:outline-offset-2"><Minimize2 className="h-4 w-4" /></button></div>
-      <div className="mt-6 flex-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--canvas)] p-4"><p className="text-sm font-semibold">准备开始创作</p><p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">适合多张图片、实机渲染和图文并排编辑的任务。</p>{selectedProduct && <p className="mt-4 rounded-md bg-[var(--surface)] px-3 py-2 text-xs">当前商品：{selectedProduct.name}</p>}</div>
-      <form onSubmit={submit} className="mt-4"><textarea rows={4} value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="描述要生成的画面、文案或修改方式……" className="w-full resize-none rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm leading-6 outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--text-primary)]" /><UiverseButton type="submit" disabled={!prompt.trim()} className="mt-2 h-11 w-full text-sm"><ArrowUp className="h-4 w-4" />生成</UiverseButton></form>
-    </section>
-    <section className="flex min-w-0 flex-1 flex-col bg-[var(--canvas)] p-6"><div className="flex items-center justify-between"><div><p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">Preview board</p><h2 className="mt-1 text-lg font-semibold">预览画板</h2></div><span className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-[11px] text-[var(--text-secondary)]">多图与文案工作区</span></div><div className="mt-5 grid min-h-0 flex-1 place-items-center rounded-[var(--radius-card)] border border-dashed border-[var(--border)] bg-[var(--surface)]"><div className="text-center"><ImageIcon className="mx-auto h-8 w-8 text-[var(--text-muted)]" aria-hidden="true" /><p className="mt-3 text-sm font-semibold">把生成的图片和文案放在这里</p><p className="mt-1 text-xs text-[var(--text-secondary)]">后续接入多图渲染后，将在此显示实机预览。</p></div></div></section>
-  </div>
+  return (
+    <div className="workbench-fullscreen fixed inset-0 z-[80] flex text-[var(--text-primary)]" role="dialog" aria-modal="true" aria-label="全屏工作台">
+      <section className="workbench-fullscreen-conversation flex w-[38%] min-w-[320px] flex-col p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">工作对话</h2>
+          <button type="button" onClick={onClose} aria-label="退出全屏工作台" className="workbench-fullscreen-close grid h-9 w-9 place-items-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent-secondary)] focus-visible:outline-offset-2"><Minimize2 className="h-4 w-4" /></button>
+        </div>
+        <div data-glasswork="" data-glasswork-radius="20" data-glasswork-rim="12" data-glasswork-dispersion="0.18" data-glasswork-tint="1.15" className="workbench-fullscreen-dialog mt-6 flex-1 p-4">
+          <p className="text-sm font-semibold">开始处理任务</p>
+          <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">适合多张图片、实机渲染和图文并排编辑的任务。</p>
+          {selectedProduct && <p className="mt-4 text-xs">当前商品：{selectedProduct.name}</p>}
+        </div>
+        <form onSubmit={submit} className="mt-4">
+          <div data-glasswork="" data-glasswork-radius="20" data-glasswork-rim="12" data-glasswork-dispersion="0.18" data-glasswork-tint="1.15" className="workbench-fullscreen-editor">
+            <textarea rows={4} value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="描述要生成的画面、文案或修改方式……" className="w-full resize-none bg-transparent p-3 text-sm leading-6 outline-none placeholder:text-[var(--text-muted)]" />
+          </div>
+          <UiverseButton type="submit" disabled={!prompt.trim()} className="workbench-fullscreen-submit mt-2 h-11 w-full text-sm"><ArrowUp className="h-4 w-4" />生成</UiverseButton>
+        </form>
+      </section>
+      <section className="flex min-w-0 flex-1 flex-col p-6">
+        <h2 className="text-lg font-semibold">预览画板</h2>
+        <div data-glasswork="" data-glasswork-radius="20" data-glasswork-rim="12" data-glasswork-dispersion="0.18" data-glasswork-tint="1.15" className="workbench-fullscreen-preview mt-5 grid min-h-0 flex-1 place-items-center">
+          <div className="text-center">
+            <ImageIcon className="mx-auto h-8 w-8 text-[var(--text-muted)]" aria-hidden="true" />
+            <p className="mt-3 text-sm font-semibold">把生成的图片和文案放在这里</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
 }
 
 function HistoryPanel({ className, query, setQuery, tasks, onSelectTask, onArchiveTask, onDeleteTask, onNewConversation, onClose }: { className: string; query: string; setQuery: (value: string) => void; tasks: Task[]; onSelectTask: (task: Task) => void; onArchiveTask: (id: string) => void; onDeleteTask: (id: string) => void; onNewConversation: () => void; onClose?: () => void }) {
   const [historyView, setHistoryView] = useState<'recent' | 'archived'>('recent')
   return (
-    <aside role="dialog" aria-modal="true" aria-label="历史记录" className={`${className} shrink-0 flex-col`}>
+    <aside role="dialog" aria-modal="true" aria-label="历史记录" data-glasswork="" data-glasswork-radius="24" data-glasswork-rim="16" data-glasswork-dispersion="0.18" data-glasswork-tint="1.25" className={`${className} shrink-0 flex-col`}>
       <div className="flex h-16 items-center justify-between border-b border-[var(--border-subtle)] px-5"><h2 className="text-base font-semibold text-[var(--text-primary)]">历史记录</h2>{onClose && <button type="button" onClick={onClose} aria-label="关闭" className="grid h-10 w-10 place-items-center rounded-[var(--radius-control)] hover:bg-[var(--surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent-secondary)]"><X className="h-[18px] w-[18px]" /></button>}</div>
       <label className="mx-4 mt-2 flex h-11 shrink-0 items-center gap-2 rounded-[var(--radius-control)] px-3 transition-colors focus-within:bg-[var(--surface-muted)] focus-within:outline focus-within:outline-2 focus-within:outline-[var(--accent-secondary)]"><Search className="h-4 w-4 text-[var(--text-secondary)]" aria-hidden="true" /><span className="sr-only">搜索历史记录</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索历史记录" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--text-secondary)]" /></label>
-      <div className="flex h-11 shrink-0 items-center gap-2 px-4"><button type="button" onClick={() => setHistoryView('recent')} aria-pressed={historyView === 'recent'} className={`h-9 px-3 text-sm ${historyView === 'recent' ? 'font-semibold text-[var(--accent-secondary)]' : 'text-[var(--text-secondary)]'}`}>最近</button><button type="button" onClick={() => setHistoryView('archived')} aria-pressed={historyView === 'archived'} className={`h-9 px-3 text-sm ${historyView === 'archived' ? 'font-semibold text-[var(--accent-secondary)]' : 'text-[var(--text-secondary)]'}`}>已归档</button></div>
+      <div className="flex h-11 shrink-0 items-center gap-2 px-4"><button type="button" onClick={() => setHistoryView('recent')} aria-pressed={historyView === 'recent'} className={`h-9 rounded-full px-3 text-sm hover:bg-[var(--interactive-hover)] ${historyView === 'recent' ? 'font-semibold text-[var(--accent-secondary)]' : 'text-[var(--text-secondary)]'}`}>最近</button><button type="button" onClick={() => setHistoryView('archived')} aria-pressed={historyView === 'archived'} className={`h-9 rounded-full px-3 text-sm hover:bg-[var(--interactive-hover)] ${historyView === 'archived' ? 'font-semibold text-[var(--accent-secondary)]' : 'text-[var(--text-secondary)]'}`}>已归档</button></div>
       <div className="flex-1 space-y-2 overflow-y-auto overscroll-contain p-3">{tasks.filter((task) => Boolean(task.archived) === (historyView === 'archived')).map((task, index) => {
         const latestImage = task.messages?.flatMap((message) => message.images || []).at(-1) || task.thumbnail
         const content = <>
@@ -646,7 +735,7 @@ function HistoryPanel({ className, query, setQuery, tasks, onSelectTask, onArchi
           <span className="mt-1 block truncate text-[11px] text-[var(--text-secondary)]">{task.description}</span>
           {latestImage && <img src={latestImage} alt="最近生成的图片" className="mt-2 h-8 w-8 rounded-md object-cover" />}
         </>
-        return <SwipeRow key={`${task.id}-${index}`} label={task.title} actions={[{ id: 'delete', label: '删除', icon: <HugeiconsIcon icon={Delete02Icon} size={20} /> }, { id: 'archive', label: task.archived ? '恢复' : '归档', icon: <HugeiconsIcon icon={Archive02Icon} size={20} />, dismiss: true }]} onCommit={(action) => action.id === 'delete' ? onDeleteTask(task.id) : onArchiveTask(task.id)} actionColor="var(--accent-primary)" drawerColor="var(--accent-secondary)" rowColor="var(--surface-muted)" textColor="var(--text-primary)" height={64} radius={12} actionWidth={80} direction="left" snapBounce={0.14} resistance={0.55} collapseMs={200} commitAt={0.6} fullSwipe><div className="flex h-full min-w-0 w-full items-center gap-2.5"><Circle className="h-4 w-4 shrink-0 text-[var(--border)]" aria-hidden="true" />{task.messages?.length ? <button type="button" onClick={() => onSelectTask(task)} className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--text-primary)]">{content}</button> : <Link href={task.href} onClick={onClose} className="min-w-0 flex-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--text-primary)]">{content}</Link>}</div></SwipeRow>
+        return <SwipeRow key={`${task.id}-${index}`} label={task.title} actions={[{ id: 'delete', label: '删除', icon: <HugeiconsIcon icon={Delete02Icon} size={20} /> }, { id: 'archive', label: task.archived ? '恢复' : '归档', icon: <HugeiconsIcon icon={Archive02Icon} size={20} />, dismiss: true }]} onCommit={(action) => action.id === 'delete' ? onDeleteTask(task.id) : onArchiveTask(task.id)} actionColor="var(--accent-primary)" drawerColor="var(--accent-secondary)" rowColor="var(--surface-muted)" textColor="var(--text-primary)" height={64} radius={32} actionWidth={80} direction="left" snapBounce={0.14} resistance={0.55} collapseMs={200} commitAt={0.6} fullSwipe><div className="flex h-full min-w-0 w-full items-center gap-2.5"><Circle className="h-4 w-4 shrink-0 text-[var(--border)]" aria-hidden="true" />{task.messages?.length ? <button type="button" onClick={() => onSelectTask(task)} className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--text-primary)]">{content}</button> : <Link href={task.href} onClick={onClose} className="min-w-0 flex-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--text-primary)]">{content}</Link>}</div></SwipeRow>
       })}</div>
       <UiverseButton type="button" onClick={() => { onNewConversation(); onClose?.() }} className="workbench-new-chat mx-4 mb-4 h-11 w-auto shrink-0 text-sm"><Plus className="h-4 w-4" aria-hidden="true" />新对话</UiverseButton>
     </aside>

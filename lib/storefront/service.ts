@@ -41,7 +41,7 @@ function catalogRow(item: CatalogItemRow): StorefrontProductRow {
     id: item.id,
     name: item.title,
     description: item.description,
-    price: variant?.price ?? 0,
+    price: variant?.price ?? null,
     currency: variant?.currency_code ?? 'CNY',
     details: item.details,
     cover_image: item.cover_image,
@@ -466,8 +466,10 @@ export async function getPublicStorefront(
 /** 店铺公开商品列表（active、按创建时间倒序、限量）。 */
 export async function getStorefrontProducts(
   storeOrId: StoreRef | { id: string; store_slug?: string; currency?: string | null } | string,
-  limit = 24
+  limit = 24,
+  offset = 0
 ): Promise<StorefrontProduct[]> {
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100 || !Number.isInteger(offset) || offset < 0 || offset > 100_000) throw new RangeError('Invalid storefront pagination')
   const storeId = typeof storeOrId === 'string' ? storeOrId : storeOrId?.id
   const storeSlug = typeof storeOrId === 'string' ? 'store' : ('slug' in storeOrId ? storeOrId.slug : storeOrId.store_slug) || 'store'
   const storeCurrency = typeof storeOrId === 'string' ? null : storeOrId?.currency
@@ -490,7 +492,8 @@ export async function getStorefrontProducts(
       .eq('status', 'active')
       .in('id', visibleProductIds)
       .order('created_at', { ascending: false })
-      .limit(limit)
+      .order('id', { ascending: false })
+      .range(offset, offset + limit - 1)
 
     if (error) {
       console.error('[Storefront][getStorefrontProducts] query failed', {

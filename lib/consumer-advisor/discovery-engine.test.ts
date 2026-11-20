@@ -1,32 +1,66 @@
-import { NextRequest,NextResponse } from 'next/server'
-import { describe,expect,it,vi } from 'vitest'
-vi.mock('server-only',()=>({}))
-vi.mock('@/lib/supabase/service-role',()=>({createServiceRoleClient:vi.fn()}))
-vi.mock('@/lib/storefront/service',()=>({mapStorefrontDiscoveryRows:vi.fn()}))
-import { attachDiscoveryActor,decodeDiscoveryCursor,discoveryActor,encodeDiscoveryCursor } from './discovery-engine'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const session='10000000-0000-4000-8000-000000000001'
-describe('discovery cursor and guest identity',()=>{
-  it('rejects forged, expired and cross-key cursors',()=>{
-    const data={r:crypto.randomUUID(),s:session,o:20,v:3,e:Date.now()+60_000}
-    const cursor=encodeDiscoveryCursor(data,'key-a')
-    expect(decodeDiscoveryCursor(cursor,'key-a')).toEqual(data)
-    expect(()=>decodeDiscoveryCursor(cursor,'key-b')).toThrow('续页地址无效')
-    const [body,signature]=cursor.split('.')
-    const changed=Buffer.from(JSON.stringify({...data,o:40})).toString('base64url')
-    expect(()=>decodeDiscoveryCursor(`${changed}.${signature}`,'key-a')).toThrow('续页地址无效')
-    expect(()=>decodeDiscoveryCursor(`${body}.${signature}.extra`,'key-a')).toThrow('续页地址无效')
-    expect(()=>decodeDiscoveryCursor(encodeDiscoveryCursor({...data,e:Date.now()-1},'key-a'),'key-a')).toThrow('搜索已过期')
+vi.mock('server-only',()=>({}))
+const m=vi.hoisted(()=>({rpc:vi.fn(),catalog:vi.fn(),retrieve:vi.fn()}))
+vi.mock('@/lib/supabase/service-role',()=>({createServiceRoleClient:()=>({rpc:m.rpc})}))
+vi.mock('@/lib/products/consumer-catalog-store',async(original)=>({...await original<typeof import('@/lib/products/consumer-catalog-store')>(),readPublishedConsumerCatalog:m.catalog}))
+vi.mock('./discovery-retrieval',()=>({retrieveDiscoveryCandidates:m.retrieve}))
+
+import { readConsumerCatalog } from '@/lib/products/consumer-catalog'
+import { catalogSnapshot } from '@/lib/products/consumer-catalog-store'
+import { startDiscovery } from './discovery-engine'
+import { keywordSearchSpec } from './search-spec'
+
+const actor={userId:null,guestHash:'a'.repeat(64),sessionId:'20000000-0000-4000-8000-000000000001'}
+const context={userId:null,version:0,memories:[]}
+const product=readConsumerCatalog()[0]
+const catalog=catalogSnapshot([product])
+const report={requestedMode:'keyword' as const,effectiveMode:'keyword' as const,profile:null,degraded:false,reason:null,
+  embeddingCalls:0,embeddingInputTokens:0,embeddingMs:0,retrievalMs:0,candidateCount:1,keywordCount:1,semanticCount:0,totalMs:0}
+
+beforeEach(()=>{
+  vi.clearAllMocks()
+  m.catalog.mockReset().mockResolvedValue(catalog)
+  m.retrieve.mockResolvedValue({products:[product],report,catalogVersion:catalog.version})
+})
+
+describe('initial discovery page',()=>{
+  it('reads the latest catalog while creating the owned search, then validates the stored search',async()=>{
+    let release:(value:unknown)=>void=()=>{}
+    let record:Record<string,any>={}
+    m.rpc.mockImplementation((name:string,args:Record<string,any>)=>{
+      if(name==='create_consumer_discovery_run') {
+        record=args.p_record
+        return {abortSignal:()=>new Promise((resolve)=>{release=resolve})}
+      }
+      return {abortSignal:async()=>({data:{id:record.id,spec:record.spec,sessionId:record.session_id,
+        contextVersion:record.context_version,expiresAt:record.expires_at,execution:record.execution},error:null})}
+    })
+    const pending=startDiscovery(actor,keywordSearchSpec('项链'),context,undefined,undefined,catalog)
+    await vi.waitFor(()=>expect(m.rpc).toHaveBeenCalledWith('create_consumer_discovery_run',expect.anything()))
+    const catalogStarted=m.catalog.mock.calls.length
+    release({data:record.id,error:null})
+    const page=await pending
+    expect(catalogStarted).toBe(1)
+    expect(m.rpc).toHaveBeenCalledWith('read_consumer_discovery_execution',expect.objectContaining({p_session_id:actor.sessionId,p_guest_hash:actor.guestHash}))
+    expect(page.products.map((item)=>item.id)).toEqual([product.id])
   })
-  it('keeps guest tokens HTTP-only, hashes owners and never accepts a guest token as an authenticated identity',()=>{
-    const first=discoveryActor(new NextRequest('http://localhost'),null,session)
-    expect(first.newGuestToken).toMatch(/^[a-f0-9]{64}$/)
-    expect(first.guestHash).not.toBe(first.newGuestToken)
-    const response=attachDiscoveryActor(NextResponse.json({ok:true}),first)
-    expect(response.headers.get('Cache-Control')).toBe('private, no-store')
-    expect(response.cookies.get('omnilink_discovery_guest')?.httpOnly).toBe(true)
-    const returning=new NextRequest('http://localhost',{headers:{cookie:`omnilink_discovery_guest=${first.newGuestToken}`}})
-    expect(discoveryActor(returning,null,session)).toMatchObject({guestHash:first.guestHash})
-    expect(discoveryActor(returning,'verified-user',session)).toEqual({userId:'verified-user',guestHash:null,sessionId:session})
+  it('rejects the first page if the published catalog changed while retrieving',async()=>{
+    let record:Record<string,any>={}
+    m.catalog.mockResolvedValueOnce(catalogSnapshot([{...product,name:`${product.name} updated`}]))
+    m.rpc.mockImplementation((name:string,args:Record<string,any>)=>{
+      if(name==='create_consumer_discovery_run') {
+        record=args.p_record
+        return {abortSignal:async()=>({data:record.id,error:null})}
+      }
+      return {abortSignal:async()=>({data:{id:record.id,spec:record.spec,sessionId:record.session_id,
+        contextVersion:record.context_version,expiresAt:record.expires_at,execution:record.execution},error:null})}
+    })
+    await expect(startDiscovery(actor,keywordSearchSpec('项链'),context,undefined,undefined,catalog)).rejects.toMatchObject({code:'SEARCH_EXPIRED'})
+  })
+  it('handles a failed concurrent catalog read when creating the search also fails',async()=>{
+    m.catalog.mockRejectedValueOnce(new Error('catalog unavailable'))
+    m.rpc.mockReturnValue({abortSignal:async()=>({data:null,error:{message:'unavailable'}})})
+    await expect(startDiscovery(actor,keywordSearchSpec('项链'),context,undefined,undefined,catalog)).rejects.toMatchObject({code:'CATALOG_UNAVAILABLE'})
   })
 })

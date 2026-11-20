@@ -472,6 +472,9 @@ class SharedRippleGPUManager {
   private initGPU() {
     if (this.renderer || typeof window === "undefined") return;
 
+    const canvas = document.createElement("canvas");
+    if (!canvas.getContext("webgl2") && !canvas.getContext("webgl")) return;
+
     document.addEventListener("visibilitychange", this.handleVisibilityChange);
 
     this.scrollY = window.scrollY || 0;
@@ -480,6 +483,7 @@ class SharedRippleGPUManager {
     this.pointerClientY = window.innerHeight * 0.36;
 
     this.renderer = new Renderer({
+      canvas,
       alpha: false,
       antialias: false,
       dpr: Math.min(window.devicePixelRatio || 1, 1.25),
@@ -788,8 +792,14 @@ class SharedRippleGPUManager {
     }
   }
 
+  public isAvailable() {
+    this.initGPU();
+    return Boolean(this.renderer);
+  }
+
   public subscribe(fn: FrameSubscriber): () => void {
     this.initGPU();
+    if (!this.renderer) return () => {};
     this.subscribers.add(fn);
     if (this.subscribers.size === 1 && !this.rafId && !document.hidden) {
       this.previousTime = 0;

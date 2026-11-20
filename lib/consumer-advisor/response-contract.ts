@@ -8,6 +8,7 @@ export type InformationItem = {
 export type ComparisonResult = {
   title: string; columns: { id: string; title: string; url: string }[];
   rows: { label: string; values: string[] }[]; sources: InformationItem[]; unknowns: string[];
+  goal?:string;
 }
 export type ExecutionTask = {
   id: string; sessionId: string; status: 'pending' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
@@ -37,7 +38,7 @@ const href=z.string().max(2048).refine((value)=>value.startsWith('/')&&!value.st
 const itemSchema=z.object({id:z.string().max(100),entityType:z.enum(['product','service','content','source']),title:z.string().max(240),excerpt:z.string().max(6000),
   url:href,imageUrl:z.string().nullable(),source:z.string().max(240),updatedAt:z.string(),version:z.number().int().positive()})
 const comparisonSchema=z.object({title:z.string().max(240),columns:z.array(z.object({id:z.string().max(100),title:z.string().max(240),url:href})).max(8),
-  rows:z.array(z.object({label:z.string().max(80),values:z.array(z.string().max(1000)).max(8)})).max(12),sources:z.array(itemSchema).max(8),unknowns:z.array(z.string().max(240)).max(8)})
+  rows:z.array(z.object({label:z.string().max(80),values:z.array(z.string().max(1000)).max(8)})).max(12),sources:z.array(itemSchema).max(8),unknowns:z.array(z.string().max(240)).max(8),goal:z.string().max(1000).optional()})
 const executionSchema=z.object({id:z.string().uuid(),sessionId:z.string().uuid(),status:z.enum(['pending','running','paused','completed','failed','cancelled']),revision:z.number().int().positive(),
   attempt:z.number().int().min(0).max(3),completedSteps:z.array(z.string().max(40)).max(4),error:z.string().nullable(),result:comparisonSchema.nullable(),updatedAt:z.string()})
 export function readExecutionBlocks(value:unknown):ResponseBlock[] {
@@ -57,8 +58,10 @@ export function readSourceIds(value:unknown):string[] {
 }
 
 export const compareInputSchema = z.object({
-  productIds: z.array(z.string().uuid()).max(6).default([]),
+  productIds: z.array(z.string().max(100).refine((id)=>z.string().uuid().safeParse(id).success||/^external-[a-z0-9-]+$/i.test(id),'商品标识无效。')).max(6).default([]),
   urls: z.array(z.string().url().max(2048)).max(2).default([]),
+  goal:z.string().trim().max(1000).optional(),
+  requestedFields:z.array(z.enum(['price','material','size','color','source','summary'])).max(6).optional(),
 }).refine((value) => value.productIds.length + value.urls.length > 0, '请先选择商品或添加网址。')
 export type CompareInput = z.infer<typeof compareInputSchema>
 

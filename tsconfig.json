@@ -43,13 +43,17 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "**/*.mts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".next-preview/types/**/*.ts",
+    ".next-preview/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
     "archive/**",
     "scripts/**/*.mts",
     "**/__tests__/**",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    ".cloudflare/types/**",
+    "lib/image-processing-cloudflare.ts"
   ]
 }

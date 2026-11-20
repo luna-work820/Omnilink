@@ -1,0 +1,15 @@
+import React from 'react'
+import { hydrateRoot } from 'react-dom/client'
+import Home from '../src/pages/home'
+import Products from '../src/pages/products'
+import Product from '../src/pages/product'
+import type { SitePageProps } from './sdk'
+const props=JSON.parse(document.getElementById('site-data')!.textContent!) as SitePageProps
+const Page=props.route.name==='home'?Home:props.route.name==='products'?Products:Product
+hydrateRoot(document.getElementById('root')!,<Page {...props}/> )
+const access=new URLSearchParams(location.search).get('access')
+if(access)document.addEventListener('click',(event)=>{
+ const target=(event.target as Element)?.closest?.('a');if(!target)return
+ const url=new URL(target.href,location.href)
+ if(url.origin===location.origin){url.searchParams.set('access',access);target.href=url.href}
+})

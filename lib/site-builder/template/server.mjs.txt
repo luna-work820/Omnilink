@@ -1,0 +1,38 @@
+import {createServer} from 'node:http'
+import {readFileSync} from 'node:fs'
+import {timingSafeEqual,randomBytes} from 'node:crypto'
+import {render} from './render.mjs'
+const cfg=JSON.parse(readFileSync('runtime.json','utf8'))
+const equal=(a,b)=>{const x=Buffer.from(a||''),y=Buffer.from(b||'');return x.length===y.length&&timingSafeEqual(x,y)}
+const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+const json=s=>JSON.stringify(s).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029')
+async function data(){
+ if(cfg.mode==='preview')return JSON.parse(readFileSync('data.json','utf8'))
+ const base=cfg.dataOrigin+'/api/site-data/v1/'+encodeURIComponent(cfg.storeSlug)
+ const load=async(path)=>{const r=await fetch(base+path,{signal:AbortSignal.timeout(10000)});if(!r.ok)throw Object.assign(new Error('Data unavailable'),{status:r.status});const d=await r.json();if(d.schemaVersion!=='1')throw Error('Contract mismatch');return d}
+ const [store,page]=await Promise.all([load(''),load('/products?limit=50')]);return {store:store.store,products:page.items}
+}
+createServer(async(req,res)=>{
+ res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Content-Type-Options','nosniff')
+ const url=new URL(req.url,'http://site.local');const cookie=(req.headers.cookie||'').match(/(?:^|;\s*)site_access=([^;]+)/)?.[1]
+ if(cfg.expiresAt<Date.now()){res.writeHead(410);res.end('Preview expired');return}
+ if(!equal(url.searchParams.get('access')||cookie,cfg.access)){res.writeHead(403);res.end('Forbidden');return}
+ const access=encodeURIComponent(cfg.access)
+ res.setHeader('Set-Cookie',`site_access=${cfg.access}; Path=/; HttpOnly; Secure; SameSite=None; Partitioned; Max-Age=540`)
+ if(url.pathname==='/site.js'||url.pathname==='/site.css'){res.setHeader('Content-Type',url.pathname.endsWith('.js')?'text/javascript; charset=utf-8':'text/css; charset=utf-8');res.end(readFileSync('.'+url.pathname));return}
+ try{
+  let current=await data();let route={name:'home'};let product=null
+  if(url.pathname==='/products')route={name:'products'}
+  else if(/^\/products\/[^/]+$/.test(url.pathname)){
+   const id=decodeURIComponent(url.pathname.split('/')[2]);route={name:'product',productId:id}
+   if(cfg.mode==='public'){const r=await fetch(cfg.dataOrigin+'/api/site-data/v1/'+encodeURIComponent(cfg.storeSlug)+'/products/'+encodeURIComponent(id),{signal:AbortSignal.timeout(10000)});if(!r.ok){res.writeHead(r.status===404?404:503);res.end('Product unavailable');return};product=(await r.json()).product}
+   else product=current.products.find(p=>p.id===id)||null
+   if(!product){res.writeHead(404);res.end('Product not found');return}
+  }else if(url.pathname!=='/'){res.writeHead(404);res.end('Not found');return}
+  const props={...current,product,route};const html=render(props);const nonce=randomBytes(16).toString('hex')
+  const images=[current.store.logoUrl,...(product?[product,...current.products]:current.products).flatMap(p=>[p.imageUrl,...p.images])].filter(Boolean).flatMap(u=>{try{return[new URL(u).origin]}catch{return[]}})
+  const frame=cfg.appOrigin||"'none'"
+  res.setHeader('Content-Security-Policy',`default-src 'none'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' ${[...new Set(images)].join(' ')}; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors ${frame}`)
+  res.setHeader('Content-Type','text/html; charset=utf-8');res.end(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(product?.name||current.store.name)}</title><link rel="stylesheet" href="/site.css?access=${access}"></head><body><div id="root">${html}</div><script id="site-data" type="application/json" nonce="${nonce}">${json(props)}</script><script type="module" nonce="${nonce}" src="/site.js?access=${access}"></script></body></html>`)
+ }catch{res.writeHead(503);res.end('Website data temporarily unavailable')}
+}).listen(3000,'0.0.0.0')

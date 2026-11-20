@@ -96,6 +96,7 @@ export const RippleDistortion: React.FC<RippleDistortionProps> = ({
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
+    if (!sharedRippleGPU.isAvailable()) return;
 
     const viewCanvas = document.createElement('canvas');
     viewCanvas.style.width = '100%';
@@ -192,7 +193,13 @@ export const RippleDistortion: React.FC<RippleDistortionProps> = ({
     };
   }, []);
 
-  return <div ref={mountRef} className={`ripple-distortion ${className}`.trim()} style={style} />;
+  return (
+    <div
+      ref={mountRef}
+      className={`ripple-distortion ${className}`.trim()}
+      style={{ backgroundImage: `url("${src}")`, backgroundSize: 'cover', backgroundPosition: 'center', ...style }}
+    />
+  );
 };
 
 export default RippleDistortion;

@@ -32,8 +32,10 @@ beforeAll(async()=>{
   await db.exec(await readFile('supabase/tests/fixtures/stage23_catalog.sql','utf8'))
   await db.exec(await readFile('supabase/migrations/20261111030610_consumer_discovery_personal_context.sql','utf8'))
   await db.exec(await readFile('supabase/migrations/20261113010000_consumer_execution_information.sql','utf8'))
+  await db.exec(await readFile('supabase/migrations/20261118014921_creator_publication_delivery.sql','utf8'))
+  await db.exec(await readFile('supabase/migrations/20261118020341_creator_public_media_policy.sql','utf8'))
 },30_000)
-beforeEach(async()=>{await db.exec('truncate public.consumer_requests,public.consumer_execution_tasks,public.consumer_external_sources,public."consumer_AI assistant_messages",public.creator_posts')})
+beforeEach(async()=>{await db.exec('truncate public.consumer_requests,public.consumer_execution_tasks,public.consumer_external_sources,public."consumer_AI assistant_messages",public.creator_post_assets,public.creator_posts')})
 afterAll(async()=>{await db?.close()})
 
 describe('request ledger on PostgreSQL',()=>{
@@ -102,6 +104,16 @@ describe('durable task fencing on PostgreSQL',()=>{
   })
 })
 describe('information projection and client permissions',()=>{
+  it('withdraws private and archived publications from the physical search index',async()=>{
+    const inserted=await db.query<{id:string}>(`insert into public.creator_posts(organization_id,store_id,author_id,kind,title,status,body,visibility)
+      values('20000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001',$1,'article','私密连通验证','published','未公开正文','private') returning id`,[A])
+    const id=inserted.rows[0].id
+    expect(await rpc('search_consumer_information',[actor,'私密连通验证',['content'],20])).toEqual([])
+    await db.query("update public.creator_posts set visibility='public' where id=$1",[id])
+    expect(await rpc('search_consumer_information',[actor,'私密连通验证',['content'],20])).toHaveLength(1)
+    await db.query("update public.creator_posts set status='archived' where id=$1",[id])
+    expect(await rpc('search_consumer_information',[actor,'私密连通验证',['content'],20])).toEqual([])
+  })
   it('includes published content while excluding drafts and pending modifications',async()=>{
     await db.query(`insert into public.creator_posts(organization_id,store_id,author_id,kind,title,status,body,draft_version)
       values ('20000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001',$1,'note','沙发选购','published','公开内容','{"title":"秘密修改"}'),

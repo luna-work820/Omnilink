@@ -302,6 +302,7 @@ const FlexCarousel = ({
   const [active, setActive] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [focusOpen, setFocusOpen] = useState(false);
+  const [webglUnavailable, setWebglUnavailable] = useState(false);
 
   const base = BEND_PRESETS[preset] || BEND_PRESETS.liquid;
   const pick = (value, key) => (value === undefined || value === null ? base[key] : value);
@@ -345,7 +346,14 @@ const FlexCarousel = ({
     const container = containerRef.current;
     if (!container) return undefined;
 
+    const canvas = document.createElement('canvas');
+    if (!canvas.getContext('webgl2')) {
+      const frame = requestAnimationFrame(() => setWebglUnavailable(true));
+      return () => cancelAnimationFrame(frame);
+    }
+
     const renderer = new Renderer({
+      canvas,
       dpr: Math.min(window.devicePixelRatio || 1, 2),
       alpha: true,
       premultipliedAlpha: true,
@@ -358,7 +366,6 @@ const FlexCarousel = ({
       return undefined;
     }
     gl.clearColor(0, 0, 0, 0);
-    const canvas = gl.canvas;
     canvas.style.display = 'block';
     canvas.style.width = '100%';
     canvas.style.height = '100%';
@@ -1261,11 +1268,14 @@ const FlexCarousel = ({
       ref={containerRef}
       className={`flex-carousel ${className}`.trim()}
       style={{ ...style, '--flex-carousel-half': `${Math.min(Math.max(cardHeight, 0.05), 1) * 50}%` }}
-      role="region"
-      aria-roledescription="carousel"
-      aria-label="Image carousel"
-      tabIndex={0}
+      role={webglUnavailable ? undefined : 'region'}
+      aria-roledescription={webglUnavailable ? undefined : 'carousel'}
+      aria-label={webglUnavailable ? undefined : 'Image carousel'}
+      tabIndex={webglUnavailable ? undefined : 0}
     >
+      {webglUnavailable && current && (
+        <img className="flex-carousel__fallback" src={current.src} alt={current.alt || current.title} />
+      )}
       {captions && current && revealed && (
         <div className="flex-carousel__caption" aria-hidden="true">
           <span key={active} className="flex-carousel__title">

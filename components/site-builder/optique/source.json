@@ -1,0 +1,38 @@
+{
+  "repository": "https://github.com/Luna-7/Omnilink",
+  "commit": "bf8e254ddcdc2a75a743c2219171961394ae3f55",
+  "files": [
+    {
+      "path": "lib/storefront/schema.ts",
+      "sha": "10ea6fc0f9e0e467699c2ca174a03e70a82a5533",
+      "url": "https://github.com/Luna-7/Omnilink/blob/bf8e254ddcdc2a75a743c2219171961394ae3f55/lib/storefront/schema.ts"
+    },
+    {
+      "path": "components/storefront/DynamicSectionRenderer.tsx",
+      "sha": "7ec286aff8ad4b7e33056c0afaad7b135b334458",
+      "url": "https://github.com/Luna-7/Omnilink/blob/bf8e254ddcdc2a75a743c2219171961394ae3f55/components/storefront/DynamicSectionRenderer.tsx"
+    },
+    {
+      "path": "lib/themes/minimal.ts",
+      "sha": "99df869bdcd03d169ee01243f987e75ab484b7a4",
+      "url": "https://github.com/Luna-7/Omnilink/blob/bf8e254ddcdc2a75a743c2219171961394ae3f55/lib/themes/minimal.ts"
+    }
+  ],
+  "assets": [
+    {
+      "sourceUrl": "https://images.unsplash.com/photo-1511499767150-a48a237f0083?q=80&w=1200&auto=format&fit=crop",
+      "localPath": "public/site-templates/optique/hero.jpg",
+      "sha256": "74b8cb2d0d1eb3faa563cb560b4935d5c0fbfeceb097118fdfac517194c56ec8"
+    },
+    {
+      "sourceUrl": "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?q=80&w=1200&auto=format&fit=crop",
+      "localPath": "public/site-templates/optique/collection.jpg",
+      "sha256": "3983548e88a694a7084255e5b68098b435ef776a0e88785f98bd0c23dea4b7fc"
+    },
+    {
+      "sourceUrl": "https://images.unsplash.com/photo-1572635196237-14b3f281503f?q=80&w=1200&auto=format&fit=crop",
+      "localPath": "public/site-templates/optique/craft.jpg",
+      "sha256": "ef56c0fcf2ba3347fab1025c16b6decc6a69af3246dbedfa1701b8f60c7608e3"
+    }
+  ]
+}

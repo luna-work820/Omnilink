@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./liquid-theme.css";
 import "@/components/ui/line-icons/line-icons.css";
 import { cn } from "@/lib/utils";
 import { LanguageProvider } from "@/context/LanguageContext";
@@ -16,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
       className={cn("h-full antialiased")}
     >
-      <body suppressHydrationWarning className="min-h-full flex flex-col font-sans bg-[var(--background)] text-[var(--ink)]">
+      <body data-liquid-theme="white" suppressHydrationWarning className="min-h-full flex flex-col font-sans bg-[var(--background)] text-[var(--ink)]">
         <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>

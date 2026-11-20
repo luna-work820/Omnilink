@@ -2,19 +2,13 @@ import 'server-only'
 
 import { createStep, createWorkflow } from '@mastra/core/workflows'
 import { z } from 'zod'
-import { isOutfitStylingGoal } from './task-contract'
 import { catalogFallback } from './catalog-fallback'
 import { parseAiAssistantMemoryCandidate } from './ai-assistant-profile'
 import type { AiAssistantMemory } from './ai-assistant-memory'
-import { SEED_CATEGORIES } from '@/lib/product/categories'
-import { getStorefrontDiscoveryItems, searchStorefrontDiscoveryItems, type StorefrontDiscoveryItem } from '@/lib/storefront/service'
-import { searchConsumerCatalogByVector } from './consumer-catalog-vector'
-
-const catalogTerms = [...new Set(SEED_CATEGORIES.flatMap((category) => [
-  category.name,
-  category.nameEn,
-  ...(category.keywords ?? []),
-].filter((term): term is string => Boolean(term))))]
+import { retrieveDiscoveryCandidates } from './discovery-retrieval'
+import { discoverySpecSchema } from './discovery-contract'
+import { ruleConsumerExecution } from './execution-policy'
+import { fuseProductIds as reciprocalRankedProductIds } from './search-spec'
 
 const routeInput = z.object({
   prompt: z.string().max(2000),
@@ -48,35 +42,8 @@ const routeConsumerIntent = createStep({
   inputSchema: routeInput,
   outputSchema: routeOutput,
   execute: async ({ inputData }) => {
-    const prompt = inputData.prompt.trim()
-    const productSpecificQuestion = /(这款|这个商品|这个产品|该商品|该产品|这件商品|这瓶|这支|这台)/.test(prompt)
-    const outfitFollowUp = /(再|更|换|改|正式|休闲|颜色|类似|不太|喜欢|第二套|另一套|还有|继续|刚才|上面|这套|那套)/.test(prompt)
-    const productFollowUp = /(再|更|换|改|便宜|价格|贵|小|大|颜色|银色|金色|简洁|简单|类似|不要|不想要|其它|其他|另外|继续|刚才|上面|这款|那款|上一款)/.test(prompt)
-    const comparisonFollowUp = /(再|更|换|改|价格|便宜|贵|材质|尺寸|颜色|区别|另一款|另外一款|哪个|这款|那款|继续|刚才|上面)/.test(prompt)
-    const historyPreferenceRequest = /(按|根据|结合|参考).{0,6}(历史|之前|以前|记忆|偏好|说过|提过)|我(?:之前|以前|上次).{0,6}(?:说过|提过|喜欢|偏好|选过)|按上次|参考上次|继续上次/.test(prompt)
-    const outfitGoal = !inputData.hasActiveSkill && isOutfitStylingGoal(prompt)
-    const mentionsCatalogTerm = catalogTerms.some((term) => term.length >= 2 && prompt.toLowerCase().includes(term.toLowerCase()))
-    const catalogInformationQuestion = /(是什么|什么是|如何|怎么|为什么|材质|材料|成分|规格|尺寸|保修|库存|配送|退换|评价)/.test(prompt)
-    const ingredientIntent = !inputData.hasImage && !inputData.hasDocument && !inputData.hasActiveSkill && !inputData.hasSelectedProducts && !productSpecificQuestion &&
-      /(成分查询|查(?:一下)?成分|分析成分|配料表|\binci\b|\bcosing\b|\bcas\s*(号|number)?\b|ingredient|[a-z][a-z /-]{3,}\s*(是什么|安全吗|适合|用途|作用))/i.test(prompt)
-
-    let intent: z.infer<typeof routeOutput>['intent']
-    if (inputData.hasDocument) intent = 'document-analysis'
-    else if (ingredientIntent) intent = 'ingredient-lookup'
-    else if (/(加入购物车|放进购物车|放到购物车|加购|add\s+to\s+cart)/i.test(prompt)) intent = 'cart-request'
-    else if (/(比较|对比|区别|差异|哪个更|哪个好|compare|versus|\bvs\b|这(?:两|几)款.{0,8}(?:价格|材质|区别|优缺点|哪个好)|它们.{0,8}(?:价格|材质|区别|优缺点|哪个好))/i.test(prompt)) intent = 'comparison'
-    else if (inputData.previousIntent === 'comparison' && comparisonFollowUp) intent = 'comparison'
-    else if (outfitGoal) intent = 'outfit-styling'
-    else if (inputData.hasImage) intent = 'image-analysis'
-    else if (inputData.hasSelectedProducts || productSpecificQuestion || /(怎么用|如何使用|规格|尺寸|材质|成分|保修|库存|配送|退换|评价|详细信息)/.test(prompt)) intent = 'product-question'
-    else if (inputData.hasActiveSkill || historyPreferenceRequest || /(适合我|根据我的|按照我的|按我的偏好|为我(?:挑|推荐)|给我推荐|结合我的偏好|个性化)/.test(prompt)) intent = 'personalized-recommendation'
-    else if (/(推荐|搜索|查找|找一个|找一款|有没有|想买|想看|帮我找|帮我挑|买一个|买一款|search(?: for)?|find|recommend|looking for|want to buy)/i.test(prompt) || (mentionsCatalogTerm && !catalogInformationQuestion)) intent = 'product-search'
-    else if (inputData.previousIntent === 'outfit-styling' && outfitFollowUp) intent = 'outfit-styling'
-    else if ((inputData.previousIntent === 'product-search' || inputData.previousIntent === 'personalized-recommendation') && productFollowUp) intent = inputData.previousIntent
-    else if (inputData.previousIntent === 'product-question' && productFollowUp) intent = 'product-question'
-    else intent = 'assistant'
-
-    return { intent }
+    const intent=ruleConsumerExecution({...inputData,hasSources:false})?.intent??'assistant'
+    return {intent:intent==='information-search'?'assistant' as const:intent}
   },
 })
 
@@ -97,9 +64,8 @@ export async function routeConsumerEntry(input: z.infer<typeof routeInput>) {
 }
 
 const consumerSearchInput = z.object({
-  query: z.string().max(2400),
+  spec: discoverySpecSchema,
   enabled: z.boolean(),
-  maxPrice: z.number().nullable(),
 })
 
 const consumerSearchOutput = z.object({
@@ -114,30 +80,16 @@ const retrieveHybridCatalogCandidates = createStep({
   inputSchema: consumerSearchInput,
   outputSchema: consumerSearchOutput,
   execute: async ({ inputData }) => {
-    const [recentItems, keywordItems, semanticMatches]: [
-      StorefrontDiscoveryItem[],
-      StorefrontDiscoveryItem[],
-      { id: string; similarity: number }[],
-    ] = await Promise.all([
-      getStorefrontDiscoveryItems(36).catch((): StorefrontDiscoveryItem[] => []),
-      inputData.enabled ? searchStorefrontDiscoveryItems(inputData.query, 24).catch((): StorefrontDiscoveryItem[] => []) : Promise.resolve([] as StorefrontDiscoveryItem[]),
-      inputData.enabled ? searchConsumerCatalogByVector(inputData.query, 24, inputData.maxPrice).catch((): { id: string; similarity: number }[] => []) : Promise.resolve([] as { id: string; similarity: number }[]),
-    ])
-    const recentProductIds = recentItems.map(({ product }) => product.id)
-    const keywordProductIds = keywordItems.map(({ product }) => product.id)
-    const semanticProductIds = semanticMatches.map(({ id }) => id)
-    return {
-      recentProductIds,
-      keywordProductIds,
-      semanticProductIds,
-      rankedProductIds: reciprocalRankedProductIds([keywordProductIds, semanticProductIds]),
-    }
+    if(!inputData.enabled)return {recentProductIds:[],keywordProductIds:[],semanticProductIds:[],rankedProductIds:[]}
+    const result=await retrieveDiscoveryCandidates(inputData.spec)
+    return {recentProductIds:[],keywordProductIds:result.keywordIds.slice(0,48),semanticProductIds:result.semanticIds.slice(0,50),
+      rankedProductIds:result.products.slice(0,98).map((product)=>product.id)}
   },
 })
 
 export const consumerHybridCatalogSearchWorkflow = createWorkflow({
   id: 'consumer-hybrid-catalog-search',
-  description: '并行召回公开商品的关键词候选和本地语义候选，再合并排序。',
+  description: '通过统一 Discovery 执行 Search Spec，供现有工作流复用。',
   inputSchema: consumerSearchInput,
   outputSchema: consumerSearchOutput,
 }).then(retrieveHybridCatalogCandidates).commit()
@@ -264,14 +216,6 @@ export function selectRelevantConsumerMemoryIds(
     semanticProductIds: [],
     keywordProductIds: [],
   })
-}
-
-function reciprocalRankedProductIds(lists: string[][]) {
-  const scores = new Map<string, number>()
-  for (const list of lists) {
-    list.forEach((id, index) => scores.set(id, (scores.get(id) ?? 0) + 1 / (60 + index + 1)))
-  }
-  return [...scores].sort((left, right) => right[1] - left[1]).map(([id]) => id)
 }
 
 const retrieveRelevantMemories = createStep({

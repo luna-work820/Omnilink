@@ -1,4 +1,5 @@
 import 'server-only'
+import { isUsablePersonalMemory } from './memory-lifecycle'
 import { createServiceRoleClient } from '@/lib/supabase/service-role'
 import type { AiAssistantMemory } from './ai-assistant-memory'
 import { DiscoveryError, type DiscoverySpec } from './discovery-contract'
@@ -8,12 +9,21 @@ export type ResolvedPersonalContext = PersonalContextSnapshot & {
   cacheKey: string; positiveTerms: string[]; avoidTerms: string[]; usedMemoryIds: string[]
 }
 
-export async function loadPersonalContext(userId: string | null): Promise<PersonalContextSnapshot> {
+export async function loadPersonalContext(userId: string | null, scope?: {query: string; preferences?: boolean}): Promise<PersonalContextSnapshot> {
   if (!userId) return { userId: null, version: 0, memories: [] }
-  const { data, error } = await createServiceRoleClient().rpc('get_consumer_context_snapshot', { p_user_id: userId }).abortSignal(AbortSignal.timeout(8000))
+  const { data, error } = await createServiceRoleClient().rpc(scope ? 'get_consumer_task_context' : 'get_consumer_context_snapshot', scope ? {p_user_id: userId,p_domains:scope.preferences === false ? [] : contextDomains(scope.query)} : {p_user_id:userId}).abortSignal(AbortSignal.timeout(8000))
   if (error || !data) throw new DiscoveryError('CONTEXT_UNAVAILABLE', 503, '个人偏好暂时无法读取，请重试。')
   const snapshot = data as { version: number; memories: AiAssistantMemory[] }
-  return { userId, version: Number(snapshot.version), memories: snapshot.memories.filter((m) => m.status === 'active' && m.confirmedAt) }
+  return { userId, version: Number(snapshot.version), memories: snapshot.memories.filter((m) => isUsablePersonalMemory(m)).slice(0,scope?6:50) }
+}
+
+export function contextDomains(query:string):AiAssistantMemory['domain'][] {
+  const domains:AiAssistantMemory['domain'][]=[]
+  if(/穿搭|衣服|裙|裤|鞋|耳饰|耳环|耳钉|项链|手链|戒指|饰品|配饰|jewel|earring|necklace|bracelet|ring\b|outfit|clothing/i.test(query))domains.push('clothing')
+  if(/护肤|皮肤|面霜|洁面|精华|保湿|控油|敏感|skin|cream|allerg/i.test(query))domains.push('skin')
+  if(/头发|发型|染发|洗发|护发|hair|shampoo/i.test(query))domains.push('hair')
+  if(/空间|家居|家具|灯|沙发|桌|椅|房间|装修|furniture|sofa|chair|table|room/i.test(query))domains.push('space')
+  return [...domains,'other']
 }
 
 const facets = ['简约','简洁','复古','原木','木质','金属','皮质','布艺','棉','羊毛','银色','金色','黑色','白色','红色','蓝色','绿色',
@@ -35,7 +45,7 @@ function termsFromMemory(memory: AiAssistantMemory) {
 }
 
 export function resolvePersonalContext(snapshot: PersonalContextSnapshot, spec?: DiscoverySpec): ResolvedPersonalContext {
-  const confirmed = snapshot.memories.filter((m) => m.status === 'active' && m.confirmedAt)
+  const confirmed = snapshot.memories.filter((m) => isUsablePersonalMemory(m) && (!spec || contextDomains(spec.query).includes(m.domain))).slice(0,6)
   const positive = new Set<string>(), negative = new Set<string>(), usedMemoryIds: string[] = []
   for (const memory of confirmed) {
     const terms = termsFromMemory(memory)
@@ -46,6 +56,7 @@ export function resolvePersonalContext(snapshot: PersonalContextSnapshot, spec?:
   }
   // The current query controls eligibility; confirmed preferences only change order.
   for (const term of spec?.excludedTerms ?? []) positive.delete(term)
+  for (const term of [...(spec?.termGroups.flat() ?? []),...(spec?.sessionTerms ?? [])]) negative.delete(term.toLowerCase())
   for (const term of negative) positive.delete(term)
   return { ...snapshot, memories: confirmed, cacheKey: `${snapshot.userId ?? 'guest'}:${snapshot.version}`,
     positiveTerms: [...positive].slice(0, 24), avoidTerms: [...negative].slice(0, 24), usedMemoryIds: usedMemoryIds.slice(0, 6) }

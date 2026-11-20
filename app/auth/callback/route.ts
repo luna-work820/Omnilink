@@ -28,15 +28,17 @@ import { createClientServer } from '@/lib/supabase/server'
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const rawNext = searchParams.get('next') ?? '/discover?openAssistant=1&newUser=1'
+  const rawNext = searchParams.get('next') ?? '/discover'
   const safeNext = safeInternalRedirectPath(rawNext, '/discover')
 
   if (code) {
-    const supabase = await createClientServer()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
-      return NextResponse.redirect(`${origin}${safeNext}`)
-    }
+    try {
+      const supabase = await createClientServer()
+      const { error } = await supabase.auth.exchangeCodeForSession(code)
+      if (!error) {
+        return NextResponse.redirect(`${origin}${safeNext}`)
+      }
+    } catch { /* Return to login with a recoverable confirmation error. */ }
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)

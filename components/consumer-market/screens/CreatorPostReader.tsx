@@ -2,23 +2,49 @@
 
 import { DisplayPrice } from '../components/DisplayPrice';
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { ExternalLink, X } from 'lucide-react'
 import type { ProductItem, ScenePost } from '../types'
+
+const ArticleReader = dynamic(() => import('@/components/creator-content/ArticlePhonePreview').then((module) => module.ArticlePhonePreview), { ssr: false, loading: () => <p className="p-6" role="status">正在读取文章…</p> })
 
 export function CreatorPostReader({ post, onClose, onOpenProduct }: {
   post: ScenePost
   onClose: () => void
   onOpenProduct: (product: ProductItem) => void
 }) {
+  const surface = useRef<HTMLDivElement>(null)
+  const previousFocus = useRef(typeof document === 'undefined' ? null : document.activeElement as HTMLElement | null)
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+      if (event.key !== 'Tab' || !surface.current) return
+      const elements = [...surface.current.querySelectorAll<HTMLElement>('button:not([disabled]),a[href],video[controls],[tabindex="0"]')].filter((element) => element.getClientRects().length)
+      const first = elements[0], last = elements.at(-1)
+      if (event.shiftKey && (document.activeElement === first || !surface.current.contains(document.activeElement))) { event.preventDefault(); last?.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+    }
     window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
+    const returnTo = previousFocus.current
+    return () => { window.removeEventListener('keydown', onKeyDown); if (returnTo?.isConnected) returnTo.focus() }
   }, [onClose])
+  const publication = post.publication
+  if (publication) return <div ref={surface} role="dialog" aria-modal="true" aria-label={post.title} className="fixed inset-0 z-50 overflow-y-auto bg-[var(--canvas)] text-[var(--market-ink)]">
+    <div className="mx-auto max-w-2xl pb-16">
+      <header className="sticky top-0 z-10 flex h-14 items-center justify-between bg-[var(--canvas)] px-4"><span className="text-sm">{post.editorName}</span><button type="button" autoFocus onClick={onClose} aria-label="关闭内容" className="grid size-10 place-items-center rounded-full"><X size={20} /></button></header>
+      {publication.kind === 'article' && publication.article ? <ArticleReader draft={publication.article} frame={false} /> : <article className="px-4">
+        {publication.kind === 'video' ? <video src={publication.media[0]} poster={publication.coverUrl} controls playsInline preload="metadata" controlsList={publication.fields.allowSave ? undefined : 'nodownload'} className="max-h-[75vh] w-full" aria-label="作品视频" /> : publication.media.map((url, index) => <Image key={url} src={url} alt={`作品图片 ${index + 1}`} width={900} height={1200} sizes="(max-width: 640px) 100vw, 680px" unoptimized className="mb-3 h-auto w-full object-contain" />)}
+        <h1 className="mt-6 text-2xl font-semibold">{publication.fields.title}</h1>
+        {publication.fields.summary && <p className="mt-4 whitespace-pre-wrap text-base leading-8">{publication.fields.summary}</p>}
+        {publication.fields.topics && <p className="mt-4 text-sm text-[var(--text-secondary)]">{publication.fields.topics}</p>}
+        {publication.fields.location && <p className="mt-4 text-sm text-[var(--text-secondary)]">{publication.fields.location}</p>}
+      </article>}
+    </div>
+  </div>
   return (
-    <div role="dialog" aria-modal="true" aria-label={post.title} className="fixed inset-0 z-50 overflow-y-auto bg-[#FCFDFE] text-[var(--market-ink)]">
+    <div ref={surface} role="dialog" aria-modal="true" aria-label={post.title} className="fixed inset-0 z-50 overflow-y-auto bg-[#FCFDFE] text-[var(--market-ink)]">
       <div className="mx-auto max-w-2xl px-4 pb-20 sm:px-6">
         <div className="sticky top-0 z-10 flex h-14 items-center justify-between bg-[#FCFDFE]">
           <span className="text-sm font-semibold">内容</span>

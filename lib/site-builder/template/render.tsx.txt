@@ -1,0 +1,6 @@
+import React from 'react'
+import { renderToString } from 'react-dom/server'
+import Home from '../src/pages/home'
+import Products from '../src/pages/products'
+import Product from '../src/pages/product'
+export function render(props){const Page=props.route.name==='home'?Home:props.route.name==='products'?Products:Product;return renderToString(<Page {...props}/>)}

@@ -10,8 +10,8 @@ import { LiquidCanvasBackground } from "./components/LiquidCanvasBackground";
 import { AuthModal } from "./components/AuthModal";
 import { usePageTheme } from "./hooks/usePageTheme";
 
-export default function App({ redirectTo }: { redirectTo?: string }) {
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+export default function App({ redirectTo, confirmationError = false }: { redirectTo?: string; confirmationError?: boolean }) {
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(confirmationError);
   const { theme, checkTheme } = usePageTheme();
 
   const handleOpenAuth = () => {
@@ -44,6 +44,7 @@ export default function App({ redirectTo }: { redirectTo?: string }) {
         onClose={() => setIsAuthModalOpen(false)}
         theme={theme}
         redirectTo={redirectTo}
+        confirmationError={confirmationError}
       />
     </div>
   );

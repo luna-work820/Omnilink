@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'node:crypto'
-import sharp from 'sharp'
 
 import { requireUser, ownsProduct } from '@/lib/api/auth'
 import { withRetry } from '@/lib/network/retry-server'
+import { encodeWebp, inspectImage } from '@/lib/image-processing'
 
 export const runtime = 'nodejs'
 
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
       assetId,
     })
 
-    const imageMetadata = await sharp(inputBuffer).metadata()
+    const imageMetadata = await inspectImage(inputBuffer)
 
     const extension = getExtension(file.type)
 
@@ -215,10 +215,7 @@ export async function POST(request: NextRequest) {
     })
 
     try {
-      const publicBuffer = await sharp(inputBuffer)
-        .rotate()
-        .webp({ quality: 85 })
-        .toBuffer()
+      const publicBuffer = await encodeWebp(inputBuffer, 85)
 
       console.log('[media.upload] public-processed', {
         productId,

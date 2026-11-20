@@ -1,5 +1,8 @@
 import { beforeEach,describe,expect,it,vi } from 'vitest'
 vi.mock('server-only',()=>({}))
+const background = vi.hoisted(() => ({ after: vi.fn(), consolidate: vi.fn() }))
+vi.mock('next/server', async (original) => ({ ...await original<typeof import('next/server')>(), after: background.after }))
+vi.mock('./memory-consolidation', () => ({ consolidateRecentMemories: background.consolidate }))
 const m=vi.hoisted(()=>({generate:vi.fn(),context:vi.fn(),products:vi.fn(),store:vi.fn(),sources:vi.fn(),propose:vi.fn(),validate:vi.fn()}))
 vi.mock('@/lib/ai/workspace-generation',()=>({generateWorkspaceText:m.generate}))
 vi.mock('@/lib/storefront/service',()=>({getStorefrontDiscoveryItemsByIds:m.products}))
@@ -9,6 +12,7 @@ vi.mock('./ai-assistant-memory',()=>({manageAiAssistantMemory:m.propose,memoryCo
 vi.mock('./consumer-entry-workflow',()=>({validateConsumerMemoryUpdate:m.validate}))
 import { runConversation } from './conversation-service'
 import { DiscoveryError } from './discovery-contract'
+import { readConsumerCatalog } from '@/lib/products/consumer-catalog'
 const sessionId=crypto.randomUUID(),sourceId=crypto.randomUUID(),taskId=crypto.randomUUID()
 const actor={userId:null,guestHash:'a'.repeat(64),sessionId}
 const base=()=>({requestId:crypto.randomUUID(),sessionId,userId:null,prompt:'解释这个概念',model:'qwen-plus' as const,
@@ -39,4 +43,20 @@ describe('conversation cost and source boundaries',()=>{
     await expect(runConversation({...base(),needsSourceContext:true,previousTaskId:taskId})).rejects.toMatchObject({status:404})
     expect(m.generate).not.toHaveBeenCalled();expect(m.sources).not.toHaveBeenCalled()
   })
+  it('uses selected product facts to scope a personal question that only says this item',async()=>{
+    const product=readConsumerCatalog().find((p)=>/necklace|earring/i.test(p.name))!
+    m.context.mockResolvedValue({version:1,memories:[]})
+    await runConversation({...base(),prompt:'按我之前的偏好，这款适合我吗？',selectedProductIds:[product.id],needsPersonalContext:true})
+    expect(m.context).toHaveBeenCalledWith(null,{query:expect.stringContaining(product.name)})
+  })
+})
+
+it('schedules consolidation only after committing a successful authenticated response', async () => {
+  const input = { ...base(), userId: crypto.randomUUID() }
+  await runConversation(input)
+  expect(input.commit).toHaveBeenCalled()
+  expect(background.after).toHaveBeenCalledTimes(1)
+  expect(background.consolidate).not.toHaveBeenCalled()
+  await background.after.mock.calls[0][0]()
+  expect(background.consolidate).toHaveBeenCalledWith(input.userId)
 })

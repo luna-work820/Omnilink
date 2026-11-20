@@ -1,3 +1,4 @@
+import { readMemoryLifecycle } from '@/lib/consumer-advisor/memory-lifecycle'
 import { NextResponse } from 'next/server'
 import { requireUser } from '@/lib/api/auth'
 import { advanceAiAssistantProfile, editAiAssistantProfile, readAiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-profile'
@@ -23,6 +24,13 @@ export async function PATCH(request: Request) {
   const body = await request.json().catch(() => null) as Record<string, unknown> | null
   if (!body || typeof body.action !== 'string') return NextResponse.json({ error: '请求无效。' }, { status: 400 })
   const action = body.action
+  if (action === 'signup-invitation-seen') {
+    try {
+      const { error } = await auth.supabase.auth.updateUser({ data: { signup_invitation_seen: true } })
+      if (error) return NextResponse.json({ error: '状态未能保存，请重试。' }, { status: 503 })
+      return NextResponse.json({ seen: true })
+    } catch { return NextResponse.json({ error: '状态未能保存，请重试。' }, { status: 503 }) }
+  }
   if(action==='assessment-propose') {
     try{
       const memories=await loadAiAssistantMemories(auth.supabase,auth.user.id)
@@ -61,7 +69,11 @@ export async function PATCH(request: Request) {
         const text = typeof body.text === 'string' ? body.text.trim() : ''
         const domain = String(body.domain)
         if (!text || text.length > 240 || !['clothing', 'skin', 'hair', 'space', 'other'].includes(domain)) return NextResponse.json({ error: '记忆内容或类别无效。' }, { status: 400 })
-        await manageAiAssistantMemory(auth.user.id, 'manual', { text, domain, evidence: '你手动保存的记忆' })
+        const lifecycle = readMemoryLifecycle(body.lifecycle)
+        if (!lifecycle || (lifecycle.expiresAt && Date.parse(lifecycle.expiresAt) <= Date.now())) {
+          return NextResponse.json({ error: '记忆适用范围或有效期无效。' }, { status: 400 })
+        }
+        await manageAiAssistantMemory(auth.user.id, 'manual', { text, domain, evidence: '你手动保存的记忆', sourcePayload: { lifecycle } })
       } else {
         if (typeof body.id !== 'string' || !isUuid(body.id)) return NextResponse.json({ error: '记忆不存在。' }, { status: 400 })
         if (!Number.isInteger(body.revision) || Number(body.revision) < 1) return NextResponse.json({ error: '请刷新后重试。' }, { status: 400 })

@@ -7,9 +7,16 @@ const localDevOrigins = Object.values(networkInterfaces())
   .map((address) => address.address);
 
 const nextConfig: NextConfig = {
-  output: process.env.VERCEL ? undefined : "standalone",
+  distDir: process.env.OMNILINK_ISOLATED_PREVIEW === "1" ? ".next-preview" : ".next",
+  output: process.env.VERCEL || process.env.OMNILINK_CLOUDFLARE === "1" ? undefined : "standalone",
   experimental: {
     agentUpgrade: "security",
+  },
+  outputFileTracingIncludes: {
+    '/api/site-builder': ['./lib/site-builder/template/**/*'],
+    '/api/site-builder/preview': ['./lib/site-builder/template/**/*'],
+    '/sites/**': ['./lib/site-builder/template/**/*'],
+    '/api/consumer/assistant': ['./.agents/skills/personal-advisor/**/*'],
   },
   serverExternalPackages: ['pdfjs-dist'],
   allowedDevOrigins: [

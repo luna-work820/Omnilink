@@ -1,23 +1,22 @@
 import { beforeEach,describe,expect,it,vi } from 'vitest'
 vi.mock('server-only',()=>({}))
-const m=vi.hoisted(()=>({store:vi.fn(),context:vi.fn(),from:vi.fn(),fetchSource:vi.fn(),saveSource:vi.fn(),sources:vi.fn()}))
+const m=vi.hoisted(()=>({store:vi.fn(),context:vi.fn(),catalog:vi.fn(),fetchSource:vi.fn(),saveSource:vi.fn(),sources:vi.fn()}))
 vi.mock('./execution-store',async(original)=>({...await original<typeof import('./execution-store')>(),taskStore:m.store,saveExternalSource:m.saveSource,readOwnedSources:m.sources}))
 vi.mock('./personal-context',()=>({loadPersonalContext:m.context}))
 vi.mock('./external-source',()=>({fetchExternalSource:m.fetchSource,externalUrl:(url:string)=>new URL(url)}))
-vi.mock('@/lib/supabase/service-role',()=>({createServiceRoleClient:()=>({from:m.from})}))
-import { advanceComparisonTask,readComparisonTask } from './comparison-workflow'
+vi.mock('@/lib/products/consumer-catalog-store',()=>({
+  readPublishedConsumerCatalog:async()=>({products:await m.catalog(),version:'test'}),
+  selectCatalogProducts:(products:{id:string}[],requested:string[])=>requested.flatMap((id)=>products.filter((product)=>product.id===id)),
+}))
+import catalogData from '@/components/consumer-market/data/five-store-demo-products.json'
+import { advanceComparisonTask,readComparisonTask,createComparisonTask,buildComparison } from './comparison-workflow'
 import type { TaskRecord } from './execution-store'
 import { DiscoveryError } from './discovery-contract'
 
 const actor={userId:crypto.randomUUID(),guestHash:null,sessionId:crypto.randomUUID()}
-const ids=[crypto.randomUUID(),crypto.randomUUID()]
+const fixtures=catalogData.slice(0,2)
+const ids=fixtures.map((product)=>product.id)
 let record:TaskRecord
-function query(data:unknown[]) {
-  const q={select:vi.fn(),in:vi.fn(),eq:vi.fn(),is:vi.fn(),abortSignal:vi.fn(),maybeSingle:vi.fn().mockResolvedValue({data:data[0],error:null}),
-    then:(resolve:(value:unknown)=>unknown,reject:(reason:unknown)=>unknown)=>Promise.resolve({data,error:null}).then(resolve,reject)}
-  for(const fn of ['select','in','eq','is','abortSignal'] as const)q[fn].mockReturnValue(q)
-  return q
-}
 beforeEach(()=>{
   vi.clearAllMocks()
   record={id:crypto.randomUUID(),session_id:actor.sessionId,input:{productIds:ids,urls:[]},status:'pending',checkpoints:{},revision:1,attempt:0,lease:null,
@@ -37,12 +36,28 @@ beforeEach(()=>{
   })
   m.context.mockResolvedValue({version:0,memories:[]})
   m.sources.mockResolvedValue([])
-  m.from.mockImplementation(()=>query(ids.map((id,index)=>({id,title:`商品 ${index}`,description:'已发布的商品资料',publisher_name:'Store',publisher_slug:'store',price:100,currency_code:'CNY',price_mode:'amount',
-    xiaohongshu_url:'https://www.xiaohongshu.com/explore/fixture',douyin_url:null,cover_image:null,item_type:'product',created_at:new Date().toISOString(),category:'家具'}))))
+  m.catalog.mockReturnValue(fixtures)
   m.fetchSource.mockResolvedValue({url:'https://example.com',title:'资料',excerpt:'公开网页正文'})
   m.saveSource.mockResolvedValue({id:crypto.randomUUID(),title:'资料',excerpt:'公开网页正文',url:'https://example.com',source:'example.com',entityType:'source',imageUrl:null,version:1,updatedAt:new Date().toISOString()})
 })
 describe('real Mastra comparison execution',()=>{
+  it('persists the URL goal and selected fields and uses them after continuation and reread',async()=>{
+    const input={productIds:ids,urls:[],goal:'比较材质和尺寸',requestedFields:['material','size'] as const}
+    await createComparisonTask(actor,'goal-request',{...input,requestedFields:[...input.requestedFields]})
+    expect(m.store).toHaveBeenCalledWith('create',actor,expect.objectContaining({input:expect.objectContaining({goal:input.goal,requestedFields:['material','size']})}))
+    record.input={...input,requestedFields:[...input.requestedFields]}
+    for(let i=0;i<4;i++)await advanceComparisonTask(actor,record.id)
+    expect(record.result).toMatchObject({goal:'比较材质和尺寸',rows:[{label:'材质'},{label:'尺寸'}]})
+    expect(record.result?.rows[0].values).toEqual(fixtures.map((product)=>product.specs['材质']))
+    expect((await readComparisonTask(actor,'get',record.id)).result?.rows.map((row)=>row.label)).toEqual(['材质','尺寸'])
+  })
+  it('keeps absent URL properties unknown and labels matching webpage text as unverified',()=>{
+    const source={id:crypto.randomUUID(),entityType:'source' as const,title:'网页',excerpt:'Material: recycled silver. Shipping worldwide.',
+      url:'https://example.com',imageUrl:null,source:'example.com',version:1,updatedAt:new Date().toISOString()}
+    const result=buildComparison([], [source],0,{goal:'Compare material and size'})
+    expect(result.rows[0].values[0]).toContain('未核验')
+    expect(result.rows[1].values).toEqual(['资料未提供'])
+  })
   it('uses persisted checkpoints across independent workflow runs and executes one new tool per continuation',async()=>{
     const started=performance.now()
     for(let i=0;i<4;i++) {
@@ -51,18 +66,18 @@ describe('real Mastra comparison execution',()=>{
       expect(task.status).toBe(i===3?'completed':'paused')
     }
     expect(record.result?.columns).toHaveLength(2)
-    expect(record.result?.rows[0].values).toEqual(['¥100.00','¥100.00'])
+    expect(record.result?.rows[0].values).toEqual(fixtures.map((product)=>product.formattedPrice))
     expect(m.context).toHaveBeenCalledTimes(2)
-    expect(m.from).toHaveBeenCalledTimes(2)
+    expect(m.catalog).toHaveBeenCalledTimes(2)
     expect(m.fetchSource).not.toHaveBeenCalled()
-    const count=m.from.mock.calls.length
+    const count=m.catalog.mock.calls.length
     expect((await advanceComparisonTask(actor,record.id)).status).toBe('completed')
-    expect(m.from).toHaveBeenCalledTimes(count+1)
+    expect(m.catalog).toHaveBeenCalledTimes(count+1)
     console.info(JSON.stringify({comparisonFixtureMs:Math.round(performance.now()-started),newTools:4,modelCalls:0}))
   })
   it('revalidates a publication before the comparison instead of trusting old product checkpoints',async()=>{
     for(let i=0;i<3;i++)await advanceComparisonTask(actor,record.id)
-    m.from.mockImplementation(()=>query([]))
+    m.catalog.mockReturnValue([])
     const result=await advanceComparisonTask(actor,record.id)
     expect(result.result?.columns).toEqual([])
     expect(result.result?.unknowns).toContain('部分商品已下架或不可公开读取。')
@@ -78,7 +93,7 @@ describe('real Mastra comparison execution',()=>{
   it('revalidates saved results after publication withdrawal without rerunning the workflow',async()=>{
     for(let i=0;i<4;i++)await advanceComparisonTask(actor,record.id)
     expect(record.result?.columns).toHaveLength(2)
-    m.from.mockImplementation(()=>query([]))
+    m.catalog.mockReturnValue([])
     const result=await readComparisonTask(actor,'get',record.id)
     expect(result.result?.columns).toEqual([])
     expect(result.result?.unknowns).toContain('部分商品已下架或不可公开读取。')

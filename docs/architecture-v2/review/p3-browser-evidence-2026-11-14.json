@@ -1,0 +1,884 @@
+{
+  "backend": "simulated HTTP, real application DOM",
+  "paidModelCalls": 0,
+  "cases": [
+    {
+      "name": "Chinese composition confirmation",
+      "status": "pass",
+      "details": {
+        "requests": 0,
+        "inputRetained": true,
+        "evidence": "simulated composition key events, not native OS IME"
+      }
+    },
+    {
+      "name": "Enter submits",
+      "status": "pass",
+      "details": {
+        "count": 19
+      }
+    },
+    {
+      "name": "Shift Enter does not submit",
+      "status": "pass",
+      "details": {
+        "input": "line one\n"
+      }
+    },
+    {
+      "name": "query earrings",
+      "status": "pass",
+      "details": {
+        "count": 19
+      }
+    },
+    {
+      "name": "query 项链",
+      "status": "pass",
+      "details": {
+        "count": 7
+      }
+    },
+    {
+      "name": "query necklace",
+      "status": "pass",
+      "details": {
+        "count": 7
+      }
+    },
+    {
+      "name": "query 戒指",
+      "status": "pass",
+      "details": {
+        "count": 8
+      }
+    },
+    {
+      "name": "query rings",
+      "status": "pass",
+      "details": {
+        "count": 8
+      }
+    },
+    {
+      "name": "Answer model independent",
+      "status": "pass",
+      "details": {
+        "searchRequests": 0
+      }
+    },
+    {
+      "name": "Pagination 20 plus 15",
+      "status": "pass",
+      "details": {
+        "unique": 35,
+        "lastRequest": "page"
+      }
+    },
+    {
+      "name": "Failed start retries same search",
+      "status": "pass",
+      "details": {
+        "actions": [
+          "start",
+          "start"
+        ],
+        "profile": "qwen-text-embedding-v4-1024-v1"
+      }
+    },
+    {
+      "name": "Failed page retries page",
+      "status": "pass",
+      "details": {
+        "actions": [
+          "page",
+          "page"
+        ]
+      }
+    },
+    {
+      "name": "Expired cursor refreshes",
+      "status": "pass",
+      "details": {
+        "action": "start",
+        "query": [
+          "全部商品"
+        ]
+      }
+    },
+    {
+      "name": "Degraded result is explicit",
+      "status": "pass",
+      "details": {
+        "count": 19
+      }
+    },
+    {
+      "name": "Zero results has no filler",
+      "status": "pass",
+      "details": {
+        "cards": 0
+      }
+    },
+    {
+      "name": "Stale response ignored",
+      "status": "pass",
+      "details": {
+        "headings": [
+          "项链"
+        ]
+      }
+    },
+    {
+      "name": "Stop ignores late tokens and permits next input",
+      "status": "pass",
+      "details": {
+        "headings": [
+          "项链"
+        ]
+      }
+    },
+    {
+      "name": "Conversation isolation",
+      "status": "pass",
+      "details": {
+        "differentSessions": true,
+        "headings": [
+          "rings"
+        ]
+      }
+    },
+    {
+      "name": "Responsive menu 1280",
+      "status": "pass",
+      "details": {
+        "width": 1280,
+        "scrollWidth": 1280,
+        "controls": [
+          {
+            "height": 44,
+            "left": 845,
+            "right": 1011
+          },
+          {
+            "height": 44,
+            "left": 845,
+            "right": 1011
+          }
+        ]
+      }
+    },
+    {
+      "name": "Responsive menu 390",
+      "status": "pass",
+      "details": {
+        "width": 390,
+        "scrollWidth": 390,
+        "controls": [
+          {
+            "height": 44,
+            "left": 199,
+            "right": 365
+          },
+          {
+            "height": 44,
+            "left": 199,
+            "right": 365
+          }
+        ]
+      }
+    },
+    {
+      "name": "Responsive menu 320",
+      "status": "pass",
+      "details": {
+        "width": 320,
+        "scrollWidth": 320,
+        "controls": [
+          {
+            "height": 44,
+            "left": 129,
+            "right": 295
+          },
+          {
+            "height": 44,
+            "left": 129,
+            "right": 295
+          }
+        ]
+      }
+    },
+    {
+      "name": "Runtime console",
+      "status": "pass",
+      "details": {
+        "exceptions": 0
+      }
+    },
+    {
+      "name": "System theme light",
+      "status": "pass",
+      "details": {
+        "colors": [
+          {
+            "foreground": "rgb(29, 31, 35)",
+            "background": "rgb(252, 253, 254)"
+          },
+          {
+            "foreground": "rgb(29, 31, 35)",
+            "background": "rgb(252, 253, 254)"
+          }
+        ],
+        "contrasts": [
+          16.204515368461582,
+          16.204515368461582
+        ]
+      }
+    },
+    {
+      "name": "System theme dark",
+      "status": "pass",
+      "details": {
+        "colors": [
+          {
+            "foreground": "rgb(235, 235, 245)",
+            "background": "rgb(20, 20, 24)"
+          },
+          {
+            "foreground": "rgb(235, 235, 245)",
+            "background": "rgb(20, 20, 24)"
+          }
+        ],
+        "contrasts": [
+          15.51560450874193,
+          15.51560450874193
+        ]
+      }
+    }
+  ],
+  "runtimeErrors": [],
+  "blockedRequests": [
+    "http://localhost:3000/api/consumer/display-currency?region=CN",
+    "http://localhost:3000/api/consumer/display-currency?region=CN"
+  ],
+  "imageHttpResponses": [
+    {
+      "url": "http://localhost:3000/omnilink-moon.svg",
+      "status": 200
+    },
+    {
+      "url": "http://localhost:3000/consumer-market/skills/know-yourself-cover.png",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/dffeb253-639f-4d36-98a7-de883f2125f8",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/92b2d437-1ff2-4542-a06c-aad63f30e613",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/a95c07d2-f1b3-45c2-bbc4-a1826135cc4a",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/50da8647-1891-474d-9faf-2860dd1bd3d9",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/32a3940b-9aa1-4a7a-878b-00a8b623a333",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/53c2695a-0cd8-4dcf-83e6-ce8db6369b40",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/eb1ecef1-1022-4493-b384-02946feea3d4",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/23036f90-20c2-4a1f-9ffd-d74dfa1f3d32",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/282c623c-eb97-4f55-b825-9825159fc8c0",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/60ae3a45-90d9-41cc-986f-6231e6045e4e",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/f4e0c7dd-26af-4ab0-95cc-37ed9d506e0f",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/8b85c41f-2b56-4a13-b4dc-d8c44b631632",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/4229877d-f738-426e-b3c8-af6ef77782af",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/172c9f40-4528-4125-8730-dac168ce2cc0",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/350f0e5e-4f78-4a51-a081-97404e89667a",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/bbb2d29a-379a-415b-9a9b-707b060b892d",
+      "status": 200
+    },
+    {
+      "url": "http://localhost:3000/consumer-market/skills/know-yourself-cover.png",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/d378ae25-e17a-41f5-a455-02903342617f",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/db929ab0-8046-42c8-88bf-a67858769b67",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/cde95801-3e3e-4727-bce2-ae648421c016",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/04568abd-adb1-4dc6-9fee-ea7f85c0b2f8",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/a00ad3c8-897f-420b-8b7d-90d07f3a988a",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/a60f713c-3a86-43ad-9181-db50b92a9e5a",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/ea0c8780-af70-4611-93b3-b476420ff4e2",
+      "status": 200
+    },
+    {
+      "url": "blob:http://localhost:3000/af7fbd52-d332-427c-825a-da2351bf0553",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/2448/9745/files/CLED-StillNecklace-bluejay.jpg?v=1770186513",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0715/7701/0400/files/LEAP_480.jpg?v=1778247839",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0924/7296/7432/files/Berhel_infinity_loop_recycled_925_silver_small_pendant.jpg?v=1755175489",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/1013/0512/products/oval_hook_earrings.jpg?v=1517928447",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/2448/9745/products/CLED-RING-HeartDangling-dew-silver.jpg?v=1758923712",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0715/7701/0400/files/LEAP_760.jpg?v=1778247719",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0372/4053/7227/products/21RH-G.jpg?v=1625077362",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0924/7296/7432/files/Two_sizes_Berhel_liquid_hoop_earrings_925_sterling_silver_handmade_in_Finland.jpg?v=1763918728",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/1013/0512/products/heart_hoops.jpg?v=1568711193",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/2448/9745/files/CLED-ring-ITL-2025-all_d47f88c6-7890-47fc-a584-5efff4e662fc.jpg?v=1748889711",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0372/4053/7227/products/21RH15-G-1.jpg?v=1626805268",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0715/7701/0400/files/LEAP_65_1_37b9de48-8fc6-4290-823d-adc9f08d3b0f.jpg?v=1778247756",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/1013/0512/products/il_fullxfull.741697144_9cxk.jpeg?v=1541030916",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0924/7296/7432/files/Happy_accident_pair_recycled_925_silver_berhel_made_in_finland.jpg?v=1764495255",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0372/4053/7227/files/2409-A-168-13-2.jpg?v=1730133683",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/2448/9745/files/CLED-HaloNecklace-prism-2.jpg?v=1775539036",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0715/7701/0400/files/LEAP284_1b663f83-1877-459c-8f1b-d206433d383f.jpg?v=1778247790",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0924/7296/7432/files/berhel_liquid_band_silver_ring.jpg?v=1769016816",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/1013/0512/products/square_threader_earrings.jpg?v=1532529372",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0372/4053/7227/products/17BEE-1.jpg?v=1626392613",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/2448/9745/files/CLED-Ring-CoreLoop-small-clearair-silver.jpg?v=1771525115",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0715/7701/0400/files/LEAP_906.jpg?v=1778247688",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/1013/0512/products/il_fullxfull.557825986_lctn.jpeg?v=1447277373",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0924/7296/7432/files/Organic_wavy_Silver_Liquid_band_ring_with_gemstones_male_female_unisex.jpg?v=1776873861",
+      "status": 200
+    },
+    {
+      "url": "https://cdn.shopify.com/s/files/1/0372/4053/7227/products/17SS-1.jpg?v=1626392469",
+      "status": 200
+    },
+    {
+      "url": "https://berhel.com/cdn/shop/files/Liquid_pendant_purple_gemstone_925_silver.jpg?v=1793547317&width=533",
+      "status": 200
+    },
+    {
+      "url": "https://www.thecled.com/cdn/shop/files/CLED-PetalIconStudEarrings-blueocean-2.jpg?v=1763056473&width=2000",
+      "status": 200
+    },
+    {
+      "url": "https://leapstudio.shop/cdn/shop/files/IMG_3323.jpg?v=1778246438&width=533",
+      "status": 200
+    },
+    {
+      "url": "https://www.thecled.com/cdn/shop/files/CLED-StillBracelet-brown.jpg?v=1759816742&width=2000",
+      "status": 200
+    },
+    {
+      "url": "https://leapstudio.shop/cdn/shop/files/LEAP595_1_-ebb_flow.jpg?v=1778247865&width=1946",
+      "status": 200
+    },
+    {
+      "url": "https://www.hooksandluxe.com/cdn/shop/files/long-bar-hoops-large-pearls_31de5159-66e9-4bee-acc6-8599f3681871.jpg?v=1752008801&width=1946",
+      "status": 200
+    },
+    {
+      "url": "https://amanostudio.com/cdn/shop/files/21HH15-G-WEB.jpg?v=1727196978&width=1946",
+      "status": 200
+    },
+    {
+      "url": "https://berhel.com/cdn/shop/files/Berhel_sapphire_earrings_925_sterling_silver_made_in_Finland.jpg?v=1793545949&width=533",
+      "status": 200
+    },
+    {
+      "url": "https://amanostudio.com/cdn/shop/files/25PH-10-WEB.jpg?v=1775085315&width=1946",
+      "status": 200
+    },
+    {
+      "url": "https://www.hooksandluxe.com/cdn/shop/files/short-bar-hoops-large-pearls.jpg?v=1752248619&width=533",
+      "status": 200
+    }
+  ],
+  "images": [
+    {
+      "id": "external-cled-still-necklace",
+      "url": "https://cdn.shopify.com/s/files/1/2448/9745/files/CLED-StillNecklace-bluejay.jpg?v=1770186513",
+      "status": "loaded",
+      "width": 2000,
+      "height": 2556
+    },
+    {
+      "id": "external-leap-spiral-necklace",
+      "url": "https://cdn.shopify.com/s/files/1/0715/7701/0400/files/LEAP_480.jpg?v=1778247839",
+      "status": "loaded",
+      "width": 1792,
+      "height": 2240
+    },
+    {
+      "id": "external-berhel-berhel-pendant",
+      "url": "https://cdn.shopify.com/s/files/1/0924/7296/7432/files/Berhel_infinity_loop_recycled_925_silver_small_pendant.jpg?v=1755175489",
+      "status": "loaded",
+      "width": 3380,
+      "height": 5070
+    },
+    {
+      "id": "external-hooks-oval-hook-earrings",
+      "url": "https://cdn.shopify.com/s/files/1/1013/0512/products/oval_hook_earrings.jpg?v=1517928447",
+      "status": "loaded",
+      "width": 1500,
+      "height": 1500
+    },
+    {
+      "id": "external-amano-2-silver-hoop-earrings",
+      "url": "https://cdn.shopify.com/s/files/1/0372/4053/7227/products/21RH-G.jpg?v=1625077362",
+      "status": "loaded",
+      "width": 3648,
+      "height": 3648
+    },
+    {
+      "id": "external-cled-heart-dangling-ring",
+      "url": "https://cdn.shopify.com/s/files/1/2448/9745/products/CLED-RING-HeartDangling-dew-silver.jpg?v=1758923712",
+      "status": "loaded",
+      "width": 2000,
+      "height": 2556
+    },
+    {
+      "id": "external-leap-between-stillness-earrings",
+      "url": "https://cdn.shopify.com/s/files/1/0715/7701/0400/files/LEAP_760.jpg?v=1778247719",
+      "status": "loaded",
+      "width": 1836,
+      "height": 2295
+    },
+    {
+      "id": "external-berhel-liquid-hoop-earrings",
+      "url": "https://cdn.shopify.com/s/files/1/0924/7296/7432/files/Two_sizes_Berhel_liquid_hoop_earrings_925_sterling_silver_handmade_in_Finland.jpg?v=1763918728",
+      "status": "loaded",
+      "width": 1586,
+      "height": 1982
+    },
+    {
+      "id": "external-hooks-heart-hoop-earrings",
+      "url": "https://cdn.shopify.com/s/files/1/1013/0512/products/heart_hoops.jpg?v=1568711193",
+      "status": "loaded",
+      "width": 1500,
+      "height": 1500
+    },
+    {
+      "id": "external-amano-1-5-classic-hoops",
+      "url": "https://cdn.shopify.com/s/files/1/0372/4053/7227/products/21RH15-G-1.jpg?v=1626805268",
+      "status": "loaded",
+      "width": 3648,
+      "height": 3648
+    },
+    {
+      "id": "external-cled-in-the-loop-ring",
+      "url": "https://cdn.shopify.com/s/files/1/2448/9745/files/CLED-ring-ITL-2025-all_d47f88c6-7890-47fc-a584-5efff4e662fc.jpg?v=1748889711",
+      "status": "loaded",
+      "width": 2000,
+      "height": 2556
+    },
+    {
+      "id": "external-leap-on-the-horizon-torque-necklace",
+      "url": "https://cdn.shopify.com/s/files/1/0715/7701/0400/files/LEAP_65_1_37b9de48-8fc6-4290-823d-adc9f08d3b0f.jpg?v=1778247756",
+      "status": "loaded",
+      "width": 2000,
+      "height": 2501
+    },
+    {
+      "id": "external-berhel-happy-accident-family",
+      "url": "https://cdn.shopify.com/s/files/1/0924/7296/7432/files/Happy_accident_pair_recycled_925_silver_berhel_made_in_finland.jpg?v=1764495255",
+      "status": "loaded",
+      "width": 1913,
+      "height": 2869
+    },
+    {
+      "id": "external-hooks-long-arc-earrings",
+      "url": "https://cdn.shopify.com/s/files/1/1013/0512/products/il_fullxfull.741697144_9cxk.jpeg?v=1541030916",
+      "status": "loaded",
+      "width": 800,
+      "height": 800
+    },
+    {
+      "id": "external-amano-zodiac-medallion-aries-taurus-gemini",
+      "url": "https://cdn.shopify.com/s/files/1/0372/4053/7227/files/2409-A-168-13-2.jpg?v=1730133683",
+      "status": "loaded",
+      "width": 2600,
+      "height": 2600
+    },
+    {
+      "id": "external-cled-halo-necklace",
+      "url": "https://cdn.shopify.com/s/files/1/2448/9745/files/CLED-HaloNecklace-prism-2.jpg?v=1775539036",
+      "status": "loaded",
+      "width": 2000,
+      "height": 2556
+    },
+    {
+      "id": "external-leap-a-familiar-embrace-earrings",
+      "url": "https://cdn.shopify.com/s/files/1/0715/7701/0400/files/LEAP284_1b663f83-1877-459c-8f1b-d206433d383f.jpg?v=1778247790",
+      "status": "loaded",
+      "width": 2000,
+      "height": 2501
+    },
+    {
+      "id": "external-berhel-liquid-band",
+      "url": "https://cdn.shopify.com/s/files/1/0924/7296/7432/files/berhel_liquid_band_silver_ring.jpg?v=1769016816",
+      "status": "loaded",
+      "width": 2961,
+      "height": 4442
+    },
+    {
+      "id": "external-hooks-square-threader-earrings",
+      "url": "https://cdn.shopify.com/s/files/1/1013/0512/products/square_threader_earrings.jpg?v=1532529372",
+      "status": "loaded",
+      "width": 1000,
+      "height": 1000
+    },
+    {
+      "id": "external-amano-honey-bee-studs-1",
+      "url": "https://cdn.shopify.com/s/files/1/0372/4053/7227/products/17BEE-1.jpg?v=1626392613",
+      "status": "loaded",
+      "width": 569,
+      "height": 569
+    },
+    {
+      "id": "external-cled-core-loop-ring-small",
+      "url": "https://cdn.shopify.com/s/files/1/2448/9745/files/CLED-Ring-CoreLoop-small-clearair-silver.jpg?v=1771525115",
+      "status": "loaded",
+      "width": 2000,
+      "height": 2556
+    },
+    {
+      "id": "external-leap-quiet-grace-onyx-earrings",
+      "url": "https://cdn.shopify.com/s/files/1/0715/7701/0400/files/LEAP_906.jpg?v=1778247688",
+      "status": "loaded",
+      "width": 2000,
+      "height": 2501
+    },
+    {
+      "id": "external-berhel-liquid-band-ring-with-gemstones",
+      "url": "https://cdn.shopify.com/s/files/1/0924/7296/7432/files/Organic_wavy_Silver_Liquid_band_ring_with_gemstones_male_female_unisex.jpg?v=1776873861",
+      "status": "loaded",
+      "width": 1543,
+      "height": 2314
+    },
+    {
+      "id": "external-hooks-circle-hoop-earrings",
+      "url": "https://cdn.shopify.com/s/files/1/1013/0512/products/il_fullxfull.557825986_lctn.jpeg?v=1447277373",
+      "status": "loaded",
+      "width": 600,
+      "height": 600
+    },
+    {
+      "id": "external-amano-star-cluster-studs",
+      "url": "https://cdn.shopify.com/s/files/1/0372/4053/7227/products/17SS-1.jpg?v=1626392469",
+      "status": "loaded",
+      "width": 569,
+      "height": 569
+    },
+    {
+      "id": "external-cled-petal-icon-stud-earrings",
+      "url": "https://www.thecled.com/cdn/shop/files/CLED-PetalIconStudEarrings-blueocean-2.jpg?v=1763056473&width=2000",
+      "status": "loaded",
+      "width": 2000,
+      "height": 2556
+    },
+    {
+      "id": "external-leap-silverlining-ring",
+      "url": "https://leapstudio.shop/cdn/shop/files/IMG_3323.jpg?v=1778246438&width=533",
+      "status": "loaded",
+      "width": 533,
+      "height": 666
+    },
+    {
+      "id": "external-berhel-liquid-gem-pendant",
+      "url": "https://berhel.com/cdn/shop/files/Liquid_pendant_purple_gemstone_925_silver.jpg?v=1793547317&width=533",
+      "status": "loaded",
+      "width": 533,
+      "height": 800
+    },
+    {
+      "id": "external-hooks-long-bar-pearl-hoop-earrings",
+      "url": "https://www.hooksandluxe.com/cdn/shop/files/long-bar-hoops-large-pearls_31de5159-66e9-4bee-acc6-8599f3681871.jpg?v=1752008801&width=1946",
+      "status": "loaded",
+      "width": 1946,
+      "height": 1946
+    },
+    {
+      "id": "external-amano-1-5-hammered-hoop-earrings",
+      "url": "https://amanostudio.com/cdn/shop/files/21HH15-G-WEB.jpg?v=1727196978&width=1946",
+      "status": "loaded",
+      "width": 1000,
+      "height": 1000
+    },
+    {
+      "id": "external-cled-still-bracelet",
+      "url": "https://www.thecled.com/cdn/shop/files/CLED-StillBracelet-brown.jpg?v=1759816742&width=2000",
+      "status": "loaded",
+      "width": 2000,
+      "height": 2556
+    },
+    {
+      "id": "external-leap-ebb-and-flow-ring",
+      "url": "https://leapstudio.shop/cdn/shop/files/LEAP595_1_-ebb_flow.jpg?v=1778247865&width=1946",
+      "status": "loaded",
+      "width": 1946,
+      "height": 2433
+    },
+    {
+      "id": "external-berhel-blue-sapphire-earrings",
+      "url": "https://berhel.com/cdn/shop/files/Berhel_sapphire_earrings_925_sterling_silver_made_in_Finland.jpg?v=1793545949&width=533",
+      "status": "loaded",
+      "width": 533,
+      "height": 800
+    },
+    {
+      "id": "external-hooks-short-bar-pearl-hoop-earrings",
+      "url": "https://www.hooksandluxe.com/cdn/shop/files/short-bar-hoops-large-pearls.jpg?v=1752248619&width=533",
+      "status": "loaded",
+      "width": 533,
+      "height": 533
+    },
+    {
+      "id": "external-amano-10mm-pearl-huggie-hoops",
+      "url": "https://amanostudio.com/cdn/shop/files/25PH-10-WEB.jpg?v=1775085315&width=1946",
+      "status": "loaded",
+      "width": 1000,
+      "height": 1000
+    }
+  ],
+  "requests": [
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "耳环"
+    },
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "earrings"
+    },
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "项链"
+    },
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "necklace"
+    },
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "戒指"
+    },
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "rings"
+    },
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "全部商品"
+    },
+    {
+      "url": "/api/consumer/discovery",
+      "action": "page"
+    },
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "全部商品"
+    },
+    {
+      "url": "/api/consumer/discovery",
+      "action": "start",
+      "query": "全部商品"
+    },
+    {
+      "url": "/api/consumer/discovery",
+      "action": "start",
+      "query": "全部商品"
+    },
+    {
+      "url": "/api/consumer/discovery",
+      "action": "page"
+    },
+    {
+      "url": "/api/consumer/discovery",
+      "action": "page"
+    },
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "全部商品"
+    },
+    {
+      "url": "/api/consumer/discovery",
+      "action": "page"
+    },
+    {
+      "url": "/api/consumer/discovery",
+      "action": "start",
+      "query": "全部商品"
+    },
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "耳环"
+    },
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "不存在的商品"
+    },
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "耳环"
+    },
+    {
+      "url": "/api/consumer/discovery",
+      "action": "start",
+      "query": "耳环"
+    },
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "项链"
+    },
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "Explain this concept"
+    },
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "项链"
+    },
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "earrings"
+    },
+    {
+      "url": "/api/consumer/assistant",
+      "action": "assistant",
+      "query": "rings"
+    }
+  ]
+}

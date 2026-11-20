@@ -14,14 +14,12 @@ import {
   scenePostsList,
   sampleCreator,
   sampleStory,
-  lampProduct,
-  keyboardProduct,
 } from '../data/mockData';
 
 const STORAGE_KEYS = {
   CART: 'omnilink_cart_items_v1',
   SAVED: 'omnilink_saved_items_v1',
-  QNA: 'omnilink_qna_history_v1',
+  QNA: 'omnilink_qna_history_v2',
   AI_CHAT: 'omnilink_ai_chat_v4',
   REJECTED: 'omnilink-rejected-products-v1',
   ARCHIVED_CONVERSATIONS: 'omnilink-ai-assistant-archived-conversations',
@@ -90,7 +88,8 @@ export class DataService {
         p.category.toLowerCase().includes(q) ||
         p.creator.toLowerCase().includes(q) ||
         p.shortDescription.toLowerCase().includes(q) ||
-        p.storeName.toLowerCase().includes(q)
+        p.storeName.toLowerCase().includes(q) ||
+        Object.values(p.specs).some((value) => value.toLowerCase().includes(q))
     );
   }
 
@@ -102,32 +101,39 @@ export class DataService {
     return scenePostsList;
   }
 
-  static getCreator(): Creator {
+  static getCreator(): Creator | null {
     return sampleCreator;
   }
 
-  static getStory(): Story {
+  static getStory(): Story | null {
     return sampleStory;
   }
 
-  static getCart(products: ProductItem[] = productsList, useOnlyProvidedProducts = false): CartItem[] {
+  static getCart(products: ProductItem[] = productsList): CartItem[] {
     try {
       const stored = getBrowserStorage()?.getItem(STORAGE_KEYS.CART);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          const productIds = new Set(products.map((product) => product.id));
-          return parsed.filter((item): item is CartItem => item?.product && productIds.has(item.product.id));
+          const productById = new Map(products.map((product) => [product.id, product]));
+          return parsed.flatMap((item) => {
+            const product = productById.get(item?.product?.id);
+            if (!product || !Number.isInteger(item.quantity) || item.quantity < 1) return [];
+            const variant = product.variants?.find((candidate) => candidate.id === item.variantId);
+            return [{
+              product,
+              quantity: item.quantity,
+              variant: variant ? Object.values(variant.optionValues).join(' / ') : '',
+              variantId: variant?.id ?? null,
+              selectedOptions: variant?.optionValues,
+            }];
+          });
         }
       }
     } catch (e) {
       console.warn('Failed to load cart', e);
     }
-    if (useOnlyProvidedProducts) return [];
-    return [
-      { product: lampProduct, quantity: 1, variant: 'Brushed Brass' },
-      { product: keyboardProduct, quantity: 1, variant: 'Dual Dial TKL' },
-    ];
+    return [];
   }
 
   static saveCart(items: CartItem[]): void {
@@ -143,14 +149,8 @@ export class DataService {
     }
   }
 
-  static getSavedProductIds(): string[] {
-    try {
-      const stored = getBrowserStorage()?.getItem(STORAGE_KEYS.SAVED);
-      if (stored) return JSON.parse(stored);
-    } catch {
-      // ignore
-    }
-    return ['p_lamp_01', 'p_chair_02', 'p_keyboard_07', 'p_headphones_06'];
+  static getSavedProductIds(products: ProductItem[] = productsList): string[] {
+    return readStringList(STORAGE_KEYS.SAVED).filter((id) => products.some((product) => product.id === id));
   }
 
   static saveProductIds(ids: string[]): void {
@@ -173,17 +173,7 @@ export class DataService {
     } catch {
       // ignore
     }
-    return {
-      p_lamp_01: [
-        {
-          id: 'q1',
-          text: '底座占地与光线色温如何？',
-          isUser: false,
-          evidenceText: '实测底座直径18cm，搭载2700K无频闪调光光源。',
-          timestamp: '官方认证',
-        },
-      ],
-    };
+    return {};
   }
 
   static saveQnaHistory(history: Record<string, QnaMessage[]>): void {
@@ -194,16 +184,22 @@ export class DataService {
     }
   }
 
-  static getAiChatHistory(): AiChatMessage[] {
+  static getAiChatHistory(products: ProductItem[] = productsList): AiChatMessage[] {
     try {
       const stored = getBrowserStorage()?.getItem(STORAGE_KEYS.AI_CHAT);
       if (stored) {
         let conversationId = '';
         return (JSON.parse(stored) as AiChatMessage[]).map((message) => {
-          if (message.id === 'msg_welcome') return message;
           if (message.conversationId) conversationId = message.conversationId;
           else if (message.isUser) conversationId = message.id;
-          return { ...message, conversationId: conversationId || message.id };
+          return {
+            ...message,
+            conversationId: conversationId || message.id,
+            matchedProducts: message.matchedProducts?.flatMap((item) => {
+              const product = products.find((candidate) => candidate.id === item.id);
+              return product ? [product] : [];
+            }),
+          };
         });
       }
     } catch {
@@ -257,46 +253,24 @@ export class DataService {
 
   static generateQnaAnswer(question: string, product: ProductItem): { answer: string; evidence: string } {
     const q = question.toLowerCase();
-    if (!productsList.some((sample) => sample.id === product.id)) {
-      const matchingSpec = Object.entries(product.specs).find(([key]) =>
-        q.includes(key.toLowerCase()) ||
-        (/(尺寸|size|dimension)/i.test(q) && /(尺寸|长|宽|高|size|dimension)/i.test(key)) ||
-        (/(材质|材料|material)/i.test(q) && /(材质|材料|material)/i.test(key)) ||
-        (/(颜色|color)/i.test(q) && /(颜色|color)/i.test(key))
-      );
-      if (matchingSpec) {
-        return {
-          answer: `商品资料中，${matchingSpec[0]}为：${matchingSpec[1]}。`,
-          evidence: `${matchingSpec[0]}：${matchingSpec[1]}`,
-        };
-      }
-      if (product.shortDescription.trim()) {
-        return {
-          answer: `目前商家提供的商品说明是：${product.shortDescription}`,
-          evidence: product.shortDescription,
-        };
-      }
+    const matchingSpec = Object.entries(product.specs).find(([key]) =>
+      q.includes(key.toLowerCase()) ||
+      (/(尺寸|size|dimension|length)/i.test(q) && /(尺寸|尺码|size|dimension)/i.test(key)) ||
+      (/(材质|材料|material)/i.test(q) && /(材质|材料|material)/i.test(key)) ||
+      (/(颜色|color)/i.test(q) && /(颜色|color)/i.test(key)) ||
+      (/(配送|运费|shipping|deliver)/i.test(q) && key === '配送政策') ||
+      (/(库存|现货|stock|availability)/i.test(q) && key === '库存状态') ||
+      (/(价格|多少钱|price|cost)/i.test(q) && key === '价格状态')
+    );
+    if (matchingSpec) {
       return {
-        answer: '当前商品资料没有包含这个问题的答案，建议在询价时请商家确认。',
-        evidence: '商品详情尚未提供相关字段。',
-      };
-    }
-    if (q.includes('desk') || q.includes('小') || q.includes('尺寸') || q.includes('size')) {
-      const dims = product.specs['Dimensions'] || product.specs['尺寸'] || '紧凑占地';
-      return {
-        answer: `该单品适合紧凑空间布置。具体尺寸：${dims}。底部配有防刮保护缓冲垫。`,
-        evidence: `实测尺寸：${dims}。`,
-      };
-    }
-    if (q.includes('光') || q.includes('灯') || q.includes('色温') || q.includes('led')) {
-      return {
-        answer: '配备 2700K 暖光集成 LED，支持顺滑无级调光，营造安静舒适的空间氛围。',
-        evidence: '经过工作室光学校准认证。',
+        answer: `商品资料中，${matchingSpec[0]}为：${matchingSpec[1]}。`,
+        evidence: `${matchingSpec[0]}：${matchingSpec[1]}${product.sourceUrl ? `；来源：${product.sourceUrl}` : ''}`,
       };
     }
     return {
-      answer: '以建筑级精工标准打磨，现货支持安全配送与 14 天退换保障。',
-      evidence: '工作室现货质检保障。',
+      answer: '当前商品资料没有提供这个问题的答案，请向原店确认。',
+      evidence: product.sourceUrl || '商品详情尚未提供相关字段。',
     };
   }
 

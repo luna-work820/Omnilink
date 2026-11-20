@@ -1,5 +1,17 @@
 import type { FeedItem, ProductItem } from '@/components/consumer-market/types'
 
+export function interleaveDiscoveryFeed(items: FeedItem[]): FeedItem[] {
+  const products = items.filter((item) => item.type === 'product')
+  const posts = items.filter((item) => item.type === 'scene')
+  const result: FeedItem[] = []
+  let nextPost = 0
+  products.forEach((product, index) => {
+    if (index % 3 === 0 && nextPost < posts.length) result.push(posts[nextPost++])
+    result.push(product)
+  })
+  return [...result, ...posts.slice(nextPost)]
+}
+
 export function rankDiscoveryFeed(
   items: FeedItem[],
   products: ProductItem[],

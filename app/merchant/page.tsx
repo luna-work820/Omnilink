@@ -1,3 +1,4 @@
+import { workspaceCapabilities } from '@/lib/workspace/capabilities'
 import { redirect } from 'next/navigation'
 import { createClientServer } from '@/lib/supabase/server'
 import { getStoreByOwnerId } from '@/lib/stores/service'
@@ -18,9 +19,9 @@ export default async function MerchantEntryPage() {
   }
 
   const store = await getStoreByOwnerId(user.id)
-  if (!store) {
+  if (!workspaceCapabilities(user.app_metadata, Boolean(store)).merchant) {
     redirect('/onboarding')
   }
 
-  redirect('/dashboard?workspace=merchant')
+  redirect('/dashboard')
 }

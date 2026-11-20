@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import sharp from 'sharp'
 import { requireUser } from '@/lib/api/auth'
 import { createServiceRoleClient } from '@/lib/supabase/service-role'
+import { encodeAvatar } from '@/lib/image-processing'
 
 export const runtime = 'nodejs'
 
@@ -22,11 +22,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const image = await sharp(Buffer.from(await file.arrayBuffer()), { failOn: 'error' })
-      .rotate()
-      .resize(512, 512, { fit: 'cover' })
-      .webp({ quality: 82 })
-      .toBuffer()
+    const image = await encodeAvatar(Buffer.from(await file.arrayBuffer()))
     const path = `consumer-avatars/${auth.user.id}/avatar.webp`
     const storage = createServiceRoleClient().storage.from('omnilink-media-public')
     const { error } = await storage.upload(path, image, {

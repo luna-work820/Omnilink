@@ -1,3 +1,4 @@
+import { parseBackdropColor } from "./backdrop-color";
 import { adapt, pickInk, tintFloor } from "./adapt.js";
 import { liquidGlass } from "./lens.js";
 
@@ -224,17 +225,12 @@ function sampleElement(element: HTMLElement, x: number, y: number, context: Canv
   }
 
   for (let current: HTMLElement | null = element; current; current = current.parentElement) {
-    const color = parseRgb(getComputedStyle(current).backgroundColor);
+    const color = parseBackdropColor(getComputedStyle(current).backgroundColor);
     if (color) return color;
   }
   return null;
 }
 
-function parseRgb(value: string): Rgb | null {
-  const values = value.match(/[\d.]+/g)?.map(Number);
-  if (!values || values.length < 3 || (values[3] ?? 1) === 0) return null;
-  return [values[0], values[1], values[2]];
-}
 
 function luminance([r, g, b]: Rgb) {
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255;

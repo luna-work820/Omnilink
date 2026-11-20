@@ -32,6 +32,20 @@ export interface ProductItem {
   storeName: string;
   sourceUrl?: string;
   sourceDate?: string;
+  catalogEvidence?: {
+    sourceType: 'official_store' | 'public_page';
+    reviewedAt: string;
+    productPageStatus: 'indexed_snapshot' | 'previous_capture' | 'not_revalidated' | 'fetched';
+    listingUrl: string;
+    priceStatus: 'snapshot' | 'unconfirmed';
+    priceSourceUrl?: string;
+    shippingSourceUrl?: string;
+    stockStatus: 'unknown' | 'sold_out_snapshot';
+    deliveryToChina: 'unverified';
+    verifiedDeliveryCountries?: string[];
+    checkoutVerified: false;
+    imageStatus: 'source_url_only';
+  };
   storeDescription?: string;
   storeImage?: string;
   contextStory?: string;
@@ -107,6 +121,7 @@ export interface ScenePost {
   aspectRatio: number;
   description: string;
   blocks?: import('@/lib/creator-content').ContentBlock[];
+  publication?: import('@/lib/creator-publication-document').PublicationDocument;
   hasWhiteBg?: boolean;
 }
 

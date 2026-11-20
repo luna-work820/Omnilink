@@ -1,0 +1,100 @@
+import { createHash } from 'node:crypto'
+import { isIP } from 'node:net'
+import { load } from 'cheerio'
+import type { ProductItem } from '@/components/consumer-market/types'
+
+type RecordValue = Record<string, unknown>
+const asRecord = (value: unknown): RecordValue => value && typeof value === 'object' && !Array.isArray(value) ? value as RecordValue : {}
+const clean = (value: unknown, max = 2000): string => typeof value === 'string'
+  ? load(value.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ')).text().replace(/\s+/g, ' ').trim().slice(0, max) : ''
+const first = (value: unknown): unknown => Array.isArray(value) ? value[0] : value
+
+export function canonicalProductUrl(value: string): string {
+  let url: URL
+  try { url = new URL(value) } catch { throw new Error('PRODUCT_URL_INVALID') }
+  if (url.protocol !== 'https:' || url.username || url.password || url.port || !url.hostname.includes('.') ||
+      isIP(url.hostname) || /(?:^|\.)(?:localhost|local)$/i.test(url.hostname) || url.href.length > 2048) {
+    throw new Error('PRODUCT_URL_INVALID')
+  }
+  url.hash = ''
+  for (const key of [...url.searchParams.keys()]) {
+    if (/^(?:utm_.+|gclid|fbclid|msclkid)$/i.test(key)) url.searchParams.delete(key)
+  }
+  url.searchParams.sort()
+  return url.href
+}
+
+function productNodes(value: unknown): RecordValue[] {
+  if (Array.isArray(value)) return value.flatMap(productNodes)
+  const object = asRecord(value)
+  const type = object['@type']
+  const isProduct = (Array.isArray(type) ? type : [type]).some((part) => typeof part === 'string' && /(?:^|\/)Product$/.test(part))
+  return [...(isProduct ? [object] : []), ...Object.values(object).flatMap((child) =>
+    child && typeof child === 'object' ? productNodes(child) : [])]
+}
+
+function imageUrl(value: unknown, base: string): string {
+  const item = first(value)
+  const candidate = typeof item === 'string' ? item : asRecord(item).url
+  if (typeof candidate !== 'string' || !candidate) return ''
+  try {
+    const url = new URL(candidate, base)
+    return url.protocol === 'https:' && !url.username && !url.password ? url.href : ''
+  } catch { return '' }
+}
+
+export function normalizeScrapedProduct(html: string, url: string, capturedAt = new Date().toISOString()): ProductItem {
+  if (Buffer.byteLength(html) > 8_000_000) throw new Error('PRODUCT_HTML_TOO_LARGE')
+  const sourceUrl = canonicalProductUrl(url)
+  const $ = load(html)
+  const structured: RecordValue[] = []
+  $('script[type="application/ld+json"]').each((_, element) => {
+    try { structured.push(...productNodes(JSON.parse($(element).html() || 'null'))) } catch { /* Other metadata can still be used. */ }
+  })
+  const data = structured.find((item) => {
+    const candidate = item.url || asRecord(first(item.offers)).url
+    if (typeof candidate !== 'string') return false
+    try { return canonicalProductUrl(new URL(candidate, sourceUrl).href) === sourceUrl } catch { return false }
+  }) ?? structured[0] ?? {}
+  const micro = $('[itemscope][itemtype$="/Product"]').first()
+  const prop = (name: string) => {
+    const element = micro.find(`[itemprop="${name}"]`).first()
+    return element.attr('content') || element.attr('src') || element.attr('href') || element.text()
+  }
+  const name = clean(data.name || prop('name') || $('meta[property="og:title"]').attr('content'), 240)
+  if (!name) throw new Error('PRODUCT_NAME_MISSING')
+  const offer = asRecord(first(data.offers))
+  const rawPrice = offer.price ?? prop('price') ?? ''
+  const priceString = String(rawPrice).replace(/[^\d.,-]/g, '').replace(/,/g, '')
+  const amount = priceString ? Number(priceString) : NaN
+  const rawCurrency = clean(offer.priceCurrency || prop('priceCurrency'), 3).toUpperCase()
+  const currency = /^[A-Z]{3}$/.test(rawCurrency) ? rawCurrency : undefined
+  const hasPrice = Number.isFinite(amount) && amount >= 0 && Boolean(currency)
+  const brandValue = first(data.brand)
+  const brand = clean(typeof brandValue === 'string' ? brandValue : asRecord(brandValue).name, 120)
+    || clean(prop('brand'), 120) || new URL(sourceUrl).hostname.replace(/^www\./, '')
+  const description = clean(data.description || prop('description') || $('meta[property="og:description"]').attr('content'), 1200)
+  const image = imageUrl(data.image || prop('image') || $('meta[property="og:image"]').attr('content'), sourceUrl)
+  const availability = clean(offer.availability || micro.find('[itemprop="availability"]').attr('href'), 120)
+  const specs: Record<string, string> = {}
+  for (const [key, value] of Object.entries({材质: data.material, 颜色: data.color, 尺寸: data.size, SKU: data.sku})) {
+    const text = clean(value, 200)
+    if (text) specs[key] = text
+  }
+  if (availability) specs['库存状态'] = /OutOfStock/i.test(availability) ? '采集时售罄' : /InStock/i.test(availability) ? '采集时有货' : '未知'
+  const category = /necklace|pendant|项链|吊坠/i.test(name) ? '项链' : /earring|耳环|耳饰/i.test(name) ? '耳饰'
+    : /bracelet|手链/i.test(name) ? '手链' : /\bring\b|戒指/i.test(name) ? '戒指' : '商品'
+  const id = `external-${createHash('sha256').update(sourceUrl).digest('hex').slice(0, 24)}`
+  return {
+    id, name, creator: brand, price: hasPrice ? amount : 0,
+    formattedPrice: hasPrice ? `${currency} ${amount.toFixed(2)}` : '待核价',
+    priceMode: hasPrice ? 'amount' : 'unknown', ...(currency ? {currency} : {}),
+    mainImage: image, secondaryImages: [], aspectRatio: 1, category,
+    shortDescription: description, aiSummary: description, reviews: [], specs, storeName: brand,
+    sourceUrl, sourceDate: capturedAt,
+    catalogEvidence: {sourceType:'public_page',reviewedAt:capturedAt,productPageStatus:'fetched',listingUrl:sourceUrl,
+      priceStatus:hasPrice?'snapshot':'unconfirmed',...(hasPrice?{priceSourceUrl:sourceUrl}:{}),
+      stockStatus:/OutOfStock/i.test(availability)?'sold_out_snapshot':'unknown',deliveryToChina:'unverified',
+      checkoutVerified:false,imageStatus:'source_url_only'},
+  }
+}

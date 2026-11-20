@@ -76,6 +76,7 @@ interface ProfileDropdownProps
   /** Menu expansion and alignment relative to the trigger. */
   placement?: "top-start" | "top-end" | "bottom-start" | "bottom-end";
   triggerClassName?: string;
+  glassPanel?: boolean;
   showAvatar?: boolean;
   showTheme?: boolean;
   accounts?: Account[];
@@ -617,6 +618,7 @@ function LinkItem({
 export default function ProfileDropdown({
   placement = "bottom-end",
   triggerClassName,
+  glassPanel = false,
   showAvatar = true,
   showTheme = true,
   accounts = SAMPLE_ACCOUNTS,
@@ -971,7 +973,11 @@ export default function ProfileDropdown({
               style={{ clipPath: outerClip }}
             />
             <motion.div
-              className="absolute inset-0 bg-[var(--surface)]"
+              data-glasswork={glassPanel ? '' : undefined}
+              data-glasswork-radius={glassPanel ? '16' : undefined}
+              data-glasswork-rim={glassPanel ? '12' : undefined}
+              data-glasswork-dispersion={glassPanel ? '0.18' : undefined}
+              className={cn('absolute inset-0 bg-[var(--surface)]', glassPanel && 'workbench-profile-menu-glass')}
               style={{ clipPath: innerClip }}
             />
           </div>

@@ -7,7 +7,7 @@ import type { Database } from '@/lib/database.types'
 const profile: Profile = {
   id: 'v3-preview-user',
   email: 'preview@omnilink.local',
-  name: '演示商家',
+  name: '演示用户',
   avatarUrl: null,
 }
 
@@ -27,11 +27,14 @@ const merchantProject = {
   updated_at: new Date(0).toISOString(),
 } satisfies Database['public']['Tables']['brand_projects']['Row']
 
-export default function V3UIPreviewPage() {
+export default async function V3UIPreviewPage({ searchParams }: { searchParams: Promise<{ capability?: string }> }) {
+  const { capability } = await searchParams
+  const capabilities = { creator: capability === 'creator' || capability === 'both', merchant: capability !== 'creator' }
+  const demoProfile = { ...profile, name: capability === 'creator' ? '演示创作者' : capability === 'both' ? '演示用户' : '演示商家' }
   return (
-    <V3DashboardShell profile={profile} workspaceMode="merchant" canSwitchWorkspace previewMode>
+    <V3DashboardShell profile={demoProfile} capabilities={capabilities} demo>
       <DashboardWorkspaceProvider>
-        <WorkbenchHome displayName={profile.name} merchantProject={merchantProject} />
+        <WorkbenchHome displayName={demoProfile.name} merchantProject={merchantProject} capabilities={capabilities} />
       </DashboardWorkspaceProvider>
     </V3DashboardShell>
   )

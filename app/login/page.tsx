@@ -4,10 +4,10 @@ import { safeInternalRedirectPath } from '@/lib/auth/redirect-path'
 import PackageLoginPage from '@/components/login-package/App'
 
 export const metadata = {
-  title: 'OMNILINK — 独立美学购物',
+  title: '登录 | Omnilink',
 }
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string | string[] }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string | string[]; error?: string }> }) {
   const params = await searchParams
   const redirectTo = safeInternalRedirectPath(params.next, '/discover')
   const hasRedirectTo = typeof params.next === 'string'
@@ -25,5 +25,5 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     redirect(redirectTo)
   }
 
-  return <PackageLoginPage redirectTo={hasRedirectTo ? redirectTo : undefined} />
+  return <PackageLoginPage confirmationError={params.error === 'auth_callback_failed'} redirectTo={hasRedirectTo ? redirectTo : undefined} />
 }

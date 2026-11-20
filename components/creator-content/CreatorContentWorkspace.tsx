@@ -70,7 +70,7 @@ function ProductRows({ ids, products, remove, move, compact = false }: {
   })}</div>
 }
 
-export function CreatorContentWorkspace({ requestedId, startNew = false }: { requestedId?: string; startNew?: boolean }) {
+export function CreatorContentWorkspace({ requestedId, startNew = false, previewMode = false }: { requestedId?: string; startNew?: boolean; previewMode?: boolean }) {
   const [products, setProducts] = useState<Product[]>([])
   const [currentId, setCurrentId] = useState<string | null>(null)
   const [wasPublished, setWasPublished] = useState(false)
@@ -92,6 +92,10 @@ export function CreatorContentWorkspace({ requestedId, startNew = false }: { req
   const videoBlockIdRef = useRef<string | null>(null)
 
   useEffect(() => {
+    if (previewMode) {
+      setLoading(false)
+      return
+    }
     let active = true
     void fetchLibrary().then((library) => {
       if (!active) return
@@ -109,7 +113,7 @@ export function CreatorContentWorkspace({ requestedId, startNew = false }: { req
       if (active) setError(cause instanceof Error ? cause.message : '加载内容失败')
     }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [requestedId, startNew])
+  }, [requestedId, startNew, previewMode])
 
   useEffect(() => {
     if (!previewOpen && picking === null) return
@@ -207,7 +211,7 @@ export function CreatorContentWorkspace({ requestedId, startNew = false }: { req
     replaceBlock(block.id, { ...block, productIds })
   }
   const save = async (status: 'draft' | 'published') => {
-    if (uploadingVideoBlock) return
+    if (previewMode || uploadingVideoBlock) return
     setSaving(true)
     setError('')
     setNotice('')
@@ -240,14 +244,23 @@ export function CreatorContentWorkspace({ requestedId, startNew = false }: { req
   const selectedProducts = selectedIds.map((id) => products.find((item) => item.id === id)).filter((item): item is Product => Boolean(item))
   const pickingBlock = draft.blocks.find((block) => block.id === picking)
 
+  if (previewMode) {
+    return (
+      <main className="mx-auto min-h-full w-full max-w-[1120px] px-4 pt-5 sm:px-8">
+        <h1 className="text-base font-semibold">内容</h1>
+        <section aria-label="内容页设计区域" className="min-h-[70vh]" />
+      </main>
+    )
+  }
+
   return <div className="mx-auto max-w-[1120px] px-4 pb-20 pt-5 sm:px-8">
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-4">
-      <div className="flex min-h-10 items-center gap-3"><h1 className="text-base font-semibold">内容</h1><span className="text-xs text-[var(--text-secondary)]">{loading ? '加载中…' : dirty ? '未保存' : hasPending ? '待发布修改' : wasPublished ? '已发布' : '草稿'}</span></div>
+      <div className="flex min-h-10 items-center gap-3"><h1 className="text-base font-semibold">内容</h1><span className="text-xs text-[var(--text-secondary)]">{previewMode ? '预览模式' : loading ? '加载中…' : dirty ? '未保存' : hasPending ? '待发布修改' : wasPublished ? '已发布' : '草稿'}</span></div>
       <div className="flex flex-wrap items-center gap-2">
-        <Link href="/dashboard/content/works" onClick={(event) => { if (dirty && !window.confirm('内容尚未保存，仍要离开吗？')) event.preventDefault() }} className="ui-secondary inline-flex min-h-10 items-center rounded-[var(--radius-control)] px-4 text-sm focus-visible:outline-2 focus-visible:outline-[#315BFF]">管理作品</Link>
+        {!previewMode && <Link href="/dashboard/content/works" onClick={(event) => { if (dirty && !window.confirm('内容尚未保存，仍要离开吗？')) event.preventDefault() }} className="ui-secondary inline-flex min-h-10 items-center rounded-[var(--radius-control)] px-4 text-sm focus-visible:outline-2 focus-visible:outline-[#315BFF]">管理作品</Link>}
         <button type="button" onClick={() => setPreviewOpen(true)} className="ui-secondary min-h-10 rounded-[var(--radius-control)] px-4 text-sm">预览</button>
-        <button type="button" onClick={() => void save('draft')} disabled={saving || loading || Boolean(uploadingVideoBlock)} className="ui-secondary min-h-10 rounded-[var(--radius-control)] px-4 text-sm disabled:opacity-50">保存草稿</button>
-        <button type="button" onClick={() => void save('published')} disabled={saving || loading || Boolean(uploadingVideoBlock)} className="min-h-10 rounded-full bg-[var(--text-primary)] px-5 text-sm font-medium text-white disabled:opacity-50">{uploadingVideoBlock ? '视频上传中…' : saving ? '保存中…' : wasPublished ? '更新发布' : '发布'}</button>
+        <button type="button" onClick={() => void save('draft')} disabled={previewMode || saving || loading || Boolean(uploadingVideoBlock)} className="ui-secondary min-h-10 rounded-[var(--radius-control)] px-4 text-sm disabled:opacity-50">保存草稿</button>
+        <button type="button" onClick={() => void save('published')} disabled={previewMode || saving || loading || Boolean(uploadingVideoBlock)} className="min-h-10 rounded-full bg-[var(--text-primary)] px-5 text-sm font-medium text-white disabled:opacity-50">{uploadingVideoBlock ? '视频上传中…' : saving ? '保存中…' : wasPublished ? '更新发布' : '发布'}</button>
       </div>
     </header>
     {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}

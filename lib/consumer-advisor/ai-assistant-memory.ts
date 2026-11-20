@@ -1,4 +1,5 @@
 import 'server-only'
+import { isUsablePersonalMemory } from './memory-lifecycle'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { readAiAssistantProfile, type AiAssistantProfile } from './ai-assistant-profile'
@@ -58,7 +59,7 @@ export function profileWithAiAssistantMemories(profile: unknown, memories: AiAss
 }
 
 export function memoryContext(memories: AiAssistantMemory[]): string {
-  return memories.filter((memory) => memory.status === 'active' && memory.confirmedAt).map((memory) =>
+  return memories.filter((memory) => isUsablePersonalMemory(memory)).map((memory) =>
     `- ID ${memory.id}；${memory.origin === 'user' ? '用户自述' : '用户已确认的推断'}；${memory.domain}；${memory.text}`,
   ).join('\n') || '无'
 }

@@ -1,3 +1,4 @@
+import { workspaceCapabilities } from '@/lib/workspace/capabilities'
 import { redirect } from 'next/navigation'
 import { createClientServer } from '@/lib/supabase/server'
 import { V3DashboardShell } from '@/components/dashboard/v3-UI/V3DashboardShell'
@@ -42,7 +43,7 @@ export default async function DashboardLayout({
   const [project, store] = user
     ? await Promise.all([getBrandProjectByUserId(user.id), getStoreByOwnerId(user.id)])
     : [DEMO_BRAND_PROJECT, null]
-  const workspaceMode = creatorEnabled && (user?.app_metadata?.workspace_mode === 'creator' || !store) ? 'creator' : 'merchant'
+  const capabilities = localPreview ? { creator: false, merchant: true } : workspaceCapabilities(user?.app_metadata, Boolean(project && store))
   if ((!project || !store) && !localPreview && !creatorEnabled) {
     redirect('/onboarding')
   }
@@ -66,9 +67,8 @@ export default async function DashboardLayout({
   return (
     <V3DashboardShell
       profile={profile}
-      workspaceMode={workspaceMode}
-      canSwitchWorkspace={creatorEnabled && Boolean(project && store)}
-      previewMode={localPreview}
+      capabilities={capabilities}
+      demo={localPreview}
     >
       <DashboardWorkspaceProvider>{children}</DashboardWorkspaceProvider>
     </V3DashboardShell>

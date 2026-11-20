@@ -1,0 +1,9 @@
+import { build } from 'esbuild'
+import { mkdirSync,writeFileSync } from 'node:fs'
+const {resolve}=await import('node:path');
+const policy={name:'source-import-policy',setup(b){b.onResolve({filter:/.*/},args=>{if(args.path==='@omnilink/site-sdk')return {path:process.cwd()+'/platform/sdk.ts'};if(!args.importer.includes('/src/'))return;const spec=args.path;if(args.kind==='dynamic-import'||args.kind==='require-call')throw Error('Dynamic module loading is not supported');if(spec==='react'||spec.startsWith('react/')||spec==='@omnilink/site-sdk')return;if(!spec.startsWith('.')||!resolve(args.resolveDir,spec).startsWith(process.cwd()+'/src/'))throw Error('Module is outside the editable source: '+spec)})}};
+const alias={}
+await mkdirSync('dist',{recursive:true})
+await build({entryPoints:['platform/client.tsx'],bundle:true,minify:true,format:'esm',platform:'browser',outfile:'dist/site.js',alias,plugins:[policy],jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}})
+await build({entryPoints:['platform/render.tsx'],bundle:true,minify:true,format:'esm',platform:'node',outfile:'dist/render.mjs',banner:{js:"import {createRequire as __createRequire} from 'node:module';const require=__createRequire(import.meta.url);"},alias,plugins:[policy],jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'}})
+const {readFileSync,existsSync}=await import('node:fs');const files=process.argv.slice(2);writeFileSync('dist/site.css',files.filter(f=>f.endsWith('.css')).map(f=>readFileSync(f,'utf8')).join('\n'))

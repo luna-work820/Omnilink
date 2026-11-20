@@ -1,0 +1,302 @@
+{
+  "date": "2026-11-16",
+  "repository": "https://github.com/firecrawl/open-lovable",
+  "commit": "806b8072f28afea11fa2b028cac1449eff74c511",
+  "scope": "static source inspection only; no installs, scripts, API calls or deployed tests",
+  "evidence": {
+    "generation": {
+      "path": "app/api/generate-ai-code-stream/route.ts",
+      "line": 91,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/app/api/generate-ai-code-stream/route.ts#L91"
+    },
+    "global_conversation": {
+      "path": "app/api/generate-ai-code-stream/route.ts",
+      "line": 103,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/app/api/generate-ai-code-stream/route.ts#L103"
+    },
+    "apply": {
+      "path": "app/api/apply-ai-code-stream/route.ts",
+      "line": 264,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/app/api/apply-ai-code-stream/route.ts#L264"
+    },
+    "parse_response": {
+      "path": "app/api/apply-ai-code-stream/route.ts",
+      "line": 24,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/app/api/apply-ai-code-stream/route.ts#L24"
+    },
+    "apply_commands": {
+      "path": "app/api/apply-ai-code-stream/route.ts",
+      "line": 692,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/app/api/apply-ai-code-stream/route.ts#L692"
+    },
+    "cleanup_all": {
+      "path": "app/api/create-ai-sandbox-v2/route.ts",
+      "line": 21,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/app/api/create-ai-sandbox-v2/route.ts#L21"
+    },
+    "manager": {
+      "path": "lib/sandbox/sandbox-manager.ts",
+      "line": 13,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/lib/sandbox/sandbox-manager.ts#L13"
+    },
+    "run_command": {
+      "path": "app/api/run-command-v2/route.ts",
+      "line": 10,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/app/api/run-command-v2/route.ts#L10"
+    },
+    "provider_types": {
+      "path": "lib/sandbox/types.ts",
+      "line": 35,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/lib/sandbox/types.ts#L35"
+    },
+    "factory": {
+      "path": "lib/sandbox/factory.ts",
+      "line": 8,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/lib/sandbox/factory.ts#L8"
+    },
+    "vercel_template": {
+      "path": "lib/sandbox/providers/vercel-provider.ts",
+      "line": 325,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/lib/sandbox/providers/vercel-provider.ts#L325"
+    },
+    "vercel_dev": {
+      "path": "lib/sandbox/providers/vercel-provider.ts",
+      "line": 527,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/lib/sandbox/providers/vercel-provider.ts#L527"
+    },
+    "e2b_template": {
+      "path": "lib/sandbox/providers/e2b-provider.ts",
+      "line": 231,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/lib/sandbox/providers/e2b-provider.ts#L231"
+    },
+    "model": {
+      "path": "lib/ai/provider-manager.ts",
+      "line": 79,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/lib/ai/provider-manager.ts#L79"
+    },
+    "parser": {
+      "path": "lib/file-parser.ts",
+      "line": 6,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/lib/file-parser.ts#L6"
+    },
+    "intent": {
+      "path": "lib/edit-intent-analyzer.ts",
+      "line": 6,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/lib/edit-intent-analyzer.ts#L6"
+    },
+    "context": {
+      "path": "lib/context-selector.ts",
+      "line": 15,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/lib/context-selector.ts#L15"
+    },
+    "morph_path": {
+      "path": "lib/morph-fast-apply.ts",
+      "line": 17,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/lib/morph-fast-apply.ts#L17"
+    },
+    "morph_apply": {
+      "path": "lib/morph-fast-apply.ts",
+      "line": 180,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/lib/morph-fast-apply.ts#L180"
+    },
+    "validator": {
+      "path": "lib/build-validator.ts",
+      "line": 12,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/lib/build-validator.ts#L12"
+    },
+    "zip": {
+      "path": "app/api/create-zip/route.ts",
+      "line": 7,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/app/api/create-zip/route.ts#L7"
+    },
+    "files": {
+      "path": "app/api/get-sandbox-files/route.ts",
+      "line": 10,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/app/api/get-sandbox-files/route.ts#L10"
+    },
+    "conversation": {
+      "path": "app/api/conversation-state/route.ts",
+      "line": 9,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/app/api/conversation-state/route.ts#L9"
+    },
+    "ui": {
+      "path": "app/generation/page.tsx",
+      "line": 548,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/app/generation/page.tsx#L548"
+    },
+    "preview": {
+      "path": "app/generation/page.tsx",
+      "line": 1603,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/app/generation/page.tsx#L1603"
+    },
+    "license": {
+      "path": "LICENSE",
+      "line": 1,
+      "url": "https://github.com/firecrawl/open-lovable/blob/806b8072f28afea11fa2b028cac1449eff74c511/LICENSE#L1"
+    }
+  },
+  "routes": [
+    {
+      "path": "app/api/analyze-edit-intent/route.ts",
+      "lines": 190,
+      "globalStateReference": false,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/apply-ai-code/route.ts",
+      "lines": 800,
+      "globalStateReference": true,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/apply-ai-code-stream/route.ts",
+      "lines": 799,
+      "globalStateReference": true,
+      "sandboxManagerReference": true
+    },
+    {
+      "path": "app/api/check-vite-errors/route.ts",
+      "lines": 12,
+      "globalStateReference": false,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/clear-vite-errors-cache/route.ts",
+      "lines": 26,
+      "globalStateReference": true,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/conversation-state/route.ts",
+      "lines": 160,
+      "globalStateReference": true,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/create-ai-sandbox/route.ts",
+      "lines": 384,
+      "globalStateReference": true,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/create-ai-sandbox-v2/route.ts",
+      "lines": 103,
+      "globalStateReference": true,
+      "sandboxManagerReference": true
+    },
+    {
+      "path": "app/api/create-zip/route.ts",
+      "lines": 70,
+      "globalStateReference": true,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/detect-and-install-packages/route.ts",
+      "lines": 189,
+      "globalStateReference": true,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/extract-brand-styles/route.ts",
+      "lines": 72,
+      "globalStateReference": false,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/generate-ai-code-stream/route.ts",
+      "lines": 1896,
+      "globalStateReference": true,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/get-sandbox-files/route.ts",
+      "lines": 208,
+      "globalStateReference": true,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/install-packages/route.ts",
+      "lines": 259,
+      "globalStateReference": true,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/install-packages-v2/route.ts",
+      "lines": 48,
+      "globalStateReference": true,
+      "sandboxManagerReference": true
+    },
+    {
+      "path": "app/api/kill-sandbox/route.ts",
+      "lines": 49,
+      "globalStateReference": true,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/monitor-vite-logs/route.ts",
+      "lines": 121,
+      "globalStateReference": true,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/report-vite-error/route.ts",
+      "lines": 62,
+      "globalStateReference": true,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/restart-vite/route.ts",
+      "lines": 103,
+      "globalStateReference": true,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/run-command/route.ts",
+      "lines": 63,
+      "globalStateReference": true,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/run-command-v2/route.ts",
+      "lines": 50,
+      "globalStateReference": true,
+      "sandboxManagerReference": true
+    },
+    {
+      "path": "app/api/sandbox-logs/route.ts",
+      "lines": 89,
+      "globalStateReference": true,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/sandbox-status/route.ts",
+      "lines": 57,
+      "globalStateReference": true,
+      "sandboxManagerReference": true
+    },
+    {
+      "path": "app/api/scrape-screenshot/route.ts",
+      "lines": 81,
+      "globalStateReference": false,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/scrape-url-enhanced/route.ts",
+      "lines": 127,
+      "globalStateReference": false,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/scrape-website/route.ts",
+      "lines": 110,
+      "globalStateReference": false,
+      "sandboxManagerReference": false
+    },
+    {
+      "path": "app/api/search/route.ts",
+      "lines": 51,
+      "globalStateReference": false,
+      "sandboxManagerReference": false
+    }
+  ]
+}

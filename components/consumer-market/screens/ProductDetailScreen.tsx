@@ -66,7 +66,7 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
     : product.variants?.find((variant) => variant.id === product.defaultVariantId);
   const selectedPrice = selectedVariant?.price ?? product.price;
   const invalidSelection = Boolean(options.length && product.variants?.length && !selectedVariant);
-  const formattedPrice = product.priceMode === 'inquiry' ? '询价' : product.priceMode === 'free' || selectedPrice === 0 ? '免费' : null;
+  const formattedPrice = product.priceMode === 'unknown' ? product.formattedPrice : product.priceMode === 'inquiry' ? '询价' : product.priceMode === 'free' || selectedPrice === 0 ? '免费' : null;
   const outboundLinks = Object.entries(product.outboundLinks ?? {}).filter((entry): entry is ['xiaohongshu' | 'douyin', string] => Boolean(entry[1]));
 
   const handleShare = () => {

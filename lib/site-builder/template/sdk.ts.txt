@@ -1,0 +1,5 @@
+export type SitePrice = {kind:'amount';amount:number;currency:string}|{kind:'free'}|{kind:'inquiry'}|{kind:'unknown'}
+export type SiteProduct = {id:string;name:string;description:string|null;category:string|null;price:SitePrice;imageUrl:string|null;images:string[];attributes:Record<string,string>;options:{name:string;values:string[]}[];variants:{id:string;price:SitePrice;selections:Record<string,string>;availability:'available'|'unavailable'|'unknown'}[];outboundLinks:{label:string;url:string}[]}
+export type SiteStore = {slug:string;name:string;description:string|null;logoUrl:string|null;contact:{email?:string;phone?:string;address?:string}}
+export type SitePageProps = {store:SiteStore;products:SiteProduct[];product:SiteProduct|null;route:{name:'home'}|{name:'products'}|{name:'product';productId:string}}
+export function formatSitePrice(price:SitePrice,locale='zh-CN'){return price.kind==='amount'?new Intl.NumberFormat(locale,{style:'currency',currency:price.currency}).format(price.amount):price.kind==='free'?'免费':price.kind==='inquiry'?'询价':'价格待确认'}

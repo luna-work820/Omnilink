@@ -7,9 +7,9 @@ export const AI_ASSISTANT_SKILLS_STORAGE_KEY = 'omnilink_consumer_skills_v2'
 export const AI_ASSISTANT_SKILLS = [
   {
     id: 'personal-advisor',
-    title: 'AI assistant',
-    description: '依据你确认的偏好、记忆和真实商品目录，提供购物与生活建议。',
-    prompt: '请以 AI assistant 的身份回应，结合本轮目标、购物偏好、已确认的专项资料与记忆、收藏商品和真实商品目录，优先给出有依据的建议。购物偏好只是跨品类参考，当前明确要求优先。只有缺少会实质改变结果的条件时才追问一个问题；对未核实的信息明确说明。',
+    title: '个人助手',
+    description: '通过照片和自述，探索肤质、外貌风格、色彩与穿搭方向。',
+    prompt: '启用个人助手，按我选择的范围探索个人形象；照片观察需要结合我的自述确认。',
     icon: UserRound,
   },
   {

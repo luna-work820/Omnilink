@@ -1,0 +1,21 @@
+{
+  "date": "2026-11-14",
+  "readOnly": true,
+  "project": "omnilink-dev",
+  "projectStatus": "ACTIVE_HEALTHY",
+  "projectRegion": "ap-southeast-1",
+  "schema": {
+    "discovery_runs": true,
+    "execution_column": false,
+    "embedding_profiles": false,
+    "catalog_vectors": false,
+    "execution_rpc": false
+  },
+  "directRestProbe": {
+    "dnsResolved": true,
+    "metadataReads": "timeout",
+    "restConnection": "ECONNRESET"
+  },
+  "paidApiCalls": 0,
+  "remoteWrites": 0
+}

@@ -1,12 +1,8 @@
 /**
  * DynamicSectionRenderer — StorefrontSchema → React UI 的共享渲染器。
  *
- * 使用方（同一份渲染逻辑，禁止分叉）：
- *   1. StorefrontEditor 的 Live Preview（Client）
- *   2. app/store/[store_slug] 公开店面（Server）
- *
- * 因此本文件刻意不加 'use client'：无 hooks、无浏览器 API，
- * Server / Client 组件均可直接消费。
+ * 用于 app/store/[store_slug] 的公开店面渲染。
+ * 无 hooks 和浏览器 API，保持服务器渲染兼容。
  *
  * 视觉约束：一律消费 var(--th-*) 主题令牌（由 ThemeRoot 作用域 +
  * storefrontThemeOverrides 内联覆盖提供），禁止硬编码颜色/圆角。
