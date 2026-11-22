@@ -16,6 +16,9 @@ describe('deterministic execution policy',()=>{
     ['复古风连衣裙','连衣裙','复古'],
     ['clean风衬衫','衬衫','clean'],
     ['哥特裙子','裙子','哥特'],
+    ['复古耳环','耳环','复古'],
+    ['clean风项链','项链','clean'],
+    ['哥特戒指','戒指','哥特'],
   ])('routes a short style and product phrase %s without a model', (prompt, category, style) => {
     const decision=ruleConsumerExecution({...input,prompt})
     expect(decision).toMatchObject({intent:'product-search',search:{query:prompt,termGroups:[expect.arrayContaining([style]),[category]],retrieval:{mode:'auto'}}})
@@ -37,6 +40,16 @@ describe('deterministic execution policy',()=>{
   it('leaves an ambiguous natural-language request to the single parser',()=>{
     expect(ruleConsumerExecution({...input,prompt:'I need something delicate for a wedding, under 100 USD'})).toBeNull()
     expect(ruleConsumerExecution({...input,prompt:'推荐一些适合婚礼的精致耳环，100美元以内'})).toBeNull()
+  })
+  it('switches explicit simple requests independently of the previous browsing scope',()=>{
+    expect(ruleConsumerExecution({...input,scope:'service',prompt:'找耳环资料'})).toMatchObject({intent:'information-search',search:{query:'耳环',type:'数字'}})
+    expect(ruleConsumerExecution({...input,scope:'information',prompt:'帮我买耳环'})).toMatchObject({intent:'product-search',search:{query:'耳环',type:'商品'}})
+    expect(ruleConsumerExecution({...input,scope:'information',prompt:'找摄影服务'})).toMatchObject({intent:'product-search',search:{query:'摄影',type:'服务'}})
+  })
+  it('leaves qualified resource requests to the parser',()=>{
+    for(const prompt of ['找最近的耳环资料','找200元以内的摄影服务','找适合婚礼的摄影服务']) {
+      expect(ruleConsumerExecution({...input,prompt})).toBeNull()
+    }
   })
   it('does not swallow a new search or a request for personal suitability behind a product reference',()=>{
     for(const prompt of ['这款适合我平时的穿搭吗','这款不要了，帮我找100美元以内的项链']) {

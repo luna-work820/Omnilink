@@ -15,6 +15,7 @@ import {
   sampleCreator,
   sampleStory,
 } from '../data/mockData';
+import { isUuid } from '@/lib/utils/uuid';
 
 const STORAGE_KEYS = {
   CART: 'omnilink_cart_items_v1',
@@ -189,12 +190,15 @@ export class DataService {
       const stored = getBrowserStorage()?.getItem(STORAGE_KEYS.AI_CHAT);
       if (stored) {
         let conversationId = '';
+        const migratedIds = new Map<string, string>();
         return (JSON.parse(stored) as AiChatMessage[]).map((message) => {
           if (message.conversationId) conversationId = message.conversationId;
           else if (message.isUser) conversationId = message.id;
+          const originalId = conversationId || message.id;
+          if (!isUuid(originalId) && !migratedIds.has(originalId)) migratedIds.set(originalId, crypto.randomUUID());
           return {
             ...message,
-            conversationId: conversationId || message.id,
+            conversationId: migratedIds.get(originalId) ?? originalId,
             matchedProducts: message.matchedProducts?.flatMap((item) => {
               const product = products.find((candidate) => candidate.id === item.id);
               return product ? [product] : [];
@@ -208,6 +212,7 @@ export class DataService {
     return [
       {
         id: 'msg_welcome',
+        conversationId: crypto.randomUUID(),
         text: '发送消息或上传照片，我会结合当前可用的商品目录给出建议；没有依据的部分会明确说明。',
         isUser: false,
         timestamp: '刚刚',

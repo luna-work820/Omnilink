@@ -285,7 +285,7 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
     responseEpoch.current++;responseAbort.current?.abort();setIsAiThinking(false);
   },[]);
   const discoveryWorkspace=useDiscoveryWorkspace(activeAiConversationId,registerProducts,cancelAssistantRequest);
-  const {acceptDiscovery,resumeDiscovery,cancelPendingDiscovery}=discoveryWorkspace;
+  const {acceptDiscovery,resumeDiscovery,cancelPendingDiscovery,clearDiscovery}=discoveryWorkspace;
   const {discovery:currentDiscovery,refreshDiscovery}=discoveryWorkspace;
   const setRetrievalOptions=useCallback((options:RetrievalOptions)=>{
     if(options.mode===retrievalOptions.mode&&options.profile===retrievalOptions.profile)return;
@@ -297,6 +297,7 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
   const previousContextVersion=discoveryWorkspace.discovery?.contextVersion;
   const restoredSearchRef=useRef<string|null>(null);
   const activeConversationRef=useRef(activeAiConversationId);
+  const localHistoryLoadedRef=useRef(false);
   useLayoutEffect(()=>{activeConversationRef.current=activeAiConversationId},[activeAiConversationId]);
   useEffect(() => {responseEpoch.current++;responseAbort.current?.abort();setIsAiThinking(false)},[activeAiConversationId]);
   useEffect(()=>()=>responseAbort.current?.abort(),[]);
@@ -308,14 +309,17 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
     setQnaHistory(DataService.getQnaHistory());
     setArchivedAiConversationIds(DataService.getArchivedConversationIds());
 
-    if (!authenticated && !initialAiMessages && !initialWelcome) {
+    if (!authenticated && !initialAiMessages && !initialWelcome && !localHistoryLoadedRef.current) {
+      localHistoryLoadedRef.current = true;
       const messages = DataService.getAiChatHistory(initialProductCatalog.current);
       setAiMessages(messages);
       const conversationId = messages.at(-1)?.conversationId;
       setActiveAiConversationId(conversationId || createConversationId());
-    } else if (!authenticated && !initialAiMessages) {
+    } else if (!authenticated && !initialAiMessages && initialWelcome && !localHistoryLoadedRef.current) {
+      localHistoryLoadedRef.current = true;
       setActiveAiConversationId(createConversationId());
-    } else if (!authenticated && !initialAiMessages?.at(-1)?.conversationId) {
+    } else if (!authenticated && initialAiMessages && !initialAiMessages.at(-1)?.conversationId && !localHistoryLoadedRef.current) {
+      localHistoryLoadedRef.current = true;
       setActiveAiConversationId(createConversationId());
     }
 
@@ -728,7 +732,10 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
       if(result.matchedProductIds?.some((id) => !availableIds.has(id))) {
         throw new Error('商品目录已更新，请刷新重试。');
       }
-      if(result.task||result.blocks?.some((block)=>block.type==='information_feed'))setHomeChatOpen(true);
+      if(result.blocks?.some((block)=>block.type==='information_feed')) {
+        clearDiscovery();
+        setHomeChatOpen(true);
+      } else if(result.task) setHomeChatOpen(true);
       if (!authenticated && result.demoMemoryUpdate && persistPreviewMemory(result.demoMemoryUpdate)) {
         showToast('已生成一条待确认偏好');
       } else if (authenticated && result.memoryProposed) {
@@ -769,7 +776,7 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
     } finally {
       if(turn===responseEpoch.current)setIsAiThinking(false);
     }
-  }, [activeAssistantSkillId, activeAiConversationId, aiMessages, aiModel, retrievalOptions, authenticated, products, savedProductIds, rejectedProductIds, showToast,acceptDiscovery,previousSearchQuery,previousSearchRunId,previousContextVersion,cancelPendingDiscovery]);
+  }, [activeAssistantSkillId, activeAiConversationId, aiMessages, aiModel, retrievalOptions, authenticated, products, savedProductIds, rejectedProductIds, showToast,acceptDiscovery,clearDiscovery,previousSearchQuery,previousSearchRunId,previousContextVersion,cancelPendingDiscovery]);
 
   const stopAiResponse=useCallback(()=>{
     responseEpoch.current++;responseAbort.current?.abort();setIsAiThinking(false);

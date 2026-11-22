@@ -121,8 +121,8 @@ export function simpleProductSearchSpec(prompt: string, type: DiscoverySpec['typ
     const match = style.pattern.exec(text)
     if (!match) continue
     const category = text.slice(match[0].length).trim()
-    if (clothingConcepts.some((group) => group.some((word) => word.toLowerCase() === category.toLowerCase()))) {
-      return discoverySpecSchema.parse({query:text,type,termGroups:[style.terms,[category]],retrieval:{mode:'auto'}})
+    if ([...clothingConcepts,...searchConcepts.slice(0,4)].some((group) => group.some((word) => word.toLowerCase() === category.toLowerCase()))) {
+      return discoverySpecSchema.parse({query:text,type,termGroups:[style.terms,[category]],sessionTerms:style.terms,retrieval:{mode:'auto'}})
     }
   }
   const keywordKind=(value:string):'category'|'exact'|'word'|null=> {

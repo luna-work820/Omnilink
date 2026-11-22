@@ -3,10 +3,11 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react'
 import { useOmnilink } from '../context/OmnilinkContext'
 import { LiquidGlass } from '@/components/ui/liquid-glass'
-import { Microphone as Mic, PaperPlaneRight as Send, CaretDown as ChevronDown } from '@phosphor-icons/react'
-import { Camera, ChevronDown as HistoryChevron, Expand, FileText, Heart, Image as ImageIcon, Link as LinkIcon, Square, LockKeyhole, LockKeyholeOpen, MessageCircle, Minus, Plus, Check, X } from 'lucide-react'
+import { Microphone as Mic, PaperPlaneRight as Send } from '@phosphor-icons/react'
+import { Camera, ChevronDown as HistoryChevron, Expand, FileText, Heart, Image as ImageIcon, Link as LinkIcon, Square, LockKeyhole, LockKeyholeOpen, MessageCircle, Minus, Plus, X } from 'lucide-react'
 import { AI_ASSISTANT_SKILLS, AI_ASSISTANT_SKILLS_STORAGE_KEY, readInstalledSkillIds, type AiAssistantSkillId } from './CapabilityLibrary'
-import type { AiChatMessage, DiscoveryType } from '../types'
+import type { InsightQuestion, InsightOption } from '@/lib/consumer-advisor/fashion-insight'
+import type { AiChatMessage } from '../types'
 
 export const FEED_CHAT_SCROLL_KEY = 'omnilink-feed-chat-preview-scroll'
 export type FeedAttachment = { name: string; kind: 'image' | 'document' | 'url'; data: string }
@@ -15,7 +16,6 @@ type VoiceResult = { results: ArrayLike<ArrayLike<{ transcript: string }>> }
 type VoiceRecognition = { lang: string; onresult: ((event: VoiceResult) => void) | null; onend: (() => void) | null; onerror: (() => void) | null; start: () => void; stop: () => void }
 type VoiceWindow = Window & { SpeechRecognition?: new () => VoiceRecognition; webkitSpeechRecognition?: new () => VoiceRecognition }
 const PINNED_SKILLS_STORAGE_KEY = 'omnilink_pinned_skills_v1'
-const discoveryTypes: { value: DiscoveryType; label: string }[] = [{ value: '商品', label: '商品' }, { value: '服务', label: '服务' }, { value: '数字', label: '信息' }]
 
 function readPinnedSkillIds(): AiAssistantSkillId[] {
   try {
@@ -25,10 +25,10 @@ function readPinnedSkillIds(): AiAssistantSkillId[] {
 }
 
 export function FeedChatDock({
-  selectedType,
-  onTypeSelect,
-  browseMode = 'products',
-  onBrowseModeChange,
+  insightQuestion,
+  insightThinking = false,
+  onInsightSkip,
+  onInsightSelect,
   chatOpen = false,
   chatCardOpen = false,
   cardHistoryOpen = false,
@@ -47,10 +47,10 @@ export function FeedChatDock({
   initialInstalledSkillIds,
   navigationOpen = false,
 }: {
-  selectedType: DiscoveryType
-  onTypeSelect: (type: DiscoveryType) => void
-  browseMode?: 'recommend' | 'content' | 'products'
-  onBrowseModeChange?: (mode: 'recommend' | 'content') => void
+  insightQuestion?: InsightQuestion | null
+  insightThinking?: boolean
+  onInsightSkip?: () => void
+  onInsightSelect?: (option: InsightOption) => void
   chatOpen?: boolean
   chatCardOpen?: boolean
   cardHistoryOpen?: boolean
@@ -73,7 +73,7 @@ export function FeedChatDock({
   const messageInputRef = useRef<HTMLTextAreaElement>(null)
   const referenceRowRef = useRef<HTMLDivElement>(null)
   const seenReferenceKeysRef = useRef<Set<string>>(new Set())
-  const [panel, setPanel] = useState<'attachments' | 'favorites' | 'types' | null>(null)
+  const [panel, setPanel] = useState<'attachments' | 'favorites' | null>(null)
   const [installedSkillIds, setInstalledSkillIds] = useState<AiAssistantSkillId[]>([])
   const [pinnedSkillIds, setPinnedSkillIds] = useState<AiAssistantSkillId[]>([])
   const [attachment, setAttachment] = useState<FeedAttachment | null>(null)
@@ -85,35 +85,13 @@ export function FeedChatDock({
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const recognitionRef = useRef<VoiceRecognition | null>(null)
   const cardHistoryRef = useRef<HTMLDivElement>(null)
-  const typePickerRef = useRef<HTMLDivElement>(null)
-  const { openAiPage, showToast, isAiThinking, products, savedProductIds,activeAssistantSkillId: activeSkillId,setActiveAssistantSkillId: setActiveSkillId,openPersonalView,stopAiResponse } = useOmnilink()
+  const { openAiPage, showToast, isAiThinking, discoveryBusy, products, savedProductIds,activeAssistantSkillId: activeSkillId,setActiveAssistantSkillId: setActiveSkillId,openPersonalView,stopAiResponse } = useOmnilink()
   const canSend = Boolean(message.trim() || attachment || selectedFavoriteIds.length || droppedReferences.length)
   const activeSkill = AI_ASSISTANT_SKILLS.find((skill) => skill.id === activeSkillId)
   const availableSkills = AI_ASSISTANT_SKILLS.filter((skill) => installedSkillIds.includes(skill.id))
   const pinnedSkills = availableSkills.filter((skill) => pinnedSkillIds.includes(skill.id))
   const favoriteProducts = products.filter((product) => savedProductIds.includes(product.id))
   const conversationTitle = conversationMessages.find((item) => item.isUser)?.text.trim() || '新对话'
-  const selectedTypeLabel = browseMode === 'recommend' ? '推荐' : browseMode === 'content' ? '内容' : discoveryTypes.find((type) => type.value === selectedType)?.label ?? '商品'
-
-  useEffect(() => {
-    if (panel !== 'types') return
-    const closeOnOutsidePress = (event: PointerEvent) => {
-      if (!typePickerRef.current?.contains(event.target as Node)) setPanel(null)
-    }
-    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setPanel(null)
-        document.getElementById('discovery-type-trigger')?.focus()
-      }
-    }
-    document.addEventListener('pointerdown', closeOnOutsidePress)
-    document.addEventListener('keydown', closeOnEscape)
-    return () => {
-      document.removeEventListener('pointerdown', closeOnOutsidePress)
-      document.removeEventListener('keydown', closeOnEscape)
-    }
-  }, [panel])
-
   useEffect(() => {
     if (chatCardOpen && cardHistoryOpen && cardHistoryRef.current) {
       cardHistoryRef.current.scrollTop = cardHistoryRef.current.scrollHeight
@@ -244,16 +222,12 @@ export function FeedChatDock({
       <input ref={fileInputRef} type="file" accept=".pdf,.txt,.md,.csv,.json" onChange={handleFile} aria-label="添加文件" className="hidden" />
       <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleFile} aria-label="添加图片" className="hidden" />
       <input ref={cameraInputRef} type="file" accept="image/png,image/jpeg,image/webp" capture="environment" onChange={handleFile} aria-label="拍摄图片" className="hidden" />
-      <div ref={typePickerRef} data-picker-open={pickerOpen} className="feed-discovery-types relative mb-0.5 shrink-0">
-        {panel === 'types' && <LiquidGlass id="discovery-type-menu" role="group" aria-label="浏览类型" radius={20} bevelDepth={8} aberration={0.12} tint={1} className="feed-discovery-popup absolute bottom-[calc(100%+8px)] left-0 z-30 w-28 p-1">
-          {onBrowseModeChange && (['recommend', 'content'] as const).map((mode) => <button key={mode} type="button" aria-pressed={browseMode === mode} onClick={() => { onBrowseModeChange(mode); setPanel(null) }} className="feed-discovery-option flex min-h-10 w-full items-center justify-between rounded-full px-3 text-left text-xs text-[var(--market-ink)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><span>{mode === 'recommend' ? '推荐' : '内容'}</span>{browseMode === mode && <Check size={15} aria-hidden="true" />}</button>)}
-          {discoveryTypes.map(({ value, label }) => <button key={value} type="button" aria-pressed={browseMode === 'products' && selectedType === value} onClick={() => { onTypeSelect(value); setPanel(null) }} className="feed-discovery-option flex min-h-10 w-full items-center justify-between rounded-full px-3 text-left text-xs text-[var(--market-ink)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><span>{label}</span>{browseMode === 'products' && selectedType === value && <Check size={15} aria-hidden="true" />}</button>)}
-        </LiquidGlass>}
-        <LiquidGlass radius={999} bevelDepth={8} aberration={0.12} tint={1} interactive className="feed-discovery-trigger-surface">
-          <button id="discovery-type-trigger" type="button" disabled={disabled} aria-label={`浏览类型，当前为${selectedTypeLabel}`} aria-haspopup="true" aria-expanded={panel === 'types'} aria-controls="discovery-type-menu" onClick={() => setPanel((current) => current === 'types' ? null : 'types')} className="feed-discovery-trigger flex h-11 min-w-[88px] items-center justify-center gap-1 rounded-full px-3 text-xs font-medium text-[var(--market-support)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40"><span>{selectedTypeLabel}</span><ChevronDown size={13} className={`transition-transform duration-[250ms] ease-out ${panel === 'types' ? 'rotate-180' : ''}`} aria-hidden="true" /></button>
-        </LiquidGlass>
-      </div>
       <form onSubmit={submit} className="relative min-w-0 flex-1" aria-label="询问 AI assistant">
+        {insightQuestion && !chatOpen && <section aria-label="细化本次搜索" className="absolute bottom-[calc(100%+10px)] left-0 right-0 z-20 rounded-[var(--radius-card)] bg-[var(--market-canvas)] p-3 text-[var(--market-ink)]">
+          <p className="text-sm font-medium">{insightQuestion.prompt}</p>
+          <div className="mt-2 flex flex-wrap gap-1">{insightQuestion.options.map((option)=><button key={option.value} type="button" onClick={()=>onInsightSelect?.(option)} className="min-h-11 rounded-full px-3 text-xs hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">{option.label}</button>)}<button type="button" onClick={onInsightSkip} className="min-h-11 rounded-full px-3 text-xs text-[var(--market-text-secondary)] hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">跳过</button></div>
+        </section>}
+        {insightThinking && !chatOpen && <span role="status" className="absolute bottom-[calc(100%+6px)] left-2 rounded-full bg-[var(--market-canvas)] px-3 py-2 text-xs text-[var(--market-text-secondary)]">正在思考</span>}
         {pickerOpen && <section id="feed-chat-picker-panel" role="group" aria-label={panel === 'favorites' ? '选择收藏' : '添加'} className={`feed-chat-picker-card absolute ${panel === 'attachments' ? 'bottom-[calc(48px+10px)] feed-chat-attachment-panel' : 'bottom-[calc(100%+10px)]'} left-0 right-0 z-30 max-h-[min(55dvh,420px)] overflow-y-auto p-2.5`} data-navigation-open={navigationOpen}>
           {panel === 'favorites' ? <>
             <h2 className="px-2 pb-1.5 text-xs font-medium text-[var(--market-text-secondary)]">收藏</h2>
@@ -289,7 +263,7 @@ export function FeedChatDock({
         <section aria-label="当前对话" aria-hidden={!chatCardOpen} inert={!chatCardOpen} className={`feed-chat-conversation-card ${cardHistoryOpen ? 'is-expanded' : ''}`}>
           <div className="feed-chat-card-heading flex min-h-14 items-center gap-1 px-2 sm:px-3">
             <button type="button" onClick={onBrowse} aria-label="收起对话卡片" className="grid h-10 w-10 shrink-0 place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><Minus size={19} aria-hidden="true" /></button>
-            <button type="button" onClick={onToggleCardHistory} aria-expanded={cardHistoryOpen} aria-controls={cardHistoryOpen ? 'feed-chat-card-history' : undefined} className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-lg px-1 text-left text-xs text-[var(--market-ink)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><MessageCircle size={17} className="shrink-0" aria-hidden="true" /><span className="truncate font-medium">{conversationTitle}</span><HistoryChevron size={14} className={`shrink-0 text-[var(--market-text-secondary)] transition-transform duration-[250ms] ease-out ${cardHistoryOpen ? 'rotate-180' : ''}`} aria-hidden="true" /></button>
+            <button type="button" onClick={onToggleCardHistory} aria-expanded={cardHistoryOpen} aria-controls={cardHistoryOpen ? 'feed-chat-card-history' : undefined} className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-lg px-1 text-left text-xs text-[var(--market-ink)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><MessageCircle size={17} className="shrink-0" aria-hidden="true" /><span className="truncate font-medium" aria-live="polite">{discoveryBusy ? '正在搜索' : (isAiThinking || insightThinking) ? '正在思考' : conversationTitle}</span><HistoryChevron size={14} className={`shrink-0 text-[var(--market-text-secondary)] transition-transform duration-[250ms] ease-out ${cardHistoryOpen ? 'rotate-180' : ''}`} aria-hidden="true" /></button>
             <button type="button" onClick={onExpandChat} aria-label="全屏展开对话" className="grid h-10 w-10 shrink-0 place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><Expand size={18} aria-hidden="true" /></button>
           </div>
           <div className="feed-chat-history-reveal" aria-hidden={!cardHistoryOpen} inert={!cardHistoryOpen}>

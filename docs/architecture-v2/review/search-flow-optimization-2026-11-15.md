@@ -38,15 +38,15 @@ flowchart TD
     C -->|对话可使用 SSE| O
 ~~~
 
-规则只处理明确且有界的操作。普通问答不会因选择了商品或信息范围就被强制改成搜索。自动检索模式仍按当前规则选择：有 sessionTerms 时尝试混合，否则关键词。改变回答模型不会自动切换解析器、Embedding 或索引。
+规则只处理明确且有界的操作。普通问答不会因选择了商品或信息范围就被强制改成搜索。自动检索模式在关键词无命中但仍有合格商品时使用语义检索；有关键词结果且存在 sessionTerms 时使用混合检索；其他情况使用关键词。改变回答模型不会自动切换解析器、Embedding 或索引。
 
 ## 本次落地
 
 | 项目 | 状态 | 实际行为与主要文件 |
 |---|---|---|
-| 搜索范围 | 【已实现且接线】 | HomeScreen 将商品、服务、信息传入 OmnilinkContext；信息进入本会话资料路径，不再把数字商品等同于信息搜索 |
+| 搜索范围 | 【已实现且接线】 | 输入框根据本轮需求自动选择商品、服务或信息检索；信息只检索本会话已导入的资料 |
 | 同任务续搜 | 【已实现且接线】 | search-continuation 的无默认值补丁保留未修改的预算、币种、排除项、配送条件；assistant 读取 ownedDiscoveryRun 后再应用修改，检查会话、所有者、过期与版本 |
-| 明确条件修改 | 【已实现且接线】 | 改色、改预算、取消预算等有界规则和结构化 refine 跳过解析与回答，并使用关键词，Embedding 也是零次；保留所选向量 Profile 和 requestedRetrieval 供检查，executionPolicy 标识 deterministic-edit |
+| 明确条件修改 | 【已实现且接线】 | 改色、改预算、取消预算等有界规则和结构化 refine 跳过解析与回答，保留请求的检索方式及 Profile；自动模式按更新后的条件选择检索方式，executionPolicy 标识 deterministic-edit |
 | 自然语言长尾续搜 | 【需要运行验证】 | 单次解析器可返回 refine 与 searchPatch；服务端仍从拥有的旧 Spec 合并，不接受模型修改执行 Profile。真实模型是否稳定识别续搜未调用 API 验证 |
 | 链接目标 | 【已实现且接线】 | goal 与 requestedFields 进入任务输入，在创建、检查点、完成和重新读取时保留；比较价格、材质、尺寸、颜色、来源、摘要。任意其他目标仍明确保留未知，不假装完成通用语义分析 |
 | 任务模型配置 | 【已实现且接线】 | model-policy 将 parser 与 answer 分离；默认解析 qwen-plus，可读取 CONSUMER_PARSER_MODEL 指定已支持的解析 Provider。本次没有新增或修改环境变量，也不自动跨区域换 Provider |

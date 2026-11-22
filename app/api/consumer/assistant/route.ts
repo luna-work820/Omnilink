@@ -4,7 +4,7 @@ import path from 'node:path'
 import { NextResponse, type NextRequest } from 'next/server'
 import { generateWorkspaceText as upstreamText, generateWorkspaceVisionText as upstreamVision, generateWorkspaceDeepSeekVisionText as upstreamDeepSeekVision, ModelConfigurationError, type WorkspaceModel,type TextGenerationOptions } from '@/lib/ai/workspace-generation'
 import { readPublishedConsumerCatalog,selectCatalogProducts } from '@/lib/products/consumer-catalog-store'
-import { consumerActionSchema,ruleConsumerExecution } from '@/lib/consumer-advisor/execution-policy'
+import { consumerActionSchema,ruleConsumerExecution,searchCapability } from '@/lib/consumer-advisor/execution-policy'
 import { retrievalOptionsSchema,type RetrievalOptions } from '@/lib/consumer-advisor/embedding-profile'
 import { retrieveDiscoveryCandidates } from '@/lib/consumer-advisor/discovery-retrieval'
 import { resolvePersonalContext } from '@/lib/consumer-advisor/personal-context'
@@ -27,7 +27,7 @@ import { createComparisonTask } from '@/lib/consumer-advisor/comparison-workflow
 import { responseEnvelope,readExecutionBlocks,readSourceIds,type ConsumerResponse } from '@/lib/consumer-advisor/response-contract'
 import { isUuid } from '@/lib/utils/uuid'
 import type { ConsumerTaskIntent } from '@/components/consumer-market/types'
-import { applySearchPatch,hasRuleSearchPatch,ruleSearchPatch,searchScopeSchema } from '@/lib/consumer-advisor/search-continuation'
+import { applySearchPatch,hasRuleSearchPatch,ruleSearchPatch,searchScopeSchema,type SearchScope } from '@/lib/consumer-advisor/search-continuation'
 import { consumerModelPolicy } from '@/lib/consumer-advisor/model-policy'
 import { executionMetrics,measureConsumerModel,type ModelStage } from '@/lib/consumer-advisor/execution-metrics'
 import { clipContextText,packContextItems } from '@/lib/consumer-advisor/context-budget'
@@ -138,7 +138,7 @@ function parseModelAnswer(content: string, allowedIds: Set<string>, allowedMemor
   }
 }
 
-type Lifecycle={actor?:DiscoveryActor;record?:RequestRecord;requestId?:string;finished?:boolean;writeHistory?:boolean;started:number;stages:ModelStage[];policy?:string;requestedRetrieval?:RetrievalOptions}
+type Lifecycle={actor?:DiscoveryActor;record?:RequestRecord;requestId?:string;finished?:boolean;writeHistory?:boolean;started:number;stages:ModelStage[];policy?:string;requestedRetrieval?:RetrievalOptions;capability?:SearchScope|'digital'|null}
 async function runAssistant(request: NextRequest,lifecycle:Lifecycle) {
   const generateWorkspaceText=(model:WorkspaceModel,prompt:string,system?:string,options:TextGenerationOptions={})=>
     measureConsumerModel(lifecycle.stages,'answer',model,(measurement)=>upstreamText(model,prompt,system,{...options,...measurement,maxAttempts:1,signal:request.signal}))
@@ -302,13 +302,10 @@ async function runAssistant(request: NextRequest,lifecycle:Lifecycle) {
       const previous=await readPreviousRun()
       classified.search=applySearchPatch(previous.spec,classified.searchPatch!)
     }
-    if(classified.search&&!action&&scope) {
-      if(scope==='information') {classified.intent='information-search';classified.search={...classified.search,type:'数字'}}
-      else if(scope==='service')classified.search={...classified.search,type:'服务'}
-    }
     if(classified.search)classified.search=discoverySpecSchema.parse({...classified.search,
       usePersonalContext:classified.needsPersonalContext||classified.intent==='personalized-recommendation'||classified.intent==='outfit-styling'||action?.type==='search'&&action.spec.usePersonalContext===true,
-      ...(action?.type==='keyword'||deterministicEdit?{retrieval:{mode:'keyword',profile:retrieval?.profile??classified.search.retrieval?.profile??'bge-small-zh-v1.5-512-v1'}}:retrieval?{retrieval}:{}),excludedProductIds:Array.isArray(body.rejectedProductIds)?body.rejectedProductIds.filter(isConsumerProductId).slice(0,100):classified.search.excludedProductIds})
+      ...(action?.type==='keyword'?{retrieval:{mode:'keyword',profile:retrieval?.profile??classified.search.retrieval?.profile??'bge-small-zh-v1.5-512-v1'}}:retrieval?{retrieval}:{}),excludedProductIds:Array.isArray(body.rejectedProductIds)?body.rejectedProductIds.filter(isConsumerProductId).slice(0,100):classified.search.excludedProductIds})
+    lifecycle.capability=searchCapability(classified.intent,classified.search)
     if(classified.intent==='assistant'||classified.intent==='product-question') {
       return await runConversation({requestId:messageId,sessionId:conversationId,userId:user?.id??null,prompt,model,skillInstructions,apiKey:userDeepSeekApiKey,
         history,selectedProductIds:[...new Set([...(Array.isArray(body.selectedProductIds)?body.selectedProductIds.filter(isConsumerProductId):[]),
@@ -332,8 +329,12 @@ async function runAssistant(request: NextRequest,lifecycle:Lifecycle) {
     if(classified.intent==='information-search') {
       const query=classified.search?.query??prompt
       const items=await searchInformation(actor,query)
+      const requestedMode=retrieval?.mode??'auto'
+      const degraded=requestedMode==='semantic'||requestedMode==='hybrid'
       lifecycle.writeHistory=true
-      return reply({text:items.length?`找到 ${items.length} 条信息。`:'没有找到相关公开信息或本会话资料。',model:null,informationQuery:query,
+      return reply({text:items.length?`找到 ${items.length} 条信息。`:'没有找到相关公开信息或本会话资料。',model:null,intent:'information-search',informationQuery:query,
+        metrics:{retrieval:{requestedMode,effectiveMode:'keyword',selectionReason:'INFORMATION_KEYWORD_ONLY',degraded,
+          reason:degraded?'INFORMATION_KEYWORD_ONLY':null,embeddingCalls:0,embeddingInputTokens:0}},
         blocks:[{type:'information_feed',id:messageId,version:1,data:{query,items}}]})
     }
     const needsContext=classified.needsPersonalContext||classified.search?.usePersonalContext===true||['personalized-recommendation','outfit-styling'].includes(classified.intent)
@@ -541,7 +542,7 @@ export async function POST(request:NextRequest):Promise<Response> {
     const result=lifecycle.requestId&&lifecycle.actor?responseEnvelope(lifecycle.requestId,lifecycle.actor.sessionId,payload):payload
     if(lifecycle.record&&!lifecycle.finished&&lifecycle.actor&&lifecycle.requestId) {
       const value=result as ConsumerResponse
-      value.metrics={...executionMetrics(lifecycle.stages,value.metrics,lifecycle.started),executionPolicy:lifecycle.policy,
+      value.metrics={...executionMetrics(lifecycle.stages,value.metrics,lifecycle.started),executionPolicy:lifecycle.policy,searchCapability:lifecycle.capability??null,
         ...(lifecycle.requestedRetrieval?{requestedRetrieval:lifecycle.requestedRetrieval}:{})}
       let saved:ConsumerResponse=value
       if(value.discovery) {

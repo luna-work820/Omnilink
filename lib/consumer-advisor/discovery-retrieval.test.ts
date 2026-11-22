@@ -66,14 +66,30 @@ describe('one search specification across retrieval and paging',()=>{
     expect(result.report).toMatchObject({effectiveMode:'keyword',reason:'KEYWORD_OVERRIDE',embeddingCalls:0})
     expect(semantic).not.toHaveBeenCalled()
   })
-  it('uses the same injected catalog for default hybrid retrieval and excludes unknown vector IDs',async()=>{
+  it('uses hybrid for soft terms and excludes unknown vector IDs',async()=>{
     const other={...base,id:'external-new',name:'Pearl earrings'}
     const semantic=vi.fn().mockResolvedValue({matches:[{id:'external-new',similarity:0.9},{id:'external-outside',similarity:1}],metrics})
-    const result=await retrieveDiscoveryCandidates(make({termGroups:[]}),undefined,undefined,{catalog:()=>[base,other],semantic})
-    expect(result.report).toMatchObject({effectiveMode:'hybrid',degraded:false})
+    const result=await retrieveDiscoveryCandidates(make({termGroups:[],sessionTerms:['polished']}),undefined,undefined,{catalog:()=>[base,other],semantic})
+    expect(result.report).toMatchObject({effectiveMode:'hybrid',selectionReason:'AUTO_SOFT_TERMS',degraded:false})
     expect(semantic.mock.calls[0][1].map((p:{id:string})=>p.id)).toEqual([base.id,other.id].sort())
     expect(result.products.map((p)=>p.id)).toContain('external-new')
     expect(result.products.map((p)=>p.id)).not.toContain('external-outside')
+  })
+  it('uses keyword retrieval for a covered query in auto mode',async()=>{
+    const semantic=vi.fn()
+    const product={...base,id:'exact-earring',name:'Silver earrings',category:'耳环'}
+    const result=await retrieveDiscoveryCandidates(make({retrieval:{mode:'auto'}}),undefined,undefined,{catalog:()=>[product],semantic})
+    expect(result.report).toMatchObject({effectiveMode:'keyword',selectionReason:'AUTO_KEYWORD_MATCH',embeddingCalls:0})
+    expect(result.products).toEqual([product])
+    expect(semantic).not.toHaveBeenCalled()
+  })
+  it('uses semantic retrieval when keyword recall misses but eligible products remain',async()=>{
+    const semantic=vi.fn().mockResolvedValue({matches:[{id:base.id,similarity:0.9}],metrics})
+    const result=await retrieveDiscoveryCandidates(make({termGroups:[['unfamiliar phrasing']],retrieval:{mode:'auto'}}),undefined,undefined,
+      {catalog:()=>[base],semantic})
+    expect(result.report).toMatchObject({effectiveMode:'semantic',selectionReason:'AUTO_NO_KEYWORD_MATCH'})
+    expect(semantic).toHaveBeenCalledOnce()
+    expect(result.products).toEqual([base])
   })
   it('reuses a catalog snapshot already read by the caller',async()=>{
     const snapshot=catalogSnapshot([base])
@@ -102,7 +118,7 @@ describe('one search specification across retrieval and paging',()=>{
     const page=pageCatalogExecution(spec,{catalogVersion:result.catalogVersion,candidateKeys:result.products.map((p)=>p.id),retrieval:result.report},0,products,result.catalogVersion)
     expect(page.products.map((p)=>p.id)).toEqual(expect.arrayContaining(['exact','related']))
   })
-  it('includes dresses and skirts for the broad single keyword 裙子, but not trousers',async()=>{
+  it('includes dresses and skirts for the broad single keyword 裙子 without embedding, but not trousers',async()=>{
     const products=[{...base,id:'dress',name:'Black dress',category:'连衣裙',shortDescription:'',specs:{}},
       {...base,id:'skirt',name:'Black skirt',category:'半身裙',shortDescription:'',specs:{}},
       {...base,id:'pants',name:'Black trousers',category:'裤装',shortDescription:'',specs:{}}]
@@ -110,7 +126,8 @@ describe('one search specification across retrieval and paging',()=>{
     const result=await retrieveDiscoveryCandidates(simpleProductSearchSpec('裙子')!,undefined,undefined,{catalog:()=>products,semantic})
     expect(result.products.map((p)=>p.id).sort()).toEqual(['dress','skirt'])
     expect(result.keywordIds.sort()).toEqual(['dress','skirt'])
-    expect(semantic.mock.calls[0][1].map((p:{id:string})=>p.id).sort()).toEqual(['dress','skirt'])
+    expect(result.report).toMatchObject({effectiveMode:'keyword',selectionReason:'AUTO_KEYWORD_MATCH',embeddingCalls:0})
+    expect(semantic).not.toHaveBeenCalled()
   })
   it('keeps the product category while using style as a soft recall signal',async()=>{
     const products=[{...base,id:'vintage-dress',name:'Vintage dress',category:'连衣裙',specs:{}},
@@ -121,6 +138,7 @@ describe('one search specification across retrieval and paging',()=>{
     const semantic=vi.fn().mockResolvedValue({matches:[{id:'vintage-necklace',similarity:1},{id:'vintage-dress',similarity:0.9},{id:'vintage-sweater',similarity:0.85},{id:'plain-shirt',similarity:0.8}],metrics})
     const result=await retrieveDiscoveryCandidates(spec,undefined,undefined,{catalog:()=>products,semantic})
     expect(semantic.mock.calls[0][1].map((p:{id:string})=>p.id).sort()).toEqual(['plain-shirt','vintage-dress','vintage-sweater'])
+    expect(result.report).toMatchObject({effectiveMode:'hybrid',selectionReason:'AUTO_SOFT_TERMS'})
     expect(result.products.map((product)=>product.id)).toEqual(['vintage-dress','vintage-sweater','plain-shirt'])
   })
   it('does not treat a dress that mentions a skirt in its description as a skirt',async()=>{
@@ -129,7 +147,8 @@ describe('one search specification across retrieval and paging',()=>{
     const semantic=vi.fn().mockResolvedValue({matches:[{id:'dress',similarity:1},{id:'skirt',similarity:0.8}],metrics})
     const result=await retrieveDiscoveryCandidates(simpleProductSearchSpec('半身裙')!,undefined,undefined,{catalog:()=>products,semantic})
     expect(result.products.map((p)=>p.id)).toEqual(['skirt'])
-    expect(semantic.mock.calls[0][1].map((p:{id:string})=>p.id)).toEqual(['skirt'])
+    expect(result.report).toMatchObject({effectiveMode:'keyword',selectionReason:'AUTO_KEYWORD_MATCH',embeddingCalls:0})
+    expect(semantic).not.toHaveBeenCalled()
   })
   it('keeps a category discovered in the catalog as a hard condition',async()=>{
     const products=[{...base,id:'shoe',name:'Canvas slip on',category:'帆布鞋',specs:{}},
@@ -137,7 +156,8 @@ describe('one search specification across retrieval and paging',()=>{
     const semantic=vi.fn().mockResolvedValue({matches:[{id:'shoe',similarity:0.9},{id:'shirt',similarity:0.8}],metrics})
     const result=await retrieveDiscoveryCandidates(simpleProductSearchSpec('帆布鞋','商品',products)!,undefined,undefined,{catalog:()=>products,semantic})
     expect(result.products.map((p)=>p.id)).toEqual(['shoe'])
-    expect(semantic.mock.calls[0][1].map((p:{id:string})=>p.id)).toEqual(['shoe'])
+    expect(result.report).toMatchObject({effectiveMode:'keyword',selectionReason:'AUTO_KEYWORD_MATCH',embeddingCalls:0})
+    expect(semantic).not.toHaveBeenCalled()
   })
   it('uses one exchange snapshot for filtering and every page, and rejects missing rates',async()=>{
     const products=[

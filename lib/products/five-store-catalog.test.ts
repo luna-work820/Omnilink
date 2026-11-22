@@ -85,6 +85,20 @@ describe('five-store source catalog', () => {
     expect(messages[0].matchedProducts).toEqual([product])
   })
 
+  it('migrates old conversation identifiers while keeping each conversation together', () => {
+    storage({ omnilink_ai_chat_v4: [
+      { id: 'u1', conversationId: 'old-chat', isUser: true, text: '第一条' },
+      { id: 'a1', conversationId: 'old-chat', isUser: false, text: '回复' },
+      { id: 'u2', conversationId: 'another-chat', isUser: true, text: '另一条' },
+    ] })
+    const messages = DataService.getAiChatHistory()
+    expect(messages[0].conversationId).toMatch(/^[0-9a-f-]{36}$/)
+    expect(messages[1].conversationId).toBe(messages[0].conversationId)
+    expect(messages[2].conversationId).not.toBe(messages[0].conversationId)
+    DataService.saveAiChatHistory(messages)
+    expect(DataService.getAiChatHistory().map((message) => message.conversationId)).toEqual(messages.map((message) => message.conversationId))
+  })
+
   it('answers from actual specifications and declines unsupported product claims', () => {
     const product = productsList.find((item) => item.id === 'external-berhel-blue-sapphire-earrings')!
     expect(DataService.generateQnaAnswer('材质是什么？', product).answer).toContain('实验室培育蓝宝石')

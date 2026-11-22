@@ -24,14 +24,13 @@ import { ExhibitionDetailScreen } from './screens/ExhibitionDetailScreen';
 import { ReviewsScreen } from './screens/ReviewsScreen';
 import { StoreScreen } from './screens/StoreScreen';
 import { PersonalPanel } from './components/PersonalPanel';
-import type { AiChatMessage, DiscoveryType, ProductItem, ScenePost } from './types';
+import type { AiChatMessage, ProductItem, ScenePost } from './types';
 import { CreatorPostReader } from './screens/CreatorPostReader';
 import type { AiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-profile';
 import type { AiAssistantSkillId } from './components/CapabilityLibrary';
 
 const OmnilinkAppInner: React.FC<{ profileName: string | null; publisherReady: boolean; creatorReady?: boolean; initialPostId?: string; profilePreview?: boolean; freshSignupPreview?: boolean; initialSignupInvitation?: boolean; invitationUserId?: string; initialAiAssistantChat?: boolean; initialAiAssistantProfile?: AiAssistantProfile; initialOnboarding?: boolean; deepSeekKeyConfigured?: boolean; onboardingPreview?: boolean; initialInstalledSkillIds?: AiAssistantSkillId[]; persistSkillChanges?: boolean; feedChatHomePreview?: boolean }> = ({ profileName, publisherReady, creatorReady = false, initialPostId, profilePreview, freshSignupPreview, initialSignupInvitation, invitationUserId, initialAiAssistantChat, initialAiAssistantProfile, initialOnboarding, deepSeekKeyConfigured, onboardingPreview, initialInstalledSkillIds, persistSkillChanges, feedChatHomePreview }) => {
   const [previewStoreName, setPreviewStoreName] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<DiscoveryType>('商品');
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const {
@@ -95,7 +94,7 @@ const OmnilinkAppInner: React.FC<{ profileName: string | null; publisherReady: b
       <div data-navigation-open={navigationOpen} inert={profileOpen} className="consumer-market-world-layout flex min-h-dvh w-full flex-1 flex-col bg-[var(--market-canvas)]">
         <Header onMenuOpenChange={changeNavigation} onProfileOpen={() => setProfileOpen(true)} profileName={profileName} publisherReady={publisherReady} creatorReady={creatorReady} deepSeekKeyConfigured={Boolean(deepSeekKeyConfigured)} />
         <main className="h-dvh min-h-0 w-full flex-none overflow-hidden">
-          <HomeScreen initialSignupInvitation={initialSignupInvitation} invitationUserId={invitationUserId} selectedType={selectedType} onTypeSelect={setSelectedType} navigationOpen={navigationOpen} chatDockPreview={feedChatHomePreview} initialOnboarding={initialOnboarding} initialAiAssistantProfile={initialAiAssistantProfile} profileName={profileName} deepSeekKeyConfigured={deepSeekKeyConfigured} onboardingPreview={onboardingPreview} initialInstalledSkillIds={initialInstalledSkillIds} persistSkillChanges={persistSkillChanges} personalPreview={profilePreview} />
+          <HomeScreen initialSignupInvitation={initialSignupInvitation} invitationUserId={invitationUserId} navigationOpen={navigationOpen} chatDockPreview={feedChatHomePreview} initialOnboarding={initialOnboarding} initialAiAssistantProfile={initialAiAssistantProfile} profileName={profileName} deepSeekKeyConfigured={deepSeekKeyConfigured} onboardingPreview={onboardingPreview} initialInstalledSkillIds={initialInstalledSkillIds} persistSkillChanges={persistSkillChanges} personalPreview={profilePreview} />
         </main>
       </div>
 
@@ -225,7 +224,7 @@ export default function App({ initialProducts = [], initialPosts = [], livePubli
     <div className="consumer-market-shell">
       {initialContentError && <div role="alert" className="fixed left-1/2 top-4 z-[100] flex max-w-[calc(100%-32px)] -translate-x-1/2 items-center gap-4 rounded-2xl bg-[var(--surface)] p-4 text-sm text-[var(--text-primary)]"><span>{initialContentError}</span><a href="/discover" className="shrink-0 underline">返回发现页</a></div>}
       <DisplayPriceProvider>
-      <OmnilinkProvider key={userId??'guest'} initialProducts={initialProducts} initialPosts={initialPosts} hasLiveProducts={hasLiveProducts} initialWelcome={initialWelcome || initialOnboarding || freshSignupPreview} initialAiMessages={initialAiMessages} authenticated={authenticated} initialAiModel={authenticated && deepSeekKeyConfigured ? 'deepseek-v4-pro' : fallbackAiModel}>
+      <OmnilinkProvider key={userId??'guest'} initialProducts={initialProducts} initialPosts={initialPosts} hasLiveProducts={hasLiveProducts} initialWelcome={initialWelcome || initialOnboarding || freshSignupPreview} initialAiMessages={initialAiMessages} authenticated={authenticated} initialAiModel={profilePreview || aiAssistantPreview ? 'qwen-plus' : authenticated && deepSeekKeyConfigured ? 'deepseek-v4-pro' : fallbackAiModel}>
         <OmnilinkAppInner initialSignupInvitation={initialSignupInvitation} invitationUserId={userId ?? 'signup-preview'} profileName={profileName} publisherReady={publisherReady} creatorReady={creatorReady} initialPostId={initialPostId} profilePreview={profilePreview} freshSignupPreview={freshSignupPreview} initialAiAssistantChat={initialAiAssistantChat} initialAiAssistantProfile={initialAiAssistantProfile} initialOnboarding={initialOnboarding} deepSeekKeyConfigured={deepSeekKeyConfigured} onboardingPreview={onboardingPreview || !authenticated} initialInstalledSkillIds={initialInstalledSkillIds} persistSkillChanges={authenticated} feedChatHomePreview={feedChatHomePreview} />
       </OmnilinkProvider>
       </DisplayPriceProvider>

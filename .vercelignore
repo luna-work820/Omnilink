@@ -1,0 +1,12 @@
+.git/
+.vercel/
+node_modules/
+.next/
+.next-preview/
+.next-preview/**
+.env
+.env.*
+*.log
+coverage/
+dist/
+build/

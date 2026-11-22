@@ -270,42 +270,6 @@ body:has(.consumer-market-shell) {
   transition-delay: 90ms;
 }
 
-.consumer-market-shell .feed-discovery-popup {
-  transform-origin: bottom left;
-  border: 0.5px solid var(--market-glass-border);
-  background: color-mix(in srgb, var(--market-surface) 88%, transparent);
-  backdrop-filter: blur(12px) saturate(1.12);
-  -webkit-backdrop-filter: blur(12px) saturate(1.12);
-  animation: feed-discovery-rise 250ms ease-out both;
-}
-
-.consumer-market-shell .feed-discovery-option:is(:hover, :focus-visible) {
-  background: var(--market-hover);
-}
-
-@keyframes feed-discovery-rise {
-  from { opacity: 0; transform: translateY(10px) scale(0.88); border-radius: 999px; }
-  to { opacity: 1; transform: translateY(0) scale(1); border-radius: 20px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .consumer-market-shell .feed-discovery-popup { animation: none; }
-  .consumer-market-shell .feed-discovery-trigger svg { transition: none; }
-}
-
-@media (max-width: 639px) {
-  .consumer-market-shell .feed-discovery-types {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 0;
-    margin: 0;
-  }
-
-  .consumer-market-shell .feed-discovery-types[data-picker-open='true'] {
-    visibility: hidden;
-  }
-}
-
 @media (max-width: 767px) {
   .consumer-market-shell .home-navigation-fluid-shell {
     height: 44px;
@@ -4199,14 +4163,14 @@ button:disabled {
   background: var(--market-hover);
 }
 
-.consumer-market-shell :is(.feed-chat-attachment-option, .feed-discovery-option, .feed-chat-picker-row),
+.consumer-market-shell :is(.feed-chat-attachment-option, .feed-chat-picker-row),
 .consumer-market-shell .ai-assistant-interface :is(.ai-assistant-menu__nav-item, .ai-assistant-menu__result, .ai-assistant-menu__model-option, .ai-assistant-menu__back),
 :is(.mention-option, .add-menu__item, .add-menu__choice, .model-menu__item) {
   border-radius: 9999px;
   corner-shape: round;
 }
 
-.consumer-market-shell :is(.feed-chat-attachment-option, .feed-discovery-option),
+.consumer-market-shell .feed-chat-attachment-option,
 .consumer-market-shell .ai-assistant-interface :is(.ai-assistant-menu__nav-item, .ai-assistant-menu__result, .ai-assistant-menu__model-option, .ai-assistant-menu__back),
 :is(.mention-option, .add-menu__item, .add-menu__choice, .model-menu__item) {
   padding-inline: var(--hover-pill-inline);

@@ -29,6 +29,7 @@
 .iconLink,
 .reset,
 .addImage {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -75,7 +76,14 @@
   background: var(--market-surface-muted);
 }
 
+.scrollArea {
+  position: relative;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
 .scroller {
+  height: 100%;
   min-height: 0;
   flex: 1 1 auto;
   overflow-y: auto;
@@ -296,6 +304,59 @@
   margin-top: 24px;
 }
 
+.recommendations {
+  margin-block: 8px;
+}
+
+.selectedProduct {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 16px 10px;
+  padding: 10px 0;
+  border-top: 0.5px solid var(--market-border);
+}
+
+.selectedProduct img {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-control);
+  object-fit: cover;
+}
+
+.selectedProduct p {
+  margin: 0 0 3px;
+  color: var(--market-text-muted);
+  font-size: 12px;
+}
+
+.selectedProduct h2 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.selectedProduct strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.selectedProduct button {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: var(--radius-control);
+  color: var(--market-text-secondary);
+  font-size: 20px;
+}
+
+.selectedProduct button:hover {
+  background: var(--market-surface-muted);
+}
+
 .product {
   display: flex;
   align-items: center;
@@ -474,6 +535,8 @@
   align-items: center;
   padding: 4px 6px;
   border: 0.5px solid var(--market-glass-border);
+  border-radius: 24px;
+  background: var(--market-surface);
   color: var(--market-ink);
 }
 
@@ -533,6 +596,7 @@
 }
 
 .sendButton {
+  position: relative;
   display: flex;
   width: 32px;
   height: 32px;

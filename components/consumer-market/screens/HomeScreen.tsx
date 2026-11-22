@@ -5,9 +5,10 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, Check, Download, FileText, Heart, Layers, Play, Plus, ShoppingBag, X } from 'lucide-react';
 import { useOmnilink } from '../context/OmnilinkContext';
-import { getDiscoveryType, type DiscoveryType, type ProductItem, type ScenePost } from '../types';
+import { getDiscoveryType, type ProductItem, type ScenePost } from '../types';
 import { interleaveDiscoveryFeed, rankDiscoveryFeed } from '@/lib/consumer-advisor/discovery-ranking';
 import { FeedChatDock, FEED_CHAT_SCROLL_KEY, type FeedAttachment, type FeedDroppedReference } from '../components/FeedChatDock';
+import { useDiscoveryInsight } from '../hooks/useDiscoveryInsight';
 import { SparkShockwave } from '../components/SparkShockwave';
 import { DiscoveryPriceProvider, DisplayPrice } from '../components/DisplayPrice';
 import ReactMarkdown from 'react-markdown';
@@ -20,10 +21,12 @@ import { ShoppingPreferenceSurveyFlow } from './ShoppingPreferenceSurveyFlow';
 import { ExecutionResults } from '../components/ExecutionResults';
 import { emptyAiAssistantProfile, type AiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-profile';
 import { DEFAULT_INSTALLED_SKILL_IDS, AI_ASSISTANT_SKILLS, AI_ASSISTANT_SKILLS_STORAGE_KEY, readInstalledSkillIds, type AiAssistantSkillId } from '../components/CapabilityLibrary';
+import CarouselCards, { type RailItem } from '@/components/kokonutui/carousel-cards';
+import { ProgressiveBlur } from '@/components/ui/progressive-blur';
 
 const excludedDiscoveryProductIds = new Set(['P0006', 'ssd-cat-paw-slippers']);
 
-export const HomeScreen: React.FC<{ initialSignupInvitation?: boolean; invitationUserId?: string; selectedType: DiscoveryType; onTypeSelect: (type: DiscoveryType) => void; navigationOpen?: boolean; chatDockPreview?: boolean; initialOnboarding?: boolean; initialAiAssistantProfile?: AiAssistantProfile; profileName?: string | null; deepSeekKeyConfigured?: boolean; onboardingPreview?: boolean; initialInstalledSkillIds?: AiAssistantSkillId[]; persistSkillChanges?: boolean;personalPreview?:boolean }> = ({ initialSignupInvitation = false, invitationUserId = 'signup-preview', selectedType, onTypeSelect, navigationOpen = false, chatDockPreview = false, initialOnboarding = false, initialAiAssistantProfile, profileName, deepSeekKeyConfigured = false, onboardingPreview = false, initialInstalledSkillIds, persistSkillChanges = false,personalPreview=false }) => {
+export const HomeScreen: React.FC<{ initialSignupInvitation?: boolean; invitationUserId?: string; navigationOpen?: boolean; chatDockPreview?: boolean; initialOnboarding?: boolean; initialAiAssistantProfile?: AiAssistantProfile; profileName?: string | null; deepSeekKeyConfigured?: boolean; onboardingPreview?: boolean; initialInstalledSkillIds?: AiAssistantSkillId[]; persistSkillChanges?: boolean;personalPreview?:boolean }> = ({ initialSignupInvitation = false, invitationUserId = 'signup-preview', navigationOpen = false, chatDockPreview = false, initialOnboarding = false, initialAiAssistantProfile, profileName, deepSeekKeyConfigured = false, onboardingPreview = false, initialInstalledSkillIds, persistSkillChanges = false,personalPreview=false }) => {
   const {
     feedItems,
     products,
@@ -37,6 +40,7 @@ export const HomeScreen: React.FC<{ initialSignupInvitation?: boolean; invitatio
     aiMessages,
     activeAiConversationId,
     isAiThinking,
+    aiModel,
     showToast,
     sendAiMessage,
     setActiveAssistantSkillId,
@@ -49,23 +53,23 @@ export const HomeScreen: React.FC<{ initialSignupInvitation?: boolean; invitatio
     discovery,discoveryBusy,discoveryError,loadMoreDiscovery,refreshDiscovery,retryDiscovery,clearDiscovery,refineDiscovery,skipDiscoveryQuestion,
     personalView,openPersonalView,resumeDiscovery,
   } = useOmnilink();
-  const [browseMode, setBrowseMode] = useState<'recommend' | 'content' | 'products'>('recommend');
   const visibleFeedItems = useMemo(() => {
-    if (browseMode === 'content') return feedItems.filter((item) => item.type === 'scene');
     if(discovery)return discovery.products.map((product)=>({type:'product' as const,product}));
     if(discoveryError?.retrySpec||discoveryBusy)return [];
-    const rankedFeedItems = rankDiscoveryFeed(feedItems.filter((item) => item.type === 'product'
-      ? !excludedDiscoveryProductIds.has(item.product.id) && (browseMode === 'recommend' || getDiscoveryType(item.product) === selectedType)
-      : browseMode === 'recommend'), products, savedProductIds, rejectedProductIds);
+    const rankedFeedItems = rankDiscoveryFeed(feedItems.filter((item) => item.type !== 'product'
+      || !excludedDiscoveryProductIds.has(item.product.id)), products, savedProductIds, rejectedProductIds);
     return interleaveDiscoveryFeed(rankedFeedItems);
-  }, [browseMode, feedItems, products, rejectedProductIds, savedProductIds, selectedType,discovery,discoveryError?.retrySpec,discoveryBusy]);
+  }, [feedItems, products, rejectedProductIds, savedProductIds,discovery,discoveryError?.retrySpec,discoveryBusy]);
   const feedScrollerRef = useRef<HTMLDivElement>(null);
   const feedMasonryRef = useRef<HTMLDivElement>(null);
   const chatScrollerRef = useRef<HTMLElement>(null);
   const [feedView, setFeedView] = useState<'feed' | 'card' | 'chat' | 'returning'>(homeChatOpen ? 'chat' : 'feed');
+  const insight = useDiscoveryInsight(discovery, aiModel, feedScrollerRef, feedMasonryRef, feedView === 'feed' && !personalView);
   const [shockwaveRun, setShockwaveRun] = useState<number | null>(null);
   const shockwaveActiveRef = useRef(false);
   const [previewMessages, setPreviewMessages] = useState<AiChatMessage[]>([]);
+  const [previewChoice, setPreviewChoice] = useState<string | null>(null);
+  const [previewAnswer, setPreviewAnswer] = useState<string | null>(null);
   const [cardHistoryOpen, setCardHistoryOpen] = useState(false);
   const pageEndRef=useRef<HTMLDivElement>(null);
   const personalPaneRef=useRef<HTMLElement>(null);
@@ -97,11 +101,10 @@ export const HomeScreen: React.FC<{ initialSignupInvitation?: boolean; invitatio
   },[personalView]);
   useEffect(()=>{
     if(!discovery||discovery.searchRunId===previousRunRef.current)return;
-    previousRunRef.current=discovery.searchRunId;onTypeSelect(discovery.spec.type);
-    setBrowseMode('products');
+    previousRunRef.current=discovery.searchRunId;
     setFeedView('feed');setCardHistoryOpen(false);setHomeChatOpen(false);
     if(feedScrollerRef.current)feedScrollerRef.current.scrollTop=0;
-  },[discovery,onTypeSelect,setHomeChatOpen]);
+  },[discovery,setHomeChatOpen]);
   useEffect(()=>{
     if(!discovery?.nextCursor||discoveryBusy||discoveryError?.message||personalView||feedView!=='feed'||!pageEndRef.current)return;
     const observer=new IntersectionObserver((entries)=>{if(entries.some((entry)=>entry.isIntersecting))loadMoreDiscovery()},
@@ -204,14 +207,16 @@ export const HomeScreen: React.FC<{ initialSignupInvitation?: boolean; invitatio
 
   const submitFeedMessage = (message: string, selectedProductIds: string[], hasActiveSkill: boolean, skillId?: AiAssistantSkillId) => {
     if (onboardingActive) return;
+    setCardHistoryOpen(true);
     openPersonalView(null);
     if (chatDockPreview) setPreviewMessages((current) => [...current, { id: `preview-${Date.now()}`, conversationId: activeAiConversationId, text: message, isUser: true }]);
-    else sendAiMessage(message, selectedProductIds, hasActiveSkill,selectedType==='数字'?'information':selectedType==='服务'?'service':'product',skillId);
+    else sendAiMessage(message, selectedProductIds, hasActiveSkill,undefined,skillId);
     setFeedView((current) => current === 'chat' ? current : 'card');
   };
 
   const submitFeedAttachment = (attachment: FeedAttachment, message: string, selectedProductIds: string[], hasActiveSkill: boolean, skillId?: AiAssistantSkillId) => {
     if (onboardingActive) return;
+    setCardHistoryOpen(true);
     openPersonalView(null);
     if (chatDockPreview) {
       setPreviewMessages((current) => [...current, {
@@ -224,15 +229,16 @@ export const HomeScreen: React.FC<{ initialSignupInvitation?: boolean; invitatio
     } else if(attachment.kind==='url') {
       sendAiUrlMessage(attachment.data,message,selectedProductIds);setHomeChatOpen(true);
     } else if (attachment.kind === 'image') {
-      sendAiImageMessage(attachment.data, message, selectedProductIds, hasActiveSkill,selectedType==='数字'?'information':selectedType==='服务'?'service':'product',skillId);
+      sendAiImageMessage(attachment.data, message, selectedProductIds, hasActiveSkill,undefined,skillId);
     } else {
-      sendAiFileMessage(attachment.name, attachment.data, message, selectedProductIds, hasActiveSkill,selectedType==='数字'?'information':selectedType==='服务'?'service':'product',skillId);
+      sendAiFileMessage(attachment.name, attachment.data, message, selectedProductIds, hasActiveSkill,undefined,skillId);
     }
     setFeedView((current) => current === 'chat' ? current : 'card');
   };
 
   const activateChat = () => {
     if (feedView !== 'feed') return;
+    setCardHistoryOpen(conversationMessages.length > 0);
     setFeedView('card');
     if (shockwaveActiveRef.current) return;
     shockwaveActiveRef.current = true;
@@ -332,7 +338,7 @@ export const HomeScreen: React.FC<{ initialSignupInvitation?: boolean; invitatio
   };
 
   const renderFeedItem = (item: (typeof visibleFeedItems)[number], index: number) =>
-    <div key={`${item.type}-${item.type === 'product' ? item.product.id : item.scenePost.id}-${index}`} data-feed-key={`${item.type}-${item.type === 'product' ? item.product.id : item.scenePost.id}-${index}`} className="feed-masonry-card mb-1.5 break-inside-avoid" onPointerDown={(event) => startCardHold(event, item.type === 'product' ? { key: `product-${item.product.id}`, title: item.product.name, url: item.product.sourceUrl ?? (item.product.storeSlug ? `${window.location.origin}/store/${encodeURIComponent(item.product.storeSlug)}/products/${encodeURIComponent(item.product.id)}` : undefined), productId: item.product.id, detail: [item.product.storeName, item.product.formattedPrice, item.product.shortDescription].filter(Boolean).join('；').slice(0, 300) } : { key: `scene-${item.scenePost.id}`, title: item.scenePost.title, url: `${window.location.origin}/discover?post=${encodeURIComponent(item.scenePost.id)}`, detail: [item.scenePost.editorName, item.scenePost.description].filter(Boolean).join('；').slice(0, 300) })} onDragStart={(event) => event.preventDefault()} onContextMenu={(event) => { if (event.currentTarget.hasAttribute('data-dragging')) event.preventDefault(); }} onClickCapture={(event) => { if (suppressCardClickRef.current) { event.preventDefault(); event.stopPropagation(); suppressCardClickRef.current = false; } }}>
+    <div key={`${item.type}-${item.type === 'product' ? item.product.id : item.scenePost.id}-${index}`} data-feed-key={`${item.type}-${item.type === 'product' ? item.product.id : item.scenePost.id}-${index}`} data-product-id={item.type === 'product' ? item.product.id : undefined} className="feed-masonry-card mb-1.5 break-inside-avoid" onPointerDown={(event) => startCardHold(event, item.type === 'product' ? { key: `product-${item.product.id}`, title: item.product.name, url: item.product.sourceUrl ?? (item.product.storeSlug ? `${window.location.origin}/store/${encodeURIComponent(item.product.storeSlug)}/products/${encodeURIComponent(item.product.id)}` : undefined), productId: item.product.id, detail: [item.product.storeName, item.product.formattedPrice, item.product.shortDescription].filter(Boolean).join('；').slice(0, 300) } : { key: `scene-${item.scenePost.id}`, title: item.scenePost.title, url: `${window.location.origin}/discover?post=${encodeURIComponent(item.scenePost.id)}`, detail: [item.scenePost.editorName, item.scenePost.description].filter(Boolean).join('；').slice(0, 300) })} onDragStart={(event) => event.preventDefault()} onContextMenu={(event) => { if (event.currentTarget.hasAttribute('data-dragging')) event.preventDefault(); }} onClickCapture={(event) => { if (suppressCardClickRef.current) { event.preventDefault(); event.stopPropagation(); suppressCardClickRef.current = false; } }}>
       {item.type === 'product'
         ? <FeedProductCard product={item.product} onClick={() => item.product.sourceUrl ? window.location.assign(item.product.sourceUrl) : openFloatingProduct(item.product)} />
         : <FeedSceneCard scenePost={item.scenePost} onClick={() => openScenePost(item.scenePost)} />}
@@ -346,7 +352,7 @@ export const HomeScreen: React.FC<{ initialSignupInvitation?: boolean; invitatio
       {discovery&&<header className="flex min-h-12 items-center gap-3 px-3 pb-3"><h1 className="min-w-0 flex-1 break-words text-base font-medium">{discovery.query}</h1><span className="text-xs text-[var(--market-text-secondary)]">已加载 {discovery.products.length} 件</span><button type="button" onClick={clearDiscovery} className="min-h-11 rounded-full px-3 text-sm hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">清除</button></header>}
       {discovery?.retrieval?.degraded&&<p role="status" className="px-3 pb-3 text-xs text-[var(--market-text-secondary)]">语义检索暂不可用，已切换关键词检索。</p>}
       {discovery?.priceWarning&&<p role="status" className="px-3 pb-3 text-xs text-[var(--market-text-secondary)]">部分商品汇率不可用，未纳入预算筛选。</p>}
-      {visibleFeedItems.length === 0 && !discoveryError?.message&&!discoveryBusy&&<p className="mx-auto max-w-md py-16 text-center text-sm text-[var(--market-text-secondary)]">{browseMode === 'content' ? '暂无公开作品。' : discovery?'没有找到符合条件的公开商品，可修改关键词。':`${selectedType === '数字' ? '信息' : selectedType}暂无内容。`}</p>}
+      {visibleFeedItems.length === 0 && !discoveryError?.message&&!discoveryBusy&&<p className="mx-auto max-w-md py-16 text-center text-sm text-[var(--market-text-secondary)]">{discovery?`没有找到符合条件的公开${discovery.spec.type === '服务' ? '服务' : '商品'}，可修改关键词。`:'暂无内容。'}</p>}
       <div ref={feedMasonryRef} className={`${feedColumnClasses} gap-1.5`}>
         {personalPreview&&!initialSignupInvitation&&!discovery&&!discoveryBusy&&!discoveryError?.retrySpec&&<div data-feed-key="know-yourself" className="feed-masonry-card mb-1.5 break-inside-avoid">
           <article className="product-feed-card group w-full select-none rounded-[var(--radius-card)] bg-[var(--market-canvas)] p-1 transition-colors duration-200 hover:bg-[var(--market-hover)]">
@@ -397,37 +403,19 @@ export const HomeScreen: React.FC<{ initialSignupInvitation?: boolean; invitatio
           <div className="mx-auto w-full max-w-3xl space-y-6">
             {onboardingActive && <InitialAssistantSetup initialProfile={initialAiAssistantProfile ?? emptyAiAssistantProfile} defaultName={profileName ?? ''} deepSeekConfigured={deepSeekConnected} preview={onboardingPreview} onDeepSeekConfigured={() => { setDeepSeekConnected(true); if (!onboardingPreview) setAiModel('deepseek-v4-pro'); }} onComplete={() => {setOnboardingCompleted(true);openPersonalView('assessment');}} />}
             {conversationMessages.map((message) => <div key={message.id} className={message.isUser ? 'flex justify-end' : 'text-[var(--market-ink)]'}>
-              {message.isUser ? <div className="max-w-[88%] rounded-2xl bg-[var(--market-surface-muted)] px-4 py-3 text-sm leading-6 sm:text-base">{message.image && <img src={message.image} alt="已发送的图片" className="mb-2 max-h-64 max-w-full rounded-lg object-contain" />}{message.fileName && <p className="mb-1 text-xs">{message.fileName}</p>}<p className="whitespace-pre-wrap break-words">{message.text}</p></div> : <div className="max-w-full break-words text-sm leading-7 sm:text-base [&_p]:mb-3 [&_table]:my-3 [&_table]:w-full [&_table]:border-collapse [&_td]:border-b-[0.5px] [&_td]:border-[var(--market-border)] [&_td]:p-2 [&_th]:border-b-[0.5px] [&_th]:border-[var(--market-border)] [&_th]:p-2 [&_th]:text-left">{message.intent === 'outfit-styling' && <p className="mb-1 text-xs font-medium text-[var(--market-text-muted)]">穿搭建议</p>}<ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: ({ src, alt }) => typeof src === 'string' && src.startsWith('/consumer-market/') ? <img src={src} alt={alt ?? ''} className="mr-2 inline-block h-11 w-11 rounded-md object-cover align-middle" /> : null }}>{message.text}</ReactMarkdown>{message.matchedProducts?.length ? <div className="mt-3 flex gap-2 overflow-x-auto pb-2">{message.matchedProducts.map((product) => {
-                const defaultVariant = product.variants?.find((variant) => variant.id === product.defaultVariantId);
-                const needsVariant = Boolean(product.options?.length);
-                const canQuickAdd = getDiscoveryType(product) === '商品' && product.priceMode !== 'inquiry' && product.priceMode !== 'unknown' && (!needsVariant || Boolean(defaultVariant));
-                const defaultVariantLabel = defaultVariant ? Object.values(defaultVariant.optionValues).filter(Boolean).join(' / ') || '标准' : '标准';
-
-                return <div key={product.id} className="w-44 shrink-0 rounded-xl border-[0.5px] border-[var(--market-border)] p-2 text-xs">
-                  <button type="button" onClick={() => openFloatingProduct(product)} className="flex w-full flex-col gap-2 text-left focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">
-                    <img src={product.mainImage} alt="" className="aspect-square w-full rounded-md object-cover" />
-                    <span className="line-clamp-2">{product.name}</span>
-                    <span className="text-[var(--market-text-muted)]"><DisplayPrice product={product} /></span>
-                    {message.matchReasons?.[product.id] && <span className="line-clamp-2 text-[var(--market-text-secondary)]">{message.matchReasons[product.id]}</span>}
-                  </button>
-                  {canQuickAdd && <button type="button" onClick={() => addToCart(product, defaultVariantLabel, defaultVariant?.optionValues)} aria-label={`将${product.name}加入购物车`} className="mt-2 flex min-h-9 w-full items-center justify-center gap-1 rounded-full bg-[var(--market-ink)] px-2 text-[var(--market-canvas)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)]">
-                    <ShoppingBag size={14} aria-hidden="true" />加入购物车
-                  </button>}
-                  <div className="mt-2 flex items-center gap-3 border-t-[0.5px] border-[var(--market-border)] pt-1">
-                    <button type="button" onClick={() => toggleSaveProduct(product.id)} aria-label={`${savedProductIds.includes(product.id) ? '取消收藏' : '收藏'}${product.name}`} aria-pressed={savedProductIds.includes(product.id)} className="flex min-h-8 items-center gap-1"><Heart size={14} fill={savedProductIds.includes(product.id) ? 'currentColor' : 'none'} aria-hidden="true" />收藏</button>
-                    <button type="button" onClick={() => toggleRejectProduct(product.id)} aria-pressed={rejectedProductIds.includes(product.id)} className="min-h-8 text-[var(--market-text-muted)]">{rejectedProductIds.includes(product.id) ? '撤销' : '不合适'}</button>
-                  </div>
-                </div>;
-              })}</div> : null}{message.searchRef&&<button type="button" onClick={()=>{const ref=message.searchRef!;openPersonalView(null);setFeedView('feed');setHomeChatOpen(false);resumeDiscovery(ref.searchRunId,ref.contextVersion,ref.spec)}} className="min-h-11 rounded-full px-4 text-sm hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">查看结果</button>}{message.retrySpec&&<button type="button" disabled={discoveryBusy} onClick={()=>{openPersonalView(null);setFeedView('feed');setHomeChatOpen(false);refreshDiscovery(message.retrySpec)}} className="min-h-11 rounded-full px-4 text-sm hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">重试搜索</button>}{message.usedPreferences?.length ? <p className="mt-2 text-xs text-[var(--market-text-muted)]">参考偏好：{message.usedPreferences.join('、')}</p> : null}</div>}
+              {message.isUser ? <div className="max-w-[88%] rounded-2xl bg-[var(--market-surface-muted)] px-4 py-3 text-sm leading-6 sm:text-base">{message.image && <img src={message.image} alt="已发送的图片" className="mb-2 max-h-64 max-w-full rounded-lg object-contain" />}{message.fileName && <p className="mb-1 text-xs">{message.fileName}</p>}<p className="whitespace-pre-wrap break-words">{message.text}</p></div> : <div className="max-w-full break-words text-sm leading-7 sm:text-base [&_p]:mb-3 [&_table]:my-3 [&_table]:w-full [&_table]:border-collapse [&_td]:border-b-[0.5px] [&_td]:border-[var(--market-border)] [&_td]:p-2 [&_th]:border-b-[0.5px] [&_th]:border-[var(--market-border)] [&_th]:p-2 [&_th]:text-left">{message.intent === 'outfit-styling' && <p className="mb-1 text-xs font-medium text-[var(--market-text-muted)]">穿搭建议</p>}<ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: ({ src, alt }) => typeof src === 'string' && src.startsWith('/consumer-market/') ? <img src={src} alt={alt ?? ''} className="mr-2 inline-block h-11 w-11 rounded-md object-cover align-middle" /> : null }}>{message.text}</ReactMarkdown>{message.matchedProducts?.length ? <ChatProductRecommendations products={message.matchedProducts} matchReasons={message.matchReasons} savedProductIds={savedProductIds} rejectedProductIds={rejectedProductIds} onOpen={openFloatingProduct} onSave={toggleSaveProduct} onReject={toggleRejectProduct} onAddToCart={addToCart} /> : null}{message.searchRef&&<button type="button" onClick={()=>{const ref=message.searchRef!;openPersonalView(null);setFeedView('feed');setHomeChatOpen(false);resumeDiscovery(ref.searchRunId,ref.contextVersion,ref.spec)}} className="min-h-11 rounded-full px-4 text-sm hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">查看结果</button>}{message.retrySpec&&<button type="button" disabled={discoveryBusy} onClick={()=>{openPersonalView(null);setFeedView('feed');setHomeChatOpen(false);refreshDiscovery(message.retrySpec)}} className="min-h-11 rounded-full px-4 text-sm hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">重试搜索</button>}{message.usedPreferences?.length ? <p className="mt-2 text-xs text-[var(--market-text-muted)]">参考偏好：{message.usedPreferences.join('、')}</p> : null}</div>}
               {!message.isUser&&message.blocks&&<ExecutionResults blocks={message.blocks} sessionId={activeAiConversationId}/>}
+              {message.id === 'ai-preview-question' && (previewAnswer ? <div className="mt-4 space-y-4"><div className="flex justify-end"><p className="rounded-2xl bg-[var(--market-surface-muted)] px-4 py-3 text-sm">{previewAnswer}</p></div><p className="text-sm">分层收纳可以让常用物件顺手，也为工作留出空间。</p><ChatProductRecommendations products={products.filter((product) => ['P0055', 'P0057', 'P0058'].includes(product.id))} savedProductIds={savedProductIds} rejectedProductIds={rejectedProductIds} onOpen={openFloatingProduct} onSave={toggleSaveProduct} onReject={toggleRejectProduct} onAddToCart={addToCart} /><button type="button" className="min-h-11 px-3 text-sm text-[var(--market-text-secondary)]" onClick={() => { setPreviewAnswer(null); setPreviewChoice(null); }}>重新选择</button></div> : <fieldset className="mt-3 space-y-2"><legend className="sr-only">选择偏好</legend>{['绿植与自然光营造的松弛感', '物件、收藏和使用痕迹', '一个能让我安静专注的角落', '桌面整洁、工具顺手的工作感', '其他'].map((option) => <label key={option} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-[var(--radius-control)] px-3 text-sm hover:bg-[var(--market-hover)]"><input type="radio" name="preview-choice" checked={previewChoice === option} onChange={() => setPreviewChoice(option)} />{option}</label>)}<button type="button" disabled={!previewChoice} onClick={() => setPreviewAnswer(previewChoice)} className="min-h-11 rounded-full bg-[var(--market-ink)] px-5 text-sm text-[var(--market-canvas)] disabled:opacity-40">提交答案</button></fieldset>)}
               {!message.isUser&&message.state==='cancelled'&&<p className="mt-2 text-xs text-[var(--market-text-secondary)]">已停止</p>}
             </div>)}
             {isAiThinking && !chatDockPreview && <p className="text-sm text-[var(--market-text-muted)]" role="status">正在分析</p>}
           </div>
         </section>
+        {feedView === 'chat' && !personalView && <><ProgressiveBlur position="top" className="z-10" /><ProgressiveBlur position="bottom" className="z-10" /></>}
         {personalView&&<section ref={personalPaneRef} aria-label={personalView==='memories'?'个人记忆':'购物偏好'} className="absolute inset-0 z-20 overflow-y-auto bg-[var(--market-canvas)] pb-36 pt-14 sm:pb-28 sm:pt-6">
           {personalView==='memories'?<MemoryPanel preview={personalPreview}/>:<div className="mx-auto max-w-2xl px-4"><header className="mb-4 flex items-center gap-3"><button type="button" onClick={()=>openPersonalView(null)} className="min-h-11 rounded-full px-3 text-sm hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">返回</button><h1 className="text-base font-medium">购物偏好</h1></header><ShoppingPreferenceSurveyFlow embedded preview={personalPreview} initialProfile={initialAiAssistantProfile??emptyAiAssistantProfile} onComplete={()=>{openPersonalView(null);setHomeChatOpen(false);setFeedView('feed');}} onReview={()=>openPersonalView('memories')}/></div>}
         </section>}
+        {personalView && <><ProgressiveBlur position="top" className="z-20" /><ProgressiveBlur position="bottom" className="z-20" /></>}
         {shockwaveRun !== null && <SparkShockwave key={shockwaveRun} navigationOpen={navigationOpen} onComplete={() => {
           shockwaveActiveRef.current = false;
           setShockwaveRun(null);
@@ -445,10 +433,10 @@ export const HomeScreen: React.FC<{ initialSignupInvitation?: boolean; invitatio
           }}
           onBrowse={() => { setHomeChatOpen(false); setFeedView('feed'); feedScrollerRef.current?.focus(); }} />
         <FeedChatDock
-          selectedType={selectedType}
-          browseMode={browseMode}
-          onBrowseModeChange={(mode)=>{setBrowseMode(mode);clearDiscovery();setHomeChatOpen(false);setFeedView('feed');}}
-          onTypeSelect={(type)=>{setBrowseMode('products');onTypeSelect(type);if(discovery&&type!=='数字')refreshDiscovery({...discovery.spec,type,retrieval:{mode:'keyword',profile:discovery.spec.retrieval?.profile??'bge-small-zh-v1.5-512-v1'}});}}
+          insightQuestion={insight.question}
+          insightThinking={insight.thinking}
+          onInsightSkip={()=>{insight.dismiss();skipDiscoveryQuestion();}}
+          onInsightSelect={(option)=>{if(!discovery)return;insight.dismiss();refreshDiscovery({...discovery.spec,sessionTerms:option.terms,questionDismissed:true});}}
           chatOpen={feedView === 'card' || feedView === 'chat'}
           chatCardOpen={feedView === 'card'}
           cardHistoryOpen={cardHistoryOpen}
@@ -568,6 +556,93 @@ const KnowYourselfDetail: React.FC<{ installed: boolean; onClose: () => void; on
     </div>,
     document.body,
   );
+};
+
+type ChatProductRecommendationsProps = {
+  products: ProductItem[];
+  matchReasons?: Record<string, string>;
+  savedProductIds: string[];
+  rejectedProductIds: string[];
+  onOpen: (product: ProductItem) => void;
+  onSave: (productId: string) => void;
+  onReject: (productId: string) => void;
+  onAddToCart: (product: ProductItem, variant?: string, selectedOptions?: Record<string, string>) => void;
+};
+
+const ChatProductRecommendations: React.FC<ChatProductRecommendationsProps> = ({
+  products,
+  matchReasons,
+  savedProductIds,
+  rejectedProductIds,
+  onOpen,
+  onSave,
+  onReject,
+  onAddToCart,
+}) => {
+  const productsById = new Map(products.map((product) => [product.id, product]));
+
+  function getQuickAdd(product: ProductItem) {
+    const defaultVariant = product.variants?.find((variant) => variant.id === product.defaultVariantId);
+    const needsVariant = Boolean(product.options?.length);
+    const canQuickAdd = getDiscoveryType(product) === '商品'
+      && product.priceMode !== 'inquiry'
+      && product.priceMode !== 'unknown'
+      && (!needsVariant || Boolean(defaultVariant));
+    const defaultVariantLabel = defaultVariant
+      ? Object.values(defaultVariant.optionValues).filter(Boolean).join(' / ') || '标准'
+      : '标准';
+
+    return { defaultVariant, defaultVariantLabel, canQuickAdd };
+  }
+
+  function renderActions(product: ProductItem) {
+    const { defaultVariant, defaultVariantLabel, canQuickAdd } = getQuickAdd(product);
+    return <>
+      {canQuickAdd && <button type="button" onClick={() => onAddToCart(product, defaultVariantLabel, defaultVariant?.optionValues)} aria-label={`将${product.name}加入购物车`} className="flex min-h-11 items-center justify-center gap-1 rounded-full bg-[var(--market-ink)] px-3 text-xs text-[var(--market-canvas)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)]"><ShoppingBag size={14} aria-hidden="true" />加入购物车</button>}
+      <button type="button" onClick={() => onReject(product.id)} aria-pressed={rejectedProductIds.includes(product.id)} className="min-h-11 rounded-full px-3 text-xs text-[var(--market-text-secondary)] hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">{rejectedProductIds.includes(product.id) ? '撤销' : '不合适'}</button>
+    </>;
+  }
+
+  if (products.length > 1) {
+    const items: RailItem[] = products.map((product) => ({
+      id: product.id,
+      title: product.name,
+      location: product.storeName,
+      image: product.mainImage,
+      imageAlt: product.name,
+      aspectRatio: product.aspectRatio,
+      description: matchReasons?.[product.id],
+      price: product.price,
+      priceText: product.formattedPrice,
+    }));
+
+    return <CarouselCards
+      items={items}
+      title="推荐商品"
+      eyebrow=""
+      defaultFavorites={savedProductIds}
+      onToggleFavorite={(id) => onSave(id)}
+      onSelect={(item) => {
+        const product = productsById.get(item.id);
+        if (product) onOpen(product);
+      }}
+      renderFooter={(item) => {
+        const product = productsById.get(item.id);
+        return product ? renderActions(product) : null;
+      }}
+      className="mt-2"
+    />;
+  }
+
+  const product = products[0];
+  if (!product) return null;
+  return <article className="mt-3 w-44 shrink-0 text-xs">
+    <FeedProductCard product={product} onClick={() => onOpen(product)} />
+    {renderActions(product)}
+    <div className="flex items-center gap-3 pt-1">
+      <button type="button" onClick={() => onSave(product.id)} aria-label={`${savedProductIds.includes(product.id) ? '取消收藏' : '收藏'}${product.name}`} aria-pressed={savedProductIds.includes(product.id)} className="flex min-h-11 items-center gap-1 text-xs"><Heart size={14} fill={savedProductIds.includes(product.id) ? 'currentColor' : 'none'} aria-hidden="true" />收藏</button>
+    </div>
+  </article>;
 };
 
 const FeedProductCard: React.FC<{

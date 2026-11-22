@@ -57,3 +57,5 @@ docs/open-source-schema/
 supabase/.temp/
 .cloudflare/
 .vinext/
+.vercel
+.env*

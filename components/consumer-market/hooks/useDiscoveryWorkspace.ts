@@ -104,7 +104,7 @@ export function useDiscoveryWorkspace(sessionId:string,onProducts:(products:Prod
   const retryDiscovery=useCallback(()=>{
     const failed=failedRequests.current[sessionRef.current]
     if(!failed||busyRef.current)return
-    if(failed.spec&&['CONTEXT_CHANGED','SEARCH_EXPIRED','CURSOR_INVALID'].includes(failed.code??'')){
+    if(failed.spec&&['CONTEXT_CHANGED','SEARCH_EXPIRED','SEARCH_NOT_FOUND','CURSOR_INVALID'].includes(failed.code??'')){
       void request({action:'start',spec:failed.spec},false,failed.spec)
     }else void request(failed.payload,failed.append,failed.spec)
   },[request])

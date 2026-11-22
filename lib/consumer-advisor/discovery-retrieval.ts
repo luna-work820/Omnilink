@@ -17,11 +17,6 @@ export async function retrieveDiscoveryCandidates(input: DiscoverySpec, context:
   const started = performance.now(), spec = discoverySpecSchema.parse(input)
   const options = retrievalOptionsSchema.parse(spec.retrieval ?? {})
   const forcedKeyword = process.env.CONSUMER_RETRIEVAL_MODE === 'keyword'
-  const mode = forcedKeyword ? 'keyword' : options.mode === 'auto' ? 'hybrid' : options.mode
-  const report: RetrievalReport = {requestedMode: options.mode, effectiveMode: mode, profile: mode === 'keyword' ? null : embeddingProfiles[options.profile],
-    degraded: forcedKeyword && options.mode !== 'keyword' && options.mode !== 'auto', reason: forcedKeyword ? 'KEYWORD_OVERRIDE' : null,
-    embeddingCalls: 0, embeddingInputTokens: null, embeddingMs: 0, retrievalMs: 0,
-    candidateCount: 0, keywordCount: 0, semanticCount: 0, totalMs: 0}
   signal?.throwIfAborted()
   const catalog = publishedCatalog ?? await deps.catalog()
   const snapshot = Array.isArray(catalog) ? catalogSnapshot(catalog) : catalog
@@ -34,9 +29,24 @@ export async function retrieveDiscoveryCandidates(input: DiscoverySpec, context:
   const priceWarning = needsRates && potentiallyEligible.some((product) => product.priceMode === 'amount' &&
     convertCurrency(product.price,product.currency,spec.currency,priceReference) === null)
   const eligible = potentiallyEligible.filter((product) => eligibleConsumerProduct(product, spec, priceReference))
-  report.eligibilityMs=Math.round(performance.now()-started)
+  const eligibilityMs=Math.round(performance.now()-started)
   const keywordIds = rankKeywordProducts(eligible, spec, context.positiveTerms, context.avoidTerms, priceReference).map((product) => product.id)
-  report.keywordCount = keywordIds.length
+  const hasKeywordOverride = forcedKeyword && options.mode !== 'keyword'
+  const selectionReason = hasKeywordOverride ? 'KEYWORD_OVERRIDE'
+    : options.mode !== 'auto' ? 'EXPLICIT_MODE'
+    : eligible.length === 0 ? 'AUTO_NO_CANDIDATES'
+    : keywordIds.length === 0 ? 'AUTO_NO_KEYWORD_MATCH'
+    : spec.sessionTerms.length ? 'AUTO_SOFT_TERMS'
+    : 'AUTO_KEYWORD_MATCH'
+  const mode = forcedKeyword ? 'keyword' : options.mode === 'auto'
+    ? selectionReason === 'AUTO_NO_KEYWORD_MATCH' ? 'semantic' : selectionReason === 'AUTO_SOFT_TERMS' ? 'hybrid' : 'keyword'
+    : options.mode
+  const report: RetrievalReport = {requestedMode: options.mode, effectiveMode: mode,
+    profile: mode === 'keyword' ? null : embeddingProfiles[options.profile], degraded: hasKeywordOverride && options.mode !== 'auto',
+    reason: hasKeywordOverride ? 'KEYWORD_OVERRIDE' : null, selectionReason,
+    eligibilityMs,
+    embeddingCalls: 0, embeddingInputTokens: null, embeddingMs: 0, retrievalMs: 0,
+    candidateCount: 0, keywordCount: keywordIds.length, semanticCount: 0, totalMs: 0}
   let semanticIds: string[] = []
   const similarities=new Map<string,number>()
   if (mode !== 'keyword' && eligible.length) {

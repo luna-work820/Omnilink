@@ -8,7 +8,7 @@ import { readPublishedConsumerCatalog,selectCatalogProducts,type ConsumerCatalog
 import { retrieveDiscoveryCandidates } from './discovery-retrieval'
 import { eligibleConsumerProduct,rankKeywordProducts,keywordProductScore,spreadStores } from './search-spec'
 import type { RetrievalReport } from './embedding-profile'
-import { DiscoveryError,discoveryQuestion,discoverySpecSchema,type DiscoveryPage,type DiscoverySpec } from './discovery-contract'
+import { DiscoveryError,discoverySpecSchema,type DiscoveryPage,type DiscoverySpec } from './discovery-contract'
 import { loadPersonalContext,resolvePersonalContext,type PersonalContextSnapshot } from './personal-context'
 import type { ExchangeRates } from './exchange-rates'
 
@@ -142,7 +142,7 @@ async function readDiscoveryPage(actor:DiscoveryActor,cursor:z.infer<typeof curs
   return {searchRunId:page.id,sessionId:page.sessionId,query:spec.query,products,
     nextCursor:nextOffset===null?null:encodeDiscoveryCursor({r:page.id,s:actor.sessionId,o:nextOffset,v:Number(page.contextVersion),e:Date.parse(page.expiresAt)}),
     contextVersion:Number(page.contextVersion),snapshotVersion:1,pageSize:20,returnedCount:products.length,candidateCount:page.execution.candidateKeys.length,
-    question:discoveryQuestion(spec),spec,priceReference:page.execution.priceReference??null,priceWarning:page.execution.priceWarning??false,
+    question:null,spec,priceReference:page.execution.priceReference??null,priceWarning:page.execution.priceWarning??false,
     retrieval:initial?page.execution.retrieval:{...page.execution.retrieval,embeddingCalls:0,embeddingInputTokens:0,embeddingMs:0,retrievalMs:0,totalMs:0}}
 }
 
@@ -165,4 +165,18 @@ export async function ownedDiscoveryRun(actor:DiscoveryActor,id:string):Promise<
   if(!data) throw new DiscoveryError('SEARCH_NOT_FOUND',404,'找不到这次搜索。')
   if(Date.parse(data.expires_at)<=Date.now()) throw new DiscoveryError('SEARCH_EXPIRED',410,'搜索已过期，请刷新结果。')
   return {...data,spec:discoverySpecSchema.parse(data.spec)} as Run
+}
+
+export async function readViewedDiscoveryProducts(actor:DiscoveryActor,run:Run,ids:string[]) {
+  const {data,error}=await createServiceRoleClient().rpc('read_consumer_discovery_execution',{
+    p_run_id:run.id,p_user_id:actor.userId,p_guest_hash:actor.guestHash,p_session_id:actor.sessionId,p_version:run.context_version,
+  }).abortSignal(AbortSignal.timeout(8000))
+  if(error)dbError(error)
+  if(!data)throw new DiscoveryError('SEARCH_NOT_FOUND',404,'找不到这次搜索。')
+  const execution=(data as DbPage).execution
+  const allowed=new Set(execution.candidateKeys)
+  if(ids.length<30 || new Set(ids).size!==ids.length || ids.some((id)=>!allowed.has(id)))throw new DiscoveryError('INVALID_VIEWED_PRODUCTS',400,'浏览记录无效。')
+  const snapshot=await readPublishedConsumerCatalog()
+  if(snapshot.version!==execution.catalogVersion)throw new DiscoveryError('SEARCH_EXPIRED',410,'目录已更新，请刷新结果。')
+  return selectCatalogProducts(snapshot.products,ids)
 }
