@@ -111,11 +111,6 @@ export function HomeNavigationDrawer({ open = true, onClose, profileName, publis
     onClose();
   };
   const activateSkill = (id: (typeof AI_ASSISTANT_SKILLS)[number]['id']) => {
-    if (id === 'shopping-preferences') {
-      openPersonalView('assessment');
-      onClose();
-      return;
-    }
     startAiConversation(id);
     setHomeChatOpen(true);
     onClose();
@@ -146,7 +141,7 @@ export function HomeNavigationDrawer({ open = true, onClose, profileName, publis
   return <div className="pointer-events-none absolute inset-0" role="presentation">
     <aside aria-label="导航与对话" className="home-navigation-drawer pointer-events-auto flex h-full w-full flex-col text-[var(--market-ink)]">
       <header className="flex min-h-14 items-center gap-1 px-3">
-        <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[16px] font-semibold"><Image src="/omnilink-moon.svg" width={24} height={24} alt="" className="h-6 w-6 shrink-0" />Omnilink</span>
+        <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[16px] font-semibold"><Image src="/omnilink-logo.png" width={24} height={24} alt="" className="h-6 w-6 shrink-0" />Omnilink</span>
         <button type="button" onClick={() => { setView('main'); setSearchOpen((open) => !open); setQuery(''); }} aria-label="搜索" aria-pressed={searchOpen} className="grid h-8 w-8 shrink-0 place-items-center rounded-full hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><MagnifyingGlass size={16} aria-hidden="true" /></button>
         <button type="button" onClick={onClose} aria-label="收起侧边栏" className="grid h-8 w-8 shrink-0 place-items-center rounded-full hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><SidebarSimple size={16} aria-hidden="true" /></button>
       </header>

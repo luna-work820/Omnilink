@@ -26,7 +26,7 @@ import { runConversation } from '@/lib/consumer-advisor/conversation-service'
 import { createComparisonTask } from '@/lib/consumer-advisor/comparison-workflow'
 import { responseEnvelope,readExecutionBlocks,readSourceIds,type ConsumerResponse } from '@/lib/consumer-advisor/response-contract'
 import { isUuid } from '@/lib/utils/uuid'
-import type { ConsumerTaskIntent } from '@/components/consumer-market/types'
+import type { ConsumerTaskIntent, ProductItem } from '@/components/consumer-market/types'
 import { applySearchPatch,hasRuleSearchPatch,ruleSearchPatch,searchScopeSchema,type SearchScope } from '@/lib/consumer-advisor/search-continuation'
 import { consumerModelPolicy } from '@/lib/consumer-advisor/model-policy'
 import { executionMetrics,measureConsumerModel,type ModelStage } from '@/lib/consumer-advisor/execution-metrics'
@@ -164,7 +164,7 @@ async function runAssistant(request: NextRequest,lifecycle:Lifecycle) {
     if(actionResult&&!actionResult.success||retrievalResult&&!retrievalResult.success||scopeResult&&!scopeResult.success
       ||body.previousSearchRunId!==undefined&&(typeof body.previousSearchRunId!=='string'||!isUuid(body.previousSearchRunId))
       ||body.previousContextVersion!==undefined&&(!Number.isInteger(body.previousContextVersion)||Number(body.previousContextVersion)<0))return NextResponse.json({error:'执行参数无效。'},{status:400})
-    if (body.skillId !== undefined && !['personal-advisor', 'shopping-preferences', 'know-yourself'].includes(String(body.skillId))) {
+    if (body.skillId !== undefined && body.skillId !== 'personal-advisor') {
       return NextResponse.json({ error: '技能无效。' }, { status: 400 })
     }
     const action=actionResult?.success?actionResult.data:undefined
@@ -389,7 +389,7 @@ async function runAssistant(request: NextRequest,lifecycle:Lifecycle) {
     const candidates=searchesCatalog?await retrieveDiscoveryCandidates(classified.search!,resolvePersonalContext(personalContext,classified.search!),request.signal):null
     const selectedIds=Array.isArray(body.selectedProductIds)?body.selectedProductIds.filter(isConsumerProductId).slice(0,6):[]
     const previousProductIds=Array.isArray(previousAssistantProductIds)?previousAssistantProductIds.filter(isConsumerProductId).slice(0,6):[]
-    const toFact=(product:ReturnType<typeof readConsumerCatalog>[number])=>({
+    const toFact=(product:ProductItem)=>({
       id:product.id,name:product.name,category:product.category,storeName:product.storeName,
       description:[product.shortDescription,...Object.entries(product.specs??{}).map(([key,value])=>`${key}：${value}`)].join('；').slice(0,1000),
       formattedPrice:product.formattedPrice,currency:product.currency})

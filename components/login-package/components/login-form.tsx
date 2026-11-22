@@ -4,6 +4,7 @@ import { cn } from "@/components/login-package/lib/utils";
 import { Button } from "@/components/login-package/components/ui/button";
 import { Input } from "@/components/login-package/components/ui/input";
 import Shuffle from "@/components/login-package/components/Shuffle";
+import Loader from "@/components/kokonutui/loader";
 
 export interface LoginFormProps extends React.ComponentProps<"div"> {
   onSwitchToSignup: () => void;
@@ -131,16 +132,27 @@ export function LoginForm({
           <Button
             type="submit"
             disabled={pending}
+            aria-busy={pending}
+            aria-label={pending ? "正在登录" : undefined}
             className="w-full h-11 rounded-xl bg-[#315BFF] text-white hover:bg-[#2548db] font-semibold text-sm cursor-pointer shadow-md transition-all active:scale-[0.99]"
           >
-            <Shuffle
-              text={pending ? "请稍候" : "登录"}
-              tag="span"
-              duration={0.3}
-              shuffleTimes={2}
-              triggerOnHover={true}
-              animationMode="evenodd"
-            />
+            {pending ? (
+              <Loader
+                size="xs"
+                className="gap-0 p-0"
+                indicatorClassName="text-white"
+                aria-hidden="true"
+              />
+            ) : (
+              <Shuffle
+                text="登录"
+                tag="span"
+                duration={0.3}
+                shuffleTimes={2}
+                triggerOnHover={true}
+                animationMode="evenodd"
+              />
+            )}
           </Button>
 
           <div

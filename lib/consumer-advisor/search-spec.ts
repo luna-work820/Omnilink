@@ -69,6 +69,8 @@ export function searchableProductFacts(product:ProductItem) {
 
 export function productSearchText(product: ProductItem) {
   return [product.name, product.category, product.shortDescription, product.storeName,
+    product.composition?.rawText,
+    ...(product.composition?.items ?? []).map((item) => item.name),
     ...Object.entries(product.specs ?? {}).filter(([key])=>!/配送|运费|税费|核验|价格状态|库存状态|历史/.test(key)).map(([,value])=>value)].join(' ').replace(/https?:\/\/[^\s；，]+/gi,' ').normalize('NFKC').toLowerCase()
 }
 

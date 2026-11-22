@@ -8,6 +8,9 @@ export const metadata = {
 }
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string | string[]; error?: string }> }) {
+  if (process.env.VERCEL_ENV === 'preview') {
+    redirect('/discover')
+  }
   const params = await searchParams
   const redirectTo = safeInternalRedirectPath(params.next, '/discover')
   const hasRedirectTo = typeof params.next === 'string'

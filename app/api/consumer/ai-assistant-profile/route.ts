@@ -55,7 +55,7 @@ export async function PATCH(request: Request) {
     }
   }
   if (action === 'skills') {
-    if (!Array.isArray(body.skillIds) || body.skillIds.some((id) => typeof id !== 'string' || !['personal-advisor', 'shopping-preferences', 'know-yourself'].includes(id))) {
+    if (!Array.isArray(body.skillIds) || body.skillIds.some((id) => id !== 'personal-advisor')) {
       return NextResponse.json({ error: '技能列表无效。' }, { status: 400 })
     }
     const skillIds = [...new Set(body.skillIds as string[])]
@@ -102,7 +102,7 @@ export async function PATCH(request: Request) {
     metadataUpdate.avatar_url = body.avatarUrl
   }
   if (action === 'basic' && !Array.isArray(auth.user.user_metadata?.enabled_skills)) {
-    metadataUpdate.enabled_skills = ['personal-advisor', 'shopping-preferences']
+    metadataUpdate.enabled_skills = ['personal-advisor']
   }
   const { error } = await auth.supabase.auth.updateUser({ data: metadataUpdate })
   if (error) return NextResponse.json({ error: '资料保存失败，请重试。' }, { status: 502 })

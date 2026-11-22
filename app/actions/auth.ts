@@ -128,7 +128,7 @@ export async function signupAction(
       email,
       password,
       options: {
-        data: { signup_invitation_version: SIGNUP_INVITATION_VERSION, signup_invitation_seen: false, ai_assistant_onboarding_started: true, enabled_skills: ['personal-advisor', 'shopping-preferences'], ...(name ? { full_name: name } : {}) },
+        data: { signup_invitation_version: SIGNUP_INVITATION_VERSION, signup_invitation_seen: false, ai_assistant_onboarding_started: true, enabled_skills: ['personal-advisor'], ...(name ? { full_name: name } : {}) },
         ...(origin ? { emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(redirectTo)}` } : {}),
       },
     })

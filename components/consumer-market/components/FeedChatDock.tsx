@@ -20,7 +20,9 @@ const PINNED_SKILLS_STORAGE_KEY = 'omnilink_pinned_skills_v1'
 function readPinnedSkillIds(): AiAssistantSkillId[] {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(PINNED_SKILLS_STORAGE_KEY) ?? '[]')
-    return Array.isArray(saved) ? AI_ASSISTANT_SKILLS.map((skill) => skill.id).filter((id) => saved.includes(id)) : []
+    const pinned = Array.isArray(saved) ? AI_ASSISTANT_SKILLS.map((skill) => skill.id).filter((id) => saved.includes(id)) : []
+    localStorage.setItem(PINNED_SKILLS_STORAGE_KEY, JSON.stringify(pinned))
+    return pinned
   } catch { return [] }
 }
 
@@ -121,7 +123,6 @@ export function FeedChatDock({
   }
 
   function activateSkill(id: AiAssistantSkillId) {
-    if (id === 'shopping-preferences') { setPanel(null);openPersonalView('assessment'); return }
     setActiveSkillId(id)
     setMessage((current) => current.endsWith('@') ? current.slice(0, -1) : current)
     setPanel(null)

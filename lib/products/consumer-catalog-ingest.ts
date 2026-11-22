@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto'
 import { isIP } from 'node:net'
 import { load } from 'cheerio'
 import type { ProductItem } from '@/components/consumer-market/types'
+import { isStoreDomainName, resolveStoreName } from './store-name'
+import { resolveProductComposition } from './product-composition'
 
 type RecordValue = Record<string, unknown>
 const asRecord = (value: unknown): RecordValue => value && typeof value === 'object' && !Array.isArray(value) ? value as RecordValue : {}
@@ -33,6 +35,17 @@ function productNodes(value: unknown): RecordValue[] {
     child && typeof child === 'object' ? productNodes(child) : [])]
 }
 
+function schemaStoreNames(value: unknown): string[] {
+  if (Array.isArray(value)) return value.flatMap(schemaStoreNames)
+  const object = asRecord(value)
+  const types = Array.isArray(object['@type']) ? object['@type'] : [object['@type']]
+  const isProduct = types.some((type) => typeof type === 'string' && /(?:^|\/)Product$/i.test(type))
+  if (isProduct) return []
+  const isStoreEntity = types.some((type) => typeof type === 'string' && /(?:Organization|LocalBusiness|OnlineStore|WebSite|Store)$/i.test(type))
+  const name = isStoreEntity && typeof object.name === 'string' ? [object.name] : []
+  return [...name, ...Object.values(object).flatMap(schemaStoreNames)]
+}
+
 function imageUrl(value: unknown, base: string): string {
   const item = first(value)
   const candidate = typeof item === 'string' ? item : asRecord(item).url
@@ -48,8 +61,13 @@ export function normalizeScrapedProduct(html: string, url: string, capturedAt = 
   const sourceUrl = canonicalProductUrl(url)
   const $ = load(html)
   const structured: RecordValue[] = []
+  const structuredDocuments: unknown[] = []
   $('script[type="application/ld+json"]').each((_, element) => {
-    try { structured.push(...productNodes(JSON.parse($(element).html() || 'null'))) } catch { /* Other metadata can still be used. */ }
+    try {
+      const document = JSON.parse($(element).html() || 'null') as unknown
+      structuredDocuments.push(document)
+      structured.push(...productNodes(document))
+    } catch { /* Other metadata can still be used. */ }
   })
   const data = structured.find((item) => {
     const candidate = item.url || asRecord(first(item.offers)).url
@@ -71,8 +89,16 @@ export function normalizeScrapedProduct(html: string, url: string, capturedAt = 
   const currency = /^[A-Z]{3}$/.test(rawCurrency) ? rawCurrency : undefined
   const hasPrice = Number.isFinite(amount) && amount >= 0 && Boolean(currency)
   const brandValue = first(data.brand)
-  const brand = clean(typeof brandValue === 'string' ? brandValue : asRecord(brandValue).name, 120)
-    || clean(prop('brand'), 120) || new URL(sourceUrl).hostname.replace(/^www\./, '')
+  const productBrand = clean(typeof brandValue === 'string' ? brandValue : asRecord(brandValue).name, 120)
+    || clean(prop('brand'), 120)
+  const siteName = clean(
+    $('meta[property="og:site_name"]').attr('content')
+      || $('meta[name="application-name"]').attr('content')
+      || structuredDocuments.flatMap(schemaStoreNames).find(Boolean),
+    120,
+  )
+  const storeName = resolveStoreName(siteName, sourceUrl, productBrand)
+  const brand = productBrand && !isStoreDomainName(productBrand) ? productBrand : storeName
   const description = clean(data.description || prop('description') || $('meta[property="og:description"]').attr('content'), 1200)
   const image = imageUrl(data.image || prop('image') || $('meta[property="og:image"]').attr('content'), sourceUrl)
   const availability = clean(offer.availability || micro.find('[itemprop="availability"]').attr('href'), 120)
@@ -83,14 +109,33 @@ export function normalizeScrapedProduct(html: string, url: string, capturedAt = 
   }
   if (availability) specs['库存状态'] = /OutOfStock/i.test(availability) ? '采集时售罄' : /InStock/i.test(availability) ? '采集时有货' : '未知'
   const category = /necklace|pendant|项链|吊坠/i.test(name) ? '项链' : /earring|耳环|耳饰/i.test(name) ? '耳饰'
-    : /bracelet|手链/i.test(name) ? '手链' : /\bring\b|戒指/i.test(name) ? '戒指' : '商品'
+    : /bracelet|手链/i.test(name) ? '手链' : /\bring\b|戒指/i.test(name) ? '戒指'
+      : /shampoo|hairbath|conditioner|body wash|洗发|护发|沐浴|洗护/i.test(name) ? '个护美妆' : '商品'
+  const rawComposition = data.ingredients ?? prop('ingredients')
+  const compositionNames = Array.isArray(rawComposition)
+    ? rawComposition.flatMap((item) => {
+      if (typeof item === 'string') return [clean(item, 300)].filter(Boolean)
+      const name = asRecord(item).name
+      return typeof name === 'string' ? [clean(name, 300)].filter(Boolean) : []
+    })
+    : typeof rawComposition === 'string'
+      ? clean(rawComposition, 8000).split(/[,，;；、]+/).map((item) => item.trim()).filter(Boolean)
+      : []
+  const composition = compositionNames.length ? {
+    kind: category === '个护美妆' ? 'cosmetic-inci' as const : 'other' as const,
+    status: 'partial' as const,
+    items: compositionNames.map((name, index) => ({name, position: index + 1})),
+    rawText: typeof rawComposition === 'string' ? clean(rawComposition, 8000) : compositionNames.join(', '),
+    sourceUrl,
+    observedAt: capturedAt,
+  } : resolveProductComposition({itemType:'product',category,specs,sourceUrl,sourceDate:capturedAt})
   const id = `external-${createHash('sha256').update(sourceUrl).digest('hex').slice(0, 24)}`
   return {
     id, name, creator: brand, price: hasPrice ? amount : 0,
     formattedPrice: hasPrice ? `${currency} ${amount.toFixed(2)}` : '待核价',
     priceMode: hasPrice ? 'amount' : 'unknown', ...(currency ? {currency} : {}),
     mainImage: image, secondaryImages: [], aspectRatio: 1, category,
-    shortDescription: description, aiSummary: description, reviews: [], specs, storeName: brand,
+    shortDescription: description, aiSummary: description, reviews: [], specs, storeName, composition,
     sourceUrl, sourceDate: capturedAt,
     catalogEvidence: {sourceType:'public_page',reviewedAt:capturedAt,productPageStatus:'fetched',listingUrl:sourceUrl,
       priceStatus:hasPrice?'snapshot':'unconfirmed',...(hasPrice?{priceSourceUrl:sourceUrl}:{}),
