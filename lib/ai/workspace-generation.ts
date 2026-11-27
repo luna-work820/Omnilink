@@ -118,7 +118,7 @@ type ModelFetchOptions = {
 
 export type TextGenerationOptions = {
   jsonOutput?: boolean; apiKey?: string; allowEnvironmentKey?: boolean
-  maxOutputTokens?: number; totalBudgetMs?: number; maxAttempts?: number; signal?: AbortSignal
+  maxOutputTokens?: number; totalBudgetMs?: number; maxAttempts?: number; signal?: AbortSignal; thinking?: boolean
   onUsage?:(usage:import('./model-usage').ModelUsage)=>void
   onCall?:()=>void
 }
@@ -180,7 +180,7 @@ async function generateDeepSeekContent(
       body: {
         model: options.image ? 'deepseek-flash' : model,
         temperature: 0.2,
-        thinking: { type: model === 'deepseek-v4-pro' && !options.image ? 'enabled' : 'disabled' },
+        thinking: { type: (options.thinking ?? (model === 'deepseek-v4-pro' && !options.image)) ? 'enabled' : 'disabled' },
         ...(options.jsonOutput ? { response_format: { type: 'json_object' } } : {}),
         ...(options.maxOutputTokens ? { max_tokens: options.maxOutputTokens } : {}),
         messages: [

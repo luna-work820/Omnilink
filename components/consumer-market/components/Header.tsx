@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import React, { useCallback, useRef, useState } from 'react';
 import { Archive, CaretRight, GearSix, MagnifyingGlass, NotePencil, SidebarSimple, SquaresFour, UserCircle } from '@phosphor-icons/react';
 import { HomeNavigationDrawer } from './HomeNavigationDrawer';
@@ -36,7 +35,7 @@ export const Header: React.FC<{
   return <>
     <div className={`home-navigation-fluid-shell fixed inset-y-0 left-0 z-[75] ${menuOpen ? 'is-expanded' : ''}`}>
     <nav aria-label="快捷导航" aria-hidden={menuOpen} inert={menuOpen} className="home-navigation-rail absolute inset-y-0 left-0 flex w-11 flex-col items-center gap-2 py-3">
-      <button ref={triggerRef} type="button" onClick={() => openMenu()} aria-label="打开侧边栏" aria-expanded="false" className={`${railEdgeButton} group`}><span className="relative grid h-8 w-8 place-items-center"><Image src="/omnilink-logo.png" width={32} height={32} alt="" className="h-8 w-8 group-hover:opacity-0 group-focus-visible:opacity-0" /><SidebarSimple size={24} aria-hidden="true" className="absolute opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" /><CaretRight size={10} weight="bold" aria-hidden="true" className="absolute right-0 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" /></span></button>
+      <button ref={triggerRef} type="button" onClick={() => openMenu()} aria-label="打开侧边栏" aria-expanded="false" className="group relative grid h-24 w-11 shrink-0 place-items-center rounded-full text-[var(--market-ink)] hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)]"><span className="rotate-90 whitespace-nowrap text-xs font-semibold tracking-tight group-hover:opacity-0 group-focus-visible:opacity-0">OMNILINK</span><SidebarSimple size={24} aria-hidden="true" className="absolute opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" /><CaretRight size={10} weight="bold" aria-hidden="true" className="absolute right-1 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" /></button>
       <button type="button" onClick={() => { startAiConversation(); setHomeChatOpen(true); }} aria-label="发起新对话" className={railButton}><NotePencil size={16} aria-hidden="true" /></button>
       <button type="button" onClick={() => openMenu('main', true)} aria-label="搜索" className={railButton}><MagnifyingGlass size={16} aria-hidden="true" /></button>
       <button type="button" onClick={() => openMenu('skills')} aria-label="插件和技能" className={railButton}><SquaresFour size={16} aria-hidden="true" /></button>

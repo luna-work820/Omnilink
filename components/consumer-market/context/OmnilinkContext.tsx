@@ -30,6 +30,7 @@ import type { SearchScope } from '@/lib/consumer-advisor/search-continuation';
 import { readDiscoveryReference,type DiscoveryPage,type DiscoverySpec } from '@/lib/consumer-advisor/discovery-contract';
 import { fetchConsumerReply } from '@/lib/consumer-advisor/client-response';
 import { ruleConsumerExecution } from '@/lib/consumer-advisor/execution-policy';
+import { selectedAppearanceAction } from '@/lib/consumer-advisor/appearance-actions';
 import { readExecutionBlocks,readSourceIds,type ExecutionTask,type ResponseBlock } from '@/lib/consumer-advisor/response-contract';
 import { DEFAULT_EMBEDDING_PROFILE,type RetrievalOptions } from '@/lib/consumer-advisor/embedding-profile';
 
@@ -705,6 +706,7 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
           previousProductIds: previousAssistant?.matchedProducts?.map((product) => product.id) ?? [],
           hasActiveSkill,
           skillId: skillId ?? activeAssistantSkillId ?? undefined,
+          appearanceSelection: [...aiMessages].reverse().find((message) => message.conversationId === activeAiConversationId && message.isUser && selectedAppearanceAction(message.text))?.text,
           previousIntent,
           previousSearch:previousSearchQuery,
           previousTaskId:previousAssistant?.blocks?.find((block)=>block.type==='task_progress')?.id,

@@ -122,14 +122,7 @@ export default function OmnilinkLayout({
               isSidebarExpanded ? "justify-start px-2" : "justify-center"
             )}
           >
-            <div className="w-7 h-7 bg-[var(--ink)] flex items-center justify-center text-[var(--surface)] font-black text-xs shrink-0">
-              O
-            </div>
-            {isSidebarExpanded && (
-              <span className="font-extrabold text-sm tracking-tight text-[var(--lavender)] dark:text-[var(--surface)] truncate">
-                Omnilink
-              </span>
-            )}
+            <span className={cn("font-extrabold text-xs tracking-tight text-[var(--ink)] whitespace-nowrap", !isSidebarExpanded && "[writing-mode:vertical-rl]")}>OMNILINK</span>
           </Link>
 
           {/* 商户/用户账号信息卡片 */}

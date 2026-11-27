@@ -10,6 +10,14 @@ export type ComparisonResult = {
   rows: { label: string; values: string[] }[]; sources: InformationItem[]; unknowns: string[];
   goal?:string;
 }
+export type FormQuestion = {
+  id: string; label: string; type: 'single' | 'multiple' | 'text';
+  options?: { value: string; label: string }[]; required?: boolean;
+}
+export type InteractiveForm = {
+  id: string; title: string; questions: FormQuestion[];
+  status: 'pending' | 'completed'; answers?: Record<string, string | string[]>;
+}
 export type ExecutionTask = {
   id: string; sessionId: string; status: 'pending' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
   revision: number; attempt: number; completedSteps: string[]; error: string | null;
@@ -20,6 +28,7 @@ export type ResponseBlock =
   | { type: 'discovery_feed'; id: string; version: 1; data: DiscoveryPage }
   | { type: 'information_feed'; id: string; version: 1; data: { query: string; items: InformationItem[] } }
   | { type: 'questionnaire'; id: string; version: 1; data: DiscoveryQuestion; state: 'pending' }
+  | { type: 'interactive_form'; id: string; version: 1; data: InteractiveForm }
   | { type: 'comparison'; id: string; version: 1; data: ComparisonResult }
   | { type: 'task_progress'; id: string; version: 1; data: ExecutionTask }
   | { type: 'media_result'; id: string; version: 1; data: { url: string; alt: string } }
@@ -35,6 +44,8 @@ export type ResponseEvent =
   | { type: 'error'; sequence: number; requestId: string; sessionId: string; error: string; code: string }
 
 const href=z.string().max(2048).refine((value)=>value.startsWith('/')&&!value.startsWith('//')&&!/[\\\u0000-\u001f]/.test(value)||/^https:\/\//i.test(value))
+const formQuestionSchema = z.object({id:z.string().min(1).max(80),label:z.string().min(1).max(240),type:z.enum(['single','multiple','text']),options:z.array(z.object({value:z.string().min(1).max(100),label:z.string().min(1).max(160)})).max(12).optional(),required:z.boolean().optional()})
+const interactiveFormSchema = z.object({id:z.string().min(1).max(100),title:z.string().min(1).max(160),questions:z.array(formQuestionSchema).min(1).max(12),status:z.enum(['pending','completed']),answers:z.record(z.string(),z.union([z.string().max(2000),z.array(z.string().max(100)).max(12)])).optional()})
 const itemSchema=z.object({id:z.string().max(100),entityType:z.enum(['product','service','content','source']),title:z.string().max(240),excerpt:z.string().max(6000),
   url:href,imageUrl:z.string().nullable(),source:z.string().max(240),updatedAt:z.string(),version:z.number().int().positive()})
 const comparisonSchema=z.object({title:z.string().max(240),columns:z.array(z.object({id:z.string().max(100),title:z.string().max(240),url:href})).max(8),
@@ -45,7 +56,7 @@ export function readExecutionBlocks(value:unknown):ResponseBlock[] {
   if(!Array.isArray(value))return []
   return value.slice(0,12).flatMap((block)=>{
     if(!block||typeof block.id!=='string'||block.id.length>100||block.version!==1)return []
-    const schema=block.type==='task_progress'?executionSchema:block.type==='comparison'?comparisonSchema:block.type==='information_feed'
+    const schema=block.type==='interactive_form'?interactiveFormSchema:block.type==='task_progress'?executionSchema:block.type==='comparison'?comparisonSchema:block.type==='information_feed'
       ?z.object({query:z.string().max(160),items:z.array(itemSchema).max(20)}):null
     const parsed=schema?.safeParse(block.data)
     return parsed?.success?[{type:block.type,id:block.id,version:1,data:parsed.data} as ResponseBlock]:[]

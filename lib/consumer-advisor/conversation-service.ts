@@ -13,7 +13,7 @@ import { packContextItems } from './context-budget'
 import { measureConsumerModel,type ModelStage } from './execution-metrics'
 
 type Input={requestId:string;sessionId:string;userId:string|null;prompt:string;model:WorkspaceModel;apiKey?:string;
-  skillInstructions?:string;history:string[];selectedProductIds:string[];needsPersonalContext:boolean;signal:AbortSignal;stream:boolean;
+  skillInstructions?:string;imageDescription?:string;history:string[];selectedProductIds:string[];needsPersonalContext:boolean;signal:AbortSignal;stream:boolean;
   proposeMemory?:()=>Promise<boolean>;
   actor:Actor;needsSourceContext:boolean;previousTaskId?:string;previousSourceIds:string[];catalogProducts?:ProductItem[];
   requestStarted?:number;
@@ -44,7 +44,7 @@ export async function runConversation(input:Input):Promise<Response> {
   const facts=packContextItems(items.map((p)=>({id:p.id,name:p.name,price:p.formattedPrice,description:p.shortDescription.slice(0,600),specs:p.specs,sourceUrl:p.sourceUrl})),6500)
   const evidence=packContextItems(sources.slice(0,2).map((s)=>({id:s.id,title:s.title,url:s.url,fetchedAt:s.updatedAt,version:s.version,excerpt:s.excerpt.slice(0,1800)})),5000)
   const memories=memory.items,products=items.filter((p)=>facts.items.some((fact)=>fact.id===p.id))
-  const prompt=JSON.stringify({question:input.prompt,recentTurns:history.items,
+  const prompt=JSON.stringify({question:input.prompt,imageObservation:input.imageDescription,recentTurns:history.items,
     confirmedContext:memoryContext(memories),products:facts.items,sourceEvidence:evidence.items})
   const contextBudget={history:history.budget,memories:memory.budget,products:facts.budget,sources:evidence.budget}
   const contextMs=Math.round(performance.now()-contextStarted),modelStages:ModelStage[]=input.modelStages??[]
@@ -76,7 +76,7 @@ export async function runConversation(input:Input):Promise<Response> {
   }
   const maxOutputTokens=input.skillInstructions?1536:1024
   if(!input.stream) {
-    const raw=await measureConsumerModel(modelStages,'answer',input.model,(measurement)=>generateWorkspaceText(input.model,prompt,[system,input.skillInstructions].filter(Boolean).join('\n\n'),{apiKey:input.apiKey,allowEnvironmentKey:false,maxOutputTokens,totalBudgetMs:30_000,maxAttempts:1,signal:input.signal,...measurement}))
+    const raw=await measureConsumerModel(modelStages,'answer',input.model,(measurement)=>generateWorkspaceText(input.model,prompt,[system,input.skillInstructions].filter(Boolean).join('\n\n'),{apiKey:input.apiKey,allowEnvironmentKey:Boolean(input.skillInstructions),maxOutputTokens,totalBudgetMs:30_000,maxAttempts:1,signal:input.signal,...measurement}))
     usage=modelStages.at(-1)!.usage
     return NextResponse.json(await finish(readableText(raw)))
   }

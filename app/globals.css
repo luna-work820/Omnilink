@@ -85,7 +85,7 @@ body:has(.consumer-market-shell) {
 }
 
 .consumer-market-shell {
-  --interactive-hover: #E9EDF2;
+  --interactive-hover: #F1F3F5;
   --market-canvas: var(--palette-cloud);
   --market-surface: var(--palette-porcelain);
   --market-surface-muted: var(--palette-moon);
@@ -307,6 +307,15 @@ body:has(.consumer-market-shell) {
 @media (hover: hover) and (pointer: fine) {
   .consumer-market-shell .conversation-action { opacity: 0.65; }
   .consumer-market-shell .conversation-row:is(:hover, :focus-within) .conversation-action { opacity: 1; }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-color-scheme: light) and (prefers-reduced-transparency: no-preference) {
+  .consumer-market-shell :is(.home-navigation-rail > button, .home-navigation-drawer button, .home-navigation-drawer .market-hover-pill):hover:not(:disabled) {
+    background-color: rgb(255 255 255 / 0.68);
+    box-shadow: inset 0 0.5px 0 rgb(255 255 255 / 0.95), inset 0 0 0 0.5px rgb(23 23 23 / 0.06);
+    -webkit-backdrop-filter: blur(10px) saturate(1.12);
+    backdrop-filter: blur(10px) saturate(1.12);
+  }
 }
 
 .consumer-market-shell .ai-assistant-interface :is(button, [data-ai-assistant-button]) {
@@ -986,11 +995,19 @@ body:has(.consumer-market-shell) {
 }
 
 .consumer-market-shell .feed-chat-dock .ai-assistant-composer-send:is(:hover, :focus-visible, :active):not(:disabled)::before {
-  background: var(--palette-cool-gray);
+  background: var(--market-hover);
 }
 
 .consumer-market-shell .ai-assistant-composer-send:disabled {
   color: var(--market-text-muted);
+}
+
+.consumer-market-shell .feed-chat-dock .ai-assistant-composer-send[data-has-text='true']:not(:disabled) {
+  color: white;
+}
+
+.consumer-market-shell .feed-chat-dock .ai-assistant-composer-send[data-has-text='true']:not(:disabled)::before {
+  background: var(--brand-primary);
 }
 
 .consumer-market-shell .ai-assistant-interface .ai-assistant-composer-sheet {
@@ -1652,14 +1669,14 @@ body:has(.ai-assistant-menu-panel) nextjs-portal {
   --neutral-ink: #171717;
   --neutral-gray: #8C8C8C;
   --neutral-light: #E8E8E8;
-  --neutral-paper: #F7F7F5;
+  --neutral-paper: #FCFDFE;
   --l-tint: #ffffff;
   --d-tint: #ffffff;
   --d-thin: 0.06;
   --d-dense: 0.22;
   --palette-cloud: var(--neutral-paper);
   --palette-porcelain: var(--neutral-paper);
-  --palette-moon: var(--neutral-light);
+  --palette-moon: #F1F3F5;
   --palette-clear-gray: var(--neutral-light);
   --palette-cool-gray: var(--neutral-light);
   --palette-mist: rgb(140 140 140 / 0.2);
@@ -1706,7 +1723,7 @@ body:has(.ai-assistant-menu-panel) nextjs-portal {
   --text-secondary: var(--palette-slate);
   --text-muted: var(--palette-smoke);
   --border-subtle: var(--palette-mist);
-  --interactive-hover: var(--neutral-light);
+  --interactive-hover: #F1F3F5;
   --surface: var(--palette-porcelain);
   --surface-muted: var(--palette-moon);
   --surface-raised: var(--palette-clear-gray);

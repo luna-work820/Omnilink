@@ -23,8 +23,8 @@ export function InsightQuestion({ question, selectedValue, onChange, onSkip, onS
       </div>
     </fieldset>
     <div className="mt-2.5 flex items-center justify-between gap-3">
-      <button type="button" disabled={disabled} onClick={onSkip} className="min-h-10 rounded-full px-3 text-xs text-[var(--market-text-secondary)] hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40">跳过</button>
-      <button type="button" disabled={!selected || disabled} onClick={() => selected && onSelect(selected)} className="min-h-10 rounded-full bg-[var(--market-ink)] px-4 text-xs font-medium text-[var(--market-canvas)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40">应用</button>
+      <button type="button" disabled={disabled} onClick={onSkip} className="h-10 w-20 rounded-full px-3 text-xs text-[var(--market-text-secondary)] hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40">跳过</button>
+      <button type="button" disabled={!selected || disabled} onClick={() => selected && onSelect(selected)} className="h-10 w-20 rounded-full bg-[var(--market-ink)] px-3 text-xs font-medium text-[var(--market-canvas)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40">应用</button>
     </div>
   </section>
 }

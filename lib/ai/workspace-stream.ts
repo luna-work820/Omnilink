@@ -16,8 +16,8 @@ export async function* streamWorkspaceText(model:WorkspaceModel,prompt:string,sy
     body={systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:0.2,maxOutputTokens:options.maxOutputTokens??1024}}
   } else {
     const deep=model.startsWith('deepseek'),key=deep?options.apiKey:process.env.DASHSCOPE_API_KEY
-    if(!key)throw new ModelConfigurationError(deep?'请在设置中连接自己的 DeepSeek API Key。':'千问尚未配置。',
-      {status:deep?400:500,code:deep?'MODEL_KEY_REQUIRED':'MODEL_PROVIDER_UNAVAILABLE'})
+    if(!key)throw new ModelConfigurationError(deep?'DeepSeek 服务尚未配置，请稍后再试。':'千问尚未配置。',
+      {status:500,code:'MODEL_PROVIDER_UNAVAILABLE'})
     const workspace=process.env.BAILIAN_WORKSPACE_ID?.trim()
     const base=deep?'https://api.deepseek.com':process.env.DASHSCOPE_BASE_URL?.trim()||(workspace?`https://${workspace}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`:'https://dashscope.aliyuncs.com/compatible-mode/v1')
     url=`${base.replace(/\/$/,'')}/chat/completions`
@@ -31,8 +31,8 @@ export async function* streamWorkspaceText(model:WorkspaceModel,prompt:string,sy
   try{response=await fetch(url,{method:'POST',headers,body:JSON.stringify(body),signal})}catch(error){if(signal.aborted)throw signal.reason;throw error}
   if(response.status===401||response.status===403) {
     await response.body?.cancel()
-    throw new ModelConfigurationError(model.startsWith('deepseek')?'DeepSeek API Key 无效或没有模型权限。':`${model==='gemini'?'Gemini':'千问'} API Key 无效，请更新配置或切换模型。`,
-      {status:model.startsWith('deepseek')?400:500,code:model.startsWith('deepseek')?'MODEL_KEY_INVALID':'MODEL_PROVIDER_UNAVAILABLE'})
+    throw new ModelConfigurationError(model.startsWith('deepseek')?'DeepSeek 服务暂时不可用，请稍后再试。':`${model==='gemini'?'Gemini':'千问'} API Key 无效，请更新配置或切换模型。`,
+      {status:500,code:'MODEL_PROVIDER_UNAVAILABLE'})
   }
   if(!response.ok||!response.body){await response.body?.cancel();throw new Error('模型暂时无法响应。')}
   let length=0,ended=false

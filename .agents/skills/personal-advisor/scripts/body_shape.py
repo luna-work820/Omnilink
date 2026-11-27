@@ -3,13 +3,7 @@
 用区间按钮替代让用户手填数字。每个部位一题，每题四个区间选项。
 """
 
-from pathlib import Path
-
 import sys
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from draw_zones import FACE_BOX  # noqa: E402,F401  (仅确认模块可导入)
 
 
 BANDS = {
@@ -51,7 +45,9 @@ REPRESENTATIVE = {
     "under_60": 56,
     "60_68": 64,
     "68_76": 72,
-    "over_76": 80,
+    # 76 以上取 84：原值 80 落在区间下沿，与臀围下沿 81 形成 w>=h 恒假，
+    # 苹果型分支不可达。取区间中段使腰围能与最小臀围比较。
+    "over_76": 84,
     "under_85": 81,
     "85_93": 89,
     "93_101": 97,
@@ -76,7 +72,9 @@ def classify(bust, waist, hip):
         return "沙漏型", "胸臀接近，腰围明显更小"
     if h - b >= 2 and waist_gap >= 12:
         return "梨型", "臀围大于胸围，腰线清晰"
-    if w >= b and w >= h:
+    # 腰围接近（4cm 容差内）或大于胸臀，判为苹果型。
+    # 容差与胸臀接近阈值同量级，避免区间代表值差异让临界组合漏判。
+    if w >= b and w >= h - 4:
         return "苹果型", "腰围接近或大于胸臀"
     if chest_hip_gap <= 6 and waist_gap < 12:
         return "矩形型", "三围接近，腰线不明显"

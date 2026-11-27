@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { useEffect, useRef } from 'react'
 import { observeGlassworkSurfaces } from '@/components/ui/glasswork/integrate'
 import { usePathname } from 'next/navigation'
@@ -130,10 +129,9 @@ function SidebarBrand({ href }: { href: string }) {
     <Link
       href={href}
       aria-label="Omnilink"
-      className="flex min-w-0 items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sidebar-ring)] focus-visible:outline-offset-2"
+      className={`flex min-w-0 items-center justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sidebar-ring)] focus-visible:outline-offset-2 ${state === 'expanded' ? '' : 'h-24'}`}
     >
-      <Image src="/omnilink-logo.png" width={28} height={28} alt="" className="size-7 shrink-0" />
-      {state === 'expanded' && <span className="min-w-0 truncate text-[13px] font-semibold tracking-[-0.03em]">omnilink</span>}
+      <span className={`whitespace-nowrap text-[13px] font-semibold tracking-[-0.03em] ${state === 'expanded' ? '' : 'rotate-90'}`}>OMNILINK</span>
     </Link>
   )
 }

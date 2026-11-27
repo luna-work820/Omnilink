@@ -6,4 +6,4 @@
 
 包内脚本保留为资源，当前模型没有 Python 执行、文件读取或成分核验工具。接入层明确要求文字选项回退，不得声称执行脚本或完成安全性、现行法规核验。预生成示意图复制到 public/consumer-market/skills/personal-assistant。
 
-原始旧版 SKILL.md 在本机备份到 /private/tmp/omnilink-personal-advisor-before-replacement/SKILL.md。用户提供的源压缩包未修改。
+原始旧版 SKILL.md 已在本机另行备份。用户提供的源压缩包未修改。

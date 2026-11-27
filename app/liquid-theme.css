@@ -74,7 +74,10 @@ body[data-liquid-theme='white']:not(:has(.consumer-market-shell)) :is([data-slot
   color: var(--sidebar-accent-foreground);
 }
 body[data-liquid-theme='white']:not(:has(.consumer-market-shell)) :is([data-slot='sidebar-menu-button'], .workspace-glass-mobile-nav a):is(:hover, :focus-visible) {
-  background: var(--interactive-hover) !important;
+  background: var(--liquid-hover) !important;
+  box-shadow: inset 0 .5px 0 var(--liquid-light), inset 0 0 0 .5px var(--liquid-edge) !important;
+  -webkit-backdrop-filter: var(--liquid-optics) !important;
+  backdrop-filter: var(--liquid-optics) !important;
 }
 body[data-liquid-theme='white']:not(:has(.consumer-market-shell)) :is([data-slot='sidebar-menu-button'], .workspace-glass-mobile-nav a):focus-visible {
   outline: 2px solid var(--sidebar-ring);
