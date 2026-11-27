@@ -210,12 +210,12 @@ export function CategorySelector({
           disabled
             ? 'cursor-not-allowed border-[var(--border-subtle)] opacity-60'
             : isOpen
-            ? 'border-[var(--accent-secondary)] ring-2 ring-[var(--accent-secondary)]/15'
-            : 'cursor-pointer border-[var(--border-subtle)] hover:border-[var(--accent-secondary)]'
+            ? 'border-[var(--brand-primary)] ring-2 ring-[var(--brand-primary)]/15'
+            : 'cursor-pointer border-[var(--border-subtle)] hover:border-[var(--interactive-hover)]'
         }`}
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Tag size={16} className={displayValue ? 'shrink-0 text-[var(--accent-secondary)]' : 'shrink-0 text-[var(--text-muted)]'} />
+          <Tag size={16} className={displayValue ? 'shrink-0 text-[var(--accent-primary)]' : 'shrink-0 text-[var(--text-muted)]'} />
           {displayValue ? (
             <div className="flex items-center gap-1.5 min-w-0">
               {currentBreadcrumb?.primary && currentBreadcrumb.secondary ? (
@@ -273,7 +273,7 @@ export function CategorySelector({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={isZh ? '搜索分类关键词（如：连衣裙、耳机、太阳镜、猫粮、面部护肤）...' : 'Search category keywords...'}
-                className="h-11 w-full rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] pl-9 pr-8 text-sm text-[var(--text-primary)] shadow-sm transition-colors focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15"
+                className="h-11 w-full rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] pl-9 pr-8 text-sm text-[var(--text-primary)] shadow-sm transition-colors focus-visible:border-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/15"
               />
               {searchQuery && (
                 <button

@@ -7,7 +7,6 @@ import {
   loadMultiChannelProductContentContext,
   MULTI_CHANNEL_PRODUCT_CONTENT_SKILL_ID,
 } from '@/lib/ai/workspace-skill-prompts'
-import { readDeepSeekKeyForUser } from '@/lib/consumer-advisor/deepseek-key-cookie'
 
 export const runtime = 'nodejs'
 
@@ -146,7 +145,7 @@ export async function POST(request: NextRequest) {
       title: typeof item.title === 'string' ? item.title.slice(0, 200) : '未命名来源',
       summary: typeof item.summary === 'string' ? item.summary.slice(0, 1200) : '',
     }))
-    const apiKey = await readDeepSeekKeyForUser(auth.user.id) ?? undefined
+    const apiKey = process.env.DEEPSEEK_API_KEY || undefined
     const skillId = typeof body.skillId === 'string' ? body.skillId.slice(0, 100) : null
     const db = auth.supabase as unknown as SupabaseClient<any>
     const { data: storeSkill, error: skillError } = skillId

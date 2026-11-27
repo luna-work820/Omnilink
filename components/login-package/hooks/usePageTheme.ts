@@ -48,15 +48,15 @@ export function detectCurrentPageTheme(): PageTheme {
     }
   }
 
-  // 4. 检查第二页与第三页 (#product-entropy)
+  // 4. 检查首页、第二页与第三页 (#product-entropy)
   const runway = document.getElementById("product-entropy");
   if (runway) {
     const rRect = runway.getBoundingClientRect();
     const scrollIntoRunway = -rRect.top;
 
-    // 前 ~1.25vh 是纯白液体第二页
+    // 前 ~2.15vh（首页与第二页）上层为白色表层
     // 超过后进入水波纹下钻放大并吞没全屏为纯黑的第三页
-    if (scrollIntoRunway < vh * 1.25) {
+    if (scrollIntoRunway < vh * 2.15) {
       return "light";
     } else {
       return "dark";

@@ -6,6 +6,7 @@ import { loadAiAssistantMemories, manageAiAssistantMemory, profileWithAiAssistan
 import { assessmentMemoryProposal } from '@/lib/consumer-advisor/assessment-memory-proposal'
 import { isUuid } from '@/lib/utils/uuid'
 import { loadPersonalContext } from '@/lib/consumer-advisor/personal-context'
+import { withMemorySources } from '@/lib/consumer-advisor/memory-sources'
 
 export const runtime = 'nodejs'
 
@@ -14,7 +15,8 @@ export async function GET() {
   if (!auth.ok) return auth.response
   try {
     const [memories,context]=await Promise.all([loadAiAssistantMemories(auth.supabase,auth.user.id),loadPersonalContext(auth.user.id)])
-    return NextResponse.json({ profile: profileWithAiAssistantMemories(auth.user.user_metadata?.ai_assistant_profile, memories),contextVersion:context.version })
+    const sourced = await withMemorySources(auth.supabase, auth.user.id, memories)
+    return NextResponse.json({ profile: profileWithAiAssistantMemories(auth.user.user_metadata?.ai_assistant_profile, sourced),contextVersion:context.version })
   } catch { return NextResponse.json({ error: '个人资料读取失败。' }, { status: 500 }) }
 }
 
@@ -42,7 +44,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({profile:profileWithAiAssistantMemories(profile,next),contextVersion:context.version})
     }catch{return NextResponse.json({error:'提案暂时无法生成，请重试。'},{status:503})}
   }
-  if (action === 'basic' && typeof body.avatarUrl === 'string' && body.avatarUrl) {
+  if (['basic', 'account'].includes(action) && typeof body.avatarUrl === 'string' && body.avatarUrl) {
     try {
       const supabaseOrigin = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').origin
       const avatarUrl = new URL(body.avatarUrl)
@@ -54,14 +56,38 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: '头像地址无效。' }, { status: 400 })
     }
   }
+  if (action === 'account') {
+    const name = typeof body.name === 'string' ? body.name.trim() : ''
+    if (!name || name.length > 40) return NextResponse.json({ error: '请输入 40 字以内的账户名。' }, { status: 400 })
+    const profile = { ...readAiAssistantProfile(auth.user.user_metadata?.ai_assistant_profile), name, ...(typeof body.avatarUrl === 'string' && body.avatarUrl ? { avatarUrl: body.avatarUrl } : {}) }
+    const { error } = await auth.supabase.auth.updateUser({ data: { ai_assistant_profile: profile, ...(profile.avatarUrl ? { avatar_url: profile.avatarUrl } : {}) } })
+    if (error) return NextResponse.json({ error: '资料保存失败，请重试。' }, { status: 502 })
+    return NextResponse.json({ profile })
+  }
   if (action === 'skills') {
-    if (!Array.isArray(body.skillIds) || body.skillIds.some((id) => typeof id !== 'string' || !['personal-advisor', 'shopping-preferences', 'know-yourself'].includes(id))) {
+    if (!Array.isArray(body.skillIds) || body.skillIds.some((id) => id !== 'personal-advisor')) {
       return NextResponse.json({ error: '技能列表无效。' }, { status: 400 })
     }
     const skillIds = [...new Set(body.skillIds as string[])]
     const { error } = await auth.supabase.auth.updateUser({ data: { enabled_skills: skillIds } })
     if (error) return NextResponse.json({ error: '技能状态保存失败。' }, { status: 502 })
     return NextResponse.json({ skillIds })
+  }
+  if (action === 'analysis-propose') {
+    if (typeof body.messageId !== 'string' || !isUuid(body.messageId)) return NextResponse.json({ error: '分析记录不存在。' }, { status: 400 })
+    try {
+      const { data, error } = await auth.supabase.from('consumer_AI assistant_messages')
+        .select('id,content').eq('user_id', auth.user.id).eq('id', body.messageId)
+        .eq('role', 'assistant').eq('style_tag', '形象分析').maybeSingle()
+      if (error) throw error
+      if (!data || typeof data.content !== 'string' || !data.content.trim()) return NextResponse.json({ error: '分析记录不存在。' }, { status: 404 })
+      const text = (data.content.trim().match(/^[^。！？\n]{1,200}[。！？]?/)?.[0] ?? data.content.trim().slice(0, 200)).trim()
+      await manageAiAssistantMemory(auth.user.id, 'propose', {
+        text, domain: 'other', origin: 'inferred', sourceKind: 'chat', sourceMessageId: data.id,
+        evidence: '来自你发起的形象分析', sourcePayload: { kind: 'appearance-analysis' },
+      })
+      return NextResponse.json({ proposed: true })
+    } catch { return NextResponse.json({ error: '记忆提案暂时无法保存，请重试。' }, { status: 503 }) }
   }
   if (['memory', 'forget', 'correct', 'confirm', 'reject'].includes(action)) {
     try {
@@ -102,7 +128,7 @@ export async function PATCH(request: Request) {
     metadataUpdate.avatar_url = body.avatarUrl
   }
   if (action === 'basic' && !Array.isArray(auth.user.user_metadata?.enabled_skills)) {
-    metadataUpdate.enabled_skills = ['personal-advisor', 'shopping-preferences']
+    metadataUpdate.enabled_skills = ['personal-advisor']
   }
   const { error } = await auth.supabase.auth.updateUser({ data: metadataUpdate })
   if (error) return NextResponse.json({ error: '资料保存失败，请重试。' }, { status: 502 })

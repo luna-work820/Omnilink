@@ -39,7 +39,7 @@ if (existsSync('.diag-test-user.json')) {
     auth: { persistSession: false, autoRefreshToken: false },
   })
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
-    email, password, email_confirm: true,
+    email, password, email_confirm: true, user_metadata: { full_name: `P0测试-${ts}` },
   })
   if (error) {
     console.log('[TEST] FATAL: cannot create test user:', error.message)

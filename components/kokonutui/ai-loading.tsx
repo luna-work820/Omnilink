@@ -502,7 +502,7 @@ export default function AILoadingState({
           <button
             aria-controls={listId}
             aria-expanded={isOpen}
-            className="group/header flex w-full items-center gap-2 rounded-[var(--radius-control)] py-1 text-start font-medium text-sm text-[var(--text-secondary)] outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]"
+            className="group/header flex w-full items-center gap-2 rounded-[var(--radius-control)] py-1 text-start font-medium text-sm text-[var(--text-secondary)] outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]"
             onClick={() => setIsOpen((open) => !open)}
             type="button"
           >

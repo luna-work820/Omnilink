@@ -241,7 +241,7 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
             !query ? (
               <Link
                 href="/dashboard/products/new"
-                className="px-5 py-2.5  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-xs font-semibold shadow-xs transition-all inline-flex items-center gap-1.5"
+                className="px-5 py-2.5  bg-[var(--primary)] hover:bg-[var(--interactive-hover)] text-[var(--surface)] text-xs font-semibold shadow-xs transition-all inline-flex items-center gap-1.5"
               >
                 <Plus size={14} />
                 <span>{t.products.addProduct}</span>
@@ -419,7 +419,7 @@ export function ProductTable({ products }: { products: ProductRow[] }) {
                         <Link
                           href={`/dashboard/products/${p.id}/edit`}
                           prefetch={true}
-                          className="p-1.5 text-[var(--lavender)] hover:text-[var(--primary-foreground)] hover:bg-[var(--primary)]  transition-colors"
+                          className="p-1.5 text-[var(--lavender)] hover:text-[var(--primary-foreground)] hover:bg-[var(--interactive-hover)]  transition-colors"
                           title="编辑商品"
                         >
                           <Edit2 size={14} />

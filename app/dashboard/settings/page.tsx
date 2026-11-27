@@ -1,4 +1,3 @@
-import {DeepSeekConnection} from '@/components/site-builder/DeepSeekConnection'
 import { redirect } from 'next/navigation'
 import { createClientServer } from '@/lib/supabase/server'
 import { getStoreByOwnerId } from '@/lib/stores/service'
@@ -31,7 +30,7 @@ export default async function SettingsPage() {
     redirect('/onboarding')
   }
 
-  return <><DeepSeekConnection/><SettingsView currentStore={store ? {
+  return <><SettingsView currentStore={store ? {
     store_name: store.name,
     store_slug: store.slug,
     base_currency: store.currency,

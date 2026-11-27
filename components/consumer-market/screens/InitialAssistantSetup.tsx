@@ -20,13 +20,8 @@ export function InitialAssistantSetup({ initialProfile, defaultName = '', deepSe
   const [step, setStep] = useState<'basic' | 'api' | 'done'>(() => initialProfile.stage === 'basic' ? 'basic' : initialProfile.stage === 'done' ? 'done' : 'api')
   const [basicsSaved, setBasicsSaved] = useState(initialProfile.stage !== 'basic')
   const [name, setName] = useState(initialProfile.name || defaultName)
-  const [apiPrompt, setApiPrompt] = useState(initialProfile.stage === 'basic' ? '' : deepSeekConfigured ? '头像和名字已保存。DeepSeek 已连接，继续后就可以开始聊天。' : '继续前，先连接 DeepSeek。')
-  const [apiKey, setApiKey] = useState('')
   const [avatarUrl, setAvatarUrl] = useState(initialProfile.avatarUrl)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
-  const [configured, setConfigured] = useState(deepSeekConfigured)
-  const [apiJustConnected, setApiJustConnected] = useState(false)
-  const [continuedWithConfiguredKey, setContinuedWithConfiguredKey] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const avatarObjectUrl = useRef<string | null>(null)
@@ -73,35 +68,6 @@ export function InitialAssistantSetup({ initialProfile, defaultName = '', deepSe
     onComplete()
   }
 
-  async function connectDeepSeek(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!apiKey.trim() || busy) return
-    setBusy(true)
-    setError(null)
-    try {
-      if (preview) {
-        setConfigured(true)
-      } else {
-        const response = await fetch('/api/consumer/deepseek-key', {
-          method: 'POST', credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ apiKey }),
-        })
-        const result = await response.json() as { configured?: boolean; error?: string }
-        if (!response.ok || !result.configured) throw new Error(result.error || 'DeepSeek 连接失败。')
-        setConfigured(true)
-      }
-      onDeepSeekConfigured()
-      setApiKey('')
-      setApiJustConnected(true)
-      await completeSetup()
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'DeepSeek 连接失败。')
-    } finally {
-      setBusy(false)
-    }
-  }
-
   async function saveBasics(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!name.trim() || busy) return
@@ -135,9 +101,7 @@ export function InitialAssistantSetup({ initialProfile, defaultName = '', deepSe
       setProfile(nextProfile)
       setAvatarFile(null)
       setBasicsSaved(true)
-      setApiPrompt(configured ? '头像和名字已保存。DeepSeek 已连接，继续后就可以开始聊天。' : '头像和名字已保存。接下来连接 DeepSeek。')
-      setStep('api')
-      if (configured) await completeSetup(nextProfile)
+      await completeSetup(nextProfile)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '保存失败，请重试。')
     } finally {
@@ -145,19 +109,12 @@ export function InitialAssistantSetup({ initialProfile, defaultName = '', deepSe
     }
   }
 
-  async function continueWithConfiguredKey() {
-    if (busy) return
-    setBusy(true)
-    setError(null)
-    try {
-      setContinuedWithConfiguredKey(true)
-      await completeSetup()
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '无法完成设置，请重试。')
-    } finally {
-      setBusy(false)
+  useEffect(() => {
+    if (initialProfile.stage !== 'basic' && initialProfile.stage !== 'done') {
+      void completeSetup().catch(() => setError('无法完成设置，请重试。'))
     }
-  }
+  // Run once to resume an unfinished setup.
+  }, [])
 
   const assistantName = profile.assistantName || 'AI assistant'
 
@@ -195,34 +152,7 @@ export function InitialAssistantSetup({ initialProfile, defaultName = '', deepSe
       </Message>
     </MessageScrollerItem>}
 
-    {basicsSaved && <MessageScrollerItem messageId="initial-assistant-api">
-      <Message align="start" data-role="assistant">
-        <MessageContent className="w-full max-w-[92%] text-sm leading-6">
-          <p>{apiPrompt || '接下来连接 DeepSeek，就可以开始聊天。'}</p>
-          {step === 'api' && (configured
-            ? <button type="button" onClick={() => void continueWithConfiguredKey()} disabled={busy} className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--market-ink)] px-5 text-sm font-semibold text-white disabled:opacity-50">{busy ? '正在继续' : '继续'}<ArrowRight size={16} aria-hidden="true" /></button>
-            : <form onSubmit={connectDeepSeek} className="mt-4 w-full" aria-label="连接 DeepSeek">
-              <label className="sr-only" htmlFor="initial-deepseek-key">DeepSeek API Key</label>
-              <div className="flex w-full min-w-0 items-center gap-2">
-                <input id="initial-deepseek-key" type="password" autoComplete="off" value={apiKey} onChange={(event) => setApiKey(event.target.value)} maxLength={512} required disabled={busy} className="h-11 min-w-0 flex-1 rounded-full border-[0.5px] border-[var(--market-border)] bg-white px-4 text-sm outline-none focus-visible:border-[var(--market-ink)]" placeholder="DeepSeek API Key" />
-                <button type="submit" disabled={busy || !apiKey.trim()} className="min-h-10 shrink-0 rounded-full bg-[var(--market-ink)] px-5 text-sm font-semibold text-white disabled:opacity-50">{busy ? '连接中' : '连接'}<ArrowRight size={16} aria-hidden="true" /></button>
-              </div>
-            </form>)}
-          {step === 'api' && error && <p role="alert" className="mt-3 text-sm text-[var(--market-accent)]">{error}</p>}
-        </MessageContent>
-      </Message>
-    </MessageScrollerItem>}
-
-    {step === 'done' && apiJustConnected && <MessageScrollerItem messageId="initial-user-api-connected" scrollAnchor>
-      <Message align="end" data-role="user" className="max-w-[88%]">
-        <MessageContent><div className="rounded-xl bg-[var(--market-surface-muted)] px-4 py-3 text-sm leading-6">DeepSeek 已连接</div></MessageContent>
-      </Message>
-    </MessageScrollerItem>}
-    {step === 'done' && continuedWithConfiguredKey && <MessageScrollerItem messageId="initial-user-continue" scrollAnchor>
-      <Message align="end" data-role="user" className="max-w-[88%]">
-        <MessageContent><div className="rounded-xl bg-[var(--market-surface-muted)] px-4 py-3 text-sm leading-6">继续</div></MessageContent>
-      </Message>
-    </MessageScrollerItem>}
+    {step === 'api' && error && <button type="button" onClick={() => void completeSetup().catch(() => setError('无法完成设置，请重试。'))} className="text-sm underline">{error} 重试</button>}
     {step === 'done' && <MessageScrollerItem messageId="initial-assistant-ready">
       <Message align="start" data-role="assistant">
         <MessageContent className="max-w-[92%] text-sm leading-6">好了，我已经准备好。你现在最想先解决什么？</MessageContent>

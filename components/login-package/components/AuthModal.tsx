@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import React, { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { X } from "lucide-react";
 import { LoginForm } from "@/components/login-package/components/login-form";
 import { SignupForm } from "@/components/login-package/components/SignupForm";
@@ -16,7 +16,59 @@ interface AuthModalProps {
 
 export function AuthModal({ isOpen, onClose, theme = "light", redirectTo, confirmationError = false }: AuthModalProps) {
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion() ?? false;
   const isDark = theme === "dark";
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const main = document.querySelector<HTMLElement>(".loginPackage > main");
+    const mainWasInert = main?.inert ?? false;
+    if (main) main.inert = true;
+
+    const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const getFocusable = () => Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(focusableSelector) ?? []);
+    const focusFrame = requestAnimationFrame(() => {
+      const firstInput = dialogRef.current?.querySelector<HTMLElement>('input:not([disabled])');
+      (firstInput ?? getFocusable()[0])?.focus({ preventScroll: true });
+    });
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+      const focusable = getFocusable();
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) {
+        event.preventDefault();
+        dialogRef.current?.focus();
+      } else if (event.shiftKey && (document.activeElement === first || !dialogRef.current?.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !dialogRef.current?.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      cancelAnimationFrame(focusFrame);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+      if (main) main.inert = mainWasInert;
+      if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
+    };
+  }, [isOpen, onClose]);
 
   return (
     <AnimatePresence>
@@ -28,7 +80,9 @@ export function AuthModal({ isOpen, onClose, theme = "light", redirectTo, confir
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
+            aria-hidden="true"
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
           />
 
           {/* 向左弹出的登录/创建页面（根据停留区域自适应纯白或纯黑）+ 末尾同款 TextCursor 动效文字 */}
@@ -36,8 +90,14 @@ export function AuthModal({ isOpen, onClose, theme = "light", redirectTo, confir
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 280 }}
-            className={`relative w-full md:w-[44vw] min-w-[360px] max-w-[580px] h-full shadow-2xl z-10 flex flex-col justify-between p-6 sm:p-10 overflow-y-auto overflow-x-hidden transition-colors ${
+            transition={prefersReducedMotion ? { duration: 0 } : { type: "spring", damping: 30, stiffness: 280 }}
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="登录或注册"
+            tabIndex={-1}
+            style={{ outlineColor: isDark ? "#FFFFFF" : "#315BFF" }}
+            className={`relative w-full md:w-[44vw] min-w-0 md:min-w-[360px] max-w-[580px] h-full shadow-2xl z-10 flex flex-col justify-between p-6 sm:p-10 overflow-y-auto overflow-x-hidden transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-4px] ${
               isDark
                 ? "bg-[#0B0C0E] text-white border-l border-white/10"
                 : "bg-white text-[#0B0C0E] border-l border-black/10"
@@ -48,24 +108,26 @@ export function AuthModal({ isOpen, onClose, theme = "light", redirectTo, confir
               className="absolute inset-0 z-0 pointer-events-none overflow-hidden"
               style={{ height: "100%", position: "absolute" }}
             >
-              <TextCursor
-                text="Hello"
-                mode="ribbon"
-                fontSize="33px"
-                spacing={88}
-                maxPoints={7}
-                shrink={0.5}
-                fade={0.6}
-                smoothing={0.3}
-                exitDuration={0.5}
-                removalInterval={30}
-                followMouseDirection
-                keepUpright
-                randomFloat
-                popIn
-                hideCursor={false}
-                color={isDark ? "rgba(110, 145, 255, 0.42)" : "rgba(49, 91, 255, 0.42)"}
-              />
+              {!prefersReducedMotion && (
+                <TextCursor
+                  text="Hello"
+                  mode="ribbon"
+                  fontSize="33px"
+                  spacing={88}
+                  maxPoints={7}
+                  shrink={0.5}
+                  fade={0.6}
+                  smoothing={0.3}
+                  exitDuration={0.5}
+                  removalInterval={30}
+                  followMouseDirection
+                  keepUpright
+                  randomFloat
+                  popIn
+                  hideCursor={false}
+                  color={isDark ? "rgba(110, 145, 255, 0.42)" : "rgba(49, 91, 255, 0.42)"}
+                />
+              )}
             </div>
 
             {/* Top Bar with Close Button & Mode Switcher */}
@@ -76,12 +138,15 @@ export function AuthModal({ isOpen, onClose, theme = "light", redirectTo, confir
                 }`}
               >
                 <button
+                  type="button"
+                  data-liquid-skip="true"
                   onClick={onClose}
                   className={`p-2 rounded-full transition-colors cursor-pointer ${
                     isDark
                       ? "bg-white/10 hover:bg-white/20 text-neutral-300 hover:text-white"
                       : "bg-black/5 hover:bg-black/10 text-neutral-600 hover:text-black"
-                  }`}
+                  } focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#315BFF]`}
+                  style={{ outlineColor: isDark ? "#FFFFFF" : "#315BFF" }}
                   aria-label="关闭窗口"
                 >
                   <X className="w-5 h-5" />
@@ -103,6 +168,7 @@ export function AuthModal({ isOpen, onClose, theme = "light", redirectTo, confir
                   hideTitle={false}
                   onSwitchToSignup={() => setMode("signup")}
                   redirectTo={redirectTo}
+                  idPrefix="modal-login"
                 />
               ) : (
                 <SignupForm
@@ -110,6 +176,7 @@ export function AuthModal({ isOpen, onClose, theme = "light", redirectTo, confir
                   hideTitle={false}
                   onSwitchToLogin={() => setMode("login")}
                   redirectTo={redirectTo}
+                  idPrefix="modal-signup"
                 />
               )}
             </div>

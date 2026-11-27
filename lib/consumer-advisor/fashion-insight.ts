@@ -25,14 +25,25 @@ export type InsightQuestion = { prompt:string; options:InsightOption[] }
 export function fashionCandidates(products:ProductItem[],spec:DiscoverySpec) {
   const query=[spec.query,...spec.sessionTerms].join(' ').toLowerCase()
   const facts=products.map((p)=>searchableProductFacts(p).replace(/https?:\/\/\S+/g,' ').toLowerCase())
-  return Object.entries(dimensions).flatMap(([id,dimension])=>{
+  const brandCount=products.filter((product)=>/品牌参考/i.test(product.category??'')).length
+  const itemCount=products.filter((product)=>/品牌商品/i.test(product.category??'')).length
+  const kindCandidates=brandCount&&itemCount?[{id:'catalog-kind',prompt:'你想先看哪类？',options:[
+    {value:'brand-reference',label:'品牌参考',terms:['品牌参考'],count:brandCount},
+    {value:'specific-product',label:'具体商品',terms:['品牌商品'],count:itemCount},
+  ]}]:[]
+  return [...kindCandidates,...Object.entries(dimensions).flatMap(([id,dimension])=>{
     const options=dimension.options.flatMap(([value,label,terms])=>{
       if(terms.some((term)=>containsSearchTerm(query,term)))return []
       const count=facts.filter((text)=>terms.some((term)=>containsSearchTerm(text,term))).length
       return count ? [{value,label,terms,count}] : []
     })
     return options.length>=2?[{id,prompt:dimension.prompt,options}]:[]
-  })
+  })]
+}
+export function fallbackInsightQuestion(candidates:ReturnType<typeof fashionCandidates>):InsightQuestion|null {
+  const dimension=candidates[0]
+  if(!dimension)return null
+  return {prompt:dimension.prompt,options:dimension.options.slice(0,3).map(({value,label,terms})=>({value,label,terms}))}
 }
 export function validateInsightChoice(raw:string,candidates:ReturnType<typeof fashionCandidates>):InsightQuestion|null {
   try {

@@ -159,7 +159,7 @@ export function VariantMatrixTable({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
-        <Layers size={14} className="shrink-0 text-[var(--accent-secondary)]" />
+        <Layers size={14} className="shrink-0 text-[var(--accent-primary)]" />
         <span>
           {isZh
             ? `按 ${filledAxes.map((a) => a.name).join(' × ')} 生成 ${rows.length} 个 SKU，可逐个调整价格 / 库存 / SKU`
@@ -189,7 +189,7 @@ export function VariantMatrixTable({
                     value={row.sku}
                     onChange={(e) => updateRow(row.key, 'sku', e.target.value)}
                     disabled={disabled}
-                    className="h-10 w-36 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 font-mono text-xs text-[var(--text-primary)] focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15"
+                    className="h-10 w-36 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 font-mono text-xs text-[var(--text-primary)] focus-visible:border-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/15"
                   />
                 </td>
                 <td className="py-2 px-3">
@@ -201,7 +201,7 @@ export function VariantMatrixTable({
                     step="0.01"
                     placeholder={basePrice || '0.00'}
                     disabled={disabled}
-                    className="h-10 w-24 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 text-xs font-semibold tabular-nums text-[var(--text-primary)] focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15"
+                    className="h-10 w-24 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 text-xs font-semibold tabular-nums text-[var(--text-primary)] focus-visible:border-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/15"
                   />
                 </td>
                 <td className="py-2 px-3">
@@ -213,7 +213,7 @@ export function VariantMatrixTable({
                     step="1"
                     placeholder={baseInventory || '0'}
                     disabled={disabled}
-                    className="h-10 w-20 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 text-xs tabular-nums text-[var(--text-primary)] focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15"
+                    className="h-10 w-20 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-2.5 text-xs tabular-nums text-[var(--text-primary)] focus-visible:border-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/15"
                   />
                 </td>
               </tr>

@@ -4,6 +4,7 @@ import path from 'path'
 export default defineConfig({
   resolve: {
     alias: {
+      '@phosphor-icons/react': path.resolve(process.cwd(), 'components/ui/line-icons/phosphor'),
       '@': path.resolve(process.cwd()),
     },
   },

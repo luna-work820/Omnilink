@@ -5,7 +5,7 @@ import { readModelUsage, type ModelUsage } from './model-usage'
 
 export type { ModelUsage } from './model-usage'
 export type ModelChunk={type:'delta';text:string}|{type:'usage';usage:ModelUsage}
-export async function* streamWorkspaceText(model:WorkspaceModel,prompt:string,system:string,options:{apiKey?:string;signal?:AbortSignal;onCall?:()=>void}={}):AsyncGenerator<ModelChunk> {
+export async function* streamWorkspaceText(model:WorkspaceModel,prompt:string,system:string,options:{apiKey?:string;signal?:AbortSignal;onCall?:()=>void;maxOutputTokens?:number}={}):AsyncGenerator<ModelChunk> {
   const abort=new AbortController(),signal=AbortSignal.any([abort.signal,AbortSignal.timeout(30_000),...(options.signal?[options.signal]:[])])
   let url:string,headers:Record<string,string>,body:Record<string,unknown>
   if(model==='gemini') {
@@ -13,7 +13,7 @@ export async function* streamWorkspaceText(model:WorkspaceModel,prompt:string,sy
     if(!key||!version)throw new ModelConfigurationError('Gemini 尚未配置。',{status:500,code:'MODEL_PROVIDER_UNAVAILABLE'})
     url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(version)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(key)}`
     headers={'Content-Type':'application/json'}
-    body={systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:0.2,maxOutputTokens:1024}}
+    body={systemInstruction:{parts:[{text:system}]},contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{temperature:0.2,maxOutputTokens:options.maxOutputTokens??1024}}
   } else {
     const deep=model.startsWith('deepseek'),key=deep?options.apiKey:process.env.DASHSCOPE_API_KEY
     if(!key)throw new ModelConfigurationError(deep?'请在设置中连接自己的 DeepSeek API Key。':'千问尚未配置。',
@@ -22,7 +22,7 @@ export async function* streamWorkspaceText(model:WorkspaceModel,prompt:string,sy
     const base=deep?'https://api.deepseek.com':process.env.DASHSCOPE_BASE_URL?.trim()||(workspace?`https://${workspace}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`:'https://dashscope.aliyuncs.com/compatible-mode/v1')
     url=`${base.replace(/\/$/,'')}/chat/completions`
     headers={'Content-Type':'application/json',Authorization:`Bearer ${key}`}
-    body={model,temperature:0.2,max_tokens:1024,stream:true,stream_options:{include_usage:true},
+    body={model,temperature:0.2,max_tokens:options.maxOutputTokens??1024,stream:true,stream_options:{include_usage:true},
       ...(deep?{thinking:{type:'disabled'}}:{}),messages:[{role:'system',content:system},{role:'user',content:prompt}]}
   }
   let response:Response

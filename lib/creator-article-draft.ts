@@ -1,4 +1,4 @@
-import type { ArticleBlock } from '@/lib/creator-article-editor'
+import type { ArticleBlockData } from '@/lib/creator-article-editor'
 import { articleBackgrounds } from '@/lib/creator-article-backgrounds'
 import { openCreatorDatabase } from '@/lib/creator-local-db'
 
@@ -6,9 +6,13 @@ export type ArticleDraft = {
   version: 2
   title: string
   background: string
-  cover: { url: string; position: number } | null
-  blocks: ArticleBlock[]
+  cover: { url: string; position: number; ratio?: string } | null
+  blocks: ArticleBlockData[]
   updatedAt: number
+}
+
+export function isArticleAspectRatio(value: unknown): value is string {
+  return typeof value === 'string' && value.length <= 32 && /^\d+(?:\.\d+)?\s*\/\s*\d+(?:\.\d+)?$/.test(value)
 }
 
 const storeName = 'article-drafts'
@@ -29,7 +33,11 @@ export async function readArticleDraft(key: string): Promise<ArticleDraft | null
       const background = legacyBackgrounds[draft.background] ?? draft.background
       if (!articleBackgrounds.some((item) => item.id === background)) return reject(new Error('文章背景格式无法读取'))
       const cover = draft.cover
-      resolve({ ...draft, version: 2, background, cover: cover && typeof cover.url === 'string' ? { url: cover.url, position: Number.isFinite(cover.position) ? Math.min(100, Math.max(0, cover.position)) : 50 } : null })
+      resolve({ ...draft, version: 2, background, cover: cover && typeof cover.url === 'string' ? {
+        url: cover.url,
+        position: Number.isFinite(cover.position) ? Math.min(100, Math.max(0, cover.position)) : 50,
+        ...(isArticleAspectRatio(cover.ratio) ? { ratio: cover.ratio } : {}),
+      } : null })
     }
     transaction.onabort = () => { database.close(); reject(transaction.error) }
     transaction.onerror = () => { database.close(); reject(transaction.error) }

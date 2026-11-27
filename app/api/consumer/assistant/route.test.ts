@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('server-only', () => ({}))
-const background = vi.hoisted(() => ({ after: vi.fn(), consolidate: vi.fn() }))
+const background = vi.hoisted(() => ({ after: vi.fn(), consolidate: vi.fn(), propose: vi.fn() }))
 vi.mock('next/server', async (original) => ({ ...await original<typeof import('next/server')>(), after: background.after }))
-vi.mock('@/lib/consumer-advisor/memory-consolidation', () => ({ consolidateRecentMemories: background.consolidate }))
+vi.mock('@/lib/consumer-advisor/memory-consolidation', () => ({ consolidateRecentMemories: background.consolidate, proposeMessageMemory: background.propose }))
 const m = vi.hoisted(() => ({ getUser:vi.fn(),from:vi.fn(),generate:vi.fn(),load:vi.fn(),manage:vi.fn(),
   route:vi.fn(),ledger:vi.fn(),classify:vi.fn(),context:vi.fn(),discover:vi.fn(),owned:vi.fn(),search:vi.fn(),information:vi.fn(),plan:vi.fn(),validate:vi.fn(),select:vi.fn(),byIds:vi.fn(),catalog:vi.fn() }))
 vi.mock('@/lib/products/consumer-catalog-store',async(original)=>({...await original<typeof import('@/lib/products/consumer-catalog-store')>(),readPublishedConsumerCatalog:m.catalog}))
@@ -31,13 +31,14 @@ const request = (body:unknown) => new NextRequest('http://localhost/api/consumer
 })
 function query(data:unknown[] = []) {
   const result = {data,error:null}
-  const chain = {select:vi.fn(),eq:vi.fn(),order:vi.fn(),limit:vi.fn(),upsert:vi.fn().mockResolvedValue(result),insert:vi.fn().mockResolvedValue(result)}
-  for (const key of ['select','eq','order'] as const) chain[key].mockReturnValue(chain)
+  const chain = {select:vi.fn(),eq:vi.fn(),neq:vi.fn(),order:vi.fn(),limit:vi.fn(),upsert:vi.fn().mockResolvedValue(result),insert:vi.fn().mockResolvedValue(result)}
+  for (const key of ['select','eq','neq','order'] as const) chain[key].mockReturnValue(chain)
   chain.limit.mockResolvedValue(result)
   return chain
 }
 beforeEach(() => {
   vi.clearAllMocks()
+  background.propose.mockResolvedValue(false)
   m.getUser.mockResolvedValue({data:{user:null},error:null})
   m.from.mockImplementation(() => query())
   m.generate.mockImplementation(async(_model,_prompt,_system,options)=>{options?.onCall?.();return JSON.stringify({analysisText:'测试回复',matchedProductIds:[],usedMemoryIds:[]})})
@@ -51,6 +52,21 @@ beforeEach(() => {
   m.search.mockResolvedValue({recentProductIds:[],keywordProductIds:[],semanticProductIds:[],rankedProductIds:[]})
   m.byIds.mockResolvedValue([]); m.select.mockReturnValue([]); m.validate.mockResolvedValue(null)
   m.plan.mockResolvedValue({intent:'assistant',relevantMemoryIds:[],comparisonProductIds:[],memoryCaptureRequested:false,searchResult:null})
+})
+it('returns a pending memory for an authenticated user self-report', async () => {
+  m.getUser.mockResolvedValue({data:{user:{id:userId,user_metadata:{}}},error:null})
+  background.propose.mockResolvedValue(true)
+  const response = await POST(request({model:'qwen-plus',prompt:'我平时喜欢黑色',skillId:'personal-advisor',conversationId}))
+  expect(response.status).toBe(200)
+  expect(await response.json()).toMatchObject({memoryProposed:true,memorySaved:false})
+  expect(background.propose).toHaveBeenCalledWith(userId,expect.any(String),'我平时喜欢黑色',false,undefined)
+})
+it('reports a memory write failure without failing the chat', async () => {
+  m.getUser.mockResolvedValue({data:{user:{id:userId,user_metadata:{}}},error:null})
+  background.propose.mockRejectedValue(new Error('unavailable'))
+  const response = await POST(request({model:'qwen-plus',prompt:'我平时喜欢黑色',skillId:'personal-advisor',conversationId}))
+  expect(response.status).toBe(200)
+  expect(await response.json()).toMatchObject({memoryProposed:false,memoryWarning:expect.any(String)})
 })
 describe('assistant API security boundary', () => {
   it('starts the public catalog read while the request record is being created',async()=>{
@@ -224,6 +240,15 @@ describe('assistant API security boundary', () => {
     expect(m.classify).not.toHaveBeenCalled()
     expect(m.generate).not.toHaveBeenCalled();expect(m.search).not.toHaveBeenCalled();expect(m.plan).not.toHaveBeenCalled()
   })
+  it('keeps direct keyword retrieval when the client sends the default auto mode',async()=>{
+    const spec=keywordSearchSpec('摄影器材')
+    m.discover.mockResolvedValue({searchRunId:crypto.randomUUID(),sessionId:conversationId,query:'摄影器材',products:[],nextCursor:null,contextVersion:0,
+      snapshotVersion:1,pageSize:20,returnedCount:0,candidateCount:0,question:null,spec})
+    const response=await POST(request({model:'qwen-plus',prompt:'摄影器材',conversationId,retrieval:{mode:'auto'}}))
+    expect(response.status).toBe(200)
+    expect(m.classify).not.toHaveBeenCalled()
+    expect(m.discover.mock.calls[0][1]).toMatchObject({query:'摄影器材',retrieval:{mode:'keyword'}})
+  })
   it('returns a catalog failure with a reusable specification instead of a fabricated empty page',async()=>{
     const {DiscoveryError}=await import('@/lib/consumer-advisor/discovery-contract')
     const spec=keywordSearchSpec('沙发')
@@ -231,7 +256,7 @@ describe('assistant API security boundary', () => {
     m.discover.mockRejectedValue(new DiscoveryError('CATALOG_UNAVAILABLE',503,'商品暂时无法读取，请重试。'))
     const response=await POST(request({model:'qwen-plus',prompt:'沙发',conversationId}))
     expect(response.status).toBe(503)
-    expect(await response.json()).toMatchObject({status:'failed',code:'CATALOG_UNAVAILABLE',retrySpec:{query:'沙发',retrieval:{mode:'auto'}},blocks:[]})
+    expect(await response.json()).toMatchObject({status:'failed',code:'CATALOG_UNAVAILABLE',retrySpec:{query:'沙发',retrieval:{mode:'keyword'}},blocks:[]})
     expect(m.generate).not.toHaveBeenCalled()
   })
   it('parses a natural language product request once and preserves the chosen retrieval profile',async()=>{
@@ -244,7 +269,7 @@ describe('assistant API security boundary', () => {
     const response=await POST(request({model:'qwen-plus',prompt:'Find some delicate earrings for a wedding',conversationId,retrieval}))
     expect(response.status).toBe(200);expect(m.classify).toHaveBeenCalledTimes(1);expect(m.generate).not.toHaveBeenCalled()
     expect(m.discover.mock.calls[0][1]).toMatchObject({retrieval})
-    expect(m.context).toHaveBeenCalledWith(null,{query:'earrings',preferences:false})
+    expect(m.context).not.toHaveBeenCalled()
   })
   it('accepts an explicit search spec without requiring an answer model',async()=>{
     const spec=keywordSearchSpec('耳环')
@@ -286,9 +311,24 @@ describe('assistant API security boundary', () => {
 it('loads the installed personal assistant for explicit skill requests without using its client text as system instructions', async () => {
   const response = await POST(request({model:'qwen-plus',prompt:'想了解个人风格',skillId:'personal-advisor',conversationId}))
   expect(response.status).toBe(200)
-  expect(String(m.generate.mock.calls[0][2])).toContain('# 个人助手')
+  expect(String(m.generate.mock.calls[0][2])).toContain('# 形象助手')
   expect(String(m.generate.mock.calls[0][2])).toContain('没有向模型开放 Python')
   expect(m.classify).not.toHaveBeenCalled()
+})
+it.each([
+  ['我想进行肤质分析。', '照片'],
+  ['我想了解自己的动物系长相。', '照片'],
+  ['我想了解自己的四季色彩。', '照片'],
+  ['我想进行身材分型。', '胸围'],
+  ['我想获得穿搭建议。', '场合'],
+  ['我想了解自己的气质表现。', '照片'],
+])('starts the chosen analysis directly for %s', async (prompt, expected) => {
+  const response = await POST(request({model:'qwen-plus',prompt,skillId:'personal-advisor',conversationId}))
+  expect(response.status).toBe(200)
+  const result = await response.json()
+  expect(result.text).toContain(expected)
+  expect(result.text).not.toMatch(/选择.*(分析项目|类别|范围)/)
+  expect(m.generate).not.toHaveBeenCalled()
 })
 it('rejects unknown skills before attempting to read any skill file', async () => {
   const response = await POST(request({model:'qwen-plus',prompt:'你好',skillId:'../../.env',conversationId}))
@@ -301,5 +341,46 @@ it('includes the personal assistant instructions for image analysis', async () =
   const response = await POST(request({model:'gemini',prompt:'我想了解肤质',skillId:'personal-advisor',
     image,conversationId}))
   expect(response.status).toBe(200)
-  expect(m.generate.mock.calls.some((call) => String(call[2]).includes('# 个人助手'))).toBe(true)
+  expect(m.generate.mock.calls.some((call) => String(call[2]).includes('# 形象助手'))).toBe(true)
+})
+it('tells the model which button was chosen when the request includes an image', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const image = `data:image/png;base64,${(await readFile('public/consumer-market/skills/personal-assistant/oil_all.png')).toString('base64')}`
+  const response = await POST(request({model:'gemini',prompt:'我想进行肤质分析。',skillId:'personal-advisor',image,conversationId}))
+  expect(response.status).toBe(200)
+  expect(m.generate.mock.calls.some((call) => String(call[2]).includes('用户已经通过按钮明确选择“肤质分析”'))).toBe(true)
+})
+it('does not show the category menu again if the model ignores the selected button', async () => {
+  m.generate.mockResolvedValue(JSON.stringify({analysisText:'请选择您本次想要进行的分析项目（可多选）',matchedProductIds:[],usedMemoryIds:[]}))
+  const response = await POST(request({model:'qwen-plus',prompt:'我想进行肤质分析。\n平时T区出油',skillId:'personal-advisor',conversationId}))
+  expect(response.status).toBe(200)
+  expect((await response.json()).text).toBe('已收到你的信息，但本次肤质分析未能完成，请重试。')
+})
+it('records the direct next step for a signed-in user', async () => {
+  m.getUser.mockResolvedValue({data:{user:{id:userId,user_metadata:{}}},error:null})
+  const response = await POST(request({model:'qwen-plus',prompt:'我想进行肤质分析。',skillId:'personal-advisor',conversationId}))
+  expect(response.status).toBe(200)
+  expect((await response.json()).text).toContain('照片')
+  expect(m.from).toHaveBeenCalledWith('consumer_AI assistant_messages')
+  expect(m.generate).not.toHaveBeenCalled()
+})
+it('keeps the chosen analysis available when the user sends a photo in a later turn', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const image = `data:image/png;base64,${(await readFile('public/consumer-market/skills/personal-assistant/oil_all.png')).toString('base64')}`
+  const response = await POST(request({model:'gemini',prompt:'这张可以吗？',skillId:'personal-advisor',image,conversationId,
+    history:[{role:'user',content:'我想进行肤质分析。'},{role:'assistant',content:'请上传一张照片。'}]}))
+  expect(response.status).toBe(200)
+  expect(m.generate.mock.calls.some((call) => String(call[2]).includes('# 肤质档案库'))).toBe(true)
+})
+it('uses authenticated conversation history to continue the selected analysis', async () => {
+  m.getUser.mockResolvedValue({data:{user:{id:userId,user_metadata:{}}},error:null})
+  m.from.mockImplementation(() => query([
+    {id:'reply',role:'assistant',content:'请上传一张照片。'},
+    {id:'choice',role:'user',content:'我想了解自己的四季色彩。'},
+  ]))
+  const { readFile } = await import('node:fs/promises')
+  const image = `data:image/png;base64,${(await readFile('public/consumer-market/skills/personal-assistant/oil_all.png')).toString('base64')}`
+  const response = await POST(request({model:'gemini',prompt:'这是我的照片',skillId:'personal-advisor',image,conversationId}))
+  expect(response.status).toBe(200)
+  expect(m.generate.mock.calls.some((call) => String(call[2]).includes('# 动物系与四季特征判定'))).toBe(true)
 })

@@ -29,6 +29,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
+        data-liquid-skip="true"
         className={twMerge(clsx(base, sizeClasses[size], variantClasses[variant], className))}
         {...props}
       >

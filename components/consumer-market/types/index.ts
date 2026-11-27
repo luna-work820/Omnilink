@@ -10,6 +10,32 @@ export interface Review {
   createdAt?: string;
 }
 
+export type ProductCompositionKind = 'cosmetic-inci' | 'textile-fiber' | 'metal-alloy' | 'material' | 'other' | 'unknown';
+export type ProductCompositionStatus = 'verified' | 'partial' | 'not_provided' | 'not_applicable';
+
+export interface ProductCompositionEntry {
+  name: string;
+  /** NFKC-normalized, whitespace-collapsed lowercase value for exact filters. */
+  normalizedName?: string;
+  position?: number;
+  proportion?: string;
+  purity?: string;
+  role?: string;
+  sourceLabel?: string;
+}
+
+/** Shared composition field for formulas, textile fibers, metals, and other product materials. */
+export interface ProductComposition {
+  kind: ProductCompositionKind;
+  status: ProductCompositionStatus;
+  items: ProductCompositionEntry[];
+  rawText?: string;
+  region?: string;
+  sourceUrl?: string;
+  observedAt?: string;
+  verifiedAt?: string;
+}
+
 export interface ProductItem {
   id: string;
   name: string;
@@ -29,9 +55,12 @@ export interface ProductItem {
   aiSummary: string;
   reviews: Review[];
   specs: Record<string, string>;
+  composition?: ProductComposition;
+  recommendationFacets?: Record<string, string[]>;
   storeName: string;
   sourceUrl?: string;
   sourceDate?: string;
+  catalogAddedAt?: string | null;
   catalogEvidence?: {
     sourceType: 'official_store' | 'public_page';
     reviewedAt: string;
@@ -57,6 +86,11 @@ export interface ProductItem {
   variants?: StorefrontProductVariant[];
   deliveryType?: 'physical' | 'digital' | 'ai_capability';
   capabilityKind?: 'question_set' | 'skill' | 'plugin';
+}
+
+/** Product records returned by the catalog always include a normalized composition field. */
+export interface CatalogProductItem extends ProductItem {
+  composition: ProductComposition;
 }
 
 export type DiscoveryType = '商品' | '数字' | '服务';
@@ -110,6 +144,7 @@ export interface Story {
 
 export interface ScenePost {
   id: string;
+  href?: string;
   kind?: 'collection' | 'note';
   title: string;
   editorName: string;
@@ -158,6 +193,8 @@ export interface AiChatMessage {
   matchedProducts?: ProductItem[];
   matchReasons?: Record<string, string>;
   usedPreferences?: string[];
+  memoryProposed?: boolean;
+  analysisMessageId?: string;
   fileName?: string;
   timestamp?: string;
   model?: ConsumerAiModel;

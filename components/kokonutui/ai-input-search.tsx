@@ -996,7 +996,7 @@ function SendStopButton({
         "h-8 shrink-0 overflow-hidden rounded-full",
         "transition-[background-color,color,box-shadow] duration-150",
         EASE_OUT_CSS,
-        "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/45",
+        "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/45",
         live
           ? "bg-[var(--accent-primary)] text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.12)] hover:bg-[var(--accent-primary-hover)] active:scale-[0.98]"
           : "bg-black/5 text-black/35 dark:bg-white/10 dark:text-white/35"

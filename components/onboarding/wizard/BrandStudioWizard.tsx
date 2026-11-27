@@ -661,7 +661,7 @@ export function BrandStudioWizard() {
                       e.stopPropagation()
                       setEditingColorIndex(idx)
                     }}
-                    className="px-2 py-0.5  bg-[var(--surface-muted)] hover:bg-[var(--primary)] hover:text-[var(--surface)] text-[var(--primary-foreground)] text-xs font-semibold transition-colors cursor-pointer"
+                    className="px-2 py-0.5  bg-[var(--surface-muted)] hover:bg-[var(--interactive-hover)] hover:text-[var(--surface)] text-[var(--primary-foreground)] text-xs font-semibold transition-colors cursor-pointer"
                   >
                     调整
                   </button>
@@ -947,7 +947,7 @@ export function BrandStudioWizard() {
                   setDownloadNotice('高定视觉海报已成功生成并下载')
                   setTimeout(() => setDownloadNotice(null), 3000)
                 }}
-                className="w-full py-2.5  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-sm"
+                className="w-full py-2.5  bg-[var(--primary)] hover:bg-[var(--interactive-hover)] text-[var(--surface)] text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-sm"
               >
                 <Download size={14} />
                 <span>导出高定视觉海报 (1080×1440)</span>

@@ -467,7 +467,7 @@ export const ProductMediaUploader = forwardRef<ProductMediaUploaderRef, ProductM
               type="button"
               onClick={handleAddUrl}
               disabled={isAddingUrl || !urlInput.trim()}
-              className="px-3.5 py-1.5 text-xs font-bold  bg-[var(--primary)] hover:bg-[var(--primary)] text-[var(--surface)] disabled:bg-[var(--surface-muted)] dark:disabled:bg-[var(--surface-muted)] disabled:text-[var(--lavender)] transition-colors inline-flex items-center gap-1 cursor-pointer"
+              className="px-3.5 py-1.5 text-xs font-bold  bg-[var(--primary)] hover:bg-[var(--interactive-hover)] text-[var(--surface)] disabled:bg-[var(--surface-muted)] dark:disabled:bg-[var(--surface-muted)] disabled:text-[var(--lavender)] transition-colors inline-flex items-center gap-1 cursor-pointer"
               style={{ outlineOffset: '2px' }}
             >
               {isAddingUrl ? (

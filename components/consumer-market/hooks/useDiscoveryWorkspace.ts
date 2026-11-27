@@ -71,10 +71,10 @@ export function useDiscoveryWorkspace(sessionId:string,onProducts:(products:Prod
     const page=pagesRef.current[sessionRef.current]
     if(page?.nextCursor && !busyRef.current) void request({action:'page',searchRunId:page.searchRunId,cursor:page.nextCursor},true,page.spec)
   },[request])
-  const refreshDiscovery=useCallback((spec?:DiscoverySpec) => {
+  const refreshDiscovery=useCallback((spec?:DiscoverySpec,chatMessage?:{requestId:string;prompt:string}) => {
     const current=pagesRef.current[sessionRef.current]
     const query=spec??current?.spec
-    if(query) void request({action:'start',spec:query},false,query)
+    if(query) void request({action:'start',spec:query,...(chatMessage?{messageId:chatMessage.requestId,chatPrompt:chatMessage.prompt}:{})},false,query)
   },[request])
   const clearDiscovery=useCallback(() => {
     epoch.current++;controller.current?.abort();busyRef.current=false;setBusy(false)

@@ -136,7 +136,7 @@ export function ColorWheelModal({
           <button
             type="button"
             onClick={handleApply}
-            className="px-4 py-1.5  bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-semibold tracking-wide transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
+            className="px-4 py-1.5  bg-[var(--primary)] hover:bg-[var(--interactive-hover)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-semibold tracking-wide transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
           >
             <Check size={13} />
             <span>保存色彩</span>

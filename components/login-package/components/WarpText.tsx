@@ -428,15 +428,8 @@ const WarpText: React.FC<WarpTextProps> = ({
     let clickSlot = 0;
     const startTime = performance.now();
 
-    const rendererCanvas = document.createElement('canvas');
-    if (!rendererCanvas.getContext('webgl2') && !rendererCanvas.getContext('webgl')) {
-      setFailed(true);
-      return undefined;
-    }
-
     try {
       renderer = new Renderer({
-        canvas: rendererCanvas,
         webgl: 2,
         alpha: true,
         premultipliedAlpha: true,

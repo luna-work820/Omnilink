@@ -6,46 +6,52 @@ import { readPublishedConsumerCatalog } from '@/lib/products/consumer-catalog-st
 import { createClientServer } from '@/lib/supabase/server'
 import { getStoreByOwnerId } from '@/lib/stores/service'
 import { emptyAiAssistantProfile, readAiAssistantProfile } from '@/lib/consumer-advisor/ai-assistant-profile'
-import { readDeepSeekKeyForUser } from '@/lib/consumer-advisor/deepseek-key-cookie'
 import { readPublishedContent } from '@/lib/creator-publication-feed'
 import { CreatorDiscoveryPreview } from '@/components/creator-content/CreatorDiscoveryPreview'
+import { PublicArticleReader } from '@/components/consumer-market/screens/PublicArticleReader'
+import { GILDED_EAST_POST_ID } from '@/components/consumer-market/data/theme-article-demo'
 
-const DEFAULT_INSTALLED_SKILL_IDS: ('personal-advisor' | 'shopping-preferences')[] = ['personal-advisor', 'shopping-preferences']
+const DEFAULT_INSTALLED_SKILL_IDS: ('personal-advisor')[] = ['personal-advisor']
 
 export const metadata = {
   title: 'Omnilink 灵感市场',
   description: '浏览创作者发布的内容、商品与推荐。',
 }
 
-export default async function ConsumerMarketPage({ searchParams }: { searchParams: Promise<{ creatorPreview?: string; aiAssistantPreview?: string; newUser?: string; openAssistant?: string; activatePersonalAdvisor?: string; demoLogin?: string; newUserPreview?: string; feedChatPreview?: string; signupPreviewComplete?: string; shoppingPreferences?: string; shoppingPreferencesPreview?: string; post?: string }> }) {
+export default async function ConsumerMarketPage({ searchParams }: { searchParams: Promise<{ creatorPreview?: string; themeArticle?: string; aiAssistantPreview?: string; newUser?: string; openAssistant?: string; activatePersonalAdvisor?: string; demoLogin?: string; newUserPreview?: string; feedChatPreview?: string; signupPreviewComplete?: string; shoppingPreferences?: string; shoppingPreferencesPreview?: string; post?: string }> }) {
   const params = await searchParams
   if (process.env.NODE_ENV !== 'production' && params.creatorPreview === '1') return <CreatorDiscoveryPreview postId={params.post} />
+  if (process.env.NODE_ENV !== 'production' && params.themeArticle === '1') {
+    const products = (await readPublishedConsumerCatalog()).products
+    return <CreatorDiscoveryPreview initialProducts={products} postId={GILDED_EAST_POST_ID} />
+  }
   const productsList = (await readPublishedConsumerCatalog()).products
   const fallbackAiModel = process.env.CONSUMER_DEFAULT_ANSWER_MODEL === 'gemini' ? 'gemini' : 'qwen-plus'
   const aiAssistantPreview = process.env.NODE_ENV !== 'production' && params.aiAssistantPreview === '1'
-  const demoLogin = process.env.NODE_ENV !== 'production' && params.demoLogin === '1'
+  const demoLogin = process.env.VERCEL_ENV === 'preview' || (process.env.NODE_ENV !== 'production' && params.demoLogin === '1')
   const newUserPreview = process.env.NODE_ENV !== 'production' && params.newUserPreview === '1'
   const feedChatPreview = process.env.NODE_ENV !== 'production' && params.feedChatPreview === '1'
   if (feedChatPreview) {
-    return <App initialProducts={productsList} hasLiveProducts profileName="预览用户" profilePreview feedChatHomePreview fallbackAiModel={fallbackAiModel} />
+    return <App initialProducts={productsList} hasLiveProducts profileName="预览用户" initialAiMessages={[]} profilePreview feedChatHomePreview fallbackAiModel={fallbackAiModel} />
   }
   if (newUserPreview) {
-    return <App initialProducts={productsList} hasLiveProducts profileName="预览用户" initialSignupInvitation initialAiAssistantProfile={{ ...emptyAiAssistantProfile, name: '预览用户' }} deepSeekKeyConfigured={false} onboardingPreview initialInstalledSkillIds={DEFAULT_INSTALLED_SKILL_IDS} profilePreview fallbackAiModel={fallbackAiModel} />
+    return <App initialProducts={productsList} hasLiveProducts profileName="预览用户" initialSignupInvitation initialAiMessages={[]} initialAiAssistantProfile={{ ...emptyAiAssistantProfile, name: '预览用户' }} deepSeekKeyConfigured={false} onboardingPreview initialInstalledSkillIds={DEFAULT_INSTALLED_SKILL_IDS} profilePreview fallbackAiModel={fallbackAiModel} />
   }
   const signupPreviewComplete = process.env.NODE_ENV !== 'production' && params.signupPreviewComplete === '1'
   if (signupPreviewComplete) {
-    return <App initialProducts={productsList} hasLiveProducts profileName="预览用户" initialAiAssistantChat initialInstalledSkillIds={['personal-advisor', 'shopping-preferences']} profilePreview fallbackAiModel={fallbackAiModel} />
+    return <App initialProducts={productsList} hasLiveProducts profileName="预览用户" initialAiAssistantChat initialAiMessages={[]} initialInstalledSkillIds={['personal-advisor']} profilePreview fallbackAiModel={fallbackAiModel} />
   }
   const shoppingPreferencesPreview = process.env.NODE_ENV !== 'production' && params.shoppingPreferencesPreview === '1'
   if (shoppingPreferencesPreview) {
     return <App initialProducts={productsList} hasLiveProducts profileName="预览用户" profilePreview onboardingPreview initialAiAssistantProfile={{...emptyAiAssistantProfile,name:'预览用户',stage:'done'}} fallbackAiModel={fallbackAiModel} />
   }
-  if (demoLogin || aiAssistantPreview) {
+  if (aiAssistantPreview || (demoLogin && !params.post)) {
     return <App
       initialProducts={productsList}
       hasLiveProducts
       profileName="预览用户"
       initialAiAssistantChat={aiAssistantPreview}
+      initialAiMessages={[]}
       profilePreview
       fallbackAiModel={fallbackAiModel}
     />
@@ -58,7 +64,16 @@ export default async function ConsumerMarketPage({ searchParams }: { searchParam
   } catch {
     user = null
   }
-  if (!user) redirect('/login?next=%2Fdiscover')
+  if (!user) {
+    const postId = typeof params.post === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.post) ? params.post : undefined
+    if (postId) {
+      const posts = await readPublishedContent(supabase, postId)
+      const article = posts.find((post) => post.id === postId && post.publication?.kind === 'article')
+      if (article) return <PublicArticleReader post={article} />
+    }
+    const destination = postId ? `/discover?post=${postId}` : '/discover'
+    redirect(`/login?next=${encodeURIComponent(destination)}`)
+  }
   const aiAssistantProfile = readAiAssistantProfile(user?.user_metadata?.ai_assistant_profile)
   const signupName = typeof user?.user_metadata?.full_name === 'string' ? user.user_metadata.full_name.trim().slice(0, 40) : ''
   const initialAiAssistantProfile = {
@@ -66,14 +81,12 @@ export default async function ConsumerMarketPage({ searchParams }: { searchParam
     avatarUrl: typeof user?.user_metadata?.avatar_url === 'string' ? user.user_metadata.avatar_url : aiAssistantProfile.avatarUrl,
   }
   const rawEnabledSkills = user?.user_metadata?.enabled_skills
-  const initialInstalledSkillIds: ('personal-advisor' | 'shopping-preferences' | 'know-yourself')[] = Array.isArray(rawEnabledSkills)
-    ? rawEnabledSkills.filter((id): id is 'personal-advisor' | 'shopping-preferences' | 'know-yourself' => id === 'personal-advisor' || id === 'shopping-preferences' || id === 'know-yourself')
-    : user ? [...DEFAULT_INSTALLED_SKILL_IDS] : []
-  if (user && !Array.isArray(rawEnabledSkills)) {
+  const initialInstalledSkillIds: ('personal-advisor')[] = [...DEFAULT_INSTALLED_SKILL_IDS]
+  if (user && !(Array.isArray(rawEnabledSkills) && rawEnabledSkills.length === 1 && rawEnabledSkills[0] === 'personal-advisor')) {
     await supabase.auth.updateUser({ data: { enabled_skills: initialInstalledSkillIds } })
   }
   const showSignupInvitation = needsSignupInvitation(user.user_metadata)
-  const deepSeekKeyConfigured = user ? Boolean(await readDeepSeekKeyForUser(user.id)) : false
+  const deepSeekKeyConfigured = false
   const activatePersonalAdvisor = params.activatePersonalAdvisor === '1'
     && (!user || initialInstalledSkillIds.includes('personal-advisor'))
 

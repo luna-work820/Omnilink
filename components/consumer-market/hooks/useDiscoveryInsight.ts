@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
-import type { DiscoveryPage } from '@/lib/consumer-advisor/discovery-contract'
+import { DISCOVERY_INSIGHT_SAMPLE_SIZE,type DiscoveryPage } from '@/lib/consumer-advisor/discovery-contract'
 import type { InsightQuestion } from '@/lib/consumer-advisor/fashion-insight'
 import type { ConsumerAiModel } from '../types'
 
@@ -25,13 +25,13 @@ export function useDiscoveryInsight(discovery:DiscoveryPage|null, model:Consumer
     const timers=new Map<Element,ReturnType<typeof setTimeout>>()
     const request=()=>{
       const page=current.current
-      if(!page||page.searchRunId!==runId||requested.current||seen.current.size<30)return
+      if(!page||page.searchRunId!==runId||requested.current||seen.current.size<DISCOVERY_INSIGHT_SAMPLE_SIZE)return
       requested.current=true
       const abort=new AbortController();controller.current=abort
       void (async()=>{
         try {
           const response=await fetch('/api/consumer/discovery',{method:'POST',credentials:'include',signal:abort.signal,headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({action:'insight',sessionId:page.sessionId,searchRunId:runId,viewedIds:[...seen.current].slice(0,30),model})})
+            body:JSON.stringify({action:'insight',sessionId:page.sessionId,searchRunId:runId,viewedIds:[...seen.current].slice(0,DISCOVERY_INSIGHT_SAMPLE_SIZE),model})})
           if(!response.ok)return
           if(!response.headers.get('content-type')?.includes('application/x-ndjson'))return
           const reader=response.body?.getReader()

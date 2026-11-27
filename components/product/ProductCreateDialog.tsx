@@ -477,7 +477,7 @@ export function ProductCreateDialog({ open: controlledOpen, initialImages = [], 
                     >
                       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-medium text-[var(--text-secondary)] [&::-webkit-details-marker]:hidden">
                         <span>{isZh ? '规格' : 'Specs'}</span>
-                        <span aria-hidden="true" className="text-lg leading-none text-[var(--accent-secondary)] transition-transform group-open:rotate-45">+</span>
+                        <span aria-hidden="true" className="text-lg leading-none text-[var(--accent-primary)] transition-transform group-open:rotate-45">+</span>
                       </summary>
                       <div className="space-y-5 border-t border-[var(--border-subtle)] py-4">
                         <ProductAttributesPanel rows={attributeRows} onChange={setAttributeRows} disabled={isSubmitting} showHeader={false} />

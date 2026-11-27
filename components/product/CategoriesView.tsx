@@ -55,7 +55,7 @@ const DEFAULT_CATEGORIES: CategoryItem[] = [
     name: '数码配件',
     name_en: 'Accessories & Power',
     count: 36,
-    color: '#e0652b',
+    color: 'var(--brand-secondary)',
     iconText: '⚡',
     description: 'GaN 快充坞、磁吸无线充及高规格扩展坞',
     description_en: 'GaN fast charging docks, MagSafe stations and USB-C hubs',

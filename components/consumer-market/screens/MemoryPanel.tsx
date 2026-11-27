@@ -45,6 +45,18 @@ function AssessmentEvidence({memory}:{memory:Memory}) {
     })}</dl></details>
 }
 
+function ConversationEvidence({memory}:{memory:Memory}) {
+  const sources=memory.sourcePayload?.sourceMessages
+  if(!Array.isArray(sources)||!sources.length)return null
+  return <details className="mt-2 text-xs text-[var(--market-text-secondary)]"><summary className="cursor-pointer py-2 focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">查看对话来源</summary>
+    <ul className="space-y-3 pb-2">{sources.map((source:unknown)=>{
+      if(!source||typeof source!=='object')return null
+      const item=source as Record<string,unknown>
+      if(typeof item.id!=='string'||typeof item.content!=='string')return null
+      return <li key={item.id}><p>{item.role==='assistant'?'助手分析':'你的回答'}</p><p className="mt-1 whitespace-pre-wrap break-words text-[var(--market-ink)]">{item.content}</p></li>
+    })}</ul></details>
+}
+
 export function MemoryPanel({preview=false}:{preview?:boolean}) {
   const {openPersonalView,updateContextVersion}=useOmnilink()
   const [profile,setProfile]=useState<AiAssistantProfile>(emptyAiAssistantProfile)
@@ -81,7 +93,7 @@ export function MemoryPanel({preview=false}:{preview?:boolean}) {
         const response=await fetch('/api/consumer/ai-assistant-profile',{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
         const result=await response.json()
         if(!response.ok||!result.profile){if(response.status===409){setEditing(null);await load()}throw new Error(result.error??'记忆暂时无法保存。')}
-        setProfile(readAiAssistantProfile(result.profile));updateContextVersion(Number(result.contextVersion??0))
+        setProfile(readAiAssistantProfile(result.profile));updateContextVersion(Number(result.contextVersion??0));await load()
       }
       setEditing(null);if(body.action==='memory')setText('')
     }catch(cause){setError(cause instanceof Error?cause.message:'记忆暂时无法保存。')}
@@ -104,6 +116,7 @@ export function MemoryPanel({preview=false}:{preview?:boolean}) {
       <p className="mt-1 text-xs text-[var(--market-text-secondary)]">{domains[memory.domain]}，{memory.origin==='inferred'?'推断':memory.sourceKind==='assessment'?'评测自述':'自述'}{memory.status==='active'?'，已确认':'，待确认'}</p>
       {memory.evidence&&<p className="mt-2 break-words text-xs leading-5 text-[var(--market-text-secondary)]">{memory.evidence}</p>}
       <AssessmentEvidence memory={memory}/>
+      <ConversationEvidence memory={memory}/>
       <div className="mt-2 flex flex-wrap gap-1">
         {memory.status!=='active'&&<button type="button" className={primary} disabled={busy} onClick={()=>void mutate({action:'confirm',id:memory.id,revision:memory.revision??1})}>确认</button>}
         <button type="button" className={secondary} disabled={busy} onClick={()=>{setEditing(memory.id);setEditText(memory.text)}}>修改</button>

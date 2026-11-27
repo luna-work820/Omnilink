@@ -72,7 +72,7 @@ export function V3DashboardShell({ children, profile, capabilities, demo = false
       <div className="dashboard-shell relative z-10 flex h-full min-h-0 w-full overflow-hidden rounded-none border-0 bg-[var(--canvas)]">
         <Sidebar aria-label="主导航" data-glasswork="" data-glasswork-radius="24" data-glasswork-rim="12" data-glasswork-dispersion="0.18" data-glasswork-tint={workbenchPage ? '1.15' : undefined} className="workspace-glass-sidebar" >
           <SidebarHeader className="justify-between">
-            <SidebarBrand href={homeHref} useMoon={workbenchPage} />
+            <SidebarBrand href={homeHref} />
             <SidebarTrigger />
           </SidebarHeader>
           <SidebarContent>
@@ -90,7 +90,7 @@ export function V3DashboardShell({ children, profile, capabilities, demo = false
                             <Link href={item.href} aria-label={item.label} aria-current={selected ? 'page' : undefined} title={item.label}>
                               <Icon aria-hidden="true" />
                               <span data-sidebar-label="" className="truncate">{item.label}</span>
-                              {selected && <span aria-hidden="true" className="ml-auto size-1.5 shrink-0 rounded-full bg-[var(--accent-secondary)]" />}
+                              {selected && <span aria-hidden="true" className="ml-auto size-1.5 shrink-0 rounded-full bg-[var(--brand-primary)]" />}
                             </Link>
                           </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -124,7 +124,7 @@ export function V3DashboardShell({ children, profile, capabilities, demo = false
   )
 }
 
-function SidebarBrand({ href, useMoon }: { href: string; useMoon: boolean }) {
+function SidebarBrand({ href }: { href: string }) {
   const { state } = useSidebar()
   return (
     <Link
@@ -132,7 +132,7 @@ function SidebarBrand({ href, useMoon }: { href: string; useMoon: boolean }) {
       aria-label="Omnilink"
       className="flex min-w-0 items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--sidebar-ring)] focus-visible:outline-offset-2"
     >
-      {useMoon ? <Image src="/omnilink-moon.svg" width={28} height={28} alt="" className="size-7 shrink-0" /> : <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--text-primary)] text-sm font-light text-[var(--surface)]">N</span>}
+      <Image src="/omnilink-logo.png" width={28} height={28} alt="" className="size-7 shrink-0" />
       {state === 'expanded' && <span className="min-w-0 truncate text-[13px] font-semibold tracking-[-0.03em]">omnilink</span>}
     </Link>
   )

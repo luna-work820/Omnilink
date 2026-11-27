@@ -4,10 +4,10 @@
   --liquid-control: color-mix(in srgb, var(--liquid-white) 70%, transparent);
   --liquid-hover: color-mix(in srgb, var(--liquid-white) 90%, transparent);
   --liquid-panel: color-mix(in srgb, var(--liquid-white) 84%, transparent);
-  --liquid-edge: rgb(29 31 35 / .09);
+  --liquid-edge: rgb(23 23 23 / .09);
   --liquid-light: rgb(255 255 255 / .95);
   --liquid-optics: blur(10px) saturate(1.25);
-  --liquid-rim: inset 0 1px 1px var(--liquid-light), inset 0 -.5px .5px rgb(29 31 35 / .06), 0 2px 8px rgb(29 31 35 / .035);
+  --liquid-rim: inset 0 1px 1px var(--liquid-light), inset 0 -.5px .5px rgb(23 23 23 / .06), 0 2px 8px rgb(23 23 23 / .035);
 }
 
 body[data-liquid-theme='white']:not(:has(.consumer-market-shell)) :is(button, input[type='button'], input[type='submit'], [role='button'], [data-glass-control])
@@ -26,8 +26,8 @@ body[data-liquid-theme='white']:not(:has(.consumer-market-shell)) :is(button, in
 
 body[data-liquid-theme='white']:not(:has(.consumer-market-shell)) :is(button, [role='button'], [data-glass-control]):not([data-liquid-skip]):not(:has(img)):is(:hover, [aria-pressed='true'], [aria-selected='true'], [data-state='open']) {
   background: var(--liquid-hover) !important;
-  border-color: rgb(29 31 35 / .16) !important;
-  box-shadow: inset 0 1px 1px var(--liquid-light), inset 0 -.5px .5px rgb(29 31 35 / .08), 0 3px 12px rgb(29 31 35 / .06) !important;
+  border-color: rgb(23 23 23 / .16) !important;
+  box-shadow: inset 0 1px 1px var(--liquid-light), inset 0 -.5px .5px rgb(23 23 23 / .08), 0 3px 12px rgb(23 23 23 / .06) !important;
 }
 
 body[data-liquid-theme='white']:not(:has(.consumer-market-shell)) :is(button, [role='button'], [data-glass-control]):disabled { opacity: .45; cursor: not-allowed; }

@@ -8,7 +8,7 @@ import { readPublishedConsumerCatalog,selectCatalogProducts,type ConsumerCatalog
 import { retrieveDiscoveryCandidates } from './discovery-retrieval'
 import { eligibleConsumerProduct,rankKeywordProducts,keywordProductScore,spreadStores } from './search-spec'
 import type { RetrievalReport } from './embedding-profile'
-import { DiscoveryError,discoverySpecSchema,type DiscoveryPage,type DiscoverySpec } from './discovery-contract'
+import { DISCOVERY_INSIGHT_SAMPLE_SIZE,DiscoveryError,discoverySpecSchema,type DiscoveryPage,type DiscoverySpec } from './discovery-contract'
 import { loadPersonalContext,resolvePersonalContext,type PersonalContextSnapshot } from './personal-context'
 import type { ExchangeRates } from './exchange-rates'
 
@@ -65,9 +65,17 @@ function dbError(error:{code?:string;message?:string}):never {
   throw new DiscoveryError('CATALOG_UNAVAILABLE',503,'商品暂时无法读取，请重试。')
 }
 
-export async function startDiscovery(actor:DiscoveryActor,input:DiscoverySpec,snapshot?:PersonalContextSnapshot,signal?:AbortSignal,previousRun?:Run,publishedCatalog?:ConsumerCatalogSnapshot):Promise<DiscoveryPage> {
+type DiscoveryCommit = (run: Record<string, unknown>, page: DiscoveryPage) => Promise<boolean>
+
+export type DiscoveryRouteMeta = {routeSource?:'rule'|'explicit'|'model'; keywordKind?:'category'|'name'|'brand'|'store'|'model'|'phrase'|null}
+
+export async function startDiscovery(actor:DiscoveryActor,input:DiscoverySpec,snapshot?:PersonalContextSnapshot,signal?:AbortSignal,previousRun?:Run,publishedCatalog?:ConsumerCatalogSnapshot,commit?:DiscoveryCommit,routeMeta?:DiscoveryRouteMeta):Promise<DiscoveryPage> {
   const spec=discoverySpecSchema.parse(input)
-  const context=resolvePersonalContext(snapshot ?? await loadPersonalContext(actor.userId,{query:spec.query,preferences:spec.usePersonalContext??false}),spec)
+  const [personalContext,catalog]=await Promise.all([
+    snapshot?Promise.resolve(snapshot):spec.usePersonalContext?loadPersonalContext(actor.userId,{query:spec.query,preferences:true}):Promise.resolve({userId:actor.userId,version:0,memories:[]}),
+    publishedCatalog?Promise.resolve(publishedCatalog):readPublishedConsumerCatalog(),
+  ])
+  const context={...resolvePersonalContext(personalContext,spec),...routeMeta}
   let previousRates:ExchangeRates|null|undefined
   if(previousRun) {
     const {data,error}=await createServiceRoleClient().rpc('read_consumer_discovery_execution',{
@@ -77,23 +85,25 @@ export async function startDiscovery(actor:DiscoveryActor,input:DiscoverySpec,sn
     if(!data)throw new DiscoveryError('SEARCH_NOT_FOUND',404,'找不到这次搜索。')
     previousRates=(data as DbPage).execution.priceReference
   }
-  const candidates=await retrieveDiscoveryCandidates(spec,context,signal,undefined,previousRates,publishedCatalog)
+  const candidates=await retrieveDiscoveryCandidates(spec,context,signal,undefined,previousRates,catalog)
   signal?.throwIfAborted()
-  return saveDiscoveryExecution(actor,spec,context.version,candidates.products.map((product)=>product.id),candidates.report,candidates.catalogVersion,candidates.priceReference,candidates.priceWarning)
+  const latestCatalog = await readPublishedConsumerCatalog()
+  if (latestCatalog.version !== candidates.catalogVersion) throw new DiscoveryError('SEARCH_EXPIRED',410,'目录已更新，请刷新结果。')
+  signal?.throwIfAborted()
+  return saveDiscoveryExecution(actor,spec,context.version,candidates.products.map((product)=>product.id),candidates.report,candidates.catalogVersion,candidates.priceReference,candidates.priceWarning,catalog,commit)
 }
 
-async function saveDiscoveryExecution(actor:DiscoveryActor,spec:DiscoverySpec,version:number,keys:string[],report:RetrievalReport,catalogVersion:string,priceReference?:ExchangeRates|null,priceWarning?:boolean) {
+async function saveDiscoveryExecution(actor:DiscoveryActor,spec:DiscoverySpec,version:number,keys:string[],report:RetrievalReport,catalogVersion:string,
+  priceReference:ExchangeRates|null|undefined,priceWarning:boolean|undefined,snapshot:ConsumerCatalogSnapshot,commit?:DiscoveryCommit) {
   const run={id:randomUUID(),user_id:actor.userId,guest_hash:actor.guestHash,session_id:actor.sessionId,spec,
     candidate_ids:[],context_version:version,expires_at:new Date(Date.now()+15*60_000).toISOString(),
     execution:{catalogVersion,candidateKeys:keys,retrieval:report,priceReference:priceReference??null,priceWarning:priceWarning??false}}
-  const catalogRead=readPublishedConsumerCatalog().then(
-    (snapshot)=>({ok:true as const,snapshot}),
-    (error:unknown)=>({ok:false as const,error}),
-  )
+  const pageRecord:DbPage={id:run.id,spec,sessionId:actor.sessionId,contextVersion:version,expiresAt:run.expires_at,execution:run.execution}
+  const page = discoveryPageAt(actor,pageRecord,snapshot,0,true)
+  if (commit && await commit(run, page)) return page
   const created=await createServiceRoleClient().rpc('create_consumer_discovery_run',{p_record:run}).abortSignal(AbortSignal.timeout(8000))
   if(created.error) dbError(created.error)
-  const snapshot=catalogRead.then((result)=>{if(!result.ok)throw result.error;return result.snapshot})
-  return readDiscoveryPage(actor,{r:run.id,s:actor.sessionId,o:0,v:version,e:Date.parse(run.expires_at)},true,snapshot)
+  return page
 }
 
 export async function refineDiscovery(actor:DiscoveryActor,run:Run,sessionTerms:string[]) {
@@ -109,7 +119,7 @@ export async function refineDiscovery(actor:DiscoveryActor,run:Run,sessionTerms:
   const products=spreadStores(rankKeywordProducts(selectCatalogProducts(snapshot.products,previous.execution.candidateKeys),spec,[],[],previous.execution.priceReference,false),(product)=>keywordProductScore(product,spec))
   return saveDiscoveryExecution(actor,spec,run.context_version,products.map((product)=>product.id),{
     ...previous.execution.retrieval,embeddingCalls:0,embeddingInputTokens:0,embeddingMs:0,retrievalMs:0,totalMs:0,candidateCount:products.length,
-  },snapshot.version,previous.execution.priceReference,previous.execution.priceWarning)
+  },snapshot.version,previous.execution.priceReference,previous.execution.priceWarning,snapshot)
 }
 
 export function pageCatalogExecution(spec:DiscoverySpec,execution:Execution,offset:number,catalog:ProductItem[],catalogVersion:string) {
@@ -126,6 +136,16 @@ export function pageCatalogExecution(spec:DiscoverySpec,execution:Execution,offs
   return {products:page,nextOffset:position<execution.candidateKeys.length?position:null}
 }
 
+function discoveryPageAt(actor:DiscoveryActor,page:DbPage,snapshot:ConsumerCatalogSnapshot,offset:number,initial=false):DiscoveryPage {
+  const spec=discoverySpecSchema.parse(page.spec)
+  const {products,nextOffset}=pageCatalogExecution(spec,page.execution,offset,snapshot.products,snapshot.version)
+  return {searchRunId:page.id,sessionId:page.sessionId,query:spec.query,products,
+    nextCursor:nextOffset===null?null:encodeDiscoveryCursor({r:page.id,s:actor.sessionId,o:nextOffset,v:Number(page.contextVersion),e:Date.parse(page.expiresAt)}),
+    contextVersion:Number(page.contextVersion),snapshotVersion:1,pageSize:20,returnedCount:products.length,candidateCount:page.execution.candidateKeys.length,
+    question:null,spec,priceReference:page.execution.priceReference??null,priceWarning:page.execution.priceWarning??false,
+    retrieval:initial?page.execution.retrieval:{...page.execution.retrieval,embeddingCalls:0,embeddingInputTokens:0,embeddingMs:0,retrievalMs:0,totalMs:0}}
+}
+
 async function readDiscoveryPage(actor:DiscoveryActor,cursor:z.infer<typeof cursorSchema>,initial=false,catalogRead?:Promise<ConsumerCatalogSnapshot>):Promise<DiscoveryPage> {
   if(cursor.s!==actor.sessionId) throw new DiscoveryError('SEARCH_NOT_FOUND',404,'找不到这次搜索。')
   const [execution,snapshot]=await Promise.all([
@@ -137,13 +157,7 @@ async function readDiscoveryPage(actor:DiscoveryActor,cursor:z.infer<typeof curs
   const {data,error}=execution
   if(error) dbError(error)
   if(!data) throw new DiscoveryError('CATALOG_UNAVAILABLE',503,'商品暂时无法读取，请重试。')
-  const page=data as DbPage, spec=discoverySpecSchema.parse(page.spec)
-  const {products,nextOffset}=pageCatalogExecution(spec,page.execution,cursor.o,snapshot.products,snapshot.version)
-  return {searchRunId:page.id,sessionId:page.sessionId,query:spec.query,products,
-    nextCursor:nextOffset===null?null:encodeDiscoveryCursor({r:page.id,s:actor.sessionId,o:nextOffset,v:Number(page.contextVersion),e:Date.parse(page.expiresAt)}),
-    contextVersion:Number(page.contextVersion),snapshotVersion:1,pageSize:20,returnedCount:products.length,candidateCount:page.execution.candidateKeys.length,
-    question:null,spec,priceReference:page.execution.priceReference??null,priceWarning:page.execution.priceWarning??false,
-    retrieval:initial?page.execution.retrieval:{...page.execution.retrieval,embeddingCalls:0,embeddingInputTokens:0,embeddingMs:0,retrievalMs:0,totalMs:0}}
+  return discoveryPageAt(actor,data as DbPage,snapshot,cursor.o,initial)
 }
 
 export async function continueDiscovery(actor:DiscoveryActor,cursor:string,runId:string) {
@@ -175,7 +189,7 @@ export async function readViewedDiscoveryProducts(actor:DiscoveryActor,run:Run,i
   if(!data)throw new DiscoveryError('SEARCH_NOT_FOUND',404,'找不到这次搜索。')
   const execution=(data as DbPage).execution
   const allowed=new Set(execution.candidateKeys)
-  if(ids.length<30 || new Set(ids).size!==ids.length || ids.some((id)=>!allowed.has(id)))throw new DiscoveryError('INVALID_VIEWED_PRODUCTS',400,'浏览记录无效。')
+  if(ids.length!==DISCOVERY_INSIGHT_SAMPLE_SIZE || new Set(ids).size!==ids.length || ids.some((id)=>!allowed.has(id)))throw new DiscoveryError('INVALID_VIEWED_PRODUCTS',400,'浏览记录无效。')
   const snapshot=await readPublishedConsumerCatalog()
   if(snapshot.version!==execution.catalogVersion)throw new DiscoveryError('SEARCH_EXPIRED',410,'目录已更新，请刷新结果。')
   return selectCatalogProducts(snapshot.products,ids)

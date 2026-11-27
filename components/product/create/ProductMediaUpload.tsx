@@ -61,7 +61,7 @@ export function ProductMediaUpload({ images, onChange, disabled = false, maxImag
           onDragOver={(event) => event.preventDefault()}
           onDragLeave={(event) => { const target = event.relatedTarget; if (!(target instanceof Node) || !event.currentTarget.contains(target)) setIsDragging(false) }}
           onDrop={onDrop}
-          className={`group relative h-[clamp(18rem,54vh,32.5rem)] min-h-[280px] overflow-hidden rounded-[var(--radius-card)] border bg-[var(--surface-muted)] transition-colors ${isDragging ? 'border-[var(--accent-secondary)]' : 'border-[var(--border-subtle)]'}`}
+          className={`group relative h-[clamp(18rem,54vh,32.5rem)] min-h-[280px] overflow-hidden rounded-[var(--radius-card)] border bg-[var(--surface-muted)] transition-colors ${isDragging ? 'border-[var(--brand-primary)]' : 'border-[var(--border-subtle)]'}`}
         >
           <Image
             src={activeImage.previewUrl}
@@ -90,10 +90,10 @@ export function ProductMediaUpload({ images, onChange, disabled = false, maxImag
           onDragOver={(event) => event.preventDefault()}
           onDragLeave={(event) => { const target = event.relatedTarget; if (!(target instanceof Node) || !event.currentTarget.contains(target)) setIsDragging(false) }}
           onDrop={onDrop}
-          className={`relative flex h-[clamp(18rem,54vh,32.5rem)] min-h-[280px] cursor-pointer items-center justify-center overflow-hidden rounded-[var(--radius-card)] border border-dashed bg-[var(--surface-muted)] transition-colors focus-within:ring-2 focus-within:ring-[var(--accent-secondary)]/25 ${isDragging ? 'border-[var(--accent-secondary)] bg-[var(--accent-secondary-soft)]' : 'border-[var(--border-subtle)] hover:border-[var(--accent-secondary)]' } ${disabled ? 'pointer-events-none opacity-50' : ''}`}
+          className={`relative flex h-[clamp(18rem,54vh,32.5rem)] min-h-[280px] cursor-pointer items-center justify-center overflow-hidden rounded-[var(--radius-card)] border border-dashed bg-[var(--surface-muted)] transition-colors focus-within:ring-2 focus-within:ring-[var(--brand-primary)]/25 ${isDragging ? 'border-[var(--brand-primary)] bg-[var(--accent-primary-soft)]' : 'border-[var(--border-subtle)] hover:border-[var(--interactive-hover)]' } ${disabled ? 'pointer-events-none opacity-50' : ''}`}
         >
           <input type="file" accept={accept} multiple className="sr-only" aria-label={addLabel} disabled={disabled} onChange={onInputChange} />
-          <UploadCloud size={32} strokeWidth={1.6} className="text-[var(--accent-secondary)]" aria-hidden="true" />
+          <UploadCloud size={32} strokeWidth={1.6} className="text-[var(--accent-primary)]" aria-hidden="true" />
         </label>
       )}
 
@@ -106,11 +106,11 @@ export function ProductMediaUpload({ images, onChange, disabled = false, maxImag
                 onClick={() => setPreviewIndex(index)}
                 aria-label={isZh ? `预览图片 ${index + 1}` : `Preview image ${index + 1}`}
                 aria-pressed={activeIndex === index}
-                className={`ui-interactive relative size-full overflow-hidden rounded-[var(--radius-card-nested)] border bg-[var(--surface-muted)] ${activeIndex === index ? 'border-[var(--accent-secondary)] ring-2 ring-[var(--accent-secondary)]/20' : 'border-[var(--border-subtle)]'}`}
+                className={`ui-interactive relative size-full overflow-hidden rounded-[var(--radius-card-nested)] border bg-[var(--surface-muted)] ${activeIndex === index ? 'border-[var(--brand-primary)] ring-2 ring-[var(--brand-primary)]/20' : 'border-[var(--border-subtle)]'}`}
               >
                 <Image src={item.previewUrl} alt="" fill className="object-cover" referrerPolicy="no-referrer" unoptimized />
                 {index === 0 && (
-                  <span title={coverLabel} className="absolute left-1 top-1 grid size-5 place-items-center rounded-full bg-[var(--surface)]/95 text-[var(--accent-secondary)] shadow-sm">
+                  <span title={coverLabel} className="absolute left-1 top-1 grid size-5 place-items-center rounded-full bg-[var(--surface)]/95 text-[var(--accent-primary)] shadow-sm">
                     <Star size={11} fill="currentColor" aria-hidden="true" />
                   </span>
                 )}
@@ -137,7 +137,7 @@ export function ProductMediaUpload({ images, onChange, disabled = false, maxImag
             <label
               onDragOver={(event) => event.preventDefault()}
               onDrop={onDrop}
-              className={`relative grid size-[76px] shrink-0 cursor-pointer place-items-center overflow-hidden rounded-[var(--radius-card-nested)] border border-dashed border-[var(--border-subtle)] bg-[var(--surface-muted)] text-[var(--accent-secondary)] transition-colors hover:border-[var(--accent-secondary)] hover:bg-[var(--accent-secondary-soft)] focus-within:ring-2 focus-within:ring-[var(--accent-secondary)]/25 ${disabled ? 'pointer-events-none opacity-50' : ''}`}
+              className={`relative grid size-[76px] shrink-0 cursor-pointer place-items-center overflow-hidden rounded-[var(--radius-card-nested)] border border-dashed border-[var(--border-subtle)] bg-[var(--surface-muted)] text-[var(--accent-primary)] transition-colors hover:border-[var(--interactive-hover)] hover:bg-[var(--accent-primary-soft)] focus-within:ring-2 focus-within:ring-[var(--brand-primary)]/25 ${disabled ? 'pointer-events-none opacity-50' : ''}`}
             >
               <input type="file" accept={accept} multiple className="sr-only" aria-label={addLabel} disabled={disabled} onChange={onInputChange} />
               <Plus size={22} aria-hidden="true" />

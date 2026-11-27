@@ -8,7 +8,8 @@ import { searchConsumerCatalogByVector, SemanticSearchError } from './consumer-c
 import { convertCurrency, type ExchangeRates } from './exchange-rates'
 import { getExchangeRates } from './exchange-rates-server'
 
-type ContextTerms = {positiveTerms: string[]; avoidTerms: string[]}
+type ContextTerms = {positiveTerms: string[]; avoidTerms: string[];
+  routeSource?: NonNullable<RetrievalReport['routeSource']>; keywordKind?: RetrievalReport['keywordKind']}
 type RetrievalDeps = {catalog: () => ProductItem[] | ConsumerCatalogSnapshot | Promise<ProductItem[] | ConsumerCatalogSnapshot>; semantic: typeof searchConsumerCatalogByVector; rates?: () => Promise<ExchangeRates | null>}
 const defaults: RetrievalDeps = {catalog: readPublishedConsumerCatalog, semantic: searchConsumerCatalogByVector, rates: getExchangeRates}
 
@@ -44,6 +45,7 @@ export async function retrieveDiscoveryCandidates(input: DiscoverySpec, context:
   const report: RetrievalReport = {requestedMode: options.mode, effectiveMode: mode,
     profile: mode === 'keyword' ? null : embeddingProfiles[options.profile], degraded: hasKeywordOverride && options.mode !== 'auto',
     reason: hasKeywordOverride ? 'KEYWORD_OVERRIDE' : null, selectionReason,
+    routeSource: context.routeSource ?? 'model', keywordKind: context.keywordKind ?? null,
     eligibilityMs,
     embeddingCalls: 0, embeddingInputTokens: null, embeddingMs: 0, retrievalMs: 0,
     candidateCount: 0, keywordCount: keywordIds.length, semanticCount: 0, totalMs: 0}
@@ -80,6 +82,8 @@ export async function retrieveDiscoveryCandidates(input: DiscoverySpec, context:
     report.effectiveMode==='keyword'?0:report.effectiveMode==='semantic'?0.015:0.0005)
   report.rankingMs=Math.round(performance.now()-rankStarted)
   report.candidateCount = ordered.length
+  report.resultReason = report.degraded ? 'SEMANTIC_DEGRADED'
+    : ordered.length === 0 ? eligible.length === 0 ? 'NO_ELIGIBLE' : 'NO_KEYWORD_MATCH' : 'MATCH'
   report.totalMs = Math.round(performance.now() - started)
   return {products:ordered, keywordIds, semanticIds, report, catalogVersion:snapshot.version,priceReference,priceWarning}
 }

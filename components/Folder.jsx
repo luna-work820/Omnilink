@@ -44,21 +44,24 @@ const parseColor = (() => {
   return value => {
     const key = String(value);
     if (cache.has(key)) return cache.get(key);
-    let rgb = [61, 139, 255];
-    const hex = key.match(/^#(?:([\da-f]{3})|([\da-f]{6}))$/i);
+    let rgb = [53, 108, 99];
+    const cssValue = key.startsWith('var(') && typeof document !== 'undefined'
+      ? getComputedStyle(document.documentElement).getPropertyValue(key.slice(4, -1).trim()).trim()
+      : key;
+    const hex = cssValue.match(/^#(?:([\da-f]{3})|([\da-f]{6}))$/i);
     if (hex) {
       const digits = hex[1]
         ? hex[1].split('').map(channel => channel + channel).join('')
         : hex[2];
       rgb = [0, 2, 4].map(index => Number.parseInt(digits.slice(index, index + 2), 16));
-    } else if (key.toLowerCase() === 'white') {
+    } else if (cssValue.toLowerCase() === 'white') {
       rgb = [255, 255, 255];
     } else if (typeof document !== 'undefined') {
       context ??= document.createElement('canvas').getContext('2d', { willReadFrequently: true });
       if (context) {
         context.clearRect(0, 0, 1, 1);
-        context.fillStyle = '#3d8bff';
-        context.fillStyle = key;
+        context.fillStyle = '#356C63';
+        context.fillStyle = cssValue;
         context.fillRect(0, 0, 1, 1);
         rgb = Array.from(context.getImageData(0, 0, 1, 1).data.slice(0, 3));
       }
@@ -773,7 +776,7 @@ const Folder = ({
   label,
   mode = 'flap',
   variant = 'solid',
-  color = '#3d8bff',
+  color = 'var(--brand-primary)',
   paperColor = '#ffffff',
   tabPosition = 'right',
   layout = 'spread',

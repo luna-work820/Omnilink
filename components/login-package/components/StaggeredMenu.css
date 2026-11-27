@@ -24,14 +24,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 2em;
   background: transparent;
   pointer-events: none;
   z-index: 20;
-}
-
-.staggered-menu-header > * {
-  pointer-events: auto;
 }
 
 .sm-logo {
@@ -121,7 +116,7 @@
   position: absolute;
   top: 0;
   right: 0;
-  width: clamp(360px, 44vw, 580px);
+  width: min(100vw, clamp(360px, 44vw, 580px));
   height: 100%;
   background: #ffffff;
   color: #0b0c0e;

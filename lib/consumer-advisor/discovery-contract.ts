@@ -8,6 +8,8 @@ export const discoverySpecSchema = z.object({
   termGroups: z.array(z.array(z.string().trim().min(1).max(48)).min(1).max(5)).max(6),
   requiredTermGroups: z.array(z.array(z.string().trim().min(1).max(48)).min(1).max(5)).max(6).optional(),
   categoryTerm: z.string().trim().min(1).max(48).optional(),
+  /** Exact catalog model facts. Never relaxed by fuzzy or semantic recall. */
+  modelTerms: z.array(z.string().trim().min(1).max(40)).max(8).optional(),
   excludedTerms: z.array(z.string().trim().min(1).max(48)).max(10).default([]),
   minPrice: z.number().nonnegative().max(1e9).nullable().default(null),
   maxPrice: z.number().nonnegative().max(1e9).nullable().default(null),
@@ -35,6 +37,7 @@ export function readDiscoveryReference(blocks:unknown):DiscoveryReference|undefi
   }
 }
 export type DiscoveryQuestion = { id: 'style'; prompt: string; options: { value: string; label: string; terms: string[] }[] }
+export const DISCOVERY_INSIGHT_SAMPLE_SIZE = 8
 export type DiscoveryPage = {
   searchRunId: string
   sessionId: string

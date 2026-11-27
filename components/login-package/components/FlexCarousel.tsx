@@ -95,8 +95,8 @@ const BEND_PRESETS = {
 };
 
 const FIT_ASPECT = { portrait: 0.75, square: 1, landscape: 4 / 3 };
-const TAPS = 12;
-const PIXEL_BUDGET = 4.5e6;
+const TAPS = 8;
+const PIXEL_BUDGET = 2.4e6;
 const INTRO_DURATION = { rise: 2.1, bloom: 1.6, spin: 2.2, deal: 1.5, fade: 0.35 };
 
 const wrap = (value, size) => ((((value + size / 2) % size) + size) % size) - size / 2;
@@ -289,6 +289,7 @@ const FlexCarousel = ({
   interval = 4,
   captions = true,
   captureWheel = true,
+  initialPaused = false,
   onChange,
   onSelect,
   className = '',
@@ -302,7 +303,6 @@ const FlexCarousel = ({
   const [active, setActive] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [focusOpen, setFocusOpen] = useState(false);
-  const [webglUnavailable, setWebglUnavailable] = useState(false);
 
   const base = BEND_PRESETS[preset] || BEND_PRESETS.liquid;
   const pick = (value, key) => (value === undefined || value === null ? base[key] : value);
@@ -346,15 +346,8 @@ const FlexCarousel = ({
     const container = containerRef.current;
     if (!container) return undefined;
 
-    const canvas = document.createElement('canvas');
-    if (!canvas.getContext('webgl2')) {
-      const frame = requestAnimationFrame(() => setWebglUnavailable(true));
-      return () => cancelAnimationFrame(frame);
-    }
-
     const renderer = new Renderer({
-      canvas,
-      dpr: Math.min(window.devicePixelRatio || 1, 2),
+      dpr: Math.min(window.devicePixelRatio || 1, 1.5),
       alpha: true,
       premultipliedAlpha: true,
       antialias: false,
@@ -366,6 +359,7 @@ const FlexCarousel = ({
       return undefined;
     }
     gl.clearColor(0, 0, 0, 0);
+    const canvas = gl.canvas;
     canvas.style.display = 'block';
     canvas.style.width = '100%';
     canvas.style.height = '100%';
@@ -712,7 +706,7 @@ const FlexCarousel = ({
     const resize = () => {
       width = Math.max(1, container.clientWidth);
       height = Math.max(1, container.clientHeight);
-      renderer.dpr = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(PIXEL_BUDGET / (width * height)));
+      renderer.dpr = Math.min(window.devicePixelRatio || 1, 1.5, Math.sqrt(PIXEL_BUDGET / (width * height)));
       renderer.setSize(width, height);
       target.setSize(Math.max(2, Math.round(width * renderer.dpr)), Math.max(2, Math.round(height * renderer.dpr)));
       lensUniforms.tScene.value = target.texture;
@@ -720,14 +714,16 @@ const FlexCarousel = ({
       start();
     };
 
+    const isPaused = () => container.dataset.paused === 'true';
+
     const frame = now => {
       raf = 0;
-      if (!alive) return;
+      if (!alive || isPaused()) return;
       const s = settingsRef.current;
       const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
       last = now;
       if (!s || !slots.length) {
-        if (visible) raf = requestAnimationFrame(frame);
+        if (visible && !isPaused()) raf = requestAnimationFrame(frame);
         return;
       }
 
@@ -1003,11 +999,11 @@ const FlexCarousel = ({
         else container.removeAttribute('data-hover');
       }
 
-      if (visible && (animating || waiting || dirty || pointer.down)) raf = requestAnimationFrame(frame);
+      if (visible && !isPaused() && (animating || waiting || dirty || pointer.down)) raf = requestAnimationFrame(frame);
     };
 
     const start = () => {
-      if (raf || !visible || !alive) return;
+      if (raf || !visible || !alive || isPaused()) return;
       last = performance.now();
       raf = requestAnimationFrame(frame);
     };
@@ -1225,6 +1221,14 @@ const FlexCarousel = ({
     });
     intersectionObserver.observe(container);
 
+    const pauseObserver = new MutationObserver(() => {
+      if (!isPaused()) {
+        dirty = true;
+        start();
+      }
+    });
+    pauseObserver.observe(container, { attributes: true, attributeFilter: ['data-paused'] });
+
     engineRef.current = {
       wake: () => {
         dirty = true;
@@ -1243,6 +1247,7 @@ const FlexCarousel = ({
       cancelAnimationFrame(raf);
       resizeObserver.disconnect();
       intersectionObserver.disconnect();
+      pauseObserver.disconnect();
       container.removeEventListener('pointerdown', onPointerDown);
       container.removeEventListener('pointermove', onPointerMove);
       container.removeEventListener('pointerup', onPointerUp);
@@ -1266,16 +1271,14 @@ const FlexCarousel = ({
   return (
     <div
       ref={containerRef}
+      data-paused={initialPaused ? 'true' : 'false'}
       className={`flex-carousel ${className}`.trim()}
       style={{ ...style, '--flex-carousel-half': `${Math.min(Math.max(cardHeight, 0.05), 1) * 50}%` }}
-      role={webglUnavailable ? undefined : 'region'}
-      aria-roledescription={webglUnavailable ? undefined : 'carousel'}
-      aria-label={webglUnavailable ? undefined : 'Image carousel'}
-      tabIndex={webglUnavailable ? undefined : 0}
+      role="region"
+      aria-roledescription="carousel"
+      aria-label="Image carousel"
+      tabIndex={0}
     >
-      {webglUnavailable && current && (
-        <img className="flex-carousel__fallback" src={current.src} alt={current.alt || current.title} />
-      )}
       {captions && current && revealed && (
         <div className="flex-carousel__caption" aria-hidden="true">
           <span key={active} className="flex-carousel__title">

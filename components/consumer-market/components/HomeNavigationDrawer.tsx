@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Archive, ArrowLeft, GearSix, MagnifyingGlass, NotePencil, SidebarSimple, Trash } from '@phosphor-icons/react';
 import { Blocks, Brain, ChevronRight, EllipsisVertical, SlidersHorizontal, X } from 'lucide-react';
 import { DropdownMenu as DropdownMenuPrimitive } from 'radix-ui';
@@ -11,28 +11,26 @@ import { useOmnilink } from '../context/OmnilinkContext';
 
 const conversationOutline = (title: string) => title.trim().split(/[\r\n，。！？!?；;：:]/, 1)[0]?.trim() || '图片消息';
 
-export function HomeNavigationDrawer({ open = true, onClose, profileName, publisherReady, creatorReady = false, deepSeekKeyConfigured, initialView = 'main', initialSearchOpen = false }: {
+export function HomeNavigationDrawer({ open = true, onClose, profileName, publisherReady, creatorReady = false, deepSeekKeyConfigured, avatarUrl, initialView = 'main', initialSearchOpen = false }: {
   open?: boolean;
   onClose: () => void;
   profileName: string | null;
   publisherReady: boolean; creatorReady?: boolean;
   deepSeekKeyConfigured: boolean;
+  avatarUrl?: string;
   initialView?: 'main' | 'skills' | 'archived' | 'settings';
   initialSearchOpen?: boolean;
 }) {
   const {
     aiMessages, activeAiConversationId, archivedAiConversationIds, products,
     startAiConversation, selectAiConversation, archiveAiConversation, deleteAiConversation,
-    setHomeChatOpen, openFloatingProduct,openPersonalView,setAiModel,
+    setHomeChatOpen, openFloatingProduct,openPersonalView,
   } = useOmnilink();
   const [view, setView] = useState<'main' | 'skills' | 'archived' | 'settings'>(initialView);
   const [searchOpen, setSearchOpen] = useState(initialSearchOpen);
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [apiKey, setApiKey] = useState('');
-  const [apiStatus, setApiStatus] = useState(deepSeekKeyConfigured ? '已连接' : '未连接');
-  const [savingKey, setSavingKey] = useState(false);
   const [installedSkillIds, setInstalledSkillIds] = useState<AiAssistantSkillId[]>([]);
   const searchRef = useRef<HTMLInputElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -111,42 +109,17 @@ export function HomeNavigationDrawer({ open = true, onClose, profileName, publis
     onClose();
   };
   const activateSkill = (id: (typeof AI_ASSISTANT_SKILLS)[number]['id']) => {
-    if (id === 'shopping-preferences') {
-      openPersonalView('assessment');
-      onClose();
-      return;
-    }
     startAiConversation(id);
     setHomeChatOpen(true);
     onClose();
+    if (id === 'personal-advisor') requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[aria-label="形象助手功能"] button')?.focus({ preventScroll: true }));
   };
-  const updateKey = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!apiKey.trim() || savingKey) return;
-    setSavingKey(true);
-    try {
-      const response = await fetch('/api/consumer/deepseek-key', {
-        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey }),
-      });
-      const result = await response.json() as { configured?: boolean; error?: string };
-      if (!response.ok || !result.configured) throw new Error(result.error || '连接失败');
-      setApiStatus('已连接');
-      setApiKey('');
-      setAiModel('deepseek-v4-pro');
-    } catch (error) {
-      setApiStatus(error instanceof Error ? error.message : '连接失败');
-    } finally {
-      setSavingKey(false);
-    }
-  };
-
   const row = 'flex min-h-9 w-full items-center gap-2 market-hover-pill text-left text-xs text-[var(--market-ink)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]';
 
   return <div className="pointer-events-none absolute inset-0" role="presentation">
     <aside aria-label="导航与对话" className="home-navigation-drawer pointer-events-auto flex h-full w-full flex-col text-[var(--market-ink)]">
       <header className="flex min-h-14 items-center gap-1 px-3">
-        <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[16px] font-semibold"><Image src="/omnilink-moon.svg" width={24} height={24} alt="" className="h-6 w-6 shrink-0" />Omnilink</span>
+        <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[16px] font-semibold"><Image src="/omnilink-logo.png" width={24} height={24} alt="" className="h-6 w-6 shrink-0" />Omnilink</span>
         <button type="button" onClick={() => { setView('main'); setSearchOpen((open) => !open); setQuery(''); }} aria-label="搜索" aria-pressed={searchOpen} className="grid h-8 w-8 shrink-0 place-items-center rounded-full hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><MagnifyingGlass size={16} aria-hidden="true" /></button>
         <button type="button" onClick={onClose} aria-label="收起侧边栏" className="grid h-8 w-8 shrink-0 place-items-center rounded-full hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><SidebarSimple size={16} aria-hidden="true" /></button>
       </header>
@@ -155,7 +128,7 @@ export function HomeNavigationDrawer({ open = true, onClose, profileName, publis
         {view !== 'main' && !normalizedQuery && <button type="button" onClick={() => setView('main')} className={`${row} mb-2`}><ArrowLeft size={17} aria-hidden="true" />返回</button>}
         {view === 'settings' && !normalizedQuery ? <div className="px-3">
           <h2 className="mb-5 text-base font-semibold">设置</h2>
-          <form onSubmit={updateKey} className="space-y-3"><label htmlFor="home-deepseek-key" className="block text-sm font-medium">DeepSeek API Key</label><div className="flex items-center gap-2"><input id="home-deepseek-key" type="password" autoComplete="off" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder="粘贴 API Key" className="h-11 min-w-0 flex-1 rounded-full border-[0.5px] border-[var(--market-border)] bg-transparent px-4 text-sm outline-none focus-visible:border-[var(--market-support)]" /><button type="submit" disabled={savingKey || !apiKey.trim()} className="h-11 rounded-full bg-[var(--market-ink)] px-5 text-sm text-white disabled:opacity-40">保存</button></div><p className="text-xs text-[var(--market-text-muted)]" aria-live="polite">{apiStatus}</p></form>
+
           <section aria-labelledby="settings-personal-heading" className="mt-8">
             <h3 id="settings-personal-heading" className="mb-4 text-xs font-medium text-[var(--market-text-muted)]">个人</h3>
             <div className="-mx-3 flex flex-col gap-2">
@@ -194,9 +167,9 @@ export function HomeNavigationDrawer({ open = true, onClose, profileName, publis
         <div ref={profileMenuRef} className="relative min-w-0 flex-1">
           {profileMenuOpen && <div id="sidebar-personal-menu" role="dialog" aria-labelledby="personal-menu-title" className="sidebar-profile-popover absolute bottom-[calc(100%+8px)] left-0 z-30 w-[min(296px,calc(100vw-24px))] rounded-3xl border-[0.5px] border-[var(--market-border)] bg-[var(--market-surface-muted)] p-2 shadow-lg">
             <div className="flex justify-end pb-1"><button type="button" autoFocus onClick={() => { setProfileMenuOpen(false); profileTriggerRef.current?.focus(); }} aria-label="关闭个人菜单" className="grid h-7 w-7 place-items-center rounded-full text-[var(--market-ink)] hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><X size={14} aria-hidden="true" /></button></div>
-            <PersonalPanel profileName={profileName} publisherReady={publisherReady} creatorReady={creatorReady} onNavigate={()=>setProfileMenuOpen(false)} />
+            <PersonalPanel avatarUrl={avatarUrl} profileName={profileName} publisherReady={publisherReady} creatorReady={creatorReady} onNavigate={()=>setProfileMenuOpen(false)} />
           </div>}
-          <button ref={profileTriggerRef} type="button" onClick={() => setProfileMenuOpen((open) => !open)} aria-haspopup="dialog" aria-expanded={profileMenuOpen} aria-controls="sidebar-personal-menu" className="flex w-full min-w-0 items-center gap-3 px-3 py-2 text-left text-xs focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--market-surface-muted)] font-semibold">{profileName?.trim().slice(0, 1) || '访'}</span><span className="truncate">{profileName || '访客'}</span></button>
+          <button ref={profileTriggerRef} type="button" onClick={() => setProfileMenuOpen((open) => !open)} aria-haspopup="dialog" aria-expanded={profileMenuOpen} aria-controls="sidebar-personal-menu" className="flex w-full min-w-0 items-center gap-3 px-3 py-2 text-left text-xs focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--market-surface-muted)] font-semibold">{avatarUrl ? <img src={avatarUrl} alt="" className="h-8 w-8 rounded-full object-cover" /> : profileName?.trim().slice(0, 1) || '访'}</span><span className="truncate">{profileName || '访客'}</span></button>
         </div>
         <button type="button" onClick={() => { setProfileMenuOpen(false); setView('settings'); setSearchOpen(false); setQuery(''); }} aria-label="设置" className="grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><GearSix size={16} aria-hidden="true" /></button>
       </footer>

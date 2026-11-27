@@ -29,6 +29,11 @@ async function getRequestOrigin(): Promise<string | undefined> {
   }
 }
 
+async function getSignupConfirmationRedirectTo(): Promise<string | undefined> {
+  const origin = await getRequestOrigin()
+  return origin ? `${origin}/auth/callback?next=${encodeURIComponent(SIGNUP_DESTINATION)}` : undefined
+}
+
 /**
  * P0 Auth Flow — server actions for sign in / sign up / sign out.
  *
@@ -47,7 +52,7 @@ async function getRequestOrigin(): Promise<string | undefined> {
  * If confirmation is off, signUp() returns a session and we redirect.
  */
 
-export type AuthState = { error?: string; message?: string; redirectUrl?: string } | null
+export type AuthState = { error?: string; message?: string; redirectUrl?: string; canResendConfirmation?: boolean } | null
 
 function isNetworkError(error: { message?: string } | null | undefined): boolean {
   const message = error?.message?.toLowerCase() ?? ''
@@ -58,6 +63,17 @@ function isNetworkError(error: { message?: string } | null | undefined): boolean
     message.includes('econnreset') ||
     message.includes('enotfound')
   )
+}
+
+function authEmailErrorMessage(error: { message: string; code?: string }): string {
+  const normalized = `${error.code ?? ''} ${error.message}`.toLowerCase()
+  if (/email_address_not_authorized|email address (?:is )?not authorized/.test(normalized)) {
+    return '当前邮箱暂时无法接收确认邮件，请使用其他邮箱或稍后重试。'
+  }
+  if (normalized.includes('over_email_send_rate_limit') || normalized.includes('email rate limit exceeded')) {
+    return '邮件发送过于频繁，请稍后重试。'
+  }
+  return error.message
 }
 
 export async function loginAction(
@@ -113,6 +129,12 @@ export async function signupAction(
   const password = String(formData.get('password') ?? '')
   const redirectTo = SIGNUP_DESTINATION
 
+  if (!name) {
+    return { error: '请填写用户名' }
+  }
+  if (name.length > 40) {
+    return { error: '用户名不能超过 40 个字符' }
+  }
   if (!email || !password) {
     return { error: '请填写电子邮箱和密码' }
   }
@@ -123,13 +145,13 @@ export async function signupAction(
 
   try {
     const supabase = await createClientServer()
-    const origin = await getRequestOrigin()
+    const emailRedirectTo = await getSignupConfirmationRedirectTo()
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { signup_invitation_version: SIGNUP_INVITATION_VERSION, signup_invitation_seen: false, ai_assistant_onboarding_started: true, enabled_skills: ['personal-advisor', 'shopping-preferences'], ...(name ? { full_name: name } : {}) },
-        ...(origin ? { emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(redirectTo)}` } : {}),
+        data: { signup_invitation_version: SIGNUP_INVITATION_VERSION, signup_invitation_seen: false, ai_assistant_onboarding_started: true, enabled_skills: ['personal-advisor'], ...(name ? { full_name: name } : {}) },
+        ...(emailRedirectTo ? { emailRedirectTo } : {}),
       },
     })
 
@@ -137,17 +159,27 @@ export async function signupAction(
       if (isNetworkError(error)) {
         return { error: '当前环境无法连接 Supabase，注册请求未提交，请检查网络或代理后重试。' }
       }
-      if (error.message.includes('already registered')) {
+      if (error.code === 'user_already_exists' || error.message.toLowerCase().includes('already registered')) {
         return { error: '该邮箱已被注册，请直接切换至「登录」模式。' }
       }
-      return { error: error.message }
+      if (error.message.toLowerCase().includes('database error saving new user')) {
+        const { data: taken, error: lookupError } = await supabase.rpc('signup_username_taken', { candidate: name })
+        if (!lookupError && taken === true) return { error: '用户名已被使用，请更换用户名。' }
+        return { error: '暂时无法注册，请稍后重试。' }
+      }
+      return { error: authEmailErrorMessage(error) }
+    }
+
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      return { error: '该邮箱已被注册，请直接切换至「登录」模式。' }
     }
 
     // Email confirmation ON: Supabase returns a user but no session.
     // User must click the confirmation link (handled by /auth/callback).
     if (!data.session) {
       return {
-        message: '账号创建成功。请点击邮箱中的激活链接',
+        message: '该邮箱已提交注册，请查收确认邮件完成验证。',
+        canResendConfirmation: true,
       }
     }
 
@@ -155,6 +187,37 @@ export async function signupAction(
     return { redirectUrl: redirectTo }
   } catch {
     return { error: '暂时无法注册，请稍后重试。' }
+  }
+}
+
+export async function resendSignupConfirmationAction(
+  _prev: AuthState,
+  formData: FormData
+): Promise<AuthState> {
+  const email = String(formData.get('email') ?? '').trim()
+  if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: '请填写有效的电子邮箱地址。' }
+  }
+
+  try {
+    const supabase = await createClientServer()
+    const emailRedirectTo = await getSignupConfirmationRedirectTo()
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      ...(emailRedirectTo ? { options: { emailRedirectTo } } : {}),
+    })
+
+    if (error) {
+      if (isNetworkError(error)) {
+        return { error: '当前环境无法连接 Supabase，请检查网络或代理后重试。' }
+      }
+      return { error: authEmailErrorMessage(error) }
+    }
+
+    return { message: '确认邮件发送请求已提交，请查收收件箱。' }
+  } catch {
+    return { error: '暂时无法重新发送确认邮件，请稍后重试。' }
   }
 }
 
