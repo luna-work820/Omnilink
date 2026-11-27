@@ -199,7 +199,7 @@ export function ProductAiIntelligenceDrawer({
                         className={`h-6 px-2.5  text-[11px] font-medium cursor-pointer transition-all focus-visible:outline-2 focus-visible:outline-[var(--primary)] ${
                           item.status === 'accepted'
                             ? 'bg-[var(--primary)] text-[var(--surface)]'
-                            : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]'
+                            : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--interactive-hover)] hover:text-[var(--primary-foreground)]'
                         }`}
                       >
                         {isZh ? '应用' : 'Apply'}
@@ -276,7 +276,7 @@ export function ProductAiIntelligenceDrawer({
                         className={`h-6 px-2.5  text-[11px] font-medium cursor-pointer transition-all focus-visible:outline-2 focus-visible:outline-[var(--primary)] ${
                           item.status === 'accepted'
                             ? 'bg-[var(--primary)] text-[var(--surface)]'
-                            : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)]'
+                            : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--interactive-hover)] hover:text-[var(--primary-foreground)]'
                         }`}
                       >
                         {isZh ? '应用' : 'Apply'}
@@ -409,7 +409,7 @@ export function ProductAiIntelligenceDrawer({
             type="button"
             onClick={handleApplyAll}
             disabled={isApplying || localChanges.length === 0}
-            className="px-5 h-9 bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold  transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:bg-[var(--surface-muted)] disabled:text-[var(--lavender)] disabled:cursor-not-allowed shadow-xs focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
+            className="px-5 h-9 bg-[var(--primary)] hover:bg-[var(--interactive-hover)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold  transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:bg-[var(--surface-muted)] disabled:text-[var(--lavender)] disabled:cursor-not-allowed shadow-xs focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
           >
             {isApplying ? (
               <>

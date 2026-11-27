@@ -34,6 +34,10 @@ export type RetrievalReport = {
   requestedMode: RetrievalOptions['mode']; effectiveMode: 'keyword' | 'semantic' | 'hybrid';
   profile: EmbeddingProfile | null; degraded: boolean; reason: string | null;
   selectionReason?: 'EXPLICIT_MODE' | 'KEYWORD_OVERRIDE' | 'AUTO_SOFT_TERMS' | 'AUTO_NO_KEYWORD_MATCH' | 'AUTO_KEYWORD_MATCH' | 'AUTO_NO_CANDIDATES';
+  /** How the request was routed, what was recognised, and why the result was empty or degraded. */
+  routeSource?: 'rule' | 'explicit' | 'model';
+  keywordKind?: 'category' | 'name' | 'brand' | 'store' | 'model' | 'phrase' | null;
+  resultReason?: 'MATCH' | 'NO_ELIGIBLE' | 'NO_KEYWORD_MATCH' | 'SEMANTIC_DEGRADED';
   embeddingCalls: number; embeddingInputTokens: number | null; embeddingMs: number; retrievalMs: number;
   candidateCount: number; keywordCount: number; semanticCount: number; totalMs: number;
   eligibilityMs?:number; rankingMs?:number;

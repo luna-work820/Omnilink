@@ -13,6 +13,8 @@ const intentSchema = z.object({
   needsSourceContext:z.boolean().default(false),
   searchOperation:z.enum(['new','refine']).optional(),
   searchPatch:searchPatchSchema.optional(),
+  routeSource:z.enum(['rule','explicit','model']).optional(),
+  keywordKind:z.enum(['category','name','brand','store','model','phrase']).optional(),
 })
 export type ClassifiedIntent = z.infer<typeof intentSchema>
 const instructions = `Classify an Omnilink request. Return JSON only: {intent,search,needsPersonalContext,needsSourceContext}.

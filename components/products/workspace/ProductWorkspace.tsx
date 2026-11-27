@@ -36,7 +36,7 @@ function PlatformPicker({ value, disabledPlatform, disabled, onChange }: { value
   const [isOpen, setIsOpen] = useState(false)
   const platformLabel = value === 'xiaohongshu' ? '小红书' : '抖音'
   return <div className="relative">
-    <button type="button" aria-haspopup="listbox" aria-expanded={isOpen} aria-label={`平台：${platformLabel}`} onClick={() => setIsOpen((open) => !open)} disabled={disabled} className="flex h-11 w-full items-center justify-between gap-2 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-white px-3 text-sm text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--accent-secondary)] disabled:opacity-50">
+    <button type="button" aria-haspopup="listbox" aria-expanded={isOpen} aria-label={`平台：${platformLabel}`} onClick={() => setIsOpen((open) => !open)} disabled={disabled} className="flex h-11 w-full items-center justify-between gap-2 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-white px-3 text-sm text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--brand-primary)] disabled:opacity-50">
       <span className="flex items-center gap-2"><PlatformMark platform={value} /><span>{platformLabel}</span></span><span aria-hidden="true" className="text-xs text-[var(--text-muted)]">⌄</span>
     </button>
     {isOpen && <div role="listbox" aria-label="选择平台" className="absolute left-0 top-full z-20 mt-1 w-full border border-[var(--border)] bg-white p-1 shadow-md">
@@ -737,7 +737,7 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
           <button
             type="submit"
             disabled={isSaving || isLoading || Boolean(recoverableProductId && !productId)}
-            className="flex h-11 items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-white px-4 text-xs font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-[var(--accent-secondary)] disabled:opacity-50"
+            className="flex h-11 items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-white px-4 text-xs font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-[var(--brand-primary)] disabled:opacity-50"
           >
             {isSaving ? (
               <Loader2 size={13} className="animate-spin" />
@@ -763,7 +763,7 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
               <span>{isZh ? '上架' : 'Publish'}</span>
             </UiverseButton>
           )}
-          {productId && <button type="button" onClick={() => void handleDelete()} disabled={isSaving} className="flex h-11 items-center justify-center rounded-full border border-[var(--border)] bg-white px-4 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--accent-secondary)] disabled:opacity-50">{isZh ? '删除' : 'Delete'}</button>}
+          {productId && <button type="button" onClick={() => void handleDelete()} disabled={isSaving} className="flex h-11 items-center justify-center rounded-full border border-[var(--border)] bg-white px-4 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--brand-primary)] disabled:opacity-50">{isZh ? '删除' : 'Delete'}</button>}
         </div>
       </div>
 
@@ -856,11 +856,11 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
                 return <div key={index} className="grid gap-2 sm:grid-cols-[180px_minmax(0,1fr)_auto]">
                   <PlatformPicker value={link.platform} disabledPlatform={otherPlatform} disabled={isSaving || isLoading} onChange={(platform) => { markEdited(); setChannelLinks((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, platform } : item)) }} />
                   <label className="sr-only" htmlFor={`channel-url-${index}`}>输入链接</label>
-                  <input id={`channel-url-${index}`} type="url" value={link.url} onChange={(event) => { markEdited(); setChannelLinks((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, url: event.target.value } : item)) }} disabled={isSaving || isLoading} placeholder={link.platform === 'xiaohongshu' ? 'https://www.xiaohongshu.com/...' : 'https://www.douyin.com/...'} className="h-11 min-w-0 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-white px-3 text-sm focus-visible:outline-2 focus-visible:outline-[var(--accent-secondary)]" />
-                  {channelLinks.length > 1 && <button type="button" onClick={() => { markEdited(); setChannelLinks((current) => current.filter((_, itemIndex) => itemIndex !== index)) }} disabled={isSaving || isLoading} aria-label="删除链接" className="grid size-11 place-items-center rounded-[var(--radius-control)] border border-[var(--border)] bg-white text-[var(--text-secondary)] hover:bg-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-[var(--accent-secondary)]"><X size={16} /></button>}
+                  <input id={`channel-url-${index}`} type="url" value={link.url} onChange={(event) => { markEdited(); setChannelLinks((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, url: event.target.value } : item)) }} disabled={isSaving || isLoading} placeholder={link.platform === 'xiaohongshu' ? 'https://www.xiaohongshu.com/...' : 'https://www.douyin.com/...'} className="h-11 min-w-0 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-white px-3 text-sm focus-visible:outline-2 focus-visible:outline-[var(--brand-primary)]" />
+                  {channelLinks.length > 1 && <button type="button" onClick={() => { markEdited(); setChannelLinks((current) => current.filter((_, itemIndex) => itemIndex !== index)) }} disabled={isSaving || isLoading} aria-label="删除链接" className="grid size-11 place-items-center rounded-[var(--radius-control)] border border-[var(--border)] bg-white text-[var(--text-secondary)] hover:bg-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-[var(--brand-primary)]"><X size={16} /></button>}
                 </div>
               })}
-              {channelLinks.length < 2 && <button type="button" onClick={() => { markEdited(); setChannelLinks((current) => [...current, { platform: current[0]?.platform === 'xiaohongshu' ? 'douyin' : 'xiaohongshu', url: '' }]) }} disabled={isSaving || isLoading} className="inline-flex min-h-9 items-center gap-2 rounded-[var(--radius-control)] border border-[var(--border)] bg-white px-3 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-[var(--accent-secondary)]"><Plus size={14} />添加链接</button>}
+              {channelLinks.length < 2 && <button type="button" onClick={() => { markEdited(); setChannelLinks((current) => [...current, { platform: current[0]?.platform === 'xiaohongshu' ? 'douyin' : 'xiaohongshu', url: '' }]) }} disabled={isSaving || isLoading} className="inline-flex min-h-9 items-center gap-2 rounded-[var(--radius-control)] border border-[var(--border)] bg-white px-3 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-[var(--brand-primary)]"><Plus size={14} />添加链接</button>}
             </div>
           </section>
 
@@ -871,7 +871,7 @@ export function ProductWorkspace({ productId, initialData }: ProductWorkspacePro
           )}
 
           {listingType === 'product' && deliveryType === 'physical' && <details className="border-t border-[var(--border-subtle)] pt-4">
-            <summary className="cursor-pointer text-sm font-medium text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--accent-secondary)]">属性与规格</summary>
+            <summary className="cursor-pointer text-sm font-medium text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-[var(--brand-primary)]">属性与规格</summary>
             <div className="mt-4 space-y-4">
             <MemoProductAttributesPanel
               rows={editorRows}

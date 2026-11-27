@@ -12,7 +12,7 @@ import {
   type ShoppingPreferenceQuestion,
 } from '@/lib/consumer-advisor/shopping-preference-survey'
 
-const INSTALLED_SKILLS = ['personal-advisor', 'shopping-preferences']
+const INSTALLED_SKILLS = ['personal-advisor']
 
 type Props = {
   initialProfile: AiAssistantProfile

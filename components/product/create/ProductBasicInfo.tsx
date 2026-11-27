@@ -22,7 +22,7 @@ interface ProductBasicInfoProps {
   nameLabel?: string
 }
 
-const inputClass = 'h-11 w-full rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-3.5 text-sm text-[var(--text-primary)] shadow-sm transition-colors placeholder:text-[var(--text-muted)] focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15 disabled:opacity-50'
+const inputClass = 'h-11 w-full rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-3.5 text-sm text-[var(--text-primary)] shadow-sm transition-colors placeholder:text-[var(--text-muted)] focus-visible:border-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/15 disabled:opacity-50'
 
 export function ProductBasicInfo({ formData, onChange, onCategoryChange, onPriceModeChange, knowledgeProductId, disabled = false, isDigital = false, minimal = false, priceMode = 'amount', hideInventory = false, mediaRow = false, hideCategory = false, nameLabel }: ProductBasicInfoProps) {
   const { isZh } = useLanguage()
@@ -66,7 +66,7 @@ export function ProductBasicInfo({ formData, onChange, onCategoryChange, onPrice
             <CategorySelector id="create-product-category" value={formData.categoryId || formData.category} onChange={(res) => { onChange({ category: res.categoryName, categoryId: res.categoryId || null }); onCategoryChange?.(res.categoryName, res.categoryId || null) }} onClear={() => { onChange({ category: '', categoryId: null }); onCategoryChange?.('', null) }} disabled={disabled} placeholder={isZh ? '选择' : 'Select'} />
           </div>}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2"><FieldLabel htmlFor="create-product-price" label={isZh ? '价格' : 'Price'} required={priceMode === 'amount'} minimal /><select aria-label={isZh ? '价格方式' : 'Price type'} value={priceMode} onChange={(event) => onPriceModeChange?.(event.target.value as 'amount' | 'inquiry' | 'free')} disabled={disabled} className="h-7 max-w-24 rounded-md border border-[var(--border)] bg-transparent px-1.5 text-[11px] text-[var(--text-secondary)] focus-visible:outline-2 focus-visible:outline-[var(--accent-secondary)]"><option value="amount">价格</option><option value="inquiry">询价</option><option value="free">免费</option></select></div>
+            <div className="flex items-center justify-between gap-2"><FieldLabel htmlFor="create-product-price" label={isZh ? '价格' : 'Price'} required={priceMode === 'amount'} minimal /><select aria-label={isZh ? '价格方式' : 'Price type'} value={priceMode} onChange={(event) => onPriceModeChange?.(event.target.value as 'amount' | 'inquiry' | 'free')} disabled={disabled} className="h-7 max-w-24 rounded-md border border-[var(--border)] bg-transparent px-1.5 text-[11px] text-[var(--text-secondary)] focus-visible:outline-2 focus-visible:outline-[var(--brand-primary)]"><option value="amount">价格</option><option value="inquiry">询价</option><option value="free">免费</option></select></div>
             <div className="relative"><span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-[var(--text-secondary)]">¥</span><input id="create-product-price" type="number" value={formData.price} onChange={(e) => onChange({ price: e.target.value, currency: 'CNY' })} min="0" step="0.01" disabled={disabled || priceMode !== 'amount'} required={priceMode === 'amount'} className={`${inputClass} pl-8 font-semibold tabular-nums`} /></div>
           </div>
           {!isDigital && <div className="space-y-1.5 sm:col-span-2"><FieldLabel htmlFor="create-product-origin" label={isZh ? '产地' : 'Origin'} optional /><input id="create-product-origin" name="origin" type="text" value={formData.origin} onChange={(e) => onChange({ origin: e.target.value })} disabled={disabled} className={inputClass} list="product-origin-options" autoComplete="country-name" /><datalist id="product-origin-options">{filteredOrigins.map((value) => <option key={value} value={value} />)}</datalist></div>}
@@ -98,7 +98,7 @@ export function ProductBasicInfo({ formData, onChange, onCategoryChange, onPrice
         <details className="group rounded-[var(--radius-card-nested)] border border-[var(--border-subtle)] px-3.5">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-medium text-[var(--text-secondary)] [&::-webkit-details-marker]:hidden">
             <span>{isZh ? '更多' : 'More'}</span>
-            <span aria-hidden="true" className="text-lg leading-none text-[var(--accent-secondary)] transition-transform group-open:rotate-45">+</span>
+            <span aria-hidden="true" className="text-lg leading-none text-[var(--accent-primary)] transition-transform group-open:rotate-45">+</span>
           </summary>
           <div className="space-y-3 pb-3.5">
             {!isDigital && <div className="space-y-1.5"><FieldLabel htmlFor="create-product-origin" label={isZh ? '产地' : 'Origin'} optional /><input id="create-product-origin" name="origin" type="text" value={formData.origin} onChange={(e) => onChange({ origin: e.target.value })} disabled={disabled} className={inputClass} list="product-origin-options" autoComplete="country-name" /><datalist id="product-origin-options">{filteredOrigins.map((value) => <option key={value} value={value} />)}</datalist></div>}
@@ -125,7 +125,7 @@ export function ProductBasicInfo({ formData, onChange, onCategoryChange, onPrice
 }
 
 function FieldLabel({ htmlFor, label, required, optional, minimal }: { htmlFor: string; label: string; required?: boolean; optional?: boolean; minimal?: boolean }) {
-  return <label htmlFor={htmlFor} className="block text-sm font-medium text-[var(--text-primary)]">{label}{required ? <span className={`ml-1 ${minimal ? 'text-[var(--accent-secondary)]' : 'text-[var(--accent-primary)]'}`} aria-hidden="true">*</span> : ''}{optional ? <span className="ml-1 text-xs font-normal text-[var(--text-muted)]">{isOptionalLabelZh(label) ? '可选' : 'Optional'}</span> : null}</label>
+  return <label htmlFor={htmlFor} className="block text-sm font-medium text-[var(--text-primary)]">{label}{required ? <span className={`ml-1 ${minimal ? 'text-[var(--accent-primary)]' : 'text-[var(--accent-primary)]'}`} aria-hidden="true">*</span> : ''}{optional ? <span className="ml-1 text-xs font-normal text-[var(--text-muted)]">{isOptionalLabelZh(label) ? '可选' : 'Optional'}</span> : null}</label>
 }
 
 function isOptionalLabelZh(label: string) {

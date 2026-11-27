@@ -37,7 +37,7 @@ const pass = (check) => { evidence.checks.push(check); console.log('PASS:', chec
 const persist = () => writeFile(fixturePath, JSON.stringify(fixture), { mode: 0o600 })
 try { await readFile(fixturePath); throw new Error('An unfinished verification fixture exists. Run --cleanup first.') } catch (error) { if (error.code !== 'ENOENT') throw error }
 await persist()
-const user = checked(await admin.auth.admin.createUser({ email: fixture.email, password: fixture.password, email_confirm: true, app_metadata: { creator_enabled: true, merchant_enabled: false }, user_metadata: { full_name: '发布连通测试', enabled_skills: [], signup_invitation_dismissed: true } }))
+const user = checked(await admin.auth.admin.createUser({ email: fixture.email, password: fixture.password, email_confirm: true, app_metadata: { creator_enabled: true, merchant_enabled: false }, user_metadata: { full_name: `发布连通测试-${randomUUID().slice(0, 8)}`, enabled_skills: [], signup_invitation_dismissed: true } }))
 fixture.userId = user.user.id
 await persist()
 const cookies = new Map()

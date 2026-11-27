@@ -318,7 +318,9 @@ export async function generateWorkspaceVisionText(prompt: string, images: { mime
               inlineData: { mimeType: image.mimeType, data: image.base64 },
             })),
           ] }],
-          generationConfig: { temperature: 0.2 },
+          generationConfig: { temperature: 0.2,
+            ...(options.maxOutputTokens ? { maxOutputTokens: options.maxOutputTokens } : {}),
+            ...(options.jsonOutput ? { responseMimeType: 'application/json' } : {}) },
         },
       },
     )

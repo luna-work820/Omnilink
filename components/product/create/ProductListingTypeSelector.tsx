@@ -18,7 +18,7 @@ export function ProductListingTypeSelector({ value, onChange, disabled = false }
     <div className="flex flex-wrap gap-1">
       {options.map((option) => <label key={option.value} className="group relative inline-flex cursor-pointer">
         <input type="radio" name="product-listing-type" value={option.value} checked={value === option.value} onChange={() => onChange(option.value)} className="peer absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none opacity-0" />
-        <span className="pointer-events-none inline-flex min-h-10 items-center justify-center rounded-[var(--radius-control)] px-4 text-sm text-[var(--text-secondary)] transition-colors group-hover:bg-[var(--surface-muted)] peer-checked:bg-[var(--surface-muted)] peer-checked:font-semibold peer-checked:text-[var(--text-primary)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--accent-secondary)]">{option.label}</span>
+        <span className="pointer-events-none inline-flex min-h-10 items-center justify-center rounded-[var(--radius-control)] px-4 text-sm text-[var(--text-secondary)] transition-colors group-hover:bg-[var(--surface-muted)] peer-checked:bg-[var(--surface-muted)] peer-checked:font-semibold peer-checked:text-[var(--text-primary)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--brand-primary)]">{option.label}</span>
       </label>)}
     </div>
   </fieldset>

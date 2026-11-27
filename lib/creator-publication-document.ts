@@ -1,6 +1,7 @@
 import type { ArticleDraft } from '@/lib/creator-article-draft'
 import type { PublicationFields, PublicationKind, PublicationStatus } from '@/lib/creator-publications'
 import { articleBackgrounds } from '@/lib/creator-article-backgrounds'
+import { articleProductUrl } from '@/lib/creator-article-media'
 import type { ScenePost } from '@/components/consumer-market/types'
 
 export type PublicationDocument = {
@@ -63,7 +64,30 @@ function validateArticle(blocks: unknown): blocks is ArticleDraft['blocks'] {
     if (!object(value)) return typeof value !== 'string' || value.length <= 100000
     if (typeof value.type === 'string' && !articleTypes.has(value.type) && !['text', 'link', 'tableContent', 'tableCell'].includes(value.type)) return false
     if (value.type === 'text' && (typeof value.text !== 'string' || value.styles !== undefined && !object(value.styles))) return false
-    if (value.type === 'productLink' && value.props !== undefined && (!object(value.props) || ['url', 'name', 'price', 'image'].some((key) => value.props && typeof (value.props as Record<string, unknown>)[key] !== 'string'))) return false
+    if (value.type === 'productLink' && value.props !== undefined) {
+      if (!object(value.props)) return false
+      const props = value.props
+      const kind = props.kind ?? 'product'
+      if (!['product', 'shop'].includes(String(kind))) return false
+      if (['url', 'name', 'image'].some((key) => typeof props[key] !== 'string')) return false
+      if (props.price !== undefined && typeof props.price !== 'string' || kind === 'product' && typeof props.price !== 'string') return false
+      if (props.subtitle !== undefined && (typeof props.subtitle !== 'string' || props.subtitle.length > 120)) return false
+      if (props.gallery !== undefined) {
+        if (!Array.isArray(props.gallery) || props.gallery.length > 9) return false
+        const validGalleryItem = (item: unknown) => {
+          if (typeof item === 'string') return imageUrl(item)
+          if (!object(item) || !imageUrl(item.url)) return false
+          const safeLink = item.link === undefined || item.link === '' || (() => {
+            if (typeof item.link !== 'string' || item.link.length > 2048) return false
+            try { const url = new URL(item.link); return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password } catch { return false }
+          })()
+          return (item.name === undefined || typeof item.name === 'string' && item.name.length <= 100)
+            && (item.price === undefined || typeof item.price === 'string' && item.price.length <= 30)
+            && safeLink
+        }
+        if (!props.gallery.every(validGalleryItem)) return false
+      }
+    }
     for (const [key, child] of Object.entries(value)) {
       if (['__proto__', 'constructor', 'prototype'].includes(key)) return false
       if (['url', 'href', 'image', 'src'].includes(key) && child && !imageUrl(child)) {
@@ -94,6 +118,35 @@ export function articleExcerpt(blocks: unknown): string {
   visit(blocks)
   return parts.join('\n').slice(0, 5000)
 }
+function hasArticleContent(value: unknown): boolean {
+  if (typeof value === 'string') return Boolean(value.trim())
+  if (Array.isArray(value)) return value.some(hasArticleContent)
+  if (!object(value)) return false
+  return hasArticleContent(value.text) || hasArticleContent(value.content) || hasArticleContent(value.children)
+    || Boolean(object(value.props) && value.props.url)
+}
+function hasIncompleteArticleCard(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(hasIncompleteArticleCard)
+  if (!object(value)) return false
+  if (value.type === 'productLink') {
+    const props = object(value.props) ? value.props : {}
+    if (typeof props.url !== 'string' || !articleProductUrl(props.url)) return true
+    if (props.kind === 'shop' && (typeof props.name !== 'string' || !props.name.trim())) return true
+  }
+  return hasIncompleteArticleCard(value.children)
+}
+export function articlePublication(article: ArticleDraft): PublicationDocument {
+  const title = article.title.trim()
+  return {
+    version: 1,
+    kind: 'article',
+    fields: { ...publicationDefaults, title },
+    media: [],
+    coverUrl: article.cover?.url ?? '',
+    article: { ...article, title },
+    excerpt: articleExcerpt(article.blocks),
+  }
+}
 export function parsePublicationDocument(value: unknown): PublicationDocument | null {
   if (!object(value) || value.version !== 1 || !['video', 'image', 'article'].includes(String(value.kind)) || !object(value.fields)) return null
   if (JSON.stringify(value).length > 1000000) return null
@@ -113,7 +166,8 @@ export function parsePublicationDocument(value: unknown): PublicationDocument | 
   if (document.kind === 'article') {
     const article = value.article
     if (!object(article) || article.version !== 2 || typeof article.title !== 'string' || article.title.trim() !== fields.title || !articleBackgrounds.some((bg) => bg.id === article.background) || !validateArticle(article.blocks)) return null
-    if (article.cover !== null && (!object(article.cover) || !imageUrl(article.cover.url) || typeof article.cover.position !== 'number' || article.cover.position < 0 || article.cover.position > 100)) return null
+    if (article.cover !== null && (!object(article.cover) || !imageUrl(article.cover.url) || typeof article.cover.position !== 'number' || article.cover.position < 0 || article.cover.position > 100
+      || article.cover.ratio !== undefined && (typeof article.cover.ratio !== 'string' || article.cover.ratio.length > 32 || !/^\d+(?:\.\d+)?\s*\/\s*\d+(?:\.\d+)?$/.test(article.cover.ratio)))) return null
     document.article = article as ArticleDraft
     document.excerpt = articleExcerpt(article.blocks)
     if ((document.article.cover?.url ?? '') !== document.coverUrl) return null
@@ -125,7 +179,8 @@ export function publicationValidation(document: PublicationDocument, status: str
   if (status === 'draft') return null
   if (!document.fields.title || !document.coverUrl) return '请填写标题并添加封面。'
   if (document.kind !== 'article' && !document.media.length) return '请添加发布素材。'
-  if (document.kind === 'article' && !document.article?.blocks.some((block) => block.type !== 'paragraph' || articleExcerpt([block]).trim())) return '请填写文章正文。'
+  if (document.kind === 'article' && !hasArticleContent(document.article?.blocks)) return '请填写文章正文。'
+  if (document.kind === 'article' && hasIncompleteArticleCard(document.article?.blocks)) return '请补全商品或店铺卡片信息。'
   if (status === 'scheduled' && (!Number.isFinite(Date.parse(document.fields.scheduledAt)) || Date.parse(document.fields.scheduledAt) <= Date.now())) return '请选择将来的发布时间。'
   return null
 }

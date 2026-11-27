@@ -29,6 +29,7 @@ import { useDiscoveryWorkspace,type PersonalView,type DiscoveryFailure } from '.
 import type { SearchScope } from '@/lib/consumer-advisor/search-continuation';
 import { readDiscoveryReference,type DiscoveryPage,type DiscoverySpec } from '@/lib/consumer-advisor/discovery-contract';
 import { fetchConsumerReply } from '@/lib/consumer-advisor/client-response';
+import { ruleConsumerExecution } from '@/lib/consumer-advisor/execution-policy';
 import { readExecutionBlocks,readSourceIds,type ExecutionTask,type ResponseBlock } from '@/lib/consumer-advisor/response-contract';
 import { DEFAULT_EMBEDDING_PROFILE,type RetrievalOptions } from '@/lib/consumer-advisor/embedding-profile';
 
@@ -337,6 +338,7 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
       const storedMessages = messages.map((message) => ({
         id: message.id, conversationId: message.conversation_id, isUser: message.role === 'user',
         text: message.content, styleTag: message.style_tag ?? undefined,
+        analysisMessageId: message.role === 'assistant' && message.style_tag === '形象分析' ? message.id : undefined,
         intent: message.style_tag ? persistedIntentByStyleTag[message.style_tag as keyof typeof persistedIntentByStyleTag] : undefined,
         matchedProducts: readDiscoveryReference(message.response_blocks)?undefined:initialProductCatalog.current.filter((product) => message.matched_product_ids?.includes(product.id)),
         searchRef:readDiscoveryReference(message.response_blocks),
@@ -709,7 +711,7 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
           previousSourceIds:[...(previousAssistant?.matchedSourceIds??[]),...(previousAssistant?.blocks?.flatMap((block)=>block.type==='information_feed'?block.data.items.filter((item)=>item.entityType==='source').map((item)=>item.id):[])??[])].slice(0,6),
           savedProductIds,
           rejectedProductIds,
-          history: aiMessages.filter((message) => message.conversationId === activeAiConversationId && message.timestamp !== '连接失败')
+          history: aiMessages.filter((message) => message.conversationId === activeAiConversationId && message.timestamp !== '连接失败' && (message.isUser || message.text.trim()))
             .slice(-6).map((message) => ({ role: message.isUser ? 'user' : 'assistant', content: message.text })),
           profile: authenticated ? undefined : readPreviewAiAssistantProfile(),
         }),abort.signal,(delta)=>{
@@ -720,10 +722,10 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
               {id:replyId,conversationId:sessionId,text:delta,isUser:false,timestamp:'AI 助手',model:aiModel,state:'streaming'}];
           });
         });
-      const result = response.body as { text?: string; styleTag?: string; intent?: AiChatMessage['intent']; matchedProductIds?: string[]; matchReasons?: Record<string, string>; usedPreferences?: string[]; memorySaved?: boolean; memoryProposed?:boolean; memoryOrigin?: 'user' | 'inferred' | null; demoMemoryUpdate?: PreviewMemoryUpdate; model?: ConsumerAiModel | null; source?: string; error?: string; discovery?:DiscoveryPage; retrySpec?:DiscoverySpec; sessionId?:string;blocks?:ResponseBlock[];task?:ExecutionTask;matchedSourceIds?:string[] };
+      const result = response.body as { text?: string; styleTag?: string; intent?: AiChatMessage['intent']; matchedProductIds?: string[]; matchReasons?: Record<string, string>; usedPreferences?: string[]; memorySaved?: boolean; memoryProposed?:boolean; memoryWarning?:string; analysisMessageId?:string; memoryOrigin?: 'user' | 'inferred' | null; demoMemoryUpdate?: PreviewMemoryUpdate; model?: ConsumerAiModel | null; source?: string; error?: string; discovery?:DiscoveryPage; retrySpec?:DiscoverySpec; sessionId?:string;blocks?:ResponseBlock[];task?:ExecutionTask;matchedSourceIds?:string[] };
       if(turn!==responseEpoch.current || activeConversationRef.current!==sessionId) return;
       retrySpec=result.retrySpec;
-      if (!response.ok || !result.text) throw new Error(result.error || '模型没有返回可用内容。');
+      if (!response.ok || (!result.text && !result.discovery)) throw new Error(result.error || '模型没有返回可用内容。');
       if(result.discovery) {
         if(!acceptDiscovery(result.discovery)) throw new Error('搜索结果已过期，请刷新重试。');
         setHomeChatOpen(false);
@@ -741,10 +743,11 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
       } else if (authenticated && result.memoryProposed) {
         showToast('已生成一条待确认偏好');
       }
+      if (result.memoryWarning) showToast(result.memoryWarning);
       const matchedIds = new Set(result.matchedProductIds || []);
       const finalMessage: AiChatMessage = {
         id: replyId,
-        text: result.text!,
+        text: result.text ?? '',
         isUser: false,
         conversationId: activeAiConversationId,
         styleTag: result.styleTag,
@@ -753,6 +756,8 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
         searchRef:result.discovery?{searchRunId:result.discovery.searchRunId,contextVersion:result.discovery.contextVersion,spec:result.discovery.spec}:undefined,
         matchReasons: result.matchReasons,
         usedPreferences: result.usedPreferences,
+        memoryProposed: result.memoryProposed,
+        analysisMessageId: result.analysisMessageId,
         timestamp: result.intent === 'outfit-styling' ? '穿搭建议' : result.source === 'ingredient-index' ? '资料检索' : result.source === 'catalog-index' ? '商品检索' : 'AI 助手',
         model: result.model === null ? undefined : result.model ?? aiModel,
         blocks:result.discovery?undefined:readExecutionBlocks(result.blocks),
@@ -795,18 +800,33 @@ export const OmnilinkProvider: React.FC<{ children: React.ReactNode; initialProd
   },[activeAiConversationId,showToast]);
 
   const sendAiMessage = useCallback((promptText: string, selectedProductIds: string[] = [], hasActiveSkill = false, searchScope?:SearchScope, skillId?: AiAssistantSkillId) => {
-    if (!promptText.trim() || isAiThinking) return;
+    const prompt=promptText.trim();
+    if (!prompt || isAiThinking) return;
     const userMsg: AiChatMessage = {
       id: `m_${crypto.randomUUID()}`,
-      text: promptText.trim(),
+      text: prompt,
       isUser: true,
       conversationId: activeAiConversationId,
       timestamp: '刚刚',
     };
 
+    const directSearch=hasActiveSkill||skillId||activeAssistantSkillId||selectedProductIds.length?null:ruleConsumerExecution({
+      prompt,hasImage:false,hasDocument:false,hasSelectedProducts:false,hasSources:false,scope:searchScope,catalogProducts:products,
+      productSearchContext:Boolean(discoveryWorkspace.discovery),
+    });
+    if(directSearch?.intent==='product-search'&&directSearch.search) {
+      // A direct keyword search stays keyword by default, but an explicit
+      // semantic/hybrid choice from the user is never overwritten.
+      const spec=retrievalOptions.mode==='auto'?directSearch.search:{...directSearch.search,retrieval:retrievalOptions};
+      setAiMessages((prev)=>[...prev,userMsg]);
+      setHomeChatOpen(false);
+      refreshDiscovery(spec,{requestId:userMsg.id,prompt});
+      return;
+    }
+
     setAiMessages((prev) => [...prev, userMsg]);
-    void requestAiResponse(promptText.trim(), undefined, selectedProductIds, userMsg.id, undefined, hasActiveSkill,searchScope,skillId);
-  }, [activeAiConversationId, isAiThinking, requestAiResponse]);
+    void requestAiResponse(prompt, undefined, selectedProductIds, userMsg.id, undefined, hasActiveSkill,searchScope,skillId);
+  }, [activeAiConversationId, activeAssistantSkillId, discoveryWorkspace.discovery, isAiThinking, products, refreshDiscovery, requestAiResponse, retrievalOptions, setHomeChatOpen]);
 
   // AI Conversational Image Upload & Reasoning
   const sendAiImageMessage = useCallback(

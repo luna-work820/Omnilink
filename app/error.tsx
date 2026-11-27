@@ -40,7 +40,7 @@ export default function ErrorBoundary({
           <button
             type="button"
             onClick={reset}
-            className="px-6 py-2.5 rounded-full bg-[#1C1E21] hover:bg-[#3D5A4C] text-[var(--surface)] text-xs font-semibold shadow-sm transition-all cursor-pointer"
+            className="px-6 py-2.5 rounded-full bg-[#1C1E21] hover:bg-[var(--brand-primary)] text-[var(--surface)] text-xs font-semibold shadow-sm transition-all cursor-pointer"
           >
             Try Again / 重试
           </button>

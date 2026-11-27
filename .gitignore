@@ -59,3 +59,6 @@ supabase/.temp/
 .vinext/
 .vercel
 .env*
+
+# Local Python environment
+.venv/

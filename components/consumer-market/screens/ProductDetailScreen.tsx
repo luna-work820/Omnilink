@@ -68,6 +68,14 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
   const invalidSelection = Boolean(options.length && product.variants?.length && !selectedVariant);
   const formattedPrice = product.priceMode === 'unknown' ? product.formattedPrice : product.priceMode === 'inquiry' ? '询价' : product.priceMode === 'free' || selectedPrice === 0 ? '免费' : null;
   const outboundLinks = Object.entries(product.outboundLinks ?? {}).filter((entry): entry is ['xiaohongshu' | 'douyin', string] => Boolean(entry[1]));
+  const composition = product.composition ?? {kind: 'unknown' as const, status: 'not_provided' as const, items: []};
+  const compositionStatus = composition.status === 'verified'
+    ? '来源已核对'
+    : composition.status === 'partial'
+      ? '信息不完整'
+      : composition.status === 'not_applicable'
+        ? '不适用'
+        : '暂无公开信息';
 
   const handleShare = () => {
     if (navigator.share) {
@@ -276,6 +284,35 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
                 </tbody>
               </table>
             </div>}
+
+            {isPhysicalProduct && <section className="mt-6" aria-labelledby="product-composition-heading">
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 id="product-composition-heading" className="text-sm font-semibold text-[var(--market-ink)]">成分与材质</h3>
+                <span className="text-xs text-[var(--market-text-muted)]">{compositionStatus}</span>
+              </div>
+              {composition.items.length > 0 ? <>
+                {composition.items.length > 10 ? <details className="mt-3">
+                  <summary className="min-h-11 cursor-pointer py-2 text-xs text-[var(--market-text-secondary)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">
+                    查看完整列表（{composition.items.length}）
+                  </summary>
+                  <ol className="space-y-2 pb-2 text-xs leading-5 text-[var(--market-ink)]">
+                    {composition.items.map((item, index) => <li key={`${item.position ?? index}-${item.name}`} className="flex items-start justify-between gap-4">
+                      <span className="min-w-0">{item.name}</span>
+                      <span className="shrink-0 text-[var(--market-text-secondary)]">{[item.proportion, item.purity ? `${item.purity} 银` : null].filter(Boolean).join('，')}</span>
+                    </li>)}
+                  </ol>
+                </details> : <ol className="mt-3 space-y-2 text-xs leading-5 text-[var(--market-ink)]">
+                  {composition.items.map((item, index) => <li key={`${item.position ?? index}-${item.name}`} className="flex items-start justify-between gap-4">
+                    <span className="min-w-0">{item.name}</span>
+                    <span className="shrink-0 text-[var(--market-text-secondary)]">{[item.proportion, item.purity ? `${item.purity} 银` : null].filter(Boolean).join('，')}</span>
+                  </li>)}
+                </ol>}
+              </> : composition.rawText ? <p className="mt-3 whitespace-pre-wrap text-xs leading-5 text-[var(--market-text-secondary)]">{composition.rawText}</p>
+                : <p className="mt-3 text-xs leading-5 text-[var(--market-text-secondary)]">暂无可核对的成分或材质信息。</p>}
+              {(composition.sourceUrl || product.sourceUrl) && <a href={composition.sourceUrl || product.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex min-h-11 items-center text-xs text-[var(--market-text-secondary)] underline decoration-[var(--market-border)] underline-offset-4 focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">
+                查看来源
+              </a>}
+            </section>}
 
             {/* 商品详情 */}
             <div className="mt-5">

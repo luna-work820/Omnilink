@@ -134,7 +134,7 @@ export function ProductNodeVisualizer({ product }: ProductNodeVisualizerProps) {
         <div className="crextio-card p-5 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-[var(--lavender)]">{isZh ? 'Agent 访问权限' : 'Agent Access'}</span>
-            <Zap size={16} className="text-[#e0652b]" />
+            <Zap size={16} className="text-[var(--brand-primary)]" />
           </div>
           <div className="text-base font-bold text-[var(--ink)]">{isZh ? '全网公共开放' : 'Public Discovery'}</div>
           <p className="text-[11px] text-[var(--lavender)]">

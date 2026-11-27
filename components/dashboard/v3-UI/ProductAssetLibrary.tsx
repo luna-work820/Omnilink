@@ -25,7 +25,7 @@ export function ProductAssetLibrary({ products }: { products: ProductRow[] }) {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">商品</h1>
           </div>
-          <Link href="/dashboard/products/new" className="inline-flex h-11 items-center justify-center rounded-full bg-[var(--text-primary)] px-5 text-sm font-medium text-[var(--surface)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-secondary)]">添加商品</Link>
+          <Link href="/dashboard/products/new" className="inline-flex h-11 items-center justify-center rounded-full bg-[var(--text-primary)] px-5 text-sm font-medium text-[var(--surface)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary)]">添加商品</Link>
         </header>
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

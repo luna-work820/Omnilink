@@ -81,7 +81,7 @@ function MessageFooter({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 function Bubble({ align = "start", variant = "default", className, ...props }: React.ComponentProps<"div"> & { align?: MessageAlign; variant?: "default" | "muted" }) {
-  return <div data-slot="bubble" data-align={align} data-variant={variant} className={cn("max-w-full text-sm leading-6", variant === "muted" ? "rounded-xl rounded-br-md bg-[var(--text-primary)] px-4 py-3 text-[var(--surface)]" : "text-[var(--text-primary)]", className)} {...props} />
+  return <div data-slot="bubble" data-align={align} data-variant={variant} className={cn("max-w-full text-sm leading-6", variant === "muted" ? "rounded-xl rounded-br-md bg-[var(--brand-primary)] px-4 py-3 text-[var(--neutral-paper)]" : "text-[var(--text-primary)]", className)} {...props} />
 }
 
 function BubbleContent({ className, ...props }: React.ComponentProps<"div">) {

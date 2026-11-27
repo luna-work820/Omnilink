@@ -13,7 +13,7 @@ export function StoreCreateForm({ capability = 'merchant', initialName = '' }: {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const creator = capability === 'creator'
-  const field = 'w-full rounded-xl border-[0.5px] border-[var(--border)] bg-transparent px-4 py-3 text-sm outline-none focus-visible:border-[var(--accent-secondary)]'
+  const field = 'w-full rounded-xl border-[0.5px] border-[var(--border)] bg-transparent px-4 py-3 text-sm outline-none focus-visible:border-[var(--brand-primary)]'
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -50,7 +50,7 @@ export function StoreCreateForm({ capability = 'merchant', initialName = '' }: {
         <textarea id="workspace-description" rows={3} maxLength={240} value={description} onChange={(event) => setDescription(event.target.value)} className={`${field} resize-none`} />
       </div>
       {error && <p role="alert" className="text-sm text-[var(--text-secondary)]">{error}</p>}
-      <button type="submit" disabled={busy || !name.trim()} className="min-h-11 w-full rounded-full bg-[var(--text-primary)] px-5 text-sm font-medium text-[var(--surface)] disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-secondary)]">{busy ? '正在开通…' : `开通并进入${creator ? '创作者中心' : '商家中心'}`}</button>
+      <button type="submit" disabled={busy || !name.trim()} className="min-h-11 w-full rounded-full bg-[var(--text-primary)] px-5 text-sm font-medium text-[var(--surface)] disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary)]">{busy ? '正在开通…' : `开通并进入${creator ? '创作者中心' : '商家中心'}`}</button>
     </form>
   </section>
 }

@@ -517,7 +517,7 @@ export function ProductAttributesSection({
             type="button"
             onClick={handleAiOrganize}
             disabled={isAnalyzing || disabled}
-            className="px-4 py-2  bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] disabled:bg-[var(--surface-muted)] disabled:text-[var(--lavender)] disabled:cursor-not-allowed text-[var(--surface)] text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
+            className="px-4 py-2  bg-[var(--primary)] hover:bg-[var(--interactive-hover)] active:bg-[var(--primary)] disabled:bg-[var(--surface-muted)] disabled:text-[var(--lavender)] disabled:cursor-not-allowed text-[var(--surface)] text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
           >
             {isAnalyzing ? (
               <Loader2 size={14} className="animate-spin" />
@@ -573,7 +573,7 @@ export function ProductAttributesSection({
               type="button"
               onClick={handleOneClickFix}
               disabled={isApplying}
-              className="px-4 py-1.5  bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-all cursor-pointer disabled:bg-[var(--surface-muted)] disabled:text-[var(--lavender)] disabled:cursor-not-allowed shadow-2xs flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
+              className="px-4 py-1.5  bg-[var(--primary)] hover:bg-[var(--interactive-hover)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-bold transition-all cursor-pointer disabled:bg-[var(--surface-muted)] disabled:text-[var(--lavender)] disabled:cursor-not-allowed shadow-2xs flex items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
             >
               {isApplying ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
               <span>{isZh ? '[一键修复]' : '[One-Click Fix]'}</span>
@@ -1033,7 +1033,7 @@ export function ProductAttributesSection({
                             disabled={disabled}
                             className={`h-7 px-3  text-xs font-medium transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-[var(--primary)] ${
                               value === 'true'
-                                ? 'bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary)]'
+                                ? 'bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--interactive-hover)]'
                                 : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-muted)]'
                             }`}
                           >
@@ -1211,7 +1211,7 @@ export function ProductAttributesSection({
                     type="button"
                     onClick={() => handleAddCustomAttribute()}
                     disabled={disabled}
-                    className="w-full h-8 px-3  bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-medium flex items-center justify-center gap-1 cursor-pointer disabled:bg-[var(--surface-muted)] disabled:text-[var(--lavender)] disabled:cursor-not-allowed transition-all focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
+                    className="w-full h-8 px-3  bg-[var(--primary)] hover:bg-[var(--interactive-hover)] active:bg-[var(--primary)] text-[var(--surface)] text-xs font-medium flex items-center justify-center gap-1 cursor-pointer disabled:bg-[var(--surface-muted)] disabled:text-[var(--lavender)] disabled:cursor-not-allowed transition-all focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
                   >
                     <Plus size={13} />
                     <span>{isZh ? '添加' : 'Add'}</span>

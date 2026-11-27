@@ -1,6 +1,28 @@
 import 'server-only'
 import { createServiceRoleClient } from '@/lib/supabase/service-role'
 import { extractMemoryDeclaration } from './memory-lifecycle'
+import { selectedAppearanceAction } from './appearance-actions'
+
+export async function proposeMessageMemory(userId: string, messageId: string, content: string, skinAnswer = false, previousUserMessageId?: string) {
+  const action = selectedAppearanceAction(content)
+  const declaration = action && content.startsWith(`${action.prompt}\n`) ? content.slice(action.prompt.length + 1).trim() : content
+  const candidate = extractMemoryDeclaration(declaration, { skinAnswer })
+  if (!candidate) return false
+  candidate.evidence = content
+  const db = createServiceRoleClient()
+  const { data, error } = await db.rpc('consolidate_consumer_memory', {
+    p_user_id: userId, p_message_id: messageId, p_candidate: candidate,
+  })
+  if (error) throw new Error('记忆整理失败。')
+  if (skinAnswer && previousUserMessageId && candidate.domain === 'skin') {
+    const merged = await db.rpc('propose_consumer_skin_merge', {
+      p_user_id: userId, p_first: previousUserMessageId, p_second: messageId,
+    })
+    if (merged.error) throw new Error('跨轮记忆整理失败。')
+    return data?.status === 'proposed' || merged.data?.status === 'proposed'
+  }
+  return data?.status === 'proposed'
+}
 
 export async function consolidateRecentMemories(userId: string) {
   const db = createServiceRoleClient()

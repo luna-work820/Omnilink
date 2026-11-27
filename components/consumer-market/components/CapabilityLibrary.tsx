@@ -1,35 +1,21 @@
 import React, { useEffect, useState } from 'react'
 import { MagnifyingGlass, Plus } from '@phosphor-icons/react'
-import { Brain, Check, ShoppingBag, UserRound } from 'lucide-react'
+import { Check, UserRound } from 'lucide-react'
 
 export const AI_ASSISTANT_SKILLS_STORAGE_KEY = 'omnilink_consumer_skills_v2'
 
 export const AI_ASSISTANT_SKILLS = [
   {
     id: 'personal-advisor',
-    title: '个人助手',
+    title: '形象助手',
     description: '通过照片和自述，探索肤质、外貌风格、色彩与穿搭方向。',
-    prompt: '启用个人助手，按我选择的范围探索个人形象；照片观察需要结合我的自述确认。',
+    prompt: '启用形象助手，按我选择的范围探索个人形象；照片观察需要结合我的自述确认。',
     icon: UserRound,
-  },
-  {
-    id: 'shopping-preferences',
-    title: '购物偏好',
-    description: '通过可续答的选择题测量偏好，并整理进个人档案。',
-    prompt: '购物偏好由用户逐题明确回答并写入档案。用户选择此技能时进入测量或续答流程；不要在聊天里重新发起安装，也不要调用模型计算测量分数。推荐时读取已保存的结构化偏好作为可调整的软参考；本轮明确需求优先，未答和跳过项视为未知。',
-    icon: ShoppingBag,
-  },
-  {
-    id: 'know-yourself',
-    title: '识己',
-    description: '通过五问梳理或单件事拆解，帮你看清处境、思维与行动之间的关系。',
-    prompt: '仅在用户想分析自身处境或具体事件时启用识己流程。用户可选择五问梳理或单件事拆解；五问梳理一次只问一道，答完五题后再总结。已有具体事件时直接按处境、机制、叙述三层梳理，区分已知事实与推测，并给出可行动的一步。不要做心理诊断、评人格等级或替用户做人生决定。若用户出现自杀或严重自伤信号，停止分析并优先回应安全与专业支持。',
-    icon: Brain,
   },
 ] as const
 
 export type AiAssistantSkillId = (typeof AI_ASSISTANT_SKILLS)[number]['id']
-export const DEFAULT_INSTALLED_SKILL_IDS: AiAssistantSkillId[] = ['personal-advisor', 'shopping-preferences']
+export const DEFAULT_INSTALLED_SKILL_IDS: AiAssistantSkillId[] = ['personal-advisor']
 
 export function readInstalledSkillIds(): AiAssistantSkillId[] {
   try {
@@ -39,10 +25,14 @@ export function readInstalledSkillIds(): AiAssistantSkillId[] {
       return [...DEFAULT_INSTALLED_SKILL_IDS]
     }
     const saved: unknown = JSON.parse(stored)
-    if (!Array.isArray(saved)) return []
-    return AI_ASSISTANT_SKILLS.map((skill) => skill.id).filter((id) => saved.includes(id))
+    if (!Array.isArray(saved)) return [...DEFAULT_INSTALLED_SKILL_IDS]
+    const shouldKeepPersonalAdvisor = saved.includes('personal-advisor')
+      || saved.some((id) => id === 'shopping-preferences' || id === 'know-yourself')
+    const installed = shouldKeepPersonalAdvisor ? [...DEFAULT_INSTALLED_SKILL_IDS] : []
+    localStorage.setItem(AI_ASSISTANT_SKILLS_STORAGE_KEY, JSON.stringify(installed))
+    return installed
   } catch {
-    return []
+    return [...DEFAULT_INSTALLED_SKILL_IDS]
   }
 }
 

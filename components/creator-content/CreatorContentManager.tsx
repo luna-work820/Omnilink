@@ -10,6 +10,7 @@ import { readContentBlocks, type ContentBlock } from '@/lib/creator-content'
 import { getArticleBackground } from '@/lib/creator-article-backgrounds'
 import { remotePublication, type RemotePublication } from '@/lib/creator-publication-document'
 import { archiveRemotePublication } from '@/lib/creator-publication-client'
+import { publishManagedArticle } from '@/lib/creator-article-publish'
 import styles from './CreatorContentManager.module.css'
 
 const ArticlePhonePreview = dynamic(() => import('./ArticlePhonePreview').then((module) => module.ArticlePhonePreview), { ssr: false, loading: () => <p role="status">正在加载文章…</p> })
@@ -118,6 +119,16 @@ export function CreatorContentManager({ ownerKey, publishingHref, previewMode = 
     finally { setBusy(false) }
   }
 
+  async function publishArticle(row: Row) {
+    setBusy(true); setError(''); setNotice('')
+    try {
+      const result = await publishManagedArticle({ id: row.id, ownerKey, local: Boolean(row.local), previewMode })
+      setNotice(result.localCleanupFailed ? '文章已发布，本机记录未能归档。' : previewMode ? '已发布到本机预览。' : '文章已发布。')
+      await load()
+    } catch (cause) { setError(cause instanceof Error ? cause.message : '发布失败，请重试。') }
+    finally { setBusy(false) }
+  }
+
   return <div className={styles.workspace}>
     <div className={styles.heading}><h1>内容管理</h1><Link href={publishingHref} className={styles.button} data-glass-control=""><Plus size={16} aria-hidden="true" />发布内容</Link></div>
     <div className={styles.tabs} role="tablist" aria-label="内容状态">{(['all', 'published', 'scheduled', 'draft', 'archived'] as const).map((value) => <button key={value} type="button" role="tab" className={styles.tab} aria-selected={status === value} onClick={() => { setStatus(value); setSelected([]) }}>{value === 'all' ? '全部' : statusLabels[value]}<span>{count(value)}</span></button>)}</div>
@@ -135,7 +146,7 @@ export function CreatorContentManager({ ownerKey, publishingHref, previewMode = 
         <div className={styles.content}><button type="button" className={styles.cover} data-liquid-skip="" aria-label={`预览${row.title || '未命名内容'}`} onClick={() => setPreviewId(row.id)}>{row.cover ? <Image src={row.cover} alt="" fill unoptimized sizes="104px" /> : row.kind === 'video' ? <Film size={24} aria-hidden="true" /> : row.kind === 'image' ? <ImageIcon size={24} aria-hidden="true" /> : <FileText size={24} aria-hidden="true" />}</button><div><h2 className={styles.title}>{row.title.trim() || '未命名内容'}</h2><div className={styles.meta}><span>{kindLabels[row.kind]}</span><span>{row.local ? '本机预览' : '线上'}</span>{(row.online?.visibility === 'private' || row.local && row.local.content.kind !== 'article' && row.local.content.fields.visibility === 'private') && <span>仅自己可见</span>}{row.pending && <span>有未发布修改</span>}<time dateTime={new Date(contentTime(row)).toISOString()}>{row.status === 'scheduled' ? '预约 ' : ''}{dateFormat.format(contentTime(row))}</time></div></div></div>
         <div className={styles.state}>{row.status === 'published' ? <CheckCircle2 size={15} aria-hidden="true" /> : row.status === 'scheduled' ? <Clock3 size={15} aria-hidden="true" /> : row.status === 'archived' ? <Trash2 size={15} aria-hidden="true" /> : <FileText size={15} aria-hidden="true" />}{statusLabels[row.status]}</div>
         <time className={styles.date} dateTime={new Date(row.updatedAt).toISOString()}>{dateFormat.format(row.updatedAt)}</time>
-        <div className={styles.actions}><button type="button" onClick={() => setPreviewId(row.id)}>预览</button>{publicHref(row) && <Link href={publicHref(row)!} className={styles.button} data-glass-control="">查看</Link>}{row.status !== 'archived' && <Link href={editHref(row)} className={styles.button} data-glass-control="">编辑</Link>}<button type="button" className={styles.iconButton} disabled={busy} aria-label={row.status === 'archived' ? `恢复${row.title}` : `移入回收站：${row.title}`} onClick={() => { void archive([row.id], row.status === 'archived') }}>{row.status === 'archived' ? <ArchiveRestore size={16} aria-hidden="true" /> : <Trash2 size={16} aria-hidden="true" />}</button></div>
+        <div className={styles.actions}><button type="button" onClick={() => setPreviewId(row.id)}>预览</button>{publicHref(row) && <Link href={publicHref(row)!} className={styles.button} data-glass-control="">查看</Link>}{row.status !== 'archived' && <Link href={editHref(row)} className={styles.button} data-glass-control="">编辑</Link>}{row.kind === 'article' && (row.local || row.remote) && row.status !== 'archived' && row.status !== 'scheduled' && (row.status === 'draft' || row.pending || Boolean(row.local && !previewMode)) && <button type="button" disabled={busy} aria-label={`${row.status === 'published' && row.pending ? '发布更新' : '发布'}：${row.title}`} onClick={() => { void publishArticle(row) }}>{row.status === 'published' && row.pending ? '更新' : '发布'}</button>}<button type="button" className={styles.iconButton} disabled={busy} aria-label={row.status === 'archived' ? `恢复${row.title}` : `移入回收站：${row.title}`} onClick={() => { void archive([row.id], row.status === 'archived') }}>{row.status === 'archived' ? <ArchiveRestore size={16} aria-hidden="true" /> : <Trash2 size={16} aria-hidden="true" />}</button></div>
       </article>)}</div>
     </>}
     <dialog ref={dialogRef} className={styles.dialog} aria-labelledby="managed-preview-title" onClose={() => setPreviewId(null)} onCancel={() => setPreviewId(null)} onClick={(event) => { if (event.target === event.currentTarget) setPreviewId(null) }}>
@@ -146,7 +157,9 @@ export function CreatorContentManager({ ownerKey, publishingHref, previewMode = 
 }
 
 function PublicationPreview({ row, products }: { row: Row; products: Product[] }) {
-  const content = row.remote?.content ?? row.local?.content
+  const published = row.remote?.content ?? row.local?.content
+  const pending = row.remote?.pending ?? row.local?.pending
+  const content = row.kind === 'article' && pending?.kind === 'article' ? pending : published
   if (content?.kind === 'article' && content.article) return <div className={styles.articlePreview} style={{ '--article-background': getArticleBackground(content.article.background).color } as CSSProperties}><ArticlePhonePreview draft={content.article} /></div>
   const blocks: ContentBlock[] = row.online && !row.remote ? readContentBlocks(row.online.blocks, row.online.body, row.online.product_ids) : []
   return <div className={styles.preview}>

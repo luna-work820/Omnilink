@@ -39,7 +39,7 @@ const backOut = (t: number) => {
 };
 
 export const TextCursor: React.FC<TextCursorProps> = ({
-  text = 'AURA VANGUARD · ',
+  text = 'AURA VANGUARD ',
   mode = 'stamps',
   layout = 'horizontal',
   spacing = 24,

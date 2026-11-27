@@ -6,10 +6,10 @@ describe('deterministic execution policy',()=>{
   it.each([['耳环','product-search'],['earrings','product-search'],['比较这两款','comparison'],['compare these','comparison'],['https://example.com/product','comparison']])('routes %s without classification', (prompt,intent)=>{
     expect(ruleConsumerExecution({...input,prompt})?.intent).toBe(intent)
   })
-  it.each(['裙子','连衣裙','dress','半身裙','一条裙子','帮我找一条裙子','上衣','裤子','外套','运动鞋','背包','围巾','袜子'])('routes the single product keyword %s without a model and keeps hybrid retrieval',prompt=>{
+  it.each(['裙子','连衣裙','dress','半身裙','一条裙子','帮我找一条裙子','上衣','裤子','外套','运动鞋','背包','围巾','袜子','摄影器材','摄影设备','相机','镜头','三脚架'])('routes the product keyword %s directly to keyword retrieval',prompt=>{
     const decision=ruleConsumerExecution({...input,prompt})
     expect(decision?.intent).toBe('product-search')
-    expect(decision?.search?.retrieval?.mode).toBe('auto')
+    expect(decision?.search?.retrieval?.mode).toBe('keyword')
   })
   it.each([
     ['复古衣服','衣服','复古'],
@@ -35,7 +35,14 @@ describe('deterministic execution policy',()=>{
   })
   it('recognizes a single word already present in a published product without a parser',()=>{
     const catalogProducts=[{...readConsumerCatalog()[0],name:'Striped halter dress',category:'连衣裙',specs:{}}]
-    expect(ruleConsumerExecution({...input,prompt:'halter',catalogProducts})).toMatchObject({intent:'product-search',search:{query:'halter',retrieval:{mode:'auto'}}})
+    expect(ruleConsumerExecution({...input,prompt:'halter',catalogProducts})).toMatchObject({intent:'product-search',search:{query:'halter',retrieval:{mode:'keyword'}}})
+  })
+  it('recognizes an existing brand and model without a classifier',()=>{
+    const catalogProducts=[{...readConsumerCatalog()[0],name:'Canon R5 camera body',category:'相机',specs:{}}]
+    expect(ruleConsumerExecution({...input,prompt:'Canon R5',catalogProducts})).toMatchObject({intent:'product-search',search:{query:'Canon R5',retrieval:{mode:'keyword'}}})
+  })
+  it.each(['摄影器材怎么选？','摄影器材评测文章','适合旅行的轻便相机','相机1000元以内'])('does not treat a qualified request as a bare keyword: %s',prompt=>{
+    expect(ruleConsumerExecution({...input,prompt})).toBeNull()
   })
   it('leaves an ambiguous natural-language request to the single parser',()=>{
     expect(ruleConsumerExecution({...input,prompt:'I need something delicate for a wedding, under 100 USD'})).toBeNull()

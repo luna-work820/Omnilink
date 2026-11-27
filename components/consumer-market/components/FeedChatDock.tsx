@@ -3,35 +3,41 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react'
 import { useOmnilink } from '../context/OmnilinkContext'
 import { LiquidGlass } from '@/components/ui/liquid-glass'
-import { Microphone as Mic, PaperPlaneRight as Send } from '@phosphor-icons/react'
+import AITextLoading from '@/components/kokonutui/ai-text-loading'
+import { InsightQuestion as InsightQuestionView } from './InsightQuestion'
+import { PaperPlaneRight as Send } from '@phosphor-icons/react'
 import { Camera, ChevronDown as HistoryChevron, Expand, FileText, Heart, Image as ImageIcon, Link as LinkIcon, Square, LockKeyhole, LockKeyholeOpen, MessageCircle, Minus, Plus, X } from 'lucide-react'
 import { AI_ASSISTANT_SKILLS, AI_ASSISTANT_SKILLS_STORAGE_KEY, readInstalledSkillIds, type AiAssistantSkillId } from './CapabilityLibrary'
 import type { InsightQuestion, InsightOption } from '@/lib/consumer-advisor/fashion-insight'
 import type { AiChatMessage } from '../types'
+import { APPEARANCE_ACTIONS } from '@/lib/consumer-advisor/appearance-actions'
+import { AnalysisMemoryButton } from './AnalysisMemoryButton'
 
 export const FEED_CHAT_SCROLL_KEY = 'omnilink-feed-chat-preview-scroll'
 export type FeedAttachment = { name: string; kind: 'image' | 'document' | 'url'; data: string }
 export type FeedDroppedReference = { key: string; title: string; url?: string; productId?: string; detail?: string }
-type VoiceResult = { results: ArrayLike<ArrayLike<{ transcript: string }>> }
-type VoiceRecognition = { lang: string; onresult: ((event: VoiceResult) => void) | null; onend: (() => void) | null; onerror: (() => void) | null; start: () => void; stop: () => void }
-type VoiceWindow = Window & { SpeechRecognition?: new () => VoiceRecognition; webkitSpeechRecognition?: new () => VoiceRecognition }
 const PINNED_SKILLS_STORAGE_KEY = 'omnilink_pinned_skills_v1'
 
 function readPinnedSkillIds(): AiAssistantSkillId[] {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(PINNED_SKILLS_STORAGE_KEY) ?? '[]')
-    return Array.isArray(saved) ? AI_ASSISTANT_SKILLS.map((skill) => skill.id).filter((id) => saved.includes(id)) : []
+    const pinned = Array.isArray(saved) ? AI_ASSISTANT_SKILLS.map((skill) => skill.id).filter((id) => saved.includes(id)) : []
+    localStorage.setItem(PINNED_SKILLS_STORAGE_KEY, JSON.stringify(pinned))
+    return pinned
   } catch { return [] }
 }
 
 export function FeedChatDock({
   insightQuestion,
   insightThinking = false,
+  selectedInsightValue,
+  onInsightChange,
   onInsightSkip,
   onInsightSelect,
   chatOpen = false,
   chatCardOpen = false,
   cardHistoryOpen = false,
+  showSignupWelcomeActions = false,
   disabled = false,
   onSubmitMessage,
   onSubmitAttachment,
@@ -39,6 +45,8 @@ export function FeedChatDock({
   onActivate,
   onToggleCardHistory,
   onExpandChat,
+  onStartSignupAssistant,
+  onBrowseSignupWelcome,
   droppedReferences = [],
   onRemoveDroppedReference,
   onClearDroppedReferences,
@@ -49,11 +57,14 @@ export function FeedChatDock({
 }: {
   insightQuestion?: InsightQuestion | null
   insightThinking?: boolean
+  selectedInsightValue: string
+  onInsightChange: (value: string) => void
   onInsightSkip?: () => void
   onInsightSelect?: (option: InsightOption) => void
   chatOpen?: boolean
   chatCardOpen?: boolean
   cardHistoryOpen?: boolean
+  showSignupWelcomeActions?: boolean
   disabled?: boolean
   onSubmitMessage?: (message: string, selectedProductIds: string[], hasActiveSkill: boolean, skillId?: AiAssistantSkillId) => void
   onSubmitAttachment?: (attachment: FeedAttachment, message: string, selectedProductIds: string[], hasActiveSkill: boolean, skillId?: AiAssistantSkillId) => void
@@ -61,6 +72,8 @@ export function FeedChatDock({
   onActivate?: () => void
   onToggleCardHistory?: () => void
   onExpandChat?: () => void
+  onStartSignupAssistant?: () => void
+  onBrowseSignupWelcome?: () => void
   droppedReferences?: FeedDroppedReference[]
   onRemoveDroppedReference?: (key: string) => void
   onClearDroppedReferences?: () => void
@@ -71,6 +84,7 @@ export function FeedChatDock({
 }) {
   const [message, setMessage] = useState('')
   const messageInputRef = useRef<HTMLTextAreaElement>(null)
+  const appearanceActionsRef = useRef<HTMLDivElement>(null)
   const referenceRowRef = useRef<HTMLDivElement>(null)
   const seenReferenceKeysRef = useRef<Set<string>>(new Set())
   const [panel, setPanel] = useState<'attachments' | 'favorites' | null>(null)
@@ -78,12 +92,10 @@ export function FeedChatDock({
   const [pinnedSkillIds, setPinnedSkillIds] = useState<AiAssistantSkillId[]>([])
   const [attachment, setAttachment] = useState<FeedAttachment | null>(null)
   const [selectedFavoriteIds, setSelectedFavoriteIds] = useState<string[]>([])
-  const [isRecording, setIsRecording] = useState(false)
   const [urlEntry,setUrlEntry]=useState(false),[urlValue,setUrlValue]=useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
-  const recognitionRef = useRef<VoiceRecognition | null>(null)
   const cardHistoryRef = useRef<HTMLDivElement>(null)
   const { openAiPage, showToast, isAiThinking, discoveryBusy, products, savedProductIds,activeAssistantSkillId: activeSkillId,setActiveAssistantSkillId: setActiveSkillId,openPersonalView,stopAiResponse } = useOmnilink()
   const canSend = Boolean(message.trim() || attachment || selectedFavoriteIds.length || droppedReferences.length)
@@ -96,9 +108,8 @@ export function FeedChatDock({
     if (chatCardOpen && cardHistoryOpen && cardHistoryRef.current) {
       cardHistoryRef.current.scrollTop = cardHistoryRef.current.scrollHeight
     }
-  }, [chatCardOpen, cardHistoryOpen, conversationMessages.length])
+  }, [chatCardOpen, cardHistoryOpen, conversationMessages.length, insightQuestion])
 
-  useEffect(() => () => recognitionRef.current?.stop(), [])
   useLayoutEffect(() => {
     const newReferences = droppedReferences.filter((reference) => !seenReferenceKeysRef.current.has(reference.key))
     seenReferenceKeysRef.current = new Set(droppedReferences.map((reference) => reference.key))
@@ -121,10 +132,10 @@ export function FeedChatDock({
   }
 
   function activateSkill(id: AiAssistantSkillId) {
-    if (id === 'shopping-preferences') { setPanel(null);openPersonalView('assessment'); return }
     setActiveSkillId(id)
     setMessage((current) => current.endsWith('@') ? current.slice(0, -1) : current)
     setPanel(null)
+    if (id === 'personal-advisor') requestAnimationFrame(() => appearanceActionsRef.current?.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true }))
   }
 
   function openAssistant(prompt?: string) {
@@ -132,28 +143,33 @@ export function FeedChatDock({
     openAiPage(prompt)
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!canSend || isAiThinking || disabled) return
-    const typedMessage = message.trim() || (attachment || droppedReferences.length ? '' : '请分析我选中的收藏商品，并说明搭配建议。')
+  function sendMessage(startPrompt?: string) {
+    if ((!canSend && !startPrompt) || isAiThinking || disabled) return
+    const typedMessage = message.trim() || (startPrompt || attachment || droppedReferences.length ? '' : '请分析我选中的收藏商品，并说明搭配建议。')
     const activeReferences = droppedReferences
     const referenceText = activeReferences.map((reference) => [
       `@${reference.title}`,
       reference.url ? `链接：${reference.url}` : '',
       reference.detail ? `信息：${reference.detail}` : '',
     ].filter(Boolean).join('\n')).join('\n')
-    const content = [typedMessage, referenceText].filter(Boolean).join('\n')
+    const content = [startPrompt, typedMessage, referenceText].filter(Boolean).join('\n')
     const prompt = activeSkill && activeSkill.id !== 'personal-advisor' ? `${activeSkill.prompt}${content ? `\n${content}` : ''}` : content
     const productIds = [...new Set([...selectedFavoriteIds, ...activeReferences.map((reference) => reference.productId).filter((id): id is string => Boolean(id))])]
-    if (attachment && onSubmitAttachment) onSubmitAttachment(attachment, prompt, productIds, Boolean(activeSkill), activeSkill?.id)
+    const keepUrlForLater = Boolean(startPrompt && attachment?.kind === 'url')
+    if (attachment && !keepUrlForLater && onSubmitAttachment) onSubmitAttachment(attachment, prompt, productIds, Boolean(activeSkill), activeSkill?.id)
     else if (onSubmitMessage) onSubmitMessage(prompt, productIds, Boolean(activeSkill), activeSkill?.id)
     else openAssistant(prompt)
     setMessage('')
-    setAttachment(null)
+    if (!keepUrlForLater) setAttachment(null)
     setSelectedFavoriteIds([])
     if (activeSkillId !== 'personal-advisor') setActiveSkillId(null)
     onClearDroppedReferences?.()
     setPanel(null)
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    sendMessage()
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -202,18 +218,6 @@ export function FeedChatDock({
     reader.readAsDataURL(file)
   }
 
-  function toggleVoice() {
-    if (isRecording) { recognitionRef.current?.stop(); return }
-    const Voice = (window as VoiceWindow).SpeechRecognition || (window as VoiceWindow).webkitSpeechRecognition
-    if (!Voice) { showToast('当前浏览器不支持语音输入。'); return }
-    const recognition = new Voice()
-    recognition.lang = 'zh-CN'
-    recognition.onresult = (event) => setMessage((current) => `${current}${event.results[0]?.[0]?.transcript ?? ''}`)
-    recognition.onend = () => { setIsRecording(false); recognitionRef.current = null }
-    recognition.onerror = () => { setIsRecording(false); recognitionRef.current = null; showToast('语音输入未完成。') }
-    try { recognition.start(); recognitionRef.current = recognition; setIsRecording(true) } catch { showToast('无法启动语音输入。') }
-  }
-
   const pickerOpen = panel === 'attachments' || panel === 'favorites'
   const attachmentPanelOpen = panel === 'attachments' || panel === 'favorites'
 
@@ -223,10 +227,6 @@ export function FeedChatDock({
       <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleFile} aria-label="添加图片" className="hidden" />
       <input ref={cameraInputRef} type="file" accept="image/png,image/jpeg,image/webp" capture="environment" onChange={handleFile} aria-label="拍摄图片" className="hidden" />
       <form onSubmit={submit} className="relative min-w-0 flex-1" aria-label="询问 AI assistant">
-        {insightQuestion && !chatOpen && <section aria-label="细化本次搜索" className="absolute bottom-[calc(100%+10px)] left-0 right-0 z-20 rounded-[var(--radius-card)] bg-[var(--market-canvas)] p-3 text-[var(--market-ink)]">
-          <p className="text-sm font-medium">{insightQuestion.prompt}</p>
-          <div className="mt-2 flex flex-wrap gap-1">{insightQuestion.options.map((option)=><button key={option.value} type="button" onClick={()=>onInsightSelect?.(option)} className="min-h-11 rounded-full px-3 text-xs hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">{option.label}</button>)}<button type="button" onClick={onInsightSkip} className="min-h-11 rounded-full px-3 text-xs text-[var(--market-text-secondary)] hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">跳过</button></div>
-        </section>}
         {insightThinking && !chatOpen && <span role="status" className="absolute bottom-[calc(100%+6px)] left-2 rounded-full bg-[var(--market-canvas)] px-3 py-2 text-xs text-[var(--market-text-secondary)]">正在思考</span>}
         {pickerOpen && <section id="feed-chat-picker-panel" role="group" aria-label={panel === 'favorites' ? '选择收藏' : '添加'} className={`feed-chat-picker-card absolute ${panel === 'attachments' ? 'bottom-[calc(48px+10px)] feed-chat-attachment-panel' : 'bottom-[calc(100%+10px)]'} left-0 right-0 z-30 max-h-[min(55dvh,420px)] overflow-y-auto p-2.5`} data-navigation-open={navigationOpen}>
           {panel === 'favorites' ? <>
@@ -258,34 +258,37 @@ export function FeedChatDock({
             {pinnedSkills.map((skill) => <LiquidGlass key={skill.id} radius={999} bevelDepth={12} aberration={0.18} tint={1} interactive className="ai-assistant-composer-surface shrink-0 rounded-full"><button type="button" disabled={disabled} onClick={() => activateSkill(skill.id)} aria-pressed={activeSkillId === skill.id} className="relative flex h-8 items-center gap-1.5 rounded-full px-2.5 text-[11px] text-[var(--market-ink)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40"><skill.icon size={13} aria-hidden="true" />{skill.title}</button></LiquidGlass>)}
           </div>
         </div>}
-        <div className={`feed-chat-fluid-card ${chatCardOpen ? 'is-expanded' : ''}`}>
+        <div className={`feed-chat-fluid-card ${chatCardOpen ? 'is-expanded' : ''} ${activeSkillId === 'personal-advisor' ? 'has-appearance-actions' : ''}`}>
         <div className="feed-chat-card-reveal">
         <section aria-label="当前对话" aria-hidden={!chatCardOpen} inert={!chatCardOpen} className={`feed-chat-conversation-card ${cardHistoryOpen ? 'is-expanded' : ''}`}>
-          <div className="feed-chat-card-heading flex min-h-14 items-center gap-1 px-2 sm:px-3">
+          <div className="feed-chat-card-heading flex h-[46px] min-h-[46px] items-center gap-1 px-2 sm:px-3">
             <button type="button" onClick={onBrowse} aria-label="收起对话卡片" className="grid h-10 w-10 shrink-0 place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><Minus size={19} aria-hidden="true" /></button>
-            <button type="button" onClick={onToggleCardHistory} aria-expanded={cardHistoryOpen} aria-controls={cardHistoryOpen ? 'feed-chat-card-history' : undefined} className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-lg px-1 text-left text-xs text-[var(--market-ink)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><MessageCircle size={17} className="shrink-0" aria-hidden="true" /><span className="truncate font-medium" aria-live="polite">{discoveryBusy ? '正在搜索' : (isAiThinking || insightThinking) ? '正在思考' : conversationTitle}</span><HistoryChevron size={14} className={`shrink-0 text-[var(--market-text-secondary)] transition-transform duration-[250ms] ease-out ${cardHistoryOpen ? 'rotate-180' : ''}`} aria-hidden="true" /></button>
+            <button type="button" onClick={onToggleCardHistory} aria-expanded={cardHistoryOpen} aria-controls={cardHistoryOpen ? 'feed-chat-card-history' : undefined} className="flex h-8 min-h-8 min-w-0 flex-1 items-center gap-2 rounded-lg px-1 text-left text-[9px] text-[var(--market-ink)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><MessageCircle size={17} className="shrink-0" aria-hidden="true" /><span className="truncate font-medium" aria-live="polite">{discoveryBusy ? '正在搜索' : (isAiThinking || insightThinking) ? '正在思考' : conversationTitle}</span><HistoryChevron size={14} className={`shrink-0 text-[var(--market-text-secondary)] transition-transform duration-[250ms] ease-out ${cardHistoryOpen ? 'rotate-180' : ''}`} aria-hidden="true" /></button>
             <button type="button" onClick={onExpandChat} aria-label="全屏展开对话" className="grid h-10 w-10 shrink-0 place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><Expand size={18} aria-hidden="true" /></button>
           </div>
           <div className="feed-chat-history-reveal" aria-hidden={!cardHistoryOpen} inert={!cardHistoryOpen}>
-          <div id="feed-chat-card-history" ref={cardHistoryRef} role="log" aria-label="过往聊天" className="feed-chat-card-history space-y-3 overflow-y-auto px-4 py-3">
-            {conversationMessages.length ? conversationMessages.map((item) => <div key={item.id} className={`flex ${item.isUser ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[88%] break-words rounded-xl px-3 py-2 text-sm leading-6 ${item.isUser ? 'bg-[var(--market-surface-muted)]' : ''}`}>{item.image && <img src={item.image} alt="已发送的图片" className="mb-2 max-h-40 max-w-full object-contain" />}{item.fileName && <p className="text-xs text-[var(--market-text-secondary)]">{item.fileName}</p>}<p className="whitespace-pre-wrap">{item.text}</p></div></div>) : <p className="py-6 text-center text-sm text-[var(--market-text-secondary)]">暂无消息</p>}
-            {isAiThinking && <p role="status" className="text-sm text-[var(--market-text-secondary)]">正在分析</p>}
+          <div id="feed-chat-card-history" ref={cardHistoryRef} role="log" aria-label="对话内容" className="feed-chat-card-history space-y-3 overflow-y-auto px-4 py-3">
+            {conversationMessages.length ? conversationMessages.map((item) => <div key={item.id} className={`flex ${item.isUser ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[88%] break-words rounded-xl px-3 py-2 text-sm leading-6 ${item.isUser ? 'bg-[var(--market-surface-muted)]' : ''}`}>{item.image && <img src={item.image} alt="已发送的图片" className="mb-2 max-h-40 max-w-full object-contain" />}{item.fileName && <p className="text-xs opacity-80">{item.fileName}</p>}<p className="whitespace-pre-wrap">{item.text}</p>{item.id === 'first-login-welcome' && showSignupWelcomeActions && onStartSignupAssistant && onBrowseSignupWelcome && <div role="group" aria-label="首次使用操作" className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={onStartSignupAssistant} className="h-[31px] w-[84px] rounded-full bg-[var(--market-surface-muted)] px-2 text-xs font-medium text-[var(--market-ink)] transition-colors duration-150 ease-out hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">形象助手</button><button type="button" onClick={onBrowseSignupWelcome} className="h-[31px] w-[84px] rounded-full bg-[var(--market-surface-muted)] px-2 text-xs font-medium text-[var(--market-ink)] transition-colors duration-150 ease-out hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">先逛逛</button></div>}{item.memoryProposed && <button type="button" onClick={() => { openPersonalView('memories'); onBrowse?.() }} className="mt-2 min-h-11 whitespace-nowrap rounded-full px-3 text-xs font-medium hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]">查看待确认记忆</button>}{item.analysisMessageId && <AnalysisMemoryButton messageId={item.analysisMessageId} onOpen={() => { openPersonalView('memories'); onBrowse?.() }} />}</div></div>) : <p className="py-6 text-center text-sm text-[var(--market-text-secondary)]">暂无消息</p>}
+            {insightQuestion && chatCardOpen && <InsightQuestionView question={insightQuestion} selectedValue={selectedInsightValue} onChange={onInsightChange} onSkip={() => onInsightSkip?.()} onSelect={(option) => onInsightSelect?.(option)} disabled={discoveryBusy} name="dock-insight" />}
+            {isAiThinking && !conversationMessages.some((message) => message.state === 'streaming') && <AITextLoading />}
           </div>
           </div>
         </section>
         </div>
         <div className="feed-chat-composer-region relative">
+          {activeSkillId === 'personal-advisor' && <div ref={appearanceActionsRef} role="group" aria-label="形象助手功能" className="feed-chat-appearance-actions flex flex-wrap gap-1.5 pb-2 pl-7 pr-2 pt-2">
+            {APPEARANCE_ACTIONS.map((action) => <LiquidGlass key={action.label} radius={999} bevelDepth={12} aberration={0.18} tint={1} interactive className="ai-assistant-composer-surface shrink-0 rounded-full" style={{ overflow: 'visible' }}><button type="button" disabled={disabled || isAiThinking} onClick={() => sendMessage(action.prompt)} className="relative h-[30px] w-[79px] whitespace-nowrap rounded-full border-[0.5px] border-[var(--market-border)] bg-transparent px-2 text-xs font-medium text-[var(--market-ink)] hover:bg-[var(--market-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40">{action.label}</button></LiquidGlass>)}
+          </div>}
           <LiquidGlass radius={chatOpen && !chatCardOpen ? 24 : 999} bevelDepth={12} aberration={0.18} tint={1} interactive className={`ai-assistant-composer-surface relative flex min-h-12 items-center rounded-full border-[0.5px] px-1.5 py-0.5 text-[var(--market-ink)] ${chatOpen ? 'is-chat-open' : ''} ${chatCardOpen ? 'is-chat-card' : ''}`} style={{ overflow: 'visible' }}>
-          <button type="button" disabled={disabled || isAiThinking} onClick={() => { setInstalledSkillIds(readInstalledSkillIds()); setPanel((current) => current === 'attachments' ? null : 'attachments') }} aria-label={attachmentPanelOpen ? '关闭附件菜单' : '添加附件'} aria-expanded={attachmentPanelOpen} aria-controls="feed-chat-picker-panel" className="feed-chat-control feed-chat-attachment-trigger relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40">{attachmentPanelOpen ? <X size={17} aria-hidden="true" /> : <Plus size={17} aria-hidden="true" />}</button>
+          <button type="button" disabled={disabled || isAiThinking} onClick={() => { setInstalledSkillIds(readInstalledSkillIds()); setPanel((current) => current === 'attachments' ? null : 'attachments') }} aria-label={attachmentPanelOpen ? '关闭附件菜单' : '添加附件'} aria-expanded={attachmentPanelOpen} aria-controls="feed-chat-picker-panel" className="feed-chat-control feed-chat-attachment-trigger relative box-border flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40">{attachmentPanelOpen ? <X size={17} aria-hidden="true" /> : <Plus size={17} aria-hidden="true" />}</button>
           <div className="feed-chat-message-field flex min-h-11 min-w-0 flex-1 flex-col justify-center">
             <div ref={referenceRowRef} className="feed-chat-inline-input flex min-w-0 items-center gap-1 overflow-x-auto">
-              {(activeSkill || attachment || selectedFavoriteIds.length > 0) && <div className="flex shrink-0 items-center gap-1">{activeSkill && <button type="button" onClick={() => setActiveSkillId(null)} className="max-w-24 truncate rounded-full bg-[var(--market-surface-muted)] px-2 py-0.5 text-xs">@{activeSkill.title} ×</button>}{attachment && <button type="button" onClick={() => setAttachment(null)} className="max-w-24 truncate rounded-full bg-[var(--market-surface-muted)] px-2 py-0.5 text-xs">{attachment.name} ×</button>}{selectedFavoriteIds.length > 0 && <button type="button" onClick={() => setPanel('favorites')} className="rounded-full bg-[var(--market-surface-muted)] px-2 py-0.5 text-xs">收藏 {selectedFavoriteIds.length}</button>}</div>}
+              {(activeSkill || attachment || selectedFavoriteIds.length > 0) && <div className="flex shrink-0 items-center gap-1">{activeSkill && <button type="button" onClick={() => setActiveSkillId(null)} className="box-border flex h-[30px] w-[95px] shrink-0 items-center justify-center overflow-hidden whitespace-nowrap rounded-full bg-[var(--market-surface-muted)] px-2 text-xs">@{activeSkill.title} ×</button>}{attachment && <button type="button" onClick={() => setAttachment(null)} className="max-w-24 truncate rounded-full bg-[var(--market-surface-muted)] px-2 py-0.5 text-xs">{attachment.name} ×</button>}{selectedFavoriteIds.length > 0 && <button type="button" onClick={() => setPanel('favorites')} className="rounded-full bg-[var(--market-surface-muted)] px-2 py-0.5 text-xs">收藏 {selectedFavoriteIds.length}</button>}</div>}
               {droppedReferences.map((reference) => <button key={reference.key} type="button" onClick={() => onRemoveDroppedReference?.(reference.key)} title={reference.url ?? reference.title} aria-label={`移除引用 ${reference.title}`} className="feed-chat-reference-chip flex h-7 max-w-40 shrink-0 items-center gap-1 rounded-full bg-[var(--market-surface-muted)] px-2 text-xs text-[var(--market-ink)] focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><span className="truncate">@{reference.title}</span><X size={12} className="shrink-0" aria-hidden="true" /></button>)}
               <textarea ref={messageInputRef} value={message} disabled={disabled} placeholder={droppedReferences.length ? '' : '说说你想找什么，或直接提问'} onClick={onActivate} onFocus={onActivate} onChange={(event) => { const next = event.target.value; setMessage(next); if (next.endsWith('@')) { setInstalledSkillIds(readInstalledSkillIds()); setPanel('attachments') } }} onKeyDown={handleKeyDown} rows={1} wrap="off" aria-label="搜索或询问 AI assistant" className="ai-assistant-composer-input block min-w-20 flex-1 bg-transparent px-1 text-xs text-[var(--market-ink)] outline-none" />
             </div>
           </div>
-          <button type="button" disabled={disabled || isAiThinking} onClick={toggleVoice} aria-label={isRecording ? '停止语音输入' : '语音输入'} aria-pressed={isRecording} className="feed-chat-control feed-chat-voice-trigger flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-[var(--market-support)] disabled:opacity-40"><Mic size={15} aria-hidden="true" /></button>
-          {isAiThinking?<button type="button" onClick={stopAiResponse} aria-label="停止回答" className="feed-chat-control relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><Square size={14} aria-hidden="true"/></button>:<button type="submit" disabled={!canSend || disabled} aria-label="发送" className="feed-chat-control ai-assistant-composer-send relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)]"><Send size={16} weight="bold" aria-hidden="true" /></button>}
+          {isAiThinking?<button type="button" onClick={stopAiResponse} aria-label="停止回答" className="feed-chat-control relative flex h-[45px] w-[45px] shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-[var(--market-support)]"><Square size={14} aria-hidden="true"/></button>:<button type="submit" disabled={!canSend || disabled} aria-label="发送" className="feed-chat-control ai-assistant-composer-send relative flex h-[45px] w-[45px] shrink-0 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--market-support)]"><Send size={16} weight="bold" aria-hidden="true" /></button>}
           </LiquidGlass>
         </div>
         </div>

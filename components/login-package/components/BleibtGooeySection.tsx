@@ -1,120 +1,93 @@
-"use client";
-
-import React, { useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
-import localFont from "next/font/local";
-import { sharedRippleGPU } from "./RippleDistortion/sharedRippleGpu";
+import React, { useEffect, useRef } from "react";
+import { motion } from "motion/react";
 import { buildMetaballPath } from "./RippleDistortion/metaballContour";
+import BleibtTriOrbit from "./BleibtTriOrbit";
+import ScrollReveal, { type ScrollRevealToken } from "./ScrollReveal";
+import FlexCarousel from "./FlexCarousel";
+import { jumpToFinalLogin } from "../lib/utils";
 
-const FlexCarousel = dynamic(() => import("./FlexCarousel"), { ssr: false });
-type OrbitImagesProps = {
-  images: string[];
-  shape: "ellipse";
-  radiusX: number;
-  radiusY: number;
-  rotation: number;
-  duration: number;
-  itemSize: number;
-  itemWidth: number;
-  itemHeight: number;
-  depth: number;
-  hoverScale: number;
-  hoverSpeed: number;
-  showPath: boolean;
-  direction: "normal";
-  easing: "easeOut";
-  fill: boolean;
-  alignToPath: boolean;
-  draggable: boolean;
-  clickToFront: boolean;
-  paused: boolean;
-  intro: boolean;
-  height: string;
-  itemRadius: number;
-  shadow: number;
-  className: string;
-};
-const OrbitImages = dynamic<OrbitImagesProps>(
-  () =>
-    import("../../OrbitImages").then(
-      (module) => module.default as React.ComponentType<OrbitImagesProps>
-    ),
-  { ssr: false }
-);
+const webMockupImg = "/login-package/assets/images/omnilink-home-curated.webp";
+const mobileMockupImg = "/login-package/assets/images/omnilink-ai-mobile.webp";
 
-const editorialFont = localFont({
-  src: "../../../public/login-package/fonts/lemi-jian-zhuan.ttf",
-  weight: "400",
-  fallback: ["Songti SC", "SimSun", "Noto Serif CJK SC", "serif"],
-  display: "swap",
-  preload: false,
-});
-
-const HEADLINE_TOKENS = [
-  "世界从不缺少选择",
-  "缺少的，是",
-  "与你有关的那一个",
+// Page 1 tokens for ScrollReveal
+const PAGE1_TAGLINE_LINES = [
+  "Your world.",
+  "Your intentions.",
+  "All connected.",
 ];
-
-const SUPPORT_TOKENS = [
-  "让选择，拥有自己的方向",
-  "让每次发现，都更接近自己",
+const PAGE1_HEADLINE_LINE1_TOKENS: ScrollRevealToken[] = [
+  { text: "从你的" },
+  { text: "想法" },
+  { text: "出发，" },
 ];
-
-const SUBTEXT_TOKENS = [
-  "不追随人群",
-  "只寻找与你有关的",
+const PAGE1_HEADLINE_LINE2_TOKENS: ScrollRevealToken[] = [
+  { text: "连接" },
+  { text: "整个" },
+  { text: "世界。" },
 ];
-
-const TOTAL_RIPPLE_TOKENS =
-  HEADLINE_TOKENS.length + SUPPORT_TOKENS.length + SUBTEXT_TOKENS.length;
-
-// Hover lift gives the page-two copy a pointer response without competing with the wave reveal.
-const pageTwoHoverLift =
-  "transition-transform duration-500 ease-out hover:-translate-y-2 motion-reduce:transition-none motion-reduce:hover:translate-y-0";
+const PAGE1_LEAD_TOKENS: ScrollRevealToken[] = [
+  { text: "一个真正" },
+  { text: "围绕你" },
+  { text: "运转的" },
+  { text: "智能空间。" },
+];
+const PAGE1_BODY_TOKENS: ScrollRevealToken[] = [
+  { text: "从一闪而过的灵感，" },
+  { text: "到一场精心规划的旅行；" },
+  { text: "从寻找心仪的事物，" },
+  { text: "到实现自己的创意。" },
+  { text: "Omnilink ", className: "font-semibold text-[#008F83]" },
+  { text: "理解你的想法，" },
+  { text: "记住你的偏好，" },
+  { text: "连接散落在世界各处的" },
+  { text: "信息、内容与服务。" },
+];
+const PAGE1_PROMPT_TOKENS: ScrollRevealToken[] = [
+  { text: "你只需要" },
+  { text: "告诉我们，" },
+  { text: "你想做什么。" },
+];
 
 const flexCarouselItems = [
-  { src: '/login-package/images/one.webp', alt: 'A chrome sculpture', title: 'Iridescence' },
-  { src: '/login-package/images/two.webp', alt: 'A figure on a white set', title: 'White Room' },
-  { src: '/login-package/images/three.webp', alt: 'A clay bust in profile', title: 'Clay Study', subtitle: 'Studio 04' },
-  { src: '/login-package/images/four.webp', alt: 'Liquid impression', title: 'Obsidian Current', subtitle: 'Studio 05' },
-  { src: '/login-package/images/one.webp', alt: 'A chrome sculpture', title: 'Iridescence' },
-  { src: '/login-package/images/two.webp', alt: 'A figure on a white set', title: 'White Room' },
-  { src: '/login-package/images/three.webp', alt: 'A clay bust in profile', title: 'Clay Study', subtitle: 'Studio 04' }
+  { src: "/login-package/carousel/1.webp", alt: "红色针织背心穿搭" },
+  { src: "/login-package/carousel/2.webp", alt: "条纹针织背心穿搭" },
+  { src: "/login-package/carousel/3.webp", alt: "室内花艺摆设" },
+  { src: "/login-package/carousel/4.webp", alt: "博物馆中的古典雕像" },
+  { src: "/login-package/carousel/5.webp", alt: "白色墙面上的雕塑陈列" },
+  { src: "/login-package/carousel/6.webp", alt: "花瓶中的绿植与墙面光影" },
 ];
 
-interface Droplet {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  r: number;
-  targetR: number;
-  life: number;
-  maxLife: number;
-}
-
-interface InkTrailNode {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  r: number;
-  maxR: number;
-  age: number;
-  maxAge: number;
-  intensity: number;
-}
-
-const galleryImages = [
-  "/login-package/images/212.webp",
-  "/login-package/images/pexels-92377587-31379973.webp",
-  "/login-package/images/pexels-arteeem-1887920.webp",
-  "/login-package/images/pexels-ebahir-32106612.webp",
-  "/login-package/images/pexels-faisal-shabir-2164409984-39884329.webp",
-  "/login-package/images/pexels-madzery-39218180.webp",
-  "/login-package/images/pexels-mathilde-11843706.webp",
+// Page 1 Lower Black Layer 3-card 45° diagonal rotating showcase (2x enlarged mixed square & rectangle proportions)
+const triOrbitItems = [
+  { src: "/login-package/assets/images/omnilink-river-editorial.png", alt: "黑白河流与 Omnilink 品牌文字", width: 624, height: 351 },
+  { src: "/login-package/assets/images/omnilink-night.webp", alt: "Omnilink 夜间版主页、侧边栏和设置界面", width: 624, height: 351 },
+  { src: "/login-package/assets/images/omnilink-iphone-mockup.png", alt: "Omnilink iPhone AI 聊天与浏览界面样机", width: 624, height: 416 },
 ];
+
+// Viscous, slow, cohesive liquid ripple parameters (avoids fragmented interference)
+const RIPPLE_CONFIG = {
+  brushSize: 124,
+  strength: 0.14,
+  swirl: 0.45,
+  rings: 1.65,
+  spread: 3.4,
+  fade: 8.8,
+  growthRate: 0.22,
+  spacing: 38,
+  clickStrength: 1.45,
+  maxWaves: 24,
+  startScale: 1.15,
+  lifeConstant: Math.log(500),
+};
+
+interface RippleWave {
+  x: number;
+  y: number;
+  scale: number;
+  target: number;
+  size: number;
+  opacity: number;
+}
 
 const clamp = (v: number, min: number, max: number) =>
   Math.max(min, Math.min(max, v));
@@ -122,74 +95,36 @@ const clamp = (v: number, min: number, max: number) =>
 export function BleibtGooeySection() {
   const runwayRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const scrollTriggerRulerRef = useRef<HTMLDivElement>(null);
-  const inkCanvasRef = useRef<HTMLCanvasElement>(null);
-  const liquidMaskLayerRef = useRef<HTMLDivElement>(null);
+  const upperWhiteLayerRef = useRef<HTMLDivElement>(null);
+  const lowerBlackLayerRef = useRef<HTMLDivElement>(null);
   const carouselWrapRef = useRef<HTMLDivElement>(null);
-  const galleryWrapRef = useRef<HTMLDivElement>(null);
-  const upperTextWrapRef = useRef<HTMLDivElement>(null);
-  const lowerDividerRef = useRef<HTMLDivElement>(null);
-  const upperDividerRef = useRef<HTMLDivElement>(null);
-  const lowerTokensRef = useRef<(HTMLSpanElement | null)[]>([]);
-  const upperTokensRef = useRef<(HTMLSpanElement | null)[]>([]);
-  const carouselLoadedRef = useRef(false);
-  const [isGalleryNearViewport, setIsGalleryNearViewport] = useState(false);
-  const [isCarouselNearViewport, setIsCarouselNearViewport] = useState(false);
-
-  useEffect(() => {
-    const gallery = galleryWrapRef.current;
-    if (!gallery) return;
-
-    let rafId = 0;
-    const updateVisibility = () => {
-      rafId = 0;
-      const rect = gallery.getBoundingClientRect();
-      const isNearViewport =
-        rect.top < window.innerHeight + 200 && rect.bottom > -200;
-      setIsGalleryNearViewport(isNearViewport);
-    };
-    const scheduleVisibilityCheck = () => {
-      if (!rafId) rafId = window.requestAnimationFrame(updateVisibility);
-    };
-
-    updateVisibility();
-    window.addEventListener("scroll", scheduleVisibilityCheck, { passive: true });
-    window.addEventListener("resize", scheduleVisibilityCheck, { passive: true });
-    return () => {
-      if (rafId) window.cancelAnimationFrame(rafId);
-      window.removeEventListener("scroll", scheduleVisibilityCheck);
-      window.removeEventListener("resize", scheduleVisibilityCheck);
-    };
-  }, []);
+  const page2TriggerRef = useRef<HTMLDivElement>(null);
+  const lowerPage1TextRef = useRef<HTMLDivElement>(null);
+  const upperPage1TextRef = useRef<HTMLDivElement>(null);
+  const lowerTriOrbitParallaxRef = useRef<HTMLDivElement>(null);
+  const lowerP2MediaParallaxRef = useRef<HTMLDivElement>(null);
+  const lowerPage2TextRef = useRef<HTMLDivElement>(null);
+  const upperPage2TextRef = useRef<HTMLDivElement>(null);
+  const page2VideoRef = useRef<HTMLVideoElement>(null);
+  const page2ImageLayerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const runway = runwayRef.current;
     const stage = stageRef.current;
-    const inkCanvas = inkCanvasRef.current;
-    const liquidMaskLayer = liquidMaskLayerRef.current;
-    if (!runway || !stage || !inkCanvas || !liquidMaskLayer) {
+    const upperWhiteLayer = upperWhiteLayerRef.current;
+    if (!runway || !stage || !upperWhiteLayer) {
       return;
     }
-
-    const inkCtx = inkCanvas.getContext("2d", { desynchronized: true });
 
     let runwayDocTop = 0;
     let runwayHeight = 1;
     let docLeft = 0;
     let width = Math.max(1, stage.clientWidth);
     let vpH = Math.max(1, window.innerHeight || 800);
-    let stageHeight = Math.max(1, vpH * 2);
-    const canvasScale = 0.38;
-
-    const BARRIER_TOP = -75;
-    const BARRIER_BOTTOM_OFFSET = 110;
-    let barrierBottom = Math.max(
-      200,
-      stageHeight - BARRIER_BOTTOM_OFFSET
-    );
+    let stageHeight = Math.max(1, vpH * 3.3);
 
     const measureSection = () => {
-      if (!runway || !stage || !inkCanvas) return;
+      if (!runway || !stage) return;
       const runwayRect = runway.getBoundingClientRect();
       const stageRect = stage.getBoundingClientRect();
       const scrollY = window.scrollY || 0;
@@ -199,22 +134,7 @@ export function BleibtGooeySection() {
       runwayHeight = Math.max(1, runwayRect.height);
       docLeft = stageRect.left + scrollX;
       width = Math.max(1, stageRect.width);
-      stageHeight = Math.max(1, vpH * 2);
-      barrierBottom = Math.max(
-        200,
-        stageHeight - BARRIER_BOTTOM_OFFSET
-      );
-      const targetW = Math.max(1, Math.round(width * canvasScale));
-      const targetH = Math.max(1, Math.round(vpH * canvasScale));
-      if (inkCanvas.width !== targetW || inkCanvas.height !== targetH) {
-        inkCanvas.width = targetW;
-        inkCanvas.height = targetH;
-      }
-      sharedRippleGPU.setMaskZoneDocumentBounds(
-        runwayDocTop,
-        runwayHeight,
-        "page2"
-      );
+      stageHeight = Math.max(1, vpH * 3.3);
     };
 
     measureSection();
@@ -222,39 +142,65 @@ export function BleibtGooeySection() {
     ro.observe(runway);
     window.addEventListener("resize", measureSection, { passive: true });
 
-    const pointer = {
-      clientX: width * 0.52,
-      clientY: vpH * 0.36,
-      anchorClientX: width * 0.52,
-      anchorClientY: vpH * 0.36,
-      x: width * 0.52,
-      y: BARRIER_TOP,
-      targetX: width * 0.52,
-      targetY: BARRIER_TOP,
-      vx: 0,
-      vy: 0,
-      lastSpawnX: width * 0.52,
-      lastSpawnY: BARRIER_TOP,
-      lastMoveTime: -10000,
-      isInsideSection: false,
+    // Wave pool stays empty until pointer movement or click.
+    const waves: RippleWave[] = Array.from(
+      { length: RIPPLE_CONFIG.maxWaves },
+      () => ({
+        x: 0,
+        y: 0,
+        scale: RIPPLE_CONFIG.startScale,
+        target: RIPPLE_CONFIG.startScale,
+        size: RIPPLE_CONFIG.brushSize,
+        opacity: 0,
+      })
+    );
+    const activeWaves: RippleWave[] = [];
+    let currentWaveIdx = 0;
+
+    // Stationary liquid aperture anchored strictly at the real mouse cursor
+    const cursor = {
+      clientX: 0,
+      clientY: 0,
+      x: 0,
+      y: 0,
+      targetX: 0,
+      targetY: 0,
+      active: false,
+      presence: 0,
     };
 
-    const chain = Array.from({ length: 7 }, (_, idx) => ({
-      x: pointer.x,
-      y: BARRIER_TOP - idx * 6,
+    const chain = Array.from({ length: 5 }, (_, idx) => ({
+      x: 0,
+      y: 0,
       vx: 0,
       vy: 0,
-      baseR: [62, 53, 44, 36, 29, 23, 17][idx],
+      baseR: [42, 35, 28, 22, 16][idx],
     }));
 
-    const droplets: Droplet[] = [];
-    const inkTrail: InkTrailNode[] = [];
+    let prevSpawnX = 0;
+    let prevSpawnY = 0;
+    let hasSpawnAnchor = false;
 
-    // Pure math scroll metrics — zero getBoundingClientRect() during scroll/pointermove
+    const spawnWave = (stageX: number, stageY: number, power = 1) => {
+      const wave = waves[currentWaveIdx];
+      currentWaveIdx = (currentWaveIdx + 1) % RIPPLE_CONFIG.maxWaves;
+      wave.x = stageX;
+      wave.y = stageY;
+      wave.scale = RIPPLE_CONFIG.startScale * power;
+      wave.target =
+        RIPPLE_CONFIG.startScale * Math.max(1, RIPPLE_CONFIG.spread) * power;
+      wave.size = Math.max(1, RIPPLE_CONFIG.brushSize);
+      wave.opacity = 1;
+    };
+
+    let scrollY = window.scrollY || 0;
+    let lastScrollY = scrollY;
+    let scrollVelocity = 0;
+
     const getScrollMetrics = (currentScrollY: number) => {
       const scrollIntoRunway = currentScrollY - runwayDocTop;
       const maxPinScroll = Math.max(1, runwayHeight - vpH);
-      const viewOffsetY = clamp(scrollIntoRunway, 0, vpH);
+      const viewOffsetY = clamp(scrollIntoRunway, 0, vpH * 2.3);
       const rawRunwayTop = -scrollIntoRunway;
       const rawRunwayBottom = rawRunwayTop + runwayHeight;
       const stageRectTop =
@@ -262,7 +208,7 @@ export function BleibtGooeySection() {
           ? -scrollIntoRunway
           : scrollIntoRunway <= maxPinScroll
           ? -viewOffsetY
-          : -vpH - (scrollIntoRunway - maxPinScroll);
+          : -vpH * 2.3 - (scrollIntoRunway - maxPinScroll);
       return {
         scrollIntoRunway,
         maxPinScroll,
@@ -273,1094 +219,887 @@ export function BleibtGooeySection() {
       };
     };
 
+    const onScroll = () => {
+      scrollY = window.scrollY || 0;
+    };
+
     const onPointerMove = (e: PointerEvent) => {
-      const { rawRunwayTop, rawRunwayBottom, stageRectTop } = getScrollMetrics(
-        window.scrollY || 0
-      );
-      const nx = clamp(e.clientX - docLeft, 90, Math.max(90, width - 90));
-      const nyClient = clamp(e.clientY, 24, Math.max(24, vpH - 24));
-
-      pointer.clientX = nx;
-      pointer.clientY = nyClient;
-      pointer.anchorClientX = nx;
-      pointer.anchorClientY = nyClient;
-
-      // Accurate stage Y coordinate across Page 1 -> Page 2 boundary (negative when cursor is still in Page 1)
-      const rawStageY = nyClient - stageRectTop;
-
-      pointer.targetX = nx;
-      pointer.targetY = clamp(rawStageY, BARRIER_TOP, barrierBottom);
-
-      pointer.isInsideSection =
-        rawStageY >= -90 &&
-        rawRunwayBottom >= 0 &&
-        rawRunwayTop <= vpH &&
-        e.clientX >= docLeft - 40 &&
-        e.clientX <= docLeft + width + 40;
-
-      if (pointer.isInsideSection) {
-        pointer.lastMoveTime = performance.now();
+      const { rawRunwayTop, rawRunwayBottom, stageRectTop } =
+        getScrollMetrics(scrollY);
+      if (rawRunwayBottom < 0 || rawRunwayTop > vpH) {
+        cursor.active = false;
+        return;
       }
-
-      if (rawStageY < -20) {
-        pointer.lastSpawnX = pointer.targetX;
-        pointer.lastSpawnY = pointer.targetY;
+      if (e.clientX < docLeft || e.clientX > docLeft + width) {
+        cursor.active = false;
         return;
       }
 
-      const dist = Math.hypot(
-        pointer.targetX - pointer.x,
-        pointer.targetY - pointer.y
-      );
-      const trailDist = Math.hypot(
-        pointer.targetX - pointer.lastSpawnX,
-        pointer.targetY - pointer.lastSpawnY
-      );
-
-      if (trailDist > 14 && pointer.targetY >= -10 && pointer.targetY <= barrierBottom - 10) {
-        const moveAngle = Math.atan2(
-          pointer.targetY - pointer.lastSpawnY,
-          pointer.targetX - pointer.lastSpawnX
-        );
-        const speed = Math.min(trailDist, 45);
-        inkTrail.push({
-          x: pointer.x,
-          y: pointer.y,
-          vx:
-            -Math.cos(moveAngle) * speed * 0.03 + (Math.random() - 0.5) * 0.35,
-          vy:
-            -Math.sin(moveAngle) * speed * 0.03 + (Math.random() - 0.5) * 0.35,
-          r: 48 + Math.min(speed * 0.4, 20),
-          maxR: 112 + Math.min(speed * 0.85, 42),
-          age: 0,
-          maxAge: 48 + Math.random() * 16,
-          intensity: Math.min(1, 0.58 + speed * 0.01),
-        });
-        if (inkTrail.length > 20) inkTrail.shift();
-        pointer.lastSpawnX = pointer.targetX;
-        pointer.lastSpawnY = pointer.targetY;
+      const stageX = e.clientX - docLeft;
+      const stageY = e.clientY - stageRectTop;
+      if (stageY < 0 || stageY > stageHeight) {
+        cursor.active = false;
+        return;
       }
 
-      if (
-        dist > 16 &&
-        droplets.length < 8 &&
-        pointer.targetY >= 5 &&
-        pointer.targetY <= barrierBottom - 15
-      ) {
-        const angle =
-          Math.atan2(
-            pointer.targetY - pointer.y,
-            pointer.targetX - pointer.x
-          ) +
-          (Math.random() - 0.5) * 0.85;
-        const speed = Math.min(dist * 0.12, 4.5);
-        droplets.push({
-          x: chain[0].x + (Math.random() - 0.5) * 22,
-          y: chain[0].y + (Math.random() - 0.5) * 22,
-          vx: -Math.cos(angle) * speed * 0.35,
-          vy: -Math.sin(angle) * speed * 0.35,
-          r: 8,
-          targetR: 18 + Math.random() * 18,
-          life: 0,
-          maxLife: 32 + Math.random() * 18,
-        });
+      cursor.clientX = stageX;
+      cursor.clientY = e.clientY;
+      cursor.targetX = stageX;
+      cursor.targetY = stageY;
+
+      if (!cursor.active) {
+        cursor.active = true;
+        if (cursor.presence < 0.05) {
+          cursor.x = stageX;
+          cursor.y = stageY;
+          for (let i = 0; i < chain.length; i++) {
+            chain[i].x = stageX;
+            chain[i].y = stageY;
+            chain[i].vx = 0;
+            chain[i].vy = 0;
+          }
+        }
+      }
+
+      if (!hasSpawnAnchor) {
+        prevSpawnX = stageX;
+        prevSpawnY = stageY;
+        hasSpawnAnchor = true;
+        spawnWave(stageX, stageY, 1);
+        return;
+      }
+
+      const dist = Math.hypot(stageX - prevSpawnX, stageY - prevSpawnY);
+      if (dist >= RIPPLE_CONFIG.spacing) {
+        spawnWave(stageX, stageY, 1);
+        prevSpawnX = stageX;
+        prevSpawnY = stageY;
       }
     };
 
-    let hoverAmount = 0;
-    let smoothExpand = 0;
-    let smoothCursorEntry = 0;
-    let lastChainWaveTime = 0;
-    let lastExpandRippleTime = 0;
-    let isFullyExpanded = false;
-    let lastCanvasOffsetY = -99999;
+    const onPointerDown = (e: PointerEvent) => {
+      const { rawRunwayTop, rawRunwayBottom, stageRectTop } =
+        getScrollMetrics(scrollY);
+      if (rawRunwayBottom < 0 || rawRunwayTop > vpH) return;
+      if (e.clientX < docLeft || e.clientX > docLeft + width) return;
 
-    // Leaner grid + 1D precomputed wave lookup tables for ultra-fast (<0.1ms) Marching Squares
-    const COLS = 38;
-    const ROWS = 24;
+      const stageX = e.clientX - docLeft;
+      const stageY = e.clientY - stageRectTop;
+      if (stageY < 0 || stageY > stageHeight) return;
+
+      cursor.clientX = stageX;
+      cursor.clientY = e.clientY;
+      cursor.targetX = stageX;
+      cursor.targetY = stageY;
+      cursor.active = true;
+      prevSpawnX = stageX;
+      prevSpawnY = stageY;
+      hasSpawnAnchor = true;
+      spawnWave(stageX, stageY, Math.max(1, RIPPLE_CONFIG.clickStrength));
+    };
+
+    const onPointerLeave = () => {
+      cursor.active = false;
+      hasSpawnAnchor = false;
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("pointerdown", onPointerDown, { passive: true });
+    document.addEventListener("mouseleave", onPointerLeave, { passive: true });
+
+    let smoothExpand = 0;
+    let isFullyExpanded = false;
+    let wasIdleClean = true;
+    let previousTime = 0;
+
+    // Balanced 64x40 grid for smooth viscous Bezier contours at ~50% lower CPU cost
+    const COLS = 64;
+    const ROWS = 40;
     const field = new Float32Array((COLS + 1) * (ROWS + 1));
     const xWave1 = new Float32Array(COLS + 1);
-    const xWave2 = new Float32Array(COLS + 1);
     const yWave1 = new Float32Array(ROWS + 1);
-    const yWave2 = new Float32Array(ROWS + 1);
+
+    // Preallocated per-wave invariant buffers to eliminate Math.pow inside inner pixel loops
+    const waveHalf = new Float32Array(RIPPLE_CONFIG.maxWaves);
+    const waveInvHalf = new Float32Array(RIPPLE_CONFIG.maxWaves);
+    const waveOpPow = new Float32Array(RIPPLE_CONFIG.maxWaves);
+
+    // Precomputed LUT for thick, cohesive, non-fragmenting viscous ring envelopes
+    const LUT_SIZE = 512;
+    const radialLut = new Float32Array(LUT_SIZE);
+    const ringLut = new Float32Array(LUT_SIZE);
+    for (let i = 0; i < LUT_SIZE; i++) {
+      const r = i / (LUT_SIZE - 1);
+      radialLut[i] = Math.pow(1.0 - r, 1.25);
+      ringLut[i] =
+        0.58 +
+        0.42 * Math.cos(Math.sqrt(r) * Math.PI * 2.0 * RIPPLE_CONFIG.rings);
+    }
+
     const startTime = performance.now();
     let frameSkip = 0;
-    let smoothTextProgress = -1;
-    const lastTokenProgress = new Float32Array(TOTAL_RIPPLE_TOKENS).fill(-1);
+    let idleBreathSkip = 0;
+    let smoothScrollLag = 0;
+    const prefersReducedMotion =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    let rafId = 0;
+    let disposed = false;
 
-    let unsubscribe: (() => void) | null = null;
-    const subscribeToFrames = () => {
-      if (unsubscribe) return;
-      unsubscribe = sharedRippleGPU.subscribe(
-      (
-      _glCanvas,
-      _vpW,
-      currentVpH,
-      sampleDisplacement,
-      sharedState
-      ) => {
-        vpH = currentVpH;
-        const {
-          scrollIntoRunway,
-          maxPinScroll,
-          viewOffsetY,
-          rawRunwayTop,
-          rawRunwayBottom,
-          stageRectTop,
-        } = getScrollMetrics(sharedState.scrollY);
+    // Dirty-check caches for zero idle DOM writes
+    let lastOrbitBgStr = "";
+    let lastMediaBgStr = "";
+    let lastFgStr = "";
+    let lastCarouselOpacity = "";
+    let lastCarouselTransform = "";
+    let lastCarouselPointer = "";
+    let lastScrollZoom = "";
+    let lastCarouselPaused = "";
+    let lastTextFadeStr = "";
+    let lastVideoPlaying: boolean | null = null;
+    let lastHeaderUpperClip = "";
+    let lastHeaderLowerClip = "";
 
-        // 向上滚动离开第二页顶部（退回首页）时，重置所有文字与竖线为初始态，避免向上快速滚动时动画冻结
-        if (rawRunwayTop > vpH) {
-          sharedRippleGPU.setPage2HoverAmount(0, "page2");
-          smoothTextProgress = 0;
-          const lowerEls = lowerTokensRef.current;
-          const upperEls = upperTokensRef.current;
-          for (let i = 0; i < TOTAL_RIPPLE_TOKENS; i++) {
-            lastTokenProgress[i] = 0;
-            const lEl = lowerEls[i];
-            const uEl = upperEls[i];
-            if (lEl) {
-              lEl.style.opacity = "0";
-              lEl.style.transform = "translate3d(0, 42px, 0) scale(0.92)";
-            }
-            if (uEl) {
-              uEl.style.opacity = "0";
-              uEl.style.transform = "translate3d(0, 42px, 0) scale(0.92)";
-            }
-          }
-          if (lowerDividerRef.current) {
-            lowerDividerRef.current.style.opacity = "1";
-          }
-          if (upperDividerRef.current) {
-            upperDividerRef.current.style.opacity = "1";
-          }
-          return;
+    const syncHeaderClip = (upperClip: string, lowerClip: string) => {
+      if (upperClip !== lastHeaderUpperClip) {
+        const upperEl = document.getElementById("omnilink-header-upper");
+        if (upperEl) {
+          lastHeaderUpperClip = upperClip;
+          upperEl.style.clipPath = upperClip;
         }
-
-        if (rawRunwayBottom < -150) {
-          sharedRippleGPU.setPage2HoverAmount(0, "page2");
-          return;
-        }
-
-        // 跟随鼠标滚动依次上浮文字（保持原字色纯黑/纯白，无变蓝过程，零 React 重渲染直接驱动 GPU 合成层）
-        const revealStart = -vpH * 0.78;
-        const revealEnd = -vpH * 0.04;
-        const rawTextProgress = clamp(
-          (scrollIntoRunway - revealStart) / Math.max(1, revealEnd - revealStart),
-          0,
-          1
-        );
-
-        const isScrollingFast = Math.abs(sharedState.scrollVelocity) > 2.0;
-
-        if (smoothTextProgress < 0) {
-          smoothTextProgress = rawTextProgress;
-        } else if (isScrollingFast) {
-          smoothTextProgress = rawTextProgress;
-        } else {
-          smoothTextProgress += (rawTextProgress - smoothTextProgress) * 0.32;
-          if (Math.abs(rawTextProgress - smoothTextProgress) < 0.0006) {
-            smoothTextProgress = rawTextProgress;
-          }
-        }
-
-        // 竖线随着滚动平滑渐隐消失（中式留白美学：初时立轴为界，随滚动意境渐深而自然消融化入水波）
-        // 向上滚动时自然重新显现
-        const lineFade =
-          0.62 + clamp(1 - (smoothTextProgress - 0.22) / 0.68, 0, 1) * 0.38;
-        if (lowerDividerRef.current) {
-          lowerDividerRef.current.style.opacity = lineFade.toFixed(3);
-        }
-        if (upperDividerRef.current) {
-          upperDividerRef.current.style.opacity = lineFade.toFixed(3);
-        }
-
-        const lowerEls = lowerTokensRef.current;
-        const upperEls = upperTokensRef.current;
-        const tokenSpan = 0.26;
-        const maxStagger = 1 - tokenSpan;
-
-        for (let i = 0; i < TOTAL_RIPPLE_TOKENS; i++) {
-          const startAt =
-            (i / Math.max(1, TOTAL_RIPPLE_TOKENS - 1)) * maxStagger;
-          const u = clamp((smoothTextProgress - startAt) / tokenSpan, 0, 1);
-
-          if (Math.abs(u - lastTokenProgress[i]) < 0.001) continue;
-          lastTokenProgress[i] = u;
-
-          const lowerEl = lowerEls[i];
-          const upperEl = upperEls[i];
-
-          if (u <= 0.001) {
-            const hiddenTransform = "translate3d(0, 42px, 0) scale(0.92)";
-            if (lowerEl) {
-              lowerEl.style.opacity = "0";
-              lowerEl.style.transform = hiddenTransform;
-            }
-            if (upperEl) {
-              upperEl.style.opacity = "0";
-              upperEl.style.transform = hiddenTransform;
-            }
-            continue;
-          }
-
-          if (u >= 0.999) {
-            const settledTransform = "translate3d(0, 0px, 0) scale(1)";
-            if (lowerEl) {
-              lowerEl.style.opacity = "1";
-              lowerEl.style.transform = settledTransform;
-            }
-            if (upperEl) {
-              upperEl.style.opacity = "1";
-              upperEl.style.transform = settledTransform;
-            }
-            continue;
-          }
-
-          // 水波纹波峰上浮曲线：由水下浮起，伴随微幅波峰涌动，随后平滑归位（全程保持原本纯黑/纯白字色）
-          const inv = 1 - u;
-          const easeOut = 1 - inv * inv * inv;
-          const waveCrest = Math.sin(u * Math.PI);
-          const liftY = (1 - easeOut) * 42 - waveCrest * 5.5;
-          const scaleVal = 0.92 + 0.08 * easeOut + waveCrest * 0.025;
-          const skewX = waveCrest * -3.5;
-          const alpha = clamp(u * 1.55, 0, 1);
-
-          const tf = `translate3d(0, ${liftY.toFixed(2)}px, 0) skewX(${skewX.toFixed(2)}deg) scale(${scaleVal.toFixed(3)})`;
-          const op = alpha.toFixed(3);
-
-          if (lowerEl) {
-            lowerEl.style.opacity = op;
-            lowerEl.style.transform = tf;
-          }
-          if (upperEl) {
-            upperEl.style.opacity = op;
-            upperEl.style.transform = tf;
-          }
-        }
-
-        // Keep the 100vh inkCanvas aligned with the active viewport window inside the 200vh stage
-        const roundedOffset = Math.round(viewOffsetY);
-        if (Math.abs(roundedOffset - lastCanvasOffsetY) >= 1) {
-          lastCanvasOffsetY = roundedOffset;
-          inkCanvas.style.transform = `translate3d(0, ${roundedOffset}px, 0)`;
-        }
-
-        // 计算第三页锁定期间的水波纹下钻扩张进度 (0 -> 1)
-        const pinExpandSpan = Math.max(1, maxPinScroll - vpH);
-        const rawExpand = clamp(
-          (scrollIntoRunway - vpH) / pinExpandSpan,
-          0,
-          1
-        );
-        smoothExpand += (rawExpand - smoothExpand) * 0.45;
-        if (Math.abs(rawExpand - smoothExpand) < 0.0005) {
-          smoothExpand = rawExpand;
-        }
-
-        // 在整个锁定行程中让水波纹液态边界平滑扩张吞没白色区域，并在行程结束时 100% 纯黑并释放滚动
-        const rippleZoom = clamp(smoothExpand, 0, 1);
-        const easedZoom =
-          rippleZoom * rippleZoom * (3.0 - 2.0 * rippleZoom);
-
-        // 随着页面变黑（白色遮罩消失：rippleZoom 0 -> 1），滚动画集渐进浮现并等比例放大；
-        // 当白色遮罩完全消失变成纯黑屏时（rippleZoom >= 1），滚动画集 100% 完全出现并放大至 1.0
-        const carouselReveal = clamp(
-          easedZoom * 0.65 + rippleZoom * 0.35,
-          0,
-          1
-        );
-        const galleryEl = galleryWrapRef.current;
-        if (galleryEl) {
-          galleryEl.style.transform = `translate3d(0, ${Math.round(viewOffsetY)}px, 0)`;
-          galleryEl.style.opacity = (0.85 * (1 - carouselReveal)).toFixed(3);
-        }
-        if (carouselReveal > 0.02 && !carouselLoadedRef.current) {
-          carouselLoadedRef.current = true;
-          setIsCarouselNearViewport(true);
-        }
-        const carouselWrapEl = carouselWrapRef.current;
-        if (carouselWrapEl) {
-          carouselWrapEl.style.opacity = carouselReveal.toFixed(4);
-          const liftPx = (1 - carouselReveal) * 32;
-          carouselWrapEl.style.transform = `translate3d(0, ${liftPx.toFixed(1)}px, 0)`;
-          carouselWrapEl.style.pointerEvents =
-            carouselReveal > 0.45 ? "auto" : "none";
-          const fcEl = carouselWrapEl.firstElementChild as HTMLElement | null;
-          if (fcEl) {
-            const zoomFactor = 0.68 + 0.32 * carouselReveal;
-            fcEl.dataset.scrollZoom = zoomFactor.toFixed(4);
-          }
-        }
-        const upperTextEl = upperTextWrapRef.current;
-        if (upperTextEl) {
-          const textAlpha = clamp(1 - carouselReveal * 1.25, 0, 1);
-          upperTextEl.style.opacity = textAlpha.toFixed(4);
-        }
-
-        const now = performance.now();
-        const t = (now - startTime) * 0.001;
-
-        pointer.clientX = clamp(
-          sharedState.pointerClientX - docLeft,
-          90,
-          Math.max(90, width - 90)
-        );
-        pointer.clientY = clamp(
-          sharedState.pointerClientY,
-          24,
-          Math.max(24, vpH - 24)
-        );
-
-        // True cursor Y in stage coordinates: negative when cursor is still on Page 1 above Page 2's top edge
-        const rawStageY = pointer.clientY - stageRectTop;
-        const maxVisY = Math.min(barrierBottom, viewOffsetY + vpH - 65);
-
-        // Smooth boundary immersion factor as cursor crosses from Page 1 (rawStageY < 0) into Page 2 (rawStageY >= 0)
-        const rawEntry = clamp((rawStageY + 95) / 185, 0, 1);
-        const targetEntry = rawEntry * rawEntry * (3.0 - 2.0 * rawEntry);
-        smoothCursorEntry += (targetEntry - smoothCursorEntry) * 0.22;
-        if (Math.abs(targetEntry - smoothCursorEntry) < 0.001) {
-          smoothCursorEntry = targetEntry;
-        }
-
-        pointer.targetX = pointer.clientX;
-        pointer.targetY = clamp(rawStageY, BARRIER_TOP, Math.max(BARRIER_TOP, maxVisY));
-        pointer.isInsideSection =
-          rawStageY >= -90 &&
-          rawRunwayBottom >= 0 &&
-          rawRunwayTop <= vpH;
-
-        const idleSec = (now - pointer.lastMoveTime) * 0.001;
-        let goalX = pointer.targetX;
-        let goalY = pointer.targetY;
-
-        if (rawStageY < -25) {
-          // While cursor is still in Page 1, keep chain poised right above the Page 1 / Page 2 boundary at cursor X
-          pointer.x += (goalX - pointer.x) * 0.35;
-          pointer.y += (goalY - pointer.y) * 0.35;
-          for (let idx = 0; idx < chain.length; idx++) {
-            const node = chain[idx];
-            node.x += (pointer.x - node.x) * 0.35;
-            node.y += (pointer.y - idx * 5 - node.y) * 0.35;
-            node.vx = 0;
-            node.vy = 0;
-          }
-        } else {
-          if (idleSec > 1.2 && rawStageY >= 20) {
-            const anchorStageY = clamp(
-              pointer.anchorClientY - stageRectTop,
-              30,
-              Math.max(30, maxVisY)
-            );
-            goalX = clamp(
-              pointer.anchorClientX +
-                Math.sin(t * 1.1) * 22 +
-                Math.cos(t * 0.65) * 12,
-              90,
-              Math.max(90, width - 90)
-            );
-            goalY = clamp(
-              anchorStageY +
-                Math.cos(t * 0.9) * 18 +
-                Math.sin(t * 1.35) * 10,
-              30,
-              Math.max(30, maxVisY)
-            );
-          }
-
-          pointer.vx = (goalX - pointer.x) * 0.24;
-          pointer.vy = (goalY - pointer.y) * 0.24;
-          pointer.x += pointer.vx;
-          pointer.y += pointer.vy;
-          pointer.y = clamp(pointer.y, BARRIER_TOP, barrierBottom);
-
-          for (let idx = 0; idx < chain.length; idx++) {
-            const node = chain[idx];
-            const target = idx === 0 ? pointer : chain[idx - 1];
-            const spring = [0.26, 0.19, 0.15, 0.12, 0.095, 0.075, 0.06][idx];
-            const damping = 0.72;
-            node.vx = (node.vx + (target.x - node.x) * spring) * damping;
-            node.vy = (node.vy + (target.y - node.y) * spring) * damping;
-            node.x += node.vx;
-            node.y += node.vy;
-
-            if (node.y > barrierBottom) {
-              node.y = barrierBottom;
-              node.vy = Math.min(0, node.vy * 0.2);
-            }
-            if (node.y < BARRIER_TOP - 20) {
-              node.y = BARRIER_TOP - 20;
-              node.vy = Math.max(0, node.vy * 0.2);
-            }
-          }
-        }
-
-        const headX = chain[0].x;
-        const headY = chain[0].y;
-
-        const distToHead = Math.hypot(
-          pointer.targetX - headX,
-          pointer.targetY - headY
-        );
-        const isActivelyHovering =
-          pointer.isInsideSection &&
-          smoothCursorEntry > 0.05 &&
-          (idleSec < 1.2 || distToHead < 130 || Math.abs(sharedState.scrollVelocity) > 0.4);
-
-        const targetHover = isActivelyHovering ? smoothCursorEntry : 0;
-        hoverAmount +=
-          (targetHover - hoverAmount) * (isActivelyHovering ? 0.2 : 0.08);
-        if (hoverAmount < 0.002) hoverAmount = 0;
-        sharedRippleGPU.setPage2HoverAmount(hoverAmount, "page2");
-
-        // Continuously bridge GPU water ripples across the Page 1 -> Page 2 boundary and along the chain
-        if (
-          (isActivelyHovering || (rawStageY > -120 && rawStageY < 120 && Math.abs(sharedState.scrollVelocity) > 0.25)) &&
-          now - lastChainWaveTime > (isScrollingFast ? 150 : 82)
-        ) {
-          lastChainWaveTime = now;
-          const midNode = chain[Math.min(2, chain.length - 1)];
-          const waveStageY = Math.max(-15, midNode.y);
-          sharedRippleGPU.spawnWaveAtClient(
-            docLeft + midNode.x,
-            stageRectTop + waveStageY,
-            idleSec < 0.25 ? 0.68 : 0.45
-          );
-        }
-
-        // 水波纹下钻扩张期间，沿着扩张波前持续激发真实的 GPU 水波纹动态波环 (滚动时自适应限流)
-        if (
-          rippleZoom > 0.005 &&
-          rippleZoom < 0.98 &&
-          now - lastExpandRippleTime > (isScrollingFast ? 180 : 100)
-        ) {
-          lastExpandRippleTime = now;
-          const waveAngle = t * 4.6;
-          const waveR = easedZoom * Math.hypot(width, vpH) * 0.48;
-          const centerBlend = clamp(rippleZoom * 0.75, 0, 0.75);
-          const cx = headX * (1 - centerBlend) + width * 0.5 * centerBlend;
-          const cy =
-            headY * (1 - centerBlend) +
-            (viewOffsetY + vpH * 0.5) * centerBlend;
-          const spawnX = cx + Math.cos(waveAngle) * waveR * 0.45;
-          const spawnY = cy + Math.sin(waveAngle) * waveR * 0.45;
-          sharedRippleGPU.spawnWaveAtClient(
-            docLeft + spawnX,
-            stageRectTop + spawnY,
-            isScrollingFast ? 0.55 : 0.45
-          );
-        }
-
-        // 仅当水波纹边界已经 100% 越过视口四角、白色部分彻底消失后，切换为全屏无裁剪纯黑底
-        if (rippleZoom >= 0.985) {
-          if (!isFullyExpanded) {
-            isFullyExpanded = true;
-            liquidMaskLayer.style.clipPath = "inset(0 0 100% 0)";
-            if (inkCtx) {
-              inkCtx.setTransform(1, 0, 0, 1, 0, 0);
-              inkCtx.clearRect(0, 0, inkCanvas.width, inkCanvas.height);
-            }
-          }
-          return;
-        }
-        isFullyExpanded = false;
-
-        for (let i = droplets.length - 1; i >= 0; i--) {
-          const d = droplets[i];
-          d.life += 1;
-          d.x += d.vx;
-          d.y += d.vy;
-          d.vx *= 0.94;
-          d.vy *= 0.94;
-
-          if (d.y > barrierBottom + 25) {
-            d.y = barrierBottom + 25;
-            d.vy = -Math.abs(d.vy) * 0.4;
-          }
-
-          const progress = d.life / d.maxLife;
-          if (progress < 0.25) {
-            d.r += (d.targetR - d.r) * 0.25;
-          } else {
-            d.r = d.targetR * Math.max(0, 1 - (progress - 0.25) / 0.75);
-          }
-
-          if (d.life >= d.maxLife || d.r < 2) {
-            droplets.splice(i, 1);
-          }
-        }
-
-        const centerBlend = clamp(rippleZoom * 0.78, 0, 0.78);
-        const swellCenterX =
-          headX * (1 - centerBlend) + width * 0.5 * centerBlend;
-        const swellCenterY =
-          headY * (1 - centerBlend) +
-          (viewOffsetY + vpH * 0.5) * centerBlend;
-        const maxDiag = Math.hypot(width, vpH);
-
-        // Draw soft liquid wake + ink trail on the lightweight 100vh downscaled canvas (skip heavy fills during fast scroll)
-        if (inkCtx && !isScrollingFast) {
-          inkCtx.save();
-          inkCtx.setTransform(
-            canvasScale,
-            0,
-            0,
-            canvasScale,
-            0,
-            -roundedOffset * canvasScale
-          );
-          inkCtx.clearRect(0, roundedOffset, width, vpH);
-
-          for (let i = inkTrail.length - 1; i >= 0; i--) {
-            const node = inkTrail[i];
-            node.age += 1;
-            node.x += node.vx;
-            node.y += node.vy;
-            const p = node.age / node.maxAge;
-            if (p >= 1) {
-              inkTrail.splice(i, 1);
-              continue;
-            }
-
-            const easeOutP = 1 - (1 - p) * (1 - p);
-            const currR = node.r + (node.maxR - node.r) * easeOutP;
-            const fade = (1 - p) * (1 - p) * node.intensity;
-
-            const grad = inkCtx.createRadialGradient(
-              node.x,
-              node.y,
-              currR * 0.1,
-              node.x,
-              node.y,
-              currR
-            );
-            grad.addColorStop(
-              0,
-              `rgba(135, 144, 160, ${(0.18 * fade).toFixed(3)})`
-            );
-            grad.addColorStop(
-              0.5,
-              `rgba(175, 184, 198, ${(0.09 * fade).toFixed(3)})`
-            );
-            grad.addColorStop(1, "rgba(255, 255, 255, 0)");
-
-            inkCtx.fillStyle = grad;
-            inkCtx.beginPath();
-            inkCtx.arc(node.x, node.y, currR, 0, Math.PI * 2);
-            inkCtx.fill();
-          }
-
-          // Soft expanding halo during drill-down or normal chain wake
-          if (easedZoom > 0.01) {
-            const haloR = 160 + easedZoom * maxDiag * 1.18;
-            const innerR = Math.max(10, haloR * 0.62);
-            const grad = inkCtx.createRadialGradient(
-              swellCenterX,
-              swellCenterY,
-              innerR,
-              swellCenterX,
-              swellCenterY,
-              haloR
-            );
-            grad.addColorStop(0, "rgba(122, 132, 150, 0.28)");
-            grad.addColorStop(0.65, "rgba(175, 184, 198, 0.12)");
-            grad.addColorStop(1, "rgba(255, 255, 255, 0)");
-            inkCtx.fillStyle = grad;
-            inkCtx.beginPath();
-            inkCtx.arc(swellCenterX, swellCenterY, haloR, 0, Math.PI * 2);
-            inkCtx.fill();
-          } else if (smoothCursorEntry > 0.02) {
-            for (let c = chain.length - 1; c >= 0; c -= 2) {
-              const node = chain[c];
-              const headFactor = (1 - c / chain.length) * smoothCursorEntry;
-              const outerInkR = node.baseR * (1.2 + 0.95 * smoothCursorEntry);
-
-              const grad = inkCtx.createRadialGradient(
-                node.x,
-                node.y,
-                node.baseR * 0.25,
-                node.x,
-                node.y,
-                outerInkR
-              );
-              grad.addColorStop(
-                0,
-                `rgba(118, 128, 145, ${(0.24 * headFactor).toFixed(3)})`
-              );
-              grad.addColorStop(
-                0.55,
-                `rgba(168, 176, 192, ${(0.11 * headFactor).toFixed(3)})`
-              );
-              grad.addColorStop(1, "rgba(255, 255, 255, 0)");
-
-              inkCtx.fillStyle = grad;
-              inkCtx.beginPath();
-              inkCtx.arc(node.x, node.y, outerInkR, 0, Math.PI * 2);
-              inkCtx.fill();
-            }
-          }
-
-          inkCtx.restore();
-        }
-
-        // Marching Squares 视口出血边界，确保水波纹放大超越屏幕四角时边缘始终保持真实液态水波弧度
-        const PAD = Math.max(200, Math.round(maxDiag * 0.22));
-        const minX = -PAD;
-        const minY = viewOffsetY - PAD;
-        const spanW = width + PAD * 2;
-        const spanH = vpH + PAD * 2;
-        const cellW = spanW / COLS;
-        const cellH = spanH / ROWS;
-
-        const swellRadius = easedZoom * maxDiag * 1.34;
-        const effectiveEntry = Math.max(smoothCursorEntry, easedZoom);
-        const chainScale = effectiveEntry * (1 + easedZoom * 15.5);
-        const activeChainCount =
-          effectiveEntry < 0.01 ? 0 : easedZoom > 0.3 ? 2 : chain.length;
-
-        const reachMargin = 175 * Math.max(0.5, chainScale) + swellRadius * 1.35;
-        let boxMinX = Math.min(
-          headX - 175 * Math.max(0.5, chainScale),
-          swellCenterX - reachMargin
-        );
-        let boxMaxX = Math.max(
-          headX + 175 * Math.max(0.5, chainScale),
-          swellCenterX + reachMargin
-        );
-        let boxMinY = Math.min(
-          headY - 175 * Math.max(0.5, chainScale),
-          swellCenterY - reachMargin
-        );
-        let boxMaxY = Math.max(
-          headY + 175 * Math.max(0.5, chainScale),
-          swellCenterY + reachMargin
-        );
-
-        for (let c = 1; c < activeChainCount; c++) {
-          const n = chain[c];
-          const rBound = 125 * chainScale;
-          if (n.x - rBound < boxMinX) boxMinX = n.x - rBound;
-          if (n.x + rBound > boxMaxX) boxMaxX = n.x + rBound;
-          if (n.y - rBound < boxMinY) boxMinY = n.y - rBound;
-          if (n.y + rBound > boxMaxY) boxMaxY = n.y + rBound;
-        }
-        for (let d = 0; d < droplets.length; d++) {
-          const drop = droplets[d];
-          if (drop.x - 90 < boxMinX) boxMinX = drop.x - 90;
-          if (drop.x + 90 > boxMaxX) boxMaxX = drop.x + 90;
-          if (drop.y - 90 < boxMinY) boxMinY = drop.y - 90;
-          if (drop.y + 90 > boxMaxY) boxMaxY = drop.y + 90;
-        }
-
-        // Precompute 1D spatial harmonic waves outside the 2D loop (eliminates 50,000+ trig calls/frame)
-        for (let gx = 0; gx <= COLS; gx++) {
-          const rx = minX + gx * cellW;
-          xWave1[gx] = Math.sin(rx * 0.014 + t * 3.2);
-          xWave2[gx] = Math.cos(rx * 0.024 - t * 2.5);
-        }
-        for (let gy = 0; gy <= ROWS; gy++) {
-          const ry = minY + gy * cellH;
-          yWave1[gy] = Math.cos(ry * 0.014 - t * 2.8);
-          yWave2[gy] = Math.sin(ry * 0.024 + t * 3.4);
-        }
-
-        field.fill(0);
-        const coreSkipR2 =
-          swellRadius > 140 ? swellRadius * 0.64 * (swellRadius * 0.64) : 0;
-        const harmonicAmp = 1 - rippleZoom * 0.35;
-
-        // Cursor boundary wave bridge when crossing between Page 1 and Page 2 (-130 <= rawStageY <= 140)
-        const boundaryProximity = clamp(1 - Math.abs(rawStageY) / 135, 0, 1);
-
-        for (let gy = 1; gy < ROWS; gy++) {
-          const rawY = minY + gy * cellH;
-          const isTopMeniscusBand = rawY < 115;
-          const inYBox = rawY >= boxMinY && rawY <= boxMaxY;
-          if (!isTopMeniscusBand && !inYBox) continue;
-
-          const yw1 = yWave1[gy];
-          const yw2 = yWave2[gy];
-          const rowOffset = gy * (COLS + 1);
-
-          for (let gx = 1; gx < COLS; gx++) {
-            const rawX = minX + gx * cellW;
-            const inXBox = rawX >= boxMinX && rawX <= boxMaxX;
-            if (!isTopMeniscusBand && !inXBox) continue;
-
-            // Fast interior core skip during drill-down expansion
-            if (coreSkipR2 > 0) {
-              const cdx = rawX - swellCenterX;
-              const cdy = rawY - swellCenterY;
-              if (cdx * cdx + cdy * cdy < coreSkipR2) {
-                field[rowOffset + gx] = 2.5;
-                continue;
-              }
-            }
-
-            const disp = sampleDisplacement(
-              docLeft + rawX,
-              stageRectTop + rawY
-            );
-
-            const px = rawX + disp.pushX * 0.78;
-            const py = rawY + disp.pushY * 0.78;
-
-            // Amplify GPU water-ripple envelope near the top boundary so Page 1 waves flow directly into Page 2's liquid mask
-            const topBoost = py < 120 ? 1.38 : 0.98;
-            let sum = (disp.envelope * 1.05 + disp.amount * 0.48) * topBoost;
-
-            // 在第二页顶部与第一页交界处（py < 110）构建连续水波纹交界，随鼠标从首页滑入产生自然液态波峰衔接
-            if (py < 110) {
-              const scrollSwell =
-                (1 - Math.min(1, sharedState.transitionProgress * 1.25)) * 12;
-              const dxPtr = px - pointer.x;
-              const cursorBridgeSwell =
-                boundaryProximity > 0
-                  ? boundaryProximity * 26 * Math.exp(-(dxPtr * dxPtr) / (155 * 155))
-                  : 0;
-              const waveTopY =
-                10 +
-                scrollSwell +
-                cursorBridgeSwell +
-                6 * xWave1[gx] +
-                4 * xWave2[gx];
-              if (py < waveTopY + 72) {
-                const distFromTop = Math.max(1, py - (waveTopY - 28));
-                sum += (35 * 35) / (distFromTop * distFromTop + 115);
-              }
-            }
-
-            if (inXBox && inYBox) {
-              const waveHarmonic =
-                0.18 * (xWave1[gx] * yw1) + 0.12 * (xWave2[gx] * yw2);
-
-              if (swellRadius > 2) {
-                const sdx = px - swellCenterX;
-                const sdy = py - swellCenterY;
-                const sd2 = sdx * sdx + sdy * sdy + 110;
-                const rSwellEff =
-                  swellRadius * (1 + harmonicAmp * waveHarmonic);
-                sum += (rSwellEff * rSwellEff) / sd2;
-              }
-
-              const chainWaveMod = 1 + waveHarmonic;
-              for (let c = 0; c < activeChainCount; c++) {
-                const node = chain[c];
-                const dx = px - node.x;
-                const dy = py - node.y;
-                const d2 = dx * dx + dy * dy + 90;
-                const trailWeight = 1 - c * 0.09;
-                const rEff =
-                  node.baseR * chainWaveMod * trailWeight * chainScale;
-                sum += (rEff * rEff) / d2;
-              }
-
-              for (let d = 0; d < droplets.length; d++) {
-                const drop = droplets[d];
-                const dx = px - drop.x;
-                const dy = py - drop.y;
-                const d2 = dx * dx + dy * dy + 60;
-                const dropR = drop.r * (1 + easedZoom * 6.5);
-                sum += (dropR * dropR) / d2;
-              }
-            }
-
-            field[rowOffset + gx] = sum;
-          }
-        }
-
-        if (isScrollingFast) {
-          frameSkip = (frameSkip + 1) % 2;
-          if (frameSkip !== 0) return;
-        }
-
-        const maskPath = buildMetaballPath(
-          field,
-          COLS,
-          ROWS,
-          minX,
-          minY,
-          cellW,
-          cellH,
-          1.08
-        );
-
-        liquidMaskLayer.style.clipPath = maskPath
-          ? `path(evenodd, 'M 0 0 H ${width.toFixed(1)} V ${stageHeight.toFixed(1)} H 0 Z ${maskPath}')`
-          : "inset(0)";
       }
-      );
+      if (lowerClip !== lastHeaderLowerClip) {
+        const lowerEl = document.getElementById("omnilink-header-lower");
+        if (lowerEl) {
+          lastHeaderLowerClip = lowerClip;
+          lowerEl.style.clipPath = lowerClip;
+        }
+      }
     };
 
-    const activeObserver = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !unsubscribe) {
-          window.addEventListener("pointermove", onPointerMove, { passive: true });
-          subscribeToFrames();
-        } else if (!entry.isIntersecting && unsubscribe) {
-          unsubscribe();
-          unsubscribe = null;
-          window.removeEventListener("pointermove", onPointerMove);
-          sharedRippleGPU.setPage2HoverAmount(0, "page2");
+    const renderFrame = (now: number) => {
+      if (disposed) return;
+      rafId = requestAnimationFrame(renderFrame);
+      if (document.hidden) return;
+
+      const delta = previousTime
+        ? Math.min(0.05, (now - previousTime) / 1000)
+        : 0.016;
+      previousTime = now;
+      const t = (now - startTime) * 0.001;
+
+      scrollVelocity = scrollY - lastScrollY;
+      lastScrollY = scrollY;
+
+      const {
+        scrollIntoRunway,
+        maxPinScroll,
+        viewOffsetY,
+        rawRunwayBottom,
+        stageRectTop,
+      } = getScrollMetrics(scrollY);
+
+      // Once final page (#gallery-parallax) reaches top 65%, hand off header theme control cleanly
+      if (rawRunwayBottom <= vpH * 0.65) {
+        syncHeaderClip("none", "inset(100%)");
+      }
+
+      if (rawRunwayBottom < -200) {
+        if (lastVideoPlaying !== false && page2VideoRef.current) {
+          lastVideoPlaying = false;
+          page2VideoRef.current.pause();
         }
-      },
-      { rootMargin: "80px 0px" }
-    );
-    activeObserver.observe(runway);
+        const fcEl = carouselWrapRef.current?.firstElementChild as HTMLElement | null;
+        if (fcEl && lastCarouselPaused !== "true") {
+          lastCarouselPaused = "true";
+          fcEl.dataset.paused = "true";
+        }
+        return;
+      }
+
+      // Pause/resume Page 2 mesh gradient video based on viewport visibility
+      const shouldPlayVideo =
+        !prefersReducedMotion &&
+        scrollIntoRunway >= vpH * 0.12 &&
+        scrollIntoRunway <= vpH * 2.55;
+      if (shouldPlayVideo !== lastVideoPlaying && page2VideoRef.current) {
+        lastVideoPlaying = shouldPlayVideo;
+        if (shouldPlayVideo) {
+          page2VideoRef.current.play().catch(() => {});
+        } else {
+          page2VideoRef.current.pause();
+        }
+      }
+
+      const isScrollingFast = Math.abs(scrollVelocity) > 2.2;
+
+      // Liquid scroll parallax: subtle counter-displacement between black background & white foreground
+      const rawLagTarget = prefersReducedMotion
+        ? 0
+        : clamp(scrollVelocity * 1.45, -44, 44);
+      smoothScrollLag += (rawLagTarget - smoothScrollLag) * 0.12;
+      if (Math.abs(smoothScrollLag) < 0.05 && Math.abs(rawLagTarget) < 0.05) {
+        smoothScrollLag = 0;
+      }
+
+      const pageFloat = clamp(scrollIntoRunway / Math.max(1, vpH * 1.25), 0, 2);
+      const transitionWave = prefersReducedMotion
+        ? 0
+        : Math.sin(pageFloat * Math.PI);
+      const fgOffsetY = -transitionWave * 14 - smoothScrollLag * 0.25;
+      const orbitBgOffsetY = transitionWave * 38 + smoothScrollLag * 0.78;
+      const mediaBgOffsetY = transitionWave * 46 + smoothScrollLag * 0.92;
+
+      const nextOrbitBgStr = `translate3d(0, ${orbitBgOffsetY.toFixed(1)}px, 0)`;
+      if (nextOrbitBgStr !== lastOrbitBgStr && lowerTriOrbitParallaxRef.current) {
+        lastOrbitBgStr = nextOrbitBgStr;
+        lowerTriOrbitParallaxRef.current.style.transform = nextOrbitBgStr;
+      }
+
+      const nextMediaBgStr = `translate3d(0, ${mediaBgOffsetY.toFixed(1)}px, 0) scale(1.12)`;
+      if (nextMediaBgStr !== lastMediaBgStr && lowerP2MediaParallaxRef.current) {
+        lastMediaBgStr = nextMediaBgStr;
+        lowerP2MediaParallaxRef.current.style.transform = nextMediaBgStr;
+      }
+
+      const nextFgStr = `translate3d(0, ${fgOffsetY.toFixed(1)}px, 0)`;
+      const fgChanged = nextFgStr !== lastFgStr;
+      if (fgChanged) {
+        lastFgStr = nextFgStr;
+        if (upperPage1TextRef.current) {
+          upperPage1TextRef.current.style.transform = nextFgStr;
+        }
+        if (lowerPage1TextRef.current) {
+          lowerPage1TextRef.current.style.transform = nextFgStr;
+        }
+      }
+
+      // Page 3 lock drill-down expansion
+      const pinStart = vpH * 2.3;
+      const pinExpandSpan = Math.max(1, maxPinScroll - pinStart);
+      const rawExpand = clamp(
+        (scrollIntoRunway - pinStart) / pinExpandSpan,
+        0,
+        1
+      );
+      smoothExpand += (rawExpand - smoothExpand) * 0.45;
+      if (Math.abs(rawExpand - smoothExpand) < 0.0005) {
+        smoothExpand = rawExpand;
+      }
+
+      const rippleZoom = clamp(smoothExpand, 0, 1);
+      const easedZoom = rippleZoom * rippleZoom * (3.0 - 2.0 * rippleZoom);
+
+      const carouselReveal = clamp(
+        easedZoom * 0.68 + rippleZoom * 0.32,
+        0,
+        1
+      );
+      const carouselWrapEl = carouselWrapRef.current;
+      if (carouselWrapEl) {
+        const nextOpacity = carouselReveal.toFixed(3);
+        if (nextOpacity !== lastCarouselOpacity) {
+          lastCarouselOpacity = nextOpacity;
+          carouselWrapEl.style.opacity = nextOpacity;
+        }
+        const liftPx = (1 - carouselReveal) * 28;
+        const nextTransform = `translate3d(0, ${liftPx.toFixed(1)}px, 0)`;
+        if (nextTransform !== lastCarouselTransform) {
+          lastCarouselTransform = nextTransform;
+          carouselWrapEl.style.transform = nextTransform;
+        }
+        const nextPointer = carouselReveal > 0.45 ? "auto" : "none";
+        if (nextPointer !== lastCarouselPointer) {
+          lastCarouselPointer = nextPointer;
+          carouselWrapEl.style.pointerEvents = nextPointer;
+        }
+        const fcEl = carouselWrapEl.firstElementChild as HTMLElement | null;
+        if (fcEl) {
+          const zoomFactor = 0.72 + 0.28 * carouselReveal;
+          const nextZoom = zoomFactor.toFixed(3);
+          if (nextZoom !== lastScrollZoom) {
+            lastScrollZoom = nextZoom;
+            fcEl.dataset.scrollZoom = nextZoom;
+          }
+          const nextPaused = carouselReveal <= 0.01 ? "true" : "false";
+          if (nextPaused !== lastCarouselPaused) {
+            lastCarouselPaused = nextPaused;
+            fcEl.dataset.paused = nextPaused;
+          }
+        }
+      }
+
+      const textFadeOut = clamp((vpH * 2.3 - scrollIntoRunway) / (vpH * 0.3), 0, 1);
+      const nextTextFadeStr = textFadeOut.toFixed(3);
+      if (nextTextFadeStr !== lastTextFadeStr || fgChanged) {
+        lastTextFadeStr = nextTextFadeStr;
+        if (lowerPage2TextRef.current) {
+          lowerPage2TextRef.current.style.opacity = nextTextFadeStr;
+          lowerPage2TextRef.current.style.transform = nextFgStr;
+        }
+        if (upperPage2TextRef.current) {
+          upperPage2TextRef.current.style.opacity = nextTextFadeStr;
+          upperPage2TextRef.current.style.transform = nextFgStr;
+        }
+        if (page2ImageLayerRef.current) {
+          page2ImageLayerRef.current.style.opacity = nextTextFadeStr;
+          page2ImageLayerRef.current.style.transform = nextFgStr;
+        }
+      }
+
+      // Keep stationary viscous liquid aperture anchored smoothly under the mouse cursor
+      cursor.presence +=
+        ((cursor.active ? 1 : 0) - cursor.presence) *
+        (cursor.active ? 0.14 : 0.055);
+      if (cursor.presence < 0.002) cursor.presence = 0;
+
+      if (cursor.active) {
+        const liveStageY = clamp(cursor.clientY - stageRectTop, 0, stageHeight);
+        cursor.targetX = stageXClamp(cursor.clientX, width);
+        cursor.targetY = liveStageY;
+        cursor.x += (cursor.targetX - cursor.x) * 0.14;
+        cursor.y += (cursor.targetY - cursor.y) * 0.14;
+
+        for (let idx = 0; idx < chain.length; idx++) {
+          const node = chain[idx];
+          const target = idx === 0 ? cursor : chain[idx - 1];
+          const spring = [0.16, 0.12, 0.09, 0.065, 0.045][idx];
+          const damping = 0.78;
+          node.vx = (node.vx + (target.x - node.x) * spring) * damping;
+          node.vy = (node.vy + (target.y - node.y) * spring) * damping;
+          node.x += node.vx;
+          node.y += node.vy;
+        }
+      }
+
+      // Advance RippleDistortion wave physics (slower outward growth & slower fade)
+      const growth = 1 - Math.exp(-delta * RIPPLE_CONFIG.growthRate);
+      const decay = Math.exp(
+        (-delta * RIPPLE_CONFIG.lifeConstant) /
+          Math.max(0.15, RIPPLE_CONFIG.fade)
+      );
+
+      activeWaves.length = 0;
+      for (let i = 0; i < RIPPLE_CONFIG.maxWaves; i++) {
+        const w = waves[i];
+        if (w.opacity <= 0) continue;
+        w.opacity *= decay;
+        w.scale += (w.target - w.scale) * growth;
+        if (w.opacity < 0.005) {
+          w.opacity = 0;
+          continue;
+        }
+        const wIdx = activeWaves.length;
+        const half = w.scale * w.size * 0.5;
+        waveHalf[wIdx] = half;
+        waveInvHalf[wIdx] = 1 / Math.max(0.001, half);
+        waveOpPow[wIdx] = Math.pow(w.opacity, 1.15);
+        activeWaves.push(w);
+      }
+
+      const headerOwnsRipple = rawRunwayBottom > vpH * 0.65;
+
+      // Page 3 fully expanded: hide Upper White Layer cleanly
+      if (rippleZoom >= 0.985) {
+        if (!isFullyExpanded) {
+          isFullyExpanded = true;
+          upperWhiteLayer.style.clipPath = "inset(100%)";
+          upperWhiteLayer.style.maskImage = "none";
+          upperWhiteLayer.style.webkitMaskImage = "none";
+          upperWhiteLayer.style.opacity = "0";
+        }
+        if (headerOwnsRipple) {
+          syncHeaderClip("inset(100%)", "none");
+        }
+        return;
+      }
+      if (isFullyExpanded) {
+        isFullyExpanded = false;
+        upperWhiteLayer.style.opacity = "1";
+      }
+
+      // If pointer hasn't entered / is outside AND all ripples faded AND not in Page 3 drill-down
+      if (
+        cursor.presence <= 0.01 &&
+        activeWaves.length === 0 &&
+        rippleZoom <= 0.002
+      ) {
+        if (!wasIdleClean) {
+          wasIdleClean = true;
+          upperWhiteLayer.style.clipPath = "none";
+          upperWhiteLayer.style.maskImage = "none";
+          upperWhiteLayer.style.webkitMaskImage = "none";
+        }
+        if (headerOwnsRipple) {
+          syncHeaderClip("none", "inset(100%)");
+        }
+        return;
+      }
+      wasIdleClean = false;
+
+      // Skip metaball grid evaluation BEFORE doing work during fast scroll
+      if (isScrollingFast) {
+        frameSkip = (frameSkip + 1) % 2;
+        if (frameSkip !== 0) return;
+      }
+
+      const maxDiag = Math.hypot(width, vpH);
+      const swellRadius = easedZoom * maxDiag * 1.38;
+
+      // Throttle idle breathing contour updates to ~30fps when cursor & waves are settled
+      const isCursorStationary =
+        swellRadius <= 2 &&
+        activeWaves.length === 0 &&
+        Math.abs(cursor.targetX - cursor.x) < 0.25 &&
+        Math.abs(cursor.targetY - cursor.y) < 0.25 &&
+        Math.abs(scrollVelocity) < 0.1;
+      if (isCursorStationary) {
+        idleBreathSkip = (idleBreathSkip + 1) % 2;
+        if (idleBreathSkip !== 0) return;
+      }
+
+      const swellCenterX = cursor.presence > 0.01 ? cursor.x : width * 0.5;
+      const swellCenterY =
+        cursor.presence > 0.01
+          ? clamp(cursor.y, viewOffsetY, viewOffsetY + vpH)
+          : viewOffsetY + vpH * 0.5;
+
+      const PAD = 120;
+      const minX = -PAD;
+      const minY = viewOffsetY - PAD;
+      const spanW = width + PAD * 2;
+      const spanH = vpH + PAD * 2;
+      const cellW = spanW / COLS;
+      const cellH = spanH / ROWS;
+
+      // Compute active bounding box when not doing full-stage Page 3 expansion
+      let gxStart = 1;
+      let gxEnd = COLS - 1;
+      let gyStart = 1;
+      let gyEnd = ROWS - 1;
+      let boxMinY = minY;
+
+      if (swellRadius <= 2) {
+        let boxMinX = Infinity;
+        let boxMaxX = -Infinity;
+        boxMinY = Infinity;
+        let boxMaxY = -Infinity;
+
+        for (let i = 0; i < activeWaves.length; i++) {
+          const w = activeWaves[i];
+          const reach = waveHalf[i] + 24;
+          if (w.x - reach < boxMinX) boxMinX = w.x - reach;
+          if (w.x + reach > boxMaxX) boxMaxX = w.x + reach;
+          if (w.y - reach < boxMinY) boxMinY = w.y - reach;
+          if (w.y + reach > boxMaxY) boxMaxY = w.y + reach;
+        }
+        if (cursor.presence > 0.01) {
+          for (let c = 0; c < chain.length; c++) {
+            const node = chain[c];
+            const reach = node.baseR * 3.8 + 20;
+            if (node.x - reach < boxMinX) boxMinX = node.x - reach;
+            if (node.x + reach > boxMaxX) boxMaxX = node.x + reach;
+            if (node.y - reach < boxMinY) boxMinY = node.y - reach;
+            if (node.y + reach > boxMaxY) boxMaxY = node.y + reach;
+          }
+        }
+
+        gxStart = Math.max(1, Math.floor((boxMinX - minX) / cellW));
+        gxEnd = Math.min(COLS - 1, Math.ceil((boxMaxX - minX) / cellW));
+        gyStart = Math.max(1, Math.floor((boxMinY - minY) / cellH));
+        gyEnd = Math.min(ROWS - 1, Math.ceil((boxMaxY - minY) / cellH));
+      }
+
+      if (gxStart <= gxEnd && gyStart <= gyEnd) {
+        for (let gx = gxStart; gx <= gxEnd; gx++) {
+          xWave1[gx] = Math.sin((minX + gx * cellW) * 0.011 + t * 0.85);
+        }
+        for (let gy = gyStart; gy <= gyEnd; gy++) {
+          yWave1[gy] = Math.cos((minY + gy * cellH) * 0.011 - t * 0.75);
+        }
+      }
+
+      field.fill(0);
+      const coreSkipR2 =
+        swellRadius > 140 ? swellRadius * 0.65 * (swellRadius * 0.65) : 0;
+      const cursorPresence = cursor.presence;
+      const swirlPi2 = RIPPLE_CONFIG.swirl * Math.PI * 2.0;
+      const strength20 = RIPPLE_CONFIG.strength * 20;
+      const activeWaveCount = activeWaves.length;
+
+      for (let gy = gyStart; gy <= gyEnd; gy++) {
+        const rawY = minY + gy * cellH;
+        const yw = yWave1[gy];
+        const rowOffset = gy * (COLS + 1);
+
+        for (let gx = gxStart; gx <= gxEnd; gx++) {
+          const rawX = minX + gx * cellW;
+
+          if (coreSkipR2 > 0) {
+            const cdx = rawX - swellCenterX;
+            const cdy = rawY - swellCenterY;
+            if (cdx * cdx + cdy * cdy < coreSkipR2) {
+              field[rowOffset + gx] = 2.6;
+              continue;
+            }
+          }
+
+          let amount = 0;
+          let pushX = 0;
+          let pushY = 0;
+
+          // First pass: accumulate active viscous waves & gentle swirl displacement
+          for (let i = 0; i < activeWaveCount; i++) {
+            const w = activeWaves[i];
+            const half = waveHalf[i];
+            const dx = rawX - w.x;
+            const dy = rawY - w.y;
+            if (dx > half || dx < -half || dy > half || dy < -half) continue;
+
+            const invHalf = waveInvHalf[i];
+            const px = dx * invHalf;
+            const py = dy * invHalf;
+            const r = px * px + py * py;
+            if (r >= 1.0) continue;
+
+            const lutIdx = (r * (LUT_SIZE - 1)) | 0;
+            const disp = radialLut[lutIdx] * ringLut[lutIdx] * waveOpPow[i];
+            const theta = disp * swirlPi2;
+            const pushMag = disp * strength20;
+            pushX += Math.sin(theta) * pushMag;
+            pushY += Math.cos(theta) * pushMag;
+            amount += disp;
+          }
+
+          // Gentle viscous swirl advection
+          let swirledSum = 0;
+          if (
+            amount > 0.01 &&
+            (Math.abs(pushX) > 0.5 || Math.abs(pushY) > 0.5)
+          ) {
+            const sx = rawX + pushX;
+            const sy = rawY + pushY;
+            for (let i = 0; i < activeWaveCount; i++) {
+              const w = activeWaves[i];
+              const half = waveHalf[i];
+              const dx = sx - w.x;
+              const dy = sy - w.y;
+              if (dx > half || dx < -half || dy > half || dy < -half) continue;
+              const invHalf = waveInvHalf[i];
+              const px = dx * invHalf;
+              const py = dy * invHalf;
+              const r = px * px + py * py;
+              if (r >= 1.0) continue;
+              const lutIdx = (r * (LUT_SIZE - 1)) | 0;
+              swirledSum += radialLut[lutIdx] * ringLut[lutIdx] * waveOpPow[i];
+            }
+          } else {
+            swirledSum = amount;
+          }
+
+          let sum = swirledSum;
+
+          // Stationary viscous liquid aperture strictly at the mouse cursor position
+          if (cursorPresence > 0.01) {
+            const waveMod = 1 + 0.08 * (xWave1[gx] * yw);
+            for (let c = 0; c < chain.length; c++) {
+              const node = chain[c];
+              const dx = rawX - node.x;
+              const dy = rawY - node.y;
+              const d2 = dx * dx + dy * dy + 72;
+              const rEff = node.baseR * waveMod * cursorPresence;
+              sum += (rEff * rEff) / d2;
+            }
+          }
+
+          // Page 3 drill-down radial expansion
+          if (swellRadius > 2) {
+            const sdx = rawX - swellCenterX;
+            const sdy = rawY - swellCenterY;
+            const sd2 = sdx * sdx + sdy * sdy + 110;
+            sum += (swellRadius * swellRadius) / sd2;
+          }
+
+          field[rowOffset + gx] = sum;
+        }
+      }
+
+      // Threshold 0.36 merges overlapping trails and keeps thick, unbroken viscous rings
+      const holeLoops = buildMetaballPath(
+        field,
+        COLS,
+        ROWS,
+        minX,
+        minY,
+        cellW,
+        cellH,
+        0.36
+      );
+
+      const outerRect = `M -400 -400 H ${width + 400} V ${stageHeight + 400} H -400 Z`;
+      if (holeLoops && rippleZoom > 0.002) {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${stageHeight}" viewBox="0 0 ${width} ${stageHeight}"><defs><filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="14"/></filter></defs><path d="${outerRect} ${holeLoops}" fill="white" fill-rule="evenodd" filter="url(#soft)"/></svg>`;
+        const mask = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+        upperWhiteLayer.style.clipPath = "none";
+        upperWhiteLayer.style.maskImage = mask;
+        upperWhiteLayer.style.webkitMaskImage = mask;
+        upperWhiteLayer.style.maskSize = "100% 100%";
+        upperWhiteLayer.style.webkitMaskSize = "100% 100%";
+      } else {
+        upperWhiteLayer.style.maskImage = "none";
+        upperWhiteLayer.style.webkitMaskImage = "none";
+        upperWhiteLayer.style.clipPath = holeLoops
+          ? `path(evenodd, '${outerRect} ${holeLoops}')`
+          : "none";
+      }
+
+      // Sync top fixed header with the exact same viewport-space liquid contour
+      if (headerOwnsRipple) {
+        const swellTouchesTop =
+          swellRadius > 2 &&
+          swellCenterY + stageRectTop - swellRadius * 1.8 <= 120;
+        const rippleTouchesTop =
+          holeLoops !== "" &&
+          (swellTouchesTop || (swellRadius <= 2 && boxMinY + stageRectTop <= 110));
+
+        if (rippleTouchesTop) {
+          const vpOffsetX = docLeft - (window.scrollX || 0);
+          const headerHoleLoops = buildMetaballPath(
+            field,
+            COLS,
+            ROWS,
+            vpOffsetX + minX,
+            minY + stageRectTop,
+            cellW,
+            cellH,
+            0.36
+          );
+          if (headerHoleLoops) {
+            const headerOuter = `M -400 -400 H ${width + 400} V 320 H -400 Z`;
+            syncHeaderClip(
+              `path(evenodd, '${headerOuter} ${headerHoleLoops}')`,
+              `path(evenodd, '${headerHoleLoops}')`
+            );
+          } else {
+            syncHeaderClip("none", "inset(100%)");
+          }
+        } else {
+          syncHeaderClip("none", "inset(100%)");
+        }
+      }
+    };
+
+    const stageXClamp = (x: number, w: number) => clamp(x, 0, w);
+
+    rafId = requestAnimationFrame(renderFrame);
 
     return () => {
-      sharedRippleGPU.clearMaskZone("page2");
-      activeObserver.disconnect();
-      unsubscribe?.();
+      disposed = true;
+      if (rafId) cancelAnimationFrame(rafId);
       ro.disconnect();
       window.removeEventListener("resize", measureSection);
+      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("mouseleave", onPointerLeave);
     };
   }, []);
 
-  const renderEditorialLayout = (isUpperMaskedLayer: boolean) => {
-    const mainText = isUpperMaskedLayer ? "text-white" : "text-[#0B0C0E]";
-    const subText = isUpperMaskedLayer ? "text-white/90" : "text-[#0B0C0E]";
-    const watermark = isUpperMaskedLayer
-      ? "text-white/20"
-      : "text-black/[0.08]";
-    const targetRefArray = isUpperMaskedLayer
-      ? upperTokensRef.current
-      : lowerTokensRef.current;
+  /**
+   * Page 1: Pure typographic editorial layout with BlurText reveal,
+   * paired with the black/white inverted CTA that morphs along the water ripple.
+   * Split at exact 1/4 page width by a continuous 0.5px vertical hairline.
+   */
+  const renderPage1HeroContent = (isWhiteUpperLayer: boolean) => {
+    const titleColor = isWhiteUpperLayer ? "text-[#1C2024]" : "text-[#FCFCFD]";
+    const leadColor = isWhiteUpperLayer ? "text-[#1C2024]" : "text-[#F0F0F3]";
+    const bodyColor = isWhiteUpperLayer ? "text-[#60646C]" : "text-[#B0B4BA]";
+    const accentColor = "text-[#008F83]";
+    const primaryBtnClass = isWhiteUpperLayer
+      ? "pointer-events-auto bg-[#111113] hover:bg-[#27272A] text-[#FFFFFF] border-[0.5px] border-[#111113]"
+      : "pointer-events-none bg-[#FFFFFF] text-[#111113] border-[0.5px] border-[#FFFFFF]";
 
     return (
-      <div className="relative w-full h-full flex flex-col justify-between px-6 sm:px-12 md:px-16 lg:px-20 pt-[14vh] pb-[6vh] select-none font-sans">
-        {/* 水波纹波峰依次上浮文本流（零 React 渲染开销，随鼠标滚轮实时同步波峰上浮） */}
+      <div className="relative w-full h-[100vh] flex items-start pt-24 md:pt-[11vh] select-none overflow-hidden">
+        {/* Continuous 0.5px vertical hairline at exact 1/4 (25%) page width */}
         <div
-          ref={isUpperMaskedLayer ? upperTextWrapRef : undefined}
-          className="relative z-10 w-full flex-1 flex flex-col justify-start transition-opacity duration-75"
+          className="hidden md:block absolute top-0 bottom-0 left-1/4 -translate-x-1/2 w-[0.5px] pointer-events-none z-[1]"
+          style={{
+            background: isWhiteUpperLayer
+              ? "linear-gradient(180deg, rgba(28,32,36,0) 0%, rgba(28,32,36,0.22) 14%, rgba(28,32,36,0.22) 86%, rgba(28,32,36,0) 100%)"
+              : "linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.34) 14%, rgba(255,255,255,0.34) 86%, rgba(255,255,255,0) 100%)",
+          }}
+        />
+
+        <div
+          ref={isWhiteUpperLayer ? upperPage1TextRef : lowerPage1TextRef}
+          className="relative z-10 w-full grid grid-cols-1 md:grid-cols-4 items-start will-change-transform"
         >
-          {/* 左侧保留轻量引文，右侧以大字展开主宣言。 */}
-          <div className="relative w-full grid grid-cols-1 md:grid-cols-[minmax(0,34fr)_minmax(0,66fr)] gap-8 md:gap-0 items-start pt-2 md:pt-4">
-            {/* 左侧主题与短句，垂直落在主标题中段。 */}
-            <div className="min-w-0 flex max-w-full flex-col justify-start pr-0 md:ml-auto md:max-w-[clamp(17rem,28vw,22rem)] md:items-end md:pt-[16vh] md:pr-8 md:text-right lg:pr-10">
-              <div
-                className="mb-4 flex items-center gap-2 font-sans text-[9px] font-semibold uppercase tracking-[0.2em] select-none sm:text-[10px]"
-              >
-                <span>01 / PERSONAL SIGNAL</span>
-                <span className="h-px w-8 bg-current opacity-30" />
-              </div>
-
-              <p
-                className={`text-sm sm:text-base md:text-base lg:text-lg font-bold tracking-[0.025em] leading-[2.08] ${pageTwoHoverLift} ${subText} ${editorialFont.className}`}
-              >
-                {SUBTEXT_TOKENS.map((token, idx) => {
-                  const globalIdx =
-                    HEADLINE_TOKENS.length + SUPPORT_TOKENS.length + idx;
-                  return (
-                    <span
-                      key={`ss-${idx}`}
-                      ref={(el) => {
-                        targetRefArray[globalIdx] = el;
-                      }}
-                      style={{
-                        display: "block",
-                        opacity: 0,
-                        transform: "translate3d(0, 42px, 0) scale(0.92)",
-                        willChange: "transform, opacity",
-                      }}
-                    >
-                      {token}
-                    </span>
-                  );
-                })}
-              </p>
+          {/* Left of 1/4 vertical axis: right-aligned flush against the 25% line */}
+          <div className="px-6 md:pl-8 md:pr-8 lg:pr-10 md:text-right md:pt-2">
+            <div className={`text-sm font-medium leading-[1.7] ${bodyColor}`}>
+              {PAGE1_TAGLINE_LINES.map((line, idx) => (
+                <ScrollReveal
+                  key={`p1-tag-${idx}`}
+                  as="p"
+                  highlightColor=""
+                  mode="enter"
+                  splitBy="words"
+                  effect="fade"
+                  stagger={0.05}
+                  duration={0.8}
+                  smoothing={0}
+                  baseOpacity={0.1}
+                  baseRotation={3}
+                  baseOffset={0}
+                  enableBlur
+                  blurStrength={4}
+                  containerClassName={idx === 2 ? `font-semibold ${accentColor}` : undefined}
+                >
+                  {line}
+                </ScrollReveal>
+              ))}
             </div>
+          </div>
 
-            {/* 中置细线界定左右两种字级，随滚动淡出。 */}
-            <div
-              ref={isUpperMaskedLayer ? upperDividerRef : lowerDividerRef}
-              className="hidden md:flex flex-col items-center justify-between absolute top-[-14vh] bottom-[-27vh] left-[34%] -translate-x-1/2 w-[1px] pointer-events-none will-change-[opacity]"
-              style={{
-                background: isUpperMaskedLayer
-                  ? "linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 12%, rgba(255,255,255,0.3) 85%, rgba(255,255,255,0) 100%)"
-                  : "linear-gradient(180deg, rgba(11,12,14,0) 0%, rgba(11,12,14,0.32) 12%, rgba(11,12,14,0.2) 85%, rgba(11,12,14,0) 100%)",
-                transition: "opacity 0.15s ease-out",
-              }}
-            >
-              <span
-                className={`text-[9px] tracking-widest my-auto select-none ${
-                  isUpperMaskedLayer ? "text-white/40" : "text-black/30"
-                }`}
+          {/* Right of 1/4 vertical axis: left-aligned flush against the 25% line with generous whitespace */}
+          <div className="login-editorial-song md:col-span-3 px-6 md:pl-10 lg:pl-14 md:pr-20 mt-6 md:mt-0 text-left">
+            <div className="max-w-xl">
+              <h1
+                className={`text-3xl sm:text-4xl lg:text-[2.65rem] font-bold tracking-tight leading-[1.2] [text-wrap:balance] ${titleColor}`}
               >
-                ◇
-              </span>
-            </div>
+                <ScrollReveal
+                  as="div"
+                  tokens={PAGE1_HEADLINE_LINE1_TOKENS}
+                  highlightColor=""
+                  mode="enter"
+                  splitBy="words"
+                  effect="fade"
+                  stagger={0.05}
+                  duration={0.8}
+                  smoothing={0}
+                  baseOpacity={0.1}
+                  baseRotation={3}
+                  baseOffset={0}
+                  enableBlur
+                  blurStrength={4}
+                />
+                <ScrollReveal
+                  as="div"
+                  tokens={PAGE1_HEADLINE_LINE2_TOKENS}
+                  highlightColor=""
+                  mode="enter"
+                  splitBy="words"
+                  effect="fade"
+                  stagger={0.05}
+                  duration={0.8}
+                  smoothing={0}
+                  baseOpacity={0.1}
+                  baseRotation={3}
+                  baseOffset={0}
+                  enableBlur
+                  blurStrength={4}
+                  containerClassName={accentColor}
+                />
+              </h1>
 
-            {/* 右侧主宣言，使用参考页的超大字级与紧行距。 */}
-            <div className="min-w-0 flex flex-col justify-start pl-0 md:min-h-[76vh] md:justify-between md:pl-7 lg:pl-8">
-              <div
-                className={`mb-4 flex items-center gap-2 font-sans text-[9px] font-semibold uppercase tracking-[0.2em] select-none sm:text-[10px] ${
-                  isUpperMaskedLayer ? "text-white/45" : "text-black/40"
-                }`}
-              >
-                <span>SIGNAL / CHOICE</span>
-                <span className="w-8 h-[1px] bg-current opacity-30" />
+              <ScrollReveal
+                as="p"
+                tokens={PAGE1_LEAD_TOKENS}
+                highlightColor=""
+                mode="enter"
+                splitBy="words"
+                effect="fade"
+                stagger={0.05}
+                duration={0.8}
+                smoothing={0}
+                baseOpacity={0.1}
+                baseRotation={3}
+                baseOffset={0}
+                enableBlur
+                blurStrength={4}
+                containerClassName={`mt-6 text-base sm:text-lg font-medium leading-relaxed ${leadColor}`}
+              />
+
+              <ScrollReveal
+                as="p"
+                tokens={PAGE1_BODY_TOKENS}
+                highlightColor=""
+                mode="enter"
+                splitBy="words"
+                effect="fade"
+                stagger={0.05}
+                duration={0.8}
+                smoothing={0}
+                baseOpacity={0.1}
+                baseRotation={3}
+                baseOffset={0}
+                enableBlur
+                blurStrength={4}
+                containerClassName={`mt-4 max-w-md text-sm leading-[1.85] ${bodyColor}`}
+              />
+
+              <ScrollReveal
+                as="p"
+                tokens={PAGE1_PROMPT_TOKENS}
+                highlightColor=""
+                mode="enter"
+                splitBy="words"
+                effect="fade"
+                stagger={0.05}
+                duration={0.8}
+                smoothing={0}
+                baseOpacity={0.1}
+                baseRotation={3}
+                baseOffset={0}
+                enableBlur
+                blurStrength={4}
+                containerClassName={`mt-4 text-sm font-medium leading-relaxed ${leadColor}`}
+              />
+
+              <div className="mt-6">
+                <motion.button
+                  type="button"
+                  data-liquid-skip="true"
+                  initial={{ filter: "blur(4px)", opacity: 0.1, rotate: 3 }}
+                  animate={{ filter: "blur(0px)", opacity: 1, rotate: 0 }}
+                  transition={{
+                    duration: 0.8,
+                    delay: 0.25,
+                    ease: [0.33, 1, 0.68, 1],
+                  }}
+                  onClick={isWhiteUpperLayer ? jumpToFinalLogin : undefined}
+                  tabIndex={isWhiteUpperLayer ? 0 : -1}
+                  aria-hidden={!isWhiteUpperLayer}
+                  className={`h-10 px-6 rounded-[8px] text-sm font-medium inline-flex items-center justify-center transition-colors duration-[250ms] ease-out cursor-pointer ${primaryBtnClass}`}
+                >
+                  开始探索
+                </motion.button>
               </div>
-
-              <p
-                className={`flex flex-col gap-1 text-2xl sm:gap-2 sm:text-3xl md:text-[clamp(2rem,4.75vw,7rem)] font-bold tracking-[-0.035em] leading-[1.18] ${pageTwoHoverLift} ${mainText} ${editorialFont.className}`}
-              >
-                {HEADLINE_TOKENS.map((token, idx) => (
-                  <span
-                    key={`h-${idx}`}
-                    className="block md:whitespace-nowrap"
-                    ref={(el) => {
-                      targetRefArray[idx] = el;
-                    }}
-                    style={{
-                      display: "block",
-                      opacity: 0,
-                      transform: "translate3d(0, 42px, 0) scale(0.92)",
-                      willChange: "transform, opacity",
-                    }}
-                  >
-                    {token}
-                  </span>
-                ))}
-              </p>
-
-              <p
-                className={`mt-8 flex flex-col gap-5 md:mt-0 text-sm sm:text-base md:text-[clamp(1.5rem,2.2vw,3rem)] font-bold tracking-[0.015em] leading-[2.02] ${pageTwoHoverLift} ${subText} ${editorialFont.className}`}
-              >
-                {SUPPORT_TOKENS.map((token, idx) => {
-                  const globalIdx = HEADLINE_TOKENS.length + idx;
-                  return (
-                    <span
-                      key={`s-${idx}`}
-                      ref={(el) => {
-                        targetRefArray[globalIdx] = el;
-                      }}
-                      style={{
-                        display: "block",
-                        opacity: 0,
-                        transform: "translate3d(0, 42px, 0) scale(0.92)",
-                        willChange: "transform, opacity",
-                      }}
-                    >
-                      {token}
-                    </span>
-                  );
-                })}
-              </p>
             </div>
           </div>
         </div>
+      </div>
+    );
+  };
 
-        {!isUpperMaskedLayer && (
-          <div className="pointer-events-none absolute left-6 right-6 top-[104vh] grid grid-cols-1 items-start gap-8 sm:left-12 sm:right-12 md:left-16 md:right-16 md:grid-cols-[minmax(0,34fr)_minmax(0,66fr)] md:gap-0 lg:left-20 lg:right-20">
-            <div className="min-w-0 md:ml-auto md:flex md:min-h-[76vh] md:max-w-[clamp(17rem,28vw,22rem)] md:flex-col md:items-end md:justify-between md:pt-10 md:pr-8 md:text-right lg:pr-10">
-              <div>
-                <div className="mb-4 flex items-center gap-2 font-sans text-[9px] font-semibold uppercase tracking-[0.2em] text-black/40 sm:text-[10px]">
-                  <span>02 / DISCOVERY</span>
-                  <span className="h-px w-8 bg-current opacity-30" />
-                </div>
-                <p className={`text-sm font-bold leading-[2] tracking-[0.025em] text-[#0B0C0E] sm:text-base lg:text-lg ${editorialFont.className}`}>
-                  从喜欢出发
-                </p>
-              </div>
-              <p className="mt-8 font-sans text-[9px] font-semibold uppercase tracking-[0.2em] text-black/40 sm:text-[10px]">
-                CURATED FOR YOU
-              </p>
-            </div>
-
-            <div className="relative min-w-0 pl-0 md:flex md:min-h-[76vh] md:flex-col md:justify-between md:pl-7 lg:pl-8">
-              <div>
-                <div className="mb-4 flex items-center gap-2 font-sans text-[9px] font-semibold uppercase tracking-[0.2em] text-black/40 sm:text-[10px]">
-                  <span>CONNECTION / DIRECTION</span>
-                  <span className="h-px w-8 bg-current opacity-30" />
-                </div>
-                <p className={`text-2xl font-bold leading-[1.18] tracking-[-0.035em] text-[#0B0C0E] sm:text-3xl md:text-[clamp(2rem,3.5vw,4.5rem)] ${editorialFont.className}`}>
-                  让喜欢相互连接
-                  <br />
-                  让发现持续发生
-                </p>
-              </div>
-              <p className="mt-8 font-sans text-[9px] font-semibold uppercase tracking-[0.2em] text-black/40 sm:text-[10px] md:mt-0">
-                YOUR TASTE, IN MOTION
-              </p>
-              <span aria-hidden="true" className="absolute -top-[20vh] -bottom-[12vh] left-[calc(-1.75rem-1px)] hidden w-px bg-black/20 md:block lg:left-[calc(-2rem-1px)]" />
+  const renderPage2EditorialContent = (isWhiteUpperLayer: boolean) => {
+    const mainText = isWhiteUpperLayer ? "text-[#1C2024]" : "text-[#F0F0F3]";
+    return (
+      <div
+        ref={isWhiteUpperLayer ? upperPage2TextRef : lowerPage2TextRef}
+        className="relative h-[130vh] w-full overflow-hidden font-sans transition-opacity duration-[250ms] ease-out will-change-[transform,opacity]"
+      >
+        <div className="mx-auto w-full max-w-[1600px] px-6 pt-24 md:px-10 md:pt-[10vh] lg:px-14">
+          <div className="grid grid-cols-1 items-end gap-8 md:grid-cols-[minmax(0,3fr)_minmax(0,1fr)] md:gap-8 lg:gap-12">
+            <div className="aspect-[4/3] w-full" aria-hidden="true" />
+            <div className="min-w-0 pb-1">
+              <h2 className={`text-xl font-semibold leading-[1.4] tracking-tight sm:text-2xl ${mainText}`}>
+                <span className="text-[#008F83]">Omnilink </span>是一个以个人需求为中心的 AI 生活空间
+              </h2>
             </div>
           </div>
-        )}
 
-        {/* 在遮罩消失变成黑屏的第三页，写着 bleibtgleich 的页面插入 FlexCarousel 3D 液态轮播：
-            横跨 100vw 左右不留空隙，随变黑过程渐进出现并等比例放大 */}
-        {isUpperMaskedLayer ? (
-          <div
-            ref={carouselWrapRef}
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: "104vh",
-              width: "100vw",
-              height: "84vh",
-              opacity: 0,
-              transform: "translate3d(0, 32px, 0)",
-              touchAction: "pan-y",
-            }}
-            className="pointer-events-auto z-30 will-change-transform"
-          >
-            {isCarouselNearViewport && <FlexCarousel
-              items={flexCarouselItems}
-              preset="liquid"
-              intro="none"
-              cardHeight={0.62}
-              gap={16}
-              squeeze={0.2}
-              focusOnClick
-              captions
-              fit="portrait"
-              radius={0}
-              lensWidth={0.78}
-              lensHeight={1.22}
-              tilt={62}
-              roundness={0.63}
-              bend={0.34}
-              reach={0.38}
-              curl="twist"
-              dispersion={0.85}
-              liquid={0.2}
-              followCursor={false}
-              autoplay
-              interval={3.5}
-              captureWheel={false}
-            />}
-          </div>
-        ) : (
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              top: "104vh",
-              width: "100vw",
-              height: "84vh",
-            }}
-            className="invisible pointer-events-none"
-            aria-hidden="true"
-          />
-        )}
-
-        {/* 第三页底部元数据与水印（无顶部分割线，确保向倒数第二页 fade 过渡时完全无缝） */}
-        <div className="relative z-10 flex items-end justify-between pt-4">
-          <div
-            className={`text-xs font-mono uppercase tracking-widest ${subText}`}
-          >
-            SCROLL_SCRUB: WORDS // FADE_BLUR
-          </div>
-          <div
-            className={`text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-[-0.04em] leading-none pointer-events-none select-none ${watermark}`}
-          >
-            bleibtgleich
-          </div>
         </div>
       </div>
     );
@@ -1371,91 +1110,195 @@ export function BleibtGooeySection() {
       id="product-entropy"
       ref={runwayRef}
       style={{ backgroundColor: "#000000" }}
-      className="relative w-full h-[270vh] select-none will-change-[background-color]"
+      className="relative w-full h-[360vh] select-none will-change-[background-color]"
     >
-      {/* 非 sticky 的参考标尺：供 ScrollReveal 在滚动至第三页锁定期前完整显影所有延伸文字 */}
-      <div
-        ref={scrollTriggerRulerRef}
-        aria-hidden="true"
-        className="pointer-events-none absolute top-[14vh] left-0 w-full h-[148vh]"
-      />
-
-      {/* 200vh 连续双页舞台（0-100vh 为第二页，100-200vh 为第三页）：
-          采用原生 CSS sticky top-[-100vh] 由浏览器合成器线程驱动：
-          1. 前 100vh 行程原生平滑滚动从第二页进入第三页（零主线程 transform 抖动）
-          2. 滚至第三页（top 抵达 -100vh）后原生锁定在屏幕内，直至水波纹下钻完全吞没白色区域后再滚入下方页面 */}
+      {/* Unified dual-layer stage */}
       <div
         ref={stageRef}
-        className="sticky top-[-100vh] left-0 w-full h-[200vh] bg-black overflow-hidden select-none cursor-crosshair"
+        className="sticky top-[-230vh] left-0 w-full h-[330vh] bg-[#000000] overflow-hidden select-none cursor-crosshair"
       >
-        {/* 纯黑底层承载画廊，白色前景通过液态开口露出图片。 */}
+        {/* Static un-transformed Page 2 trigger anchor so ScrollTrigger syncs both layers identically */}
         <div
-          id="page3-black-scene"
-          className="absolute inset-0 w-full h-full bg-black z-0"
-        >
-          <canvas
-            ref={inkCanvasRef}
-            className="hidden"
-          />
+          ref={page2TriggerRef}
+          className="absolute top-[100vh] inset-x-0 h-[130vh] pointer-events-none"
+          aria-hidden="true"
+        />
 
-        {/* 图片只存在于黑色底层。 */}
+        {/* =====================================================================
+            LOWER LAYER (下层：统一纯黑 #000000 底色，第一、二页无缝衔接过渡)
+            - Page 1 + Page 2 unified 230vh black canvas: seamless cross-boundary
+              flow between the 2x 3-card 45° Orbit and Page 2 animated mesh media
+            - Page 3 (230-330vh): Seamless #000000 transition into FlexCarousel
+        ===================================================================== */}
         <div
-          id="page2-orbit-gallery"
-          ref={galleryWrapRef}
-          className="absolute left-[-20vw] top-[-12vh] h-[118vh] w-[140vw] z-[9] will-change-transform md:top-[-20vh] md:h-[140vh]"
-          style={{
-            pointerEvents: "auto",
-            opacity: 0.85,
-            WebkitMaskImage:
-              "linear-gradient(180deg, rgba(0,0,0,0) 0%, #000000 9%, #000000 100%)",
-            maskImage:
-              "linear-gradient(180deg, rgba(0,0,0,0) 0%, #000000 9%, #000000 100%)",
-          }}
+          id="page3-liquid-mask-layer"
+          ref={lowerBlackLayerRef}
+          style={{ backgroundColor: "#000000" }}
+          className="absolute inset-0 w-full h-full z-10 will-change-[background-color]"
         >
-          {isGalleryNearViewport && <OrbitImages
-            images={galleryImages}
-            shape="ellipse"
-            radiusX={520}
-            radiusY={260}
-            rotation={45}
-            duration={32}
-            itemSize={270}
-            itemWidth={270}
-            itemHeight={175}
-            depth={0.75}
-            hoverScale={1.18}
-            hoverSpeed={0.3}
-            showPath={false}
-            direction="normal"
-            easing="easeOut"
-            fill
-            alignToPath={false}
-            draggable
-            clickToFront={false}
-            paused={false}
-            intro
-            height="100%"
-            itemRadius={0}
-            shadow={0}
-            className="w-full h-full opacity-90"
-          />}
-        </div>
+          {/* Unified Page 1 + Page 2 Lower Black Layer (no seam or overflow clip between 0–230vh) */}
+          <div className="relative w-full h-[230vh] bg-[#000000] overflow-visible">
+            {/* Continuous Animated Mesh Gradient Media spanning smoothly from lower Page 1 through Page 2 */}
+            <div
+              ref={lowerP2MediaParallaxRef}
+              className="absolute top-[52vh] inset-x-0 h-[182vh] z-[1] pointer-events-none will-change-transform"
+              style={{
+                transform: "scale(1.12)",
+                WebkitMaskImage:
+                  "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.45) 20%, #000000 36%, #000000 84%, rgba(0,0,0,0) 100%)",
+                maskImage:
+                  "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.45) 20%, #000000 36%, #000000 84%, rgba(0,0,0,0) 100%)",
+              }}
+            >
+              <video
+                ref={page2VideoRef}
+                src="/assets/aistudio/animated-mesh-gradient-1140x1140_c014aba0.webm"
+                poster="/assets/aistudio/mesh-gradient-1795588690877_23d82141.png"
+                loop
+                muted
+                playsInline
+                preload="auto"
+                className="w-full h-full object-cover object-center block"
+              />
+            </div>
 
+            {/* Page 1 2x 3-Card 45° Diagonal Variable-Speed Gallery (full-width unclipped stage) */}
+            <div
+              ref={lowerTriOrbitParallaxRef}
+              className="absolute top-0 inset-x-0 h-[100vh] z-[2] pointer-events-none overflow-visible will-change-transform"
+            >
+              <BleibtTriOrbit
+                items={triOrbitItems}
+                cycleSeconds={4.2}
+                diagonalAngle={45}
+              />
+            </div>
+
+            {/* Page 1 Mirrored White Typography (0–100vh) */}
+            <div className="relative w-full h-[100vh] z-10 pointer-events-none">
+              {renderPage1HeroContent(false)}
+            </div>
+
+            {/* Page 2 Mirrored White Typography (100–230vh) */}
+            <div className="relative w-full h-[130vh] z-10 pointer-events-none">
+              {renderPage2EditorialContent(false)}
+            </div>
+          </div>
+
+          {/* Page 3 Lower Black Layer: Pure #000000 + FlexCarousel */}
           <div
             id="page3-upper-editorial"
-            className="absolute inset-0 w-full h-full z-10 pointer-events-none will-change-[opacity]"
+            className="relative w-full h-[100vh] overflow-hidden will-change-[opacity]"
           >
-            {renderEditorialLayout(true)}
+            <div
+              ref={carouselWrapRef}
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: "8vh",
+                width: "100vw",
+                height: "84vh",
+                opacity: 0,
+                transform: "translate3d(0, 28px, 0)",
+                touchAction: "pan-y",
+              }}
+              className="pointer-events-auto z-30 will-change-transform"
+            >
+              <FlexCarousel
+                items={flexCarouselItems}
+                preset="liquid"
+                intro="none"
+                cardHeight={0.62}
+                gap={16}
+                squeeze={0.2}
+                focusOnClick
+                captions={false}
+                fit="portrait"
+                radius={0}
+                lensWidth={0.78}
+                lensHeight={1.22}
+                tilt={62}
+                roundness={0.63}
+                bend={0.34}
+                reach={0.38}
+                curl="twist"
+                dispersion={0.85}
+                liquid={0.2}
+                followCursor={false}
+                autoplay
+                interval={3.5}
+                captureWheel={false}
+                initialPaused
+              />
+            </div>
           </div>
         </div>
 
-        {/* 白色前景盖住底层；黑色文字随白色表面一起裁切。 */}
+        {/* =====================================================================
+            UPPER LAYER (上层：统一纯白 #FFFFFF 表层，Page 1 与 Page 2 无缝链接过渡)
+            Zero preset holes: remains calm white until pointer hover/click
+            triggers concentric swirling RippleDistortion water waves
+        ===================================================================== */}
         <div
-          id="page3-liquid-mask-layer"
-          ref={liquidMaskLayerRef}
-          className="absolute inset-0 w-full h-full bg-white z-20 will-change-[clip-path]"
+          ref={upperWhiteLayerRef}
+          className="absolute inset-0 w-full h-full bg-[#FFFFFF] z-20 pointer-events-none will-change-[clip-path,opacity]"
         >
-          {renderEditorialLayout(false)}
+          {renderPage1HeroContent(true)}
+          {renderPage2EditorialContent(true)}
+          <div className="login-editorial-song min-h-[100vh] w-full px-6 pt-24 md:px-10 md:pt-[8vh] lg:px-14">
+            <div className="relative mx-auto grid w-full max-w-[1600px] grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+              <div aria-hidden="true" className="absolute inset-y-0 left-2/3 hidden w-[0.5px] bg-[#60646C] md:block" />
+              <p className="self-end pb-5 text-sm font-semibold leading-snug text-[#1C2024] md:pe-10 md:text-right">
+                你的世界<br />由你连接
+              </p>
+              <h2 className="text-3xl font-bold leading-[1.15] tracking-tight text-[#1C2024] sm:text-4xl lg:text-5xl md:ps-10">
+                连接<span className="text-[#008F83]">灵感</span><br />与生活
+              </h2>
+              <p className="mt-12 text-3xl font-bold leading-[1.2] tracking-tight text-[#1C2024] sm:text-4xl lg:text-5xl md:mt-16 md:pe-10 md:text-right">
+                探索喜欢的事物<br />找到<span className="text-[#008F83]">需要</span>的答案
+              </p>
+              <p className="mt-6 max-w-sm text-sm leading-[1.8] text-[#60646C] sm:text-base md:mt-16 md:ps-10">
+                连接商品、内容与服务，让信息自由流通，把更多时间留给生活。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* =====================================================================
+            ABOVE-RIPPLE STACKED MOCKUPS (z-30：占左侧 2/3 视觉中心大幅画面，不受水波纹裁切)
+        ===================================================================== */}
+        <div
+          ref={page2ImageLayerRef}
+          className="absolute top-[100vh] inset-x-0 h-[130vh] z-30 pointer-events-none pt-20 md:pt-[10vh] transition-opacity duration-[250ms] ease-out will-change-[transform,opacity]"
+        >
+          <div className="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-8 px-6 pt-4 md:grid-cols-[minmax(0,3fr)_minmax(0,1fr)] md:gap-8 md:px-10 md:pt-0 lg:gap-12 lg:px-14">
+            <div className="min-w-0">
+              <div className="relative w-full">
+                {/* Web UI Mockup (back) */}
+                <div className="w-[91%] aspect-[4/3] rounded-[8px] overflow-hidden border-[0.5px] border-[#D9D9E0] bg-[#FFFFFF]">
+                  <img
+                    src={webMockupImg}
+                    alt="Omnilink 桌面端首页"
+                    draggable={false}
+                    className="w-full h-full object-cover block select-none"
+                  />
+                </div>
+
+                {/* Mobile UI Mockup (overlapping front lower-right corner) */}
+                <div className="absolute right-0 -bottom-4 md:-bottom-6 w-[23%] max-w-[210px] rounded-[10px] overflow-hidden border-[0.5px] border-[#C9CBD4] bg-[#FFFFFF] shadow-[0_8px_24px_rgba(28,32,36,0.12)]">
+                  <img
+                    src={mobileMockupImg}
+                    alt="Omnilink 移动端 AI 对话界面"
+                    draggable={false}
+                    className="w-full h-auto block select-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="hidden md:block" aria-hidden="true" />
+          </div>
         </div>
       </div>
     </section>

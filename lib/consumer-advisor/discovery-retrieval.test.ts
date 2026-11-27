@@ -43,14 +43,16 @@ describe('one search specification across retrieval and paging',()=>{
     expect(eligibleConsumerProduct({...base,catalogEvidence:{...base.catalogEvidence!,verifiedDeliveryCountries:['CN']}},{...spec,termGroups:[]})).toBe(true)
     expect((await retrieveDiscoveryCandidates(make({termGroups:[['中国大陆']]}))).products).toHaveLength(0)
   })
-  it('keeps reviewed numeric prices searchable while excluding the five unconfirmed prices',async()=>{
+  it('keeps reviewed numeric prices searchable while excluding unconfirmed prices',async()=>{
     const rates={date:'2026-11-19',rates:{EUR:1,USD:1,CNY:7}}
     const result=await retrieveDiscoveryCandidates(make({query:'USD items',termGroups:[],maxPrice:300,currency:'USD',retrieval:{mode:'keyword'}}),undefined,undefined,
       {catalog:readConsumerCatalog,semantic:vi.fn(),rates:async()=>rates})
     expect(result.products.length).toBeGreaterThan(0)
     expect(result.products.every((product)=>product.priceMode==='amount'&&
       (product.currency==='USD'||product.currency==='EUR'?product.price:product.currency==='CNY'?product.price/7:Infinity)<=300)).toBe(true)
-    expect(readConsumerCatalog().filter((product)=>product.priceMode==='unknown')).toHaveLength(5)
+    const unknownIds=new Set(readConsumerCatalog().filter((product)=>product.priceMode==='unknown').map((product)=>product.id))
+    expect(unknownIds.size).toBeGreaterThan(0)
+    expect(result.products.some((product)=>unknownIds.has(product.id))).toBe(false)
   })
   it.each(['INDEX_PROFILE_MISMATCH','INDEX_STALE','INDEX_NOT_READY','EMBEDDING_UNAVAILABLE'])('returns explicit keyword degradation on %s',async(reason)=>{
     const semantic=vi.fn().mockRejectedValue(new SemanticSearchError(reason,{...metrics,embeddingCalls:reason.startsWith('INDEX')?0:1}))
@@ -101,12 +103,13 @@ describe('one search specification across retrieval and paging',()=>{
     expect(result.products).toEqual(snapshot.products)
   })
   it('lets semantic recall include related wording while retaining category, required terms and exclusions',async()=>{
+    const neutralBase={...base,storeName:'Test Store',composition:undefined}
     const products=[
-      {...base,id:'exact',name:'Black vintage dress',category:'dress',shortDescription:'cotton',specs:{}},
-      {...base,id:'related',name:'Black retro dress',category:'dress',shortDescription:'cotton',specs:{}},
-      {...base,id:'wrong-color',name:'White retro dress',category:'dress',shortDescription:'cotton',specs:{}},
-      {...base,id:'wrong-category',name:'Black retro necklace',category:'necklace',shortDescription:'cotton',specs:{}},
-      {...base,id:'excluded',name:'Black retro dress with silk',category:'dress',shortDescription:'cotton',specs:{}},
+      {...neutralBase,id:'exact',name:'Black vintage dress',category:'dress',shortDescription:'cotton',specs:{}},
+      {...neutralBase,id:'related',name:'Black retro dress',category:'dress',shortDescription:'cotton',specs:{}},
+      {...neutralBase,id:'wrong-color',name:'White retro dress',category:'dress',shortDescription:'cotton',specs:{}},
+      {...neutralBase,id:'wrong-category',name:'Black retro necklace',category:'necklace',shortDescription:'cotton',specs:{}},
+      {...neutralBase,id:'excluded',name:'Black retro dress with silk',category:'dress',shortDescription:'cotton',specs:{}},
     ]
     const spec=make({query:'只要黑色复古连衣裙，不要丝绸',termGroups:[['连衣裙','dress'],['复古','vintage']],
       requiredTermGroups:[['黑色','black']],excludedTerms:['silk'],retrieval:{mode:'hybrid'}})
@@ -126,7 +129,24 @@ describe('one search specification across retrieval and paging',()=>{
     const result=await retrieveDiscoveryCandidates(simpleProductSearchSpec('裙子')!,undefined,undefined,{catalog:()=>products,semantic})
     expect(result.products.map((p)=>p.id).sort()).toEqual(['dress','skirt'])
     expect(result.keywordIds.sort()).toEqual(['dress','skirt'])
-    expect(result.report).toMatchObject({effectiveMode:'keyword',selectionReason:'AUTO_KEYWORD_MATCH',embeddingCalls:0})
+    expect(result.report).toMatchObject({effectiveMode:'keyword',selectionReason:'EXPLICIT_MODE',embeddingCalls:0})
+    expect(semantic).not.toHaveBeenCalled()
+  })
+  it('retrieves photography categories by keyword without starting a vector query',async()=>{
+    const products=[{...base,id:'camera',name:'Canon camera',category:'相机',shortDescription:'',specs:{}},
+      {...base,id:'tripod',name:'Camera tripod',category:'tripod',shortDescription:'',specs:{}},
+      {...base,id:'shirt',name:'Cotton shirt',category:'上衣',shortDescription:'',specs:{}}]
+    const semantic=vi.fn()
+    const result=await retrieveDiscoveryCandidates(simpleProductSearchSpec('摄影器材')!,undefined,undefined,{catalog:()=>products,semantic})
+    expect(result.products.map((product)=>product.id).sort()).toEqual(['camera','tripod'])
+    expect(result.report).toMatchObject({effectiveMode:'keyword',embeddingCalls:0})
+    expect(semantic).not.toHaveBeenCalled()
+  })
+  it('does not fall back to vectors for an unmatched direct product keyword',async()=>{
+    const semantic=vi.fn()
+    const result=await retrieveDiscoveryCandidates(simpleProductSearchSpec('摄影器材')!,undefined,undefined,{catalog:()=>[{...base,name:'Cotton shirt',category:'上衣',specs:{}}],semantic})
+    expect(result.products).toEqual([])
+    expect(result.report).toMatchObject({effectiveMode:'keyword',embeddingCalls:0})
     expect(semantic).not.toHaveBeenCalled()
   })
   it('keeps the product category while using style as a soft recall signal',async()=>{
@@ -147,7 +167,7 @@ describe('one search specification across retrieval and paging',()=>{
     const semantic=vi.fn().mockResolvedValue({matches:[{id:'dress',similarity:1},{id:'skirt',similarity:0.8}],metrics})
     const result=await retrieveDiscoveryCandidates(simpleProductSearchSpec('半身裙')!,undefined,undefined,{catalog:()=>products,semantic})
     expect(result.products.map((p)=>p.id)).toEqual(['skirt'])
-    expect(result.report).toMatchObject({effectiveMode:'keyword',selectionReason:'AUTO_KEYWORD_MATCH',embeddingCalls:0})
+    expect(result.report).toMatchObject({effectiveMode:'keyword',selectionReason:'EXPLICIT_MODE',embeddingCalls:0})
     expect(semantic).not.toHaveBeenCalled()
   })
   it('keeps a category discovered in the catalog as a hard condition',async()=>{
@@ -156,7 +176,7 @@ describe('one search specification across retrieval and paging',()=>{
     const semantic=vi.fn().mockResolvedValue({matches:[{id:'shoe',similarity:0.9},{id:'shirt',similarity:0.8}],metrics})
     const result=await retrieveDiscoveryCandidates(simpleProductSearchSpec('帆布鞋','商品',products)!,undefined,undefined,{catalog:()=>products,semantic})
     expect(result.products.map((p)=>p.id)).toEqual(['shoe'])
-    expect(result.report).toMatchObject({effectiveMode:'keyword',selectionReason:'AUTO_KEYWORD_MATCH',embeddingCalls:0})
+    expect(result.report).toMatchObject({effectiveMode:'keyword',selectionReason:'EXPLICIT_MODE',embeddingCalls:0})
     expect(semantic).not.toHaveBeenCalled()
   })
   it('uses one exchange snapshot for filtering and every page, and rejects missing rates',async()=>{
@@ -201,9 +221,9 @@ describe('one search specification across retrieval and paging',()=>{
     expect(earrings.products.some((product)=>product.name==='Tiny Zodiac Medallion Necklace')).toBe(false)
   })
   it('pages 35 approved products as 20 + 15 with no repeated IDs and rechecks changed hard conditions',async()=>{
-    const spec=make({query:'全部商品',termGroups:[]}),result=await retrieveDiscoveryCandidates(spec)
+    const catalog=Array.from({length:35},(_,index)=>({...base,id:`paging-${index}`,itemType:'product' as const,price:100,priceMode:'amount' as const,currency:'CNY'}))
+    const spec=make({query:'全部商品',termGroups:[]}),result=await retrieveDiscoveryCandidates(spec,undefined,undefined,{catalog:()=>catalog,semantic:vi.fn()})
     const execution={catalogVersion:'five-store-v1',candidateKeys:result.products.map((p)=>p.id),retrieval:result.report}
-    const catalog=readConsumerCatalog()
     const first=pageCatalogExecution(spec,execution,0,catalog,'five-store-v1'),second=pageCatalogExecution(spec,execution,first.nextOffset!,catalog,'five-store-v1')
     expect(first.products).toHaveLength(20);expect(second.products).toHaveLength(15);expect(second.nextOffset).toBeNull()
     expect(new Set([...first.products,...second.products].map((p)=>p.id)).size).toBe(35)

@@ -76,7 +76,7 @@ export function readAiAssistantProfile(value: unknown): AiAssistantProfile {
     }
   }
   const savedAssistantName = typeof data.assistantName === 'string' ? data.assistantName.trim() : ''
-  const assistantName = savedAssistantName && !/^(?:eva|个人助手)$/i.test(savedAssistantName)
+  const assistantName = savedAssistantName && !/^(?:eva|个人助手|形象助手)$/i.test(savedAssistantName)
     ? savedAssistantName.slice(0, 24)
     : 'AI assistant'
   return {

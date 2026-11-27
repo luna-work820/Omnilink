@@ -12,16 +12,6 @@
   outline: none;
 }
 
-.flex-carousel__fallback {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: min(72vw, 420px);
-  height: 62%;
-  object-fit: cover;
-  transform: translate(-50%, -50%);
-}
-
 .flex-carousel[data-hover='open'] {
   cursor: zoom-in;
 }

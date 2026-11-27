@@ -241,7 +241,7 @@ export function ProductAttributesPanel({
                 onChange={(e) => handleTraitValueChange(row.id, e.target.value)}
                 placeholder={placeholderFor(row)}
                 disabled={disabled}
-                className="h-10 w-full rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15"
+                className="h-10 w-full rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:border-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/15"
               />
             </div>
             <div className="w-16 sm:w-20 shrink-0">
@@ -251,7 +251,7 @@ export function ProductAttributesPanel({
                 onChange={(e) => handleUnitChange(row.id, e.target.value)}
                 placeholder={isZh ? '单位' : 'Unit'}
                 disabled={disabled}
-                className="h-10 w-full rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-2 text-center text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15"
+                className="h-10 w-full rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-2 text-center text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:border-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/15"
               />
             </div>
             <button
@@ -277,7 +277,7 @@ export function ProductAttributesPanel({
         badge="B"
         titleZh="销售规格"
         titleEn="Purchase Variants"
-        accentClass="bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)] border-[var(--accent-secondary)]/20"
+        accentClass="bg-[var(--accent-primary-soft)] text-[var(--accent-primary)] border-[var(--brand-primary)]/20"
         rows={variantRows}
         disabled={disabled}
         renderRow={(row) => (
@@ -400,8 +400,8 @@ function AttributeSection({
                 disabled={disabled || added}
               className={`ui-interactive flex h-8 items-center gap-1.5 rounded-[var(--radius-control)] border px-3 text-xs transition-colors ${
                   added
-                    ? 'cursor-default border-[var(--accent-secondary)] bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)]'
-                    : 'border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-secondary)] hover:border-[var(--accent-secondary)] hover:text-[var(--accent-secondary)]'
+                    ? 'cursor-default border-[var(--brand-primary)] bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]'
+                    : 'border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-secondary)] hover:border-[var(--interactive-hover)] hover:text-[var(--neutral-ink)]'
                 }`}
               >
                 {added && <Check size={13} aria-hidden="true" />}
@@ -416,7 +416,7 @@ function AttributeSection({
               disabled={disabled}
               aria-label={isZh ? `添加${titleZh.replace('商品', '').replace('销售', '')}` : `Add ${titleEn}`}
               title={isZh ? `添加${titleZh.replace('商品', '').replace('销售', '')}` : `Add ${titleEn}`}
-              className="ui-interactive grid h-8 w-8 place-items-center rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-secondary)] hover:border-[var(--accent-secondary)] hover:text-[var(--accent-secondary)]"
+              className="ui-interactive grid h-8 w-8 place-items-center rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--text-secondary)] hover:border-[var(--interactive-hover)] hover:text-[var(--neutral-ink)]"
             >
               <Plus size={13} />
             </button>
@@ -444,7 +444,7 @@ function AttributeSection({
                   ? `自定义${titleZh.replace('商品', '').replace('销售', '')}名称，回车添加`
                   : `Custom ${titleEn.toLowerCase()}, press Enter`
               }
-              className="h-9 min-w-0 flex-1 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15"
+              className="h-9 min-w-0 flex-1 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:border-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/15"
             />
             <button
               type="button"
@@ -530,7 +530,7 @@ function VariantRowEditor({
           }}
           placeholder={placeholder}
           disabled={disabled}
-          className="h-9 w-32 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:border-[var(--accent-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-secondary)]/15"
+          className="h-9 w-32 rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface)] px-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:border-[var(--brand-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/15"
         />
       </div>
 

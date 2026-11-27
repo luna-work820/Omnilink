@@ -17,7 +17,7 @@ import type { KnowledgeEntryRecord } from '@/lib/knowledge/model'
 import { useDashboardWorkspace } from '@/components/dashboard/DashboardWorkspaceProvider'
 import { ProductCreateDialog } from '@/components/product/ProductCreateDialog'
 import { UiverseButton } from '@/components/ui/UiverseButton'
-import AILoadingState, { type AgentStep } from '@/components/kokonutui/ai-loading'
+import AITextLoading from '@/components/kokonutui/ai-text-loading'
 import AIInputSearch, { type SearchTool } from '@/components/kokonutui/ai-input-search'
 import { ContentGenerationStudio } from './ContentGenerationStudio'
 import { CreatorQuickUpload } from '@/components/creator-content/CreatorQuickUpload'
@@ -40,18 +40,11 @@ const MAX_CHAT_IMAGE_BYTES = 5 * 1024 * 1024
 const CHAT_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 const MAX_CHAT_IMAGES = 4
 const WORKBENCH_TOOLS: SearchTool[] = [
-  { id: 'knowledge', label: '资料', icon: DatabaseIcon, color: '#315bff', activity: '正在整理已选资料', placeholder: '输入任务…', readsSources: true },
-  { id: 'product', label: '商品', icon: Package, color: '#F18A24', activity: '正在分析商品资料', placeholder: '输入任务…' },
-  { id: 'visual', label: '视觉', icon: ImageIcon, color: '#F18A24', activity: '正在构思视觉方案', placeholder: '输入任务…' },
-  { id: 'reason', label: '分析', icon: Lightbulb, color: '#315bff', activity: '正在深入分析', placeholder: '输入任务…' },
+  { id: 'knowledge', label: '资料', icon: DatabaseIcon, color: 'var(--brand-primary)', activity: '正在整理已选资料', placeholder: '输入任务…', readsSources: true },
+  { id: 'product', label: '商品', icon: Package, color: 'var(--brand-primary)', activity: '正在分析商品资料', placeholder: '输入任务…' },
+  { id: 'visual', label: '视觉', icon: ImageIcon, color: 'var(--brand-primary)', activity: '正在构思视觉方案', placeholder: '输入任务…' },
+  { id: 'reason', label: '分析', icon: Lightbulb, color: 'var(--brand-primary)', activity: '正在深入分析', placeholder: '输入任务…' },
 ]
-const WORKBENCH_LOADING_STEPS: AgentStep[] = [{
-  id: 'request',
-  label: 'AI 正在处理本次请求',
-  status: 'running',
-  detail: ['请求处理中'],
-}]
-
 function readImageBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -536,7 +529,7 @@ export function WorkbenchHome({ displayName, merchantProject, capabilities = { c
                             <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] opacity-60">
                               {message.role === 'user' ? '你' : `AI ${message.model === 'qwen-plus' ? '千问 Plus' : message.model === 'deepseek-flash' ? 'DeepSeek Flash' : message.model === 'deepseek-v4-pro' ? 'DeepSeek Pro' : 'Gemini'}`}
                             </div>
-                            {message.pending ? <AILoadingState steps={WORKBENCH_LOADING_STEPS} className="justify-start" /> : <BubbleContent>{message.content}</BubbleContent>}
+                            {message.pending ? <AITextLoading /> : <BubbleContent>{message.content}</BubbleContent>}
                             {message.images?.length ? (
                               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                                 {message.images.map((image, imageIndex) => message.role === 'assistant' ? (
@@ -691,7 +684,7 @@ function FullscreenWorkbench({ prompt, setPrompt, submit, onClose, selectedProdu
       <section className="workbench-fullscreen-conversation flex w-[38%] min-w-[320px] flex-col p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">工作对话</h2>
-          <button type="button" onClick={onClose} aria-label="退出全屏工作台" className="workbench-fullscreen-close grid h-9 w-9 place-items-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent-secondary)] focus-visible:outline-offset-2"><Minimize2 className="h-4 w-4" /></button>
+          <button type="button" onClick={onClose} aria-label="退出全屏工作台" className="workbench-fullscreen-close grid h-9 w-9 place-items-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--brand-primary)] focus-visible:outline-offset-2"><Minimize2 className="h-4 w-4" /></button>
         </div>
         <div data-glasswork="" data-glasswork-radius="20" data-glasswork-rim="12" data-glasswork-dispersion="0.18" data-glasswork-tint="1.15" className="workbench-fullscreen-dialog mt-6 flex-1 p-4">
           <p className="text-sm font-semibold">开始处理任务</p>
@@ -722,9 +715,9 @@ function HistoryPanel({ className, query, setQuery, tasks, onSelectTask, onArchi
   const [historyView, setHistoryView] = useState<'recent' | 'archived'>('recent')
   return (
     <aside role="dialog" aria-modal="true" aria-label="历史记录" data-glasswork="" data-glasswork-radius="24" data-glasswork-rim="16" data-glasswork-dispersion="0.18" data-glasswork-tint="1.25" className={`${className} shrink-0 flex-col`}>
-      <div className="flex h-16 items-center justify-between border-b border-[var(--border-subtle)] px-5"><h2 className="text-base font-semibold text-[var(--text-primary)]">历史记录</h2>{onClose && <button type="button" onClick={onClose} aria-label="关闭" className="grid h-10 w-10 place-items-center rounded-[var(--radius-control)] hover:bg-[var(--surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent-secondary)]"><X className="h-[18px] w-[18px]" /></button>}</div>
-      <label className="mx-4 mt-2 flex h-11 shrink-0 items-center gap-2 rounded-[var(--radius-control)] px-3 transition-colors focus-within:bg-[var(--surface-muted)] focus-within:outline focus-within:outline-2 focus-within:outline-[var(--accent-secondary)]"><Search className="h-4 w-4 text-[var(--text-secondary)]" aria-hidden="true" /><span className="sr-only">搜索历史记录</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索历史记录" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--text-secondary)]" /></label>
-      <div className="flex h-11 shrink-0 items-center gap-2 px-4"><button type="button" onClick={() => setHistoryView('recent')} aria-pressed={historyView === 'recent'} className={`h-9 rounded-full px-3 text-sm hover:bg-[var(--interactive-hover)] ${historyView === 'recent' ? 'font-semibold text-[var(--accent-secondary)]' : 'text-[var(--text-secondary)]'}`}>最近</button><button type="button" onClick={() => setHistoryView('archived')} aria-pressed={historyView === 'archived'} className={`h-9 rounded-full px-3 text-sm hover:bg-[var(--interactive-hover)] ${historyView === 'archived' ? 'font-semibold text-[var(--accent-secondary)]' : 'text-[var(--text-secondary)]'}`}>已归档</button></div>
+      <div className="flex h-16 items-center justify-between border-b border-[var(--border-subtle)] px-5"><h2 className="text-base font-semibold text-[var(--text-primary)]">历史记录</h2>{onClose && <button type="button" onClick={onClose} aria-label="关闭" className="grid h-10 w-10 place-items-center rounded-[var(--radius-control)] hover:bg-[var(--surface-muted)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--brand-primary)]"><X className="h-[18px] w-[18px]" /></button>}</div>
+      <label className="mx-4 mt-2 flex h-11 shrink-0 items-center gap-2 rounded-[var(--radius-control)] px-3 transition-colors focus-within:bg-[var(--surface-muted)] focus-within:outline focus-within:outline-2 focus-within:outline-[var(--brand-primary)]"><Search className="h-4 w-4 text-[var(--text-secondary)]" aria-hidden="true" /><span className="sr-only">搜索历史记录</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索历史记录" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--text-secondary)]" /></label>
+      <div className="flex h-11 shrink-0 items-center gap-2 px-4"><button type="button" onClick={() => setHistoryView('recent')} aria-pressed={historyView === 'recent'} className={`h-9 rounded-full px-3 text-sm hover:bg-[var(--interactive-hover)] ${historyView === 'recent' ? 'font-semibold text-[var(--accent-primary)]' : 'text-[var(--text-secondary)]'}`}>最近</button><button type="button" onClick={() => setHistoryView('archived')} aria-pressed={historyView === 'archived'} className={`h-9 rounded-full px-3 text-sm hover:bg-[var(--interactive-hover)] ${historyView === 'archived' ? 'font-semibold text-[var(--accent-primary)]' : 'text-[var(--text-secondary)]'}`}>已归档</button></div>
       <div className="flex-1 space-y-2 overflow-y-auto overscroll-contain p-3">{tasks.filter((task) => Boolean(task.archived) === (historyView === 'archived')).map((task, index) => {
         const latestImage = task.messages?.flatMap((message) => message.images || []).at(-1) || task.thumbnail
         const content = <>

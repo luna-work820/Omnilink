@@ -1,7 +1,9 @@
 import { PGlite } from '@electric-sql/pglite'
 import { readFile } from 'node:fs/promises'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { publicationDefaults } from '../creator-publication-document'
+import { articlePublication, parsePublicationDocument, publicationDefaults, publicationScene } from '../creator-publication-document'
+import { articleBlocksForEditor, articleBlocksFromEditor } from '../creator-article-editor'
+import { gildedEastArticle } from '@/components/consumer-market/data/theme-article-demo'
 
 const A = '10000000-0000-4000-8000-000000000001', B = '10000000-0000-4000-8000-000000000002'
 const store = '30000000-0000-4000-8000-000000000001', org = '20000000-0000-4000-8000-000000000001'
@@ -25,6 +27,69 @@ beforeAll(async () => {
 }, 30000)
 afterAll(async () => { await db?.close() })
 describe('publication transactions and public boundaries', () => {
+  it('keeps a shop article linked across drafts, publication and public reads', async () => {
+    const original = articlePublication(gildedEastArticle)
+    const row = await save(original, 'published', null, [])
+    const edited = articlePublication({ ...gildedEastArticle, title: '更新后的长文' })
+    await save(edited, 'draft', row.id, [])
+
+    await role(null, async () => {
+      const result = await db.query<{ title: string; publication: typeof original }>('select title,publication from public.creator_posts where id=$1', [row.id])
+      expect(result.rows[0].title).toBe(gildedEastArticle.title)
+      expect(result.rows[0].publication.article?.blocks.find((block) => block.type === 'productLink')?.props).toMatchObject({ kind: 'shop', gallery: expect.any(Array) })
+    })
+    await role(A, async () => {
+      const result = await db.query<{ draft_version: { publication: typeof edited } }>('select draft_version from public.get_creator_publication_for_editor($1,$2)', [store, row.id])
+      expect(result.rows[0].draft_version.publication.article?.title).toBe('更新后的长文')
+    })
+    await save(edited, 'published', row.id, [])
+    await role(null, async () => {
+      const result = await db.query<{ title: string; publication: typeof edited }>('select title,publication from public.creator_posts where id=$1', [row.id])
+      expect(result.rows[0].title).toBe('更新后的长文')
+      expect(result.rows[0].publication.article?.title).toBe(result.rows[0].title)
+      expect(result.rows[0].publication.article?.blocks.find((block) => block.type === 'productLink')?.props).toMatchObject({ url: 'https://shop383283250.taobao.com/' })
+    })
+  })
+  it('shows the editor’s article and card changes publicly after publication', async () => {
+    const row = await save(articlePublication(gildedEastArticle), 'published', null, [])
+    const articlePath = `${org}/${A}/40000000-0000-4000-8000-000000000003.webp`
+    const cover = `/api/creator-posts/media/${articlePath}`
+    const fields = {
+      kind: 'shop', url: 'https://shop.example.com/', name: '新店名', subtitle: '新副标题', price: '', image: cover,
+      gallery: [{ url: cover, name: '新商品', price: '128 元', link: 'https://shop.example.com/item/123' }],
+    }
+    const editorBlocks = articleBlocksForEditor([
+      { type: 'paragraph', content: [{ type: 'text', text: '编辑后的正文', styles: {} }] },
+      { type: 'productLink', props: fields },
+    ])
+    const edited = articlePublication({
+      ...gildedEastArticle, title: '编辑后的标题', background: 'blue-2', cover: { url: cover, position: 50 },
+      blocks: articleBlocksFromEditor(editorBlocks),
+    })
+    expect(parsePublicationDocument(edited)).not.toBeNull()
+    await save(edited, 'draft', row.id, [articlePath])
+
+    await role(A, async () => {
+      const result = await db.query<{ draft_version: { publication: typeof edited } }>('select draft_version from public.get_creator_publication_for_editor($1,$2)', [store, row.id])
+      expect(result.rows[0].draft_version.publication).toEqual(edited)
+    })
+    await role(null, async () => {
+      const result = await db.query<{ title: string }>('select title from public.creator_posts where id=$1', [row.id])
+      expect(result.rows[0].title).toBe(gildedEastArticle.title)
+    })
+
+    await save(edited, 'published', row.id, [articlePath])
+    await role(null, async () => {
+      const result = await db.query<{ publication: unknown }>('select publication from public.creator_posts where id=$1', [row.id])
+      const document = parsePublicationDocument(result.rows[0].publication)!
+      const post = publicationScene(row.id, document, '创作者')
+      expect(post).toMatchObject({ id: row.id, title: '编辑后的标题', coverImage: cover, description: '编辑后的正文' })
+      expect(document.article).toMatchObject({ background: 'blue-2', cover: { url: cover }, blocks: [
+        { type: 'paragraph', content: [{ text: '编辑后的正文' }] },
+        { type: 'productLink', props: fields },
+      ] })
+    })
+  })
   it('atomically publishes content and its media references', async () => {
     const row = await save(document('公开图文'))
     await role(null, async () => {

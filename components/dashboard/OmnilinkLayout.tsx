@@ -205,7 +205,7 @@ export default function OmnilinkLayout({
                       className={cn(
                         'w-full h-8.5  px-2 flex items-center gap-2 transition-all duration-200 cursor-pointer border',
                         active
-                          ? 'bg-[var(--accent-secondary-soft)] border-transparent text-[var(--accent-secondary)] font-semibold'
+                          ? 'bg-[var(--accent-primary-soft)] border-transparent text-[var(--accent-primary)] font-semibold'
                           : 'border-transparent text-[var(--lavender)] dark:text-[var(--lavender)] hover:bg-[var(--interactive-hover)]'
                       )}
                     >
@@ -233,7 +233,7 @@ export default function OmnilinkLayout({
                     className={cn(
                       'w-full h-8.5  px-2.5 flex items-center gap-2.5 transition-all duration-150 cursor-pointer',
                       active
-                        ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)] font-semibold'
+                        ? 'bg-[var(--accent-primary-soft)] text-[var(--accent-primary)] font-semibold'
                         : 'text-[var(--lavender)] dark:text-[var(--lavender)] hover:bg-[var(--interactive-hover)]'
                     )}
                   >
@@ -260,7 +260,7 @@ export default function OmnilinkLayout({
                           'w-7 h-7 rounded-full relative flex items-center justify-center transition-all duration-300',
                           'bg-[var(--ink)]',
                           active
-                            ? 'ring-2 ring-[var(--accent-secondary)] ring-offset-2 ring-offset-white'
+                            ? 'ring-2 ring-[var(--brand-primary)] ring-offset-2 ring-offset-white'
                             : ''
                         )}
                       >
@@ -282,7 +282,7 @@ export default function OmnilinkLayout({
                     className={cn(
                       'w-8.5 h-8.5  flex items-center justify-center transition-all duration-150',
                       active
-                        ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)]'
+                        ? 'bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]'
                         : 'text-[var(--lavender)] dark:text-[var(--lavender)] hover:bg-[var(--interactive-hover)]'
                     )}
                   >
@@ -316,7 +316,7 @@ export default function OmnilinkLayout({
               </div>
               <button
                 type="button"
-                className="mt-0.5 w-full bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] text-[var(--surface)] text-[9.5px] font-bold py-1 px-1.5  flex items-center justify-between cursor-pointer transition-all shadow-xs"
+                className="mt-0.5 w-full bg-[var(--primary)] hover:bg-[var(--interactive-hover)] active:bg-[var(--primary)] text-[var(--surface)] text-[9.5px] font-bold py-1 px-1.5  flex items-center justify-between cursor-pointer transition-all shadow-xs"
               >
                 <span>{isZh ? '探索方案' : 'Explore'}</span>
                 <ChevronRight size={9} className="text-[var(--surface)]" />
@@ -358,7 +358,7 @@ export default function OmnilinkLayout({
                     className={cn(
                       'w-full h-8.5  px-2.5 flex items-center gap-2.5 transition-all duration-150 cursor-pointer',
                       active
-                        ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)] font-semibold'
+                        ? 'bg-[var(--accent-primary-soft)] text-[var(--accent-primary)] font-semibold'
                         : 'text-[var(--lavender)] dark:text-[var(--lavender)] hover:bg-[var(--interactive-hover)]'
                     )}
                   >
@@ -376,7 +376,7 @@ export default function OmnilinkLayout({
                     className={cn(
                       'w-8.5 h-8.5  flex items-center justify-center transition-all duration-150',
                       active
-                        ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)]'
+                        ? 'bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]'
                         : 'text-[var(--lavender)] dark:text-[var(--lavender)] hover:bg-[var(--interactive-hover)]'
                     )}
                   >
@@ -435,7 +435,7 @@ export default function OmnilinkLayout({
                   className={cn(
                     'px-2.5 py-1 rounded-full text-[11px] font-bold transition-all flex items-center gap-1',
                     active
-                      ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)]'
+                      ? 'bg-[var(--accent-primary-soft)] text-[var(--accent-primary)]'
                       : 'text-[var(--lavender)] hover:bg-[var(--interactive-hover)]'
                   )}
                 >
@@ -450,7 +450,7 @@ export default function OmnilinkLayout({
                 href={item.href}
                 className={cn(
                   'px-2.5 py-1 rounded-full text-[11px] font-medium transition-all',
-                  active ? 'bg-[var(--accent-secondary-soft)] text-[var(--accent-secondary)] font-semibold' : 'text-[var(--lavender)] dark:text-[var(--lavender)] hover:bg-[var(--interactive-hover)]'
+                  active ? 'bg-[var(--accent-primary-soft)] text-[var(--accent-primary)] font-semibold' : 'text-[var(--lavender)] dark:text-[var(--lavender)] hover:bg-[var(--interactive-hover)]'
                 )}
               >
                 {t.nav[item.key]}

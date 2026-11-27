@@ -10,6 +10,7 @@ export interface LoginFormProps extends React.ComponentProps<"div"> {
   variant?: "dark" | "light";
   hideTitle?: boolean;
   redirectTo?: string;
+  idPrefix?: string;
 }
 
 export function LoginForm({
@@ -18,6 +19,7 @@ export function LoginForm({
   variant = "dark",
   hideTitle = false,
   redirectTo,
+  idPrefix = "login",
   ...props
 }: LoginFormProps) {
   const [state, action, pending] = useActionState<AuthState, FormData>(loginAction, null);
@@ -52,7 +54,7 @@ export function LoginForm({
 
       <form
         action={action}
-        className="flex-1 flex flex-col justify-between pt-2"
+        className="flex flex-col gap-6 pt-2"
       >
         {redirectTo && <input type="hidden" name="redirectTo" value={redirectTo} />}
         {state?.error && (
@@ -72,7 +74,7 @@ export function LoginForm({
         <div className="flex flex-col gap-3.5">
           <div className="flex flex-col gap-1.5">
             <label
-              htmlFor="email"
+              htmlFor={`${idPrefix}-email`}
               className={cn(
                 "text-xs font-medium tracking-wide",
                 isLight ? "text-neutral-700" : "text-neutral-300"
@@ -81,7 +83,7 @@ export function LoginForm({
               邮箱
             </label>
             <Input
-              id="email"
+              id={`${idPrefix}-email`}
               name="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -93,7 +95,7 @@ export function LoginForm({
                 "h-11 rounded-xl transition-all",
                 isLight
                   ? "bg-black/[0.035] border-black/15 text-[#0B0C0E] placeholder:text-neutral-400 focus-visible:ring-[#315BFF] focus-visible:border-[#315BFF]"
-                  : "bg-white/[0.06] border-white/15 text-white placeholder:text-neutral-500 focus-visible:ring-[#315BFF] focus-visible:border-[#315BFF]"
+                  : "bg-white/[0.06] border-white/15 text-white placeholder:text-neutral-500 focus-visible:ring-white focus-visible:border-white"
               )}
             />
           </div>
@@ -101,7 +103,7 @@ export function LoginForm({
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <label
-                htmlFor="password"
+                htmlFor={`${idPrefix}-password`}
                 className={cn(
                   "text-xs font-medium tracking-wide",
                   isLight ? "text-neutral-700" : "text-neutral-300"
@@ -111,7 +113,7 @@ export function LoginForm({
               </label>
             </div>
             <Input
-              id="password"
+              id={`${idPrefix}-password`}
               name="password"
               type="password"
               placeholder="••••••••"
@@ -121,7 +123,7 @@ export function LoginForm({
                 "h-11 rounded-xl transition-all",
                 isLight
                   ? "bg-black/[0.035] border-black/15 text-[#0B0C0E] focus-visible:ring-[#315BFF] focus-visible:border-[#315BFF]"
-                  : "bg-white/[0.06] border-white/15 text-white focus-visible:ring-[#315BFF] focus-visible:border-[#315BFF]"
+                  : "bg-white/[0.06] border-white/15 text-white focus-visible:ring-white focus-visible:border-white"
               )}
             />
           </div>
@@ -131,7 +133,7 @@ export function LoginForm({
           <Button
             type="submit"
             disabled={pending}
-            className="w-full h-11 rounded-xl bg-[#315BFF] text-white hover:bg-[#2548db] font-semibold text-sm cursor-pointer shadow-md transition-all active:scale-[0.99]"
+            className="w-full h-11 rounded-xl bg-[#008F83] text-white hover:bg-[#007F75] font-semibold text-sm cursor-pointer transition-all active:scale-[0.99]"
           >
             <Shuffle
               text={pending ? "请稍候" : "登录"}
@@ -152,6 +154,7 @@ export function LoginForm({
             还没有账户？{" "}
             <button
               type="button"
+              data-liquid-skip="true"
               onClick={onSwitchToSignup}
               className={cn(
                 "underline underline-offset-4 font-semibold cursor-pointer transition-colors",

@@ -47,7 +47,7 @@ export function ProductCreateFooter({
         disabled={disabled || isSubmitting || publishDisabled}
         title={publishDisabled ? publishUnavailableLabel : undefined}
         aria-label={publishDisabled ? publishUnavailableLabel : publishing ? (isZh ? '正在上架' : 'Publishing') : (isZh ? '保存并上架' : 'Save and publish')}
-        className="ui-interactive flex h-12 items-center justify-center gap-2 rounded-full bg-[var(--accent-secondary)] px-4 text-sm font-semibold text-[var(--accent-secondary-foreground)] transition-colors hover:bg-[var(--accent-secondary-hover)] disabled:bg-[var(--surface-muted)] disabled:text-[var(--text-muted)]"
+        className="ui-interactive flex h-12 items-center justify-center gap-2 rounded-full bg-[var(--accent-primary)] px-4 text-sm font-semibold text-[var(--accent-primary-foreground)] transition-colors hover:bg-[var(--interactive-hover)] hover:text-[var(--neutral-ink)] disabled:bg-[var(--surface-muted)] disabled:text-[var(--text-muted)]"
       >
         {publishDisabled ? <LockKeyhole size={15} aria-hidden="true" /> : publishing ? <Loader2 size={15} className="animate-spin" aria-hidden="true" /> : null}
         <span>{isZh ? '上架' : 'Publish'}</span>

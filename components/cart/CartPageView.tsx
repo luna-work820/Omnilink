@@ -181,7 +181,7 @@ export default function CartPageView({ store }: { store: StorefrontStore }) {
           ))}
         </div>
 
-        <Link href={`/store/${store.slug}`} className="mt-6 inline-flex min-h-11 items-center rounded-[var(--th-radius-button)] border border-[var(--th-color-border)] px-5 text-sm text-[var(--th-color-text)] hover:bg-[var(--th-color-border)]/40 focus-visible:outline-2 focus-visible:outline-[#315BFF]">Continue Shopping</Link>
+        <Link href={`/store/${store.slug}`} className="mt-6 inline-flex min-h-11 items-center rounded-[var(--th-radius-button)] border border-[var(--th-color-border)] px-5 text-sm text-[var(--th-color-text)] hover:bg-[var(--th-color-border)]/40 focus-visible:outline-2 focus-visible:outline-[var(--brand-primary)]">Continue Shopping</Link>
       </div>
     </main>
   )

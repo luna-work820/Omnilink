@@ -4,8 +4,7 @@ import { cn } from '@/lib/utils'
 import { ArrowUpRight, Sparkles, ArrowRight, type LucideIcon } from 'lucide-react'
 
 /* ============================================================
-   Omnilink Dashboard Kit —— Rexora Design System
-   Clean Off-White Canvas · Rounded Pure White Cards · Vivid Lime & Ink Accents
+   Omnilink Dashboard Kit
    ============================================================ */
 
 /* 页面头部 */
@@ -146,8 +145,9 @@ export function PrimaryLink({
   return (
     <Link
       href={href}
+      data-interactive="true"
       className={cn(
-        'inline-flex items-center justify-center gap-2 px-4 py-2.5  text-xs font-medium text-[var(--surface)] bg-[var(--primary)] hover:bg-[var(--primary)] active:bg-[var(--primary)] transition-all focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2',
+        'inline-flex min-h-[var(--button-height-md)] items-center justify-center gap-2 rounded-[var(--button-radius)] px-4 text-sm font-medium text-[var(--surface)] bg-[var(--primary)] hover:bg-[var(--interactive-hover)] active:bg-[var(--primary)] transition-all focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2',
         className
       )}
     >
@@ -169,8 +169,9 @@ export function GhostLink({
   return (
     <Link
       href={href}
+      data-interactive="true"
       className={cn(
-        'inline-flex items-center justify-center gap-2 px-4 py-2.5  text-xs font-medium bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-muted)] hover:border-[var(--border)] transition-all focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2',
+        'inline-flex min-h-[var(--button-height-md)] items-center justify-center gap-2 rounded-[var(--button-radius)] px-4 text-sm font-medium bg-[var(--surface)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-muted)] hover:border-[var(--border)] transition-all focus-visible:outline-2 focus-visible:outline-[var(--primary)] focus-visible:outline-offset-2',
         className
       )}
     >
@@ -264,7 +265,7 @@ export function StatusDot({
   label: string
 }) {
   const color =
-    tone === 'ok' ? 'bg-[var(--acid-sage)]' : tone === 'warn' ? 'bg-[#e0652b]' : 'bg-[var(--lavender)]'
+    tone === 'ok' ? 'bg-[var(--acid-sage)]' : tone === 'warn' ? 'bg-[var(--brand-secondary)]' : 'bg-[var(--lavender)]'
   return (
     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--ink)]">
       <span className={cn('w-2 h-2 rounded-full', color)} />
@@ -340,7 +341,7 @@ export function RowLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--ink)] hover:text-[#e0652b] transition-colors"
+      className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--ink)] hover:text-[var(--neutral-ink)] transition-colors"
     >
       {label}
       <ArrowRight size={12} />

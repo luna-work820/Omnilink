@@ -2,7 +2,6 @@ import {after} from 'next/server'
 import {z} from 'zod'
 import {websiteAuth,websiteFailure} from '@/lib/site-builder/auth'
 import {readWebsiteState,websiteCommand,executeWebsiteBuild,verifyPublicDataConnection} from '@/lib/site-builder/service'
-import {readDeepSeekKeyForUser} from '@/lib/consumer-advisor/deepseek-key-cookie'
 import {sandboxConfigured} from '@/lib/site-builder/runtime'
 import {isWebsiteInstruction} from '@/lib/site-builder/intent'
 
@@ -27,8 +26,8 @@ export async function POST(request:Request){
   const body=parsed.data
   if(body.action==='generate'){
    if(!isWebsiteInstruction(body.prompt,body.continuing))return Response.json({error:'请说明建站或修改网站的具体要求'},{status:400})
-   const apiKey=await readDeepSeekKeyForUser(auth.user.id)
-   if(!apiKey)return Response.json({error:'请先在设置中连接 DeepSeek API Key'},{status:400})
+   const apiKey=process.env.DEEPSEEK_API_KEY?.trim()
+   if(!apiKey)return Response.json({error:'服务器尚未配置 DeepSeek 服务'},{status:400})
    if(!sandboxConfigured())return Response.json({error:'服务器尚未配置 Vercel Sandbox 认证'},{status:503})
    const build=await websiteCommand(auth.user.id,auth.store.id,'start',body)
    if(!build.existing)after(()=>executeWebsiteBuild({userId:auth.user.id,storeId:auth.store.id,buildId:build.id,prompt:body.prompt,apiKey}))
